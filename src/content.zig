@@ -123,11 +123,27 @@ fn tiles(app: *App, parent: NodeId, names: []const []const u8) !void {
 fn tableOf(app: *App, parent: NodeId, rows: []const []const []const u8) !void {
     const table = try app.tree.append(parent, .{ .table = .{} });
     for (rows, 0..) |cells, r| {
-        const row = try app.tree.append(table, .{ .row = .{ .header = r == 0 } });
-        for (cells) |c| {
-            const cell = try app.tree.append(row, .{ .cell = .{} });
-            _ = try app.tree.append(cell, .{ .text = .{ .content = c } });
-        }
+        try tableRow(app, table, cells, r == 0);
+    }
+}
+
+/// A table whose columns need no names. nokre's row is only a header
+/// when marked (`.header = true`), so the case is expressed by never
+/// marking one — passing empty header strings instead would emit empty
+/// `<th>`s, and a screen reader associates every cell with a header
+/// that says nothing.
+fn headerlessTableOf(app: *App, parent: NodeId, rows: []const []const []const u8) !void {
+    const table = try app.tree.append(parent, .{ .table = .{} });
+    for (rows) |cells| {
+        try tableRow(app, table, cells, false);
+    }
+}
+
+fn tableRow(app: *App, table: NodeId, cells: []const []const u8, header: bool) !void {
+    const row = try app.tree.append(table, .{ .row = .{ .header = header } });
+    for (cells) |c| {
+        const cell = try app.tree.append(row, .{ .cell = .{} });
+        _ = try app.tree.append(cell, .{ .text = .{ .content = c } });
     }
 }
 
@@ -663,20 +679,25 @@ fn colophon(app: *App) !void {
     // depend on checkout *state*, which is the point — provenance — and
     // costs the paragraph above nothing: a rebuild on the same two
     // clean commits is still byte-identical, so the empty-diff property
-    // survives the stamp. One consequence is worn openly instead of
-    // papered over: the commit that publishes this page can never be
-    // the hash printed on it, because the site hash is HEAD as of the
-    // build and the publishing commit does not exist yet. So a clean
-    // stamp is had by committing first and rebuilding after — the order
-    // the README's Publishing section asks for.
+    // survives the stamp. The two clauses wear different words because
+    // they know different things. The nokre clause can name the exact
+    // sources — that checkout is only read — so a dirty tree there is a
+    // real finding and gets the admission. The site's own clause can
+    // never name the commit it lands in: the hash is HEAD as of the
+    // build, the publishing commit does not exist yet, and the tree is
+    // dirty at rebuild time by construction (the rebuild is what
+    // dirties it). An admission that is always true says nothing, so
+    // this clause says the honest smaller thing — the output was built
+    // atop that commit — and no more.
     const provenance = comptime prov: {
         const lead: []const nok.element.Span =
             &.{plain("And which sources those were is stamped rather than assumed: " ++
                 "this page was generated from nokre at ")};
-        const mid: []const nok.element.Span = &.{plain(" and this repository at ")};
-        const tail: []const nok.element.Span = &.{plain(".")};
+        const mid: []const nok.element.Span = &.{plain(" and built atop ")};
+        const site_clause: []const nok.element.Span = &.{mono(opts.site_rev)};
+        const tail: []const nok.element.Span = &.{plain(" of this repository.")};
         break :prov lead ++ stamp(opts.nokre_rev, opts.nokre_dirty) ++
-            mid ++ stamp(opts.site_rev, opts.site_dirty) ++ tail;
+            mid ++ site_clause ++ tail;
     };
     try spanned(app, root, provenance);
 
@@ -755,8 +776,7 @@ fn colophon(app: *App) !void {
     });
 
     try heading(app, root, .h2, "What it costs the reader");
-    try tableOf(app, root, &.{
-        &.{ "", "" },
+    try headerlessTableOf(app, root, &.{
         &.{ "JavaScript", "nokre's own live driver and nothing else. No framework, no dependency, no analytics, no cookies." },
         &.{ "Before it runs", "The whole page. Content, links, chrome — the script changes what is measured, not what is there." },
         &.{ "With it off", "The same page, wrapped for a 1280-pixel window." },

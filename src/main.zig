@@ -15,6 +15,7 @@ const nok = @import("nokre");
 const opts = @import("site_options");
 
 const content = @import("content.zig");
+const icons = @import("icons.zig");
 const links = @import("links.zig");
 const pages = @import("pages.zig");
 
@@ -175,6 +176,33 @@ pub fn main(init: std.process.Init) !void {
         return error.BrokenReferences;
     }
 
+    // ---- the icon check ----------------------------------------------
+    //
+    // The served woff2 draws exactly the codepoints tools/build-fonts.py
+    // lists, so an icon in this run's output that the list lacks ships
+    // as tofu on every reader's screen — invisible to every check that
+    // reads the tree, because the tree only knows names. The list's
+    // names and codepoints are themselves proven against nokre by the
+    // unit tests (icons.zig); this proves this output against the list.
+    // The stylesheet is composed here, before anything is written, so
+    // its own icon escapes face the same check the documents do.
+    var css: std.ArrayList(u8) = .empty;
+    try dom.stylesheet.write(gpa, &css, .{});
+    try css.appendSlice(gpa, shell_css);
+
+    const subset = try icons.parse(gpa, icons.py);
+    const emitted = try icons.collectEmitted(gpa, documents, css.items);
+    var uncovered: usize = 0;
+    for (emitted) |cp| {
+        if (icons.covered(subset, cp)) continue;
+        std.debug.print("icon U+{X:0>4} ({s}) is not in tools/build-fonts.py's ICONS\n", .{ cp, icons.nameOf(cp) });
+        uncovered += 1;
+    }
+    if (uncovered != 0) {
+        std.debug.print("{d} icon(s) would render as tofu: add them to ICONS and re-run the subset\n", .{uncovered});
+        return error.IconNotInFontSubset;
+    }
+
     // ---- write -------------------------------------------------------
     const out_dir = opts.out_dir;
     try cwd.createDirPath(io, out_dir);
@@ -185,9 +213,6 @@ pub fn main(init: std.process.Init) !void {
         try cwd.writeFile(io, .{ .sub_path = path, .data = documents[i] });
     }
 
-    var css: std.ArrayList(u8) = .empty;
-    try dom.stylesheet.write(gpa, &css, .{});
-    try css.appendSlice(gpa, shell_css);
     try cwd.writeFile(io, .{
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "style.css" }),
         .data = css.items,
@@ -232,6 +257,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try writeExtras(gpa, io, cwd, out_dir);
+    try failOnStale(gpa, io, cwd, out_dir);
 
     std.debug.print("{d} screens, {d} references, {d} bytes of markup, {d} bytes of driver\n", .{
         pages.all.len,
@@ -252,6 +278,64 @@ fn has(list: []const []const u8, needle: []const u8) bool {
         if (std.mem.eql(u8, s, needle)) return true;
     }
     return false;
+}
+
+/// After the write, nothing in the output tree may keep the shape of a
+/// generated page this run did not generate. The generator only creates
+/// and overwrites, so a renamed or removed route would leave its old
+/// `<name>/index.html` and `md/<name>.md` published forever — served,
+/// indexed, and invisible to every check that walks the route table,
+/// because the route table is exactly what no longer names them. Found
+/// ones fail the build rather than being deleted: what a page on its
+/// way out becomes — a redirect, a removal commit somebody reviews — is
+/// the operator's decision, same fail-forward posture as every other
+/// check here. The walk is scoped to the two shapes this run writes,
+/// `<route>/index.html` and `md/<route>.md`; everything else in the
+/// tree (assets/, the driver files, app.wasm, the extras, 404.html and
+/// the root index.html) has a fixed name and a writer of its own.
+fn failOnStale(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
+    var stale: usize = 0;
+
+    var root = try cwd.openDir(io, out_dir, .{ .iterate = true });
+    defer root.close(io);
+    var it = root.iterate();
+    while (try it.next(io)) |entry| {
+        if (entry.kind != .directory) continue;
+        const index = try std.fs.path.join(gpa, &.{ out_dir, entry.name, "index.html" });
+        cwd.access(io, index, .{}) catch continue;
+        if (writesPageDir(entry.name)) continue;
+        std.debug.print("stale page: {s} — no route writes it\n", .{index});
+        stale += 1;
+    }
+
+    const md_dir_path = try std.fs.path.join(gpa, &.{ out_dir, "md" });
+    var md_dir = try cwd.openDir(io, md_dir_path, .{ .iterate = true });
+    defer md_dir.close(io);
+    var md_it = md_dir.iterate();
+    while (try md_it.next(io)) |entry| {
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.name, ".md")) continue;
+        const stem = entry.name[0 .. entry.name.len - ".md".len];
+        if (pages.find(stem)) |p| {
+            if (p.md.len != 0) continue;
+        }
+        std.debug.print("stale source: {s}/{s} — no route writes it\n", .{ md_dir_path, entry.name });
+        stale += 1;
+    }
+
+    if (stale != 0) {
+        std.debug.print("{d} stale file(s) left published by a rename or removal\n", .{stale});
+        return error.StaleOutput;
+    }
+}
+
+/// Whether this run wrote `<name>/index.html`: the name must be a
+/// route, and one publishing in the directory shape — home lands at the
+/// root and the 404 page at `404.html` (`outPath`), so directories by
+/// those names would be stale like any other.
+fn writesPageDir(name: []const u8) bool {
+    const p = pages.find(name) orelse return false;
+    return !std.mem.eql(u8, p.name, "home") and p.kind != .not_found;
 }
 
 fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const u8 {
@@ -396,15 +480,17 @@ fn sourceUrl(gpa: std.mem.Allocator, p: pages.Page) ![]const u8 {
 }
 
 fn footer(em: *dom.Emitter) !void {
+    // The two repository links leave the site, so they carry the pair
+    // every external link here carries (`links.external_attrs`).
     try em.print(
         \\<footer>
         \\<span>MIT licensed. Documentation rendered from the repository at
-        \\<a href="{s}/tree/{s}/docs" rel="noopener">docs/</a>.</span>
-        \\<span><a href="{s}" rel="noopener">Source on GitHub</a></span>
+        \\<a href="{s}/tree/{s}/docs" {s}>docs/</a>.</span>
+        \\<span><a href="{s}" {s}>Source on GitHub</a></span>
         \\<span><a href="/colophon/">How this site is built</a></span>
         \\</footer>
         \\
-    , .{ links.repo_url, links.branch, links.repo_url });
+    , .{ links.repo_url, links.branch, links.external_attrs, links.repo_url, links.external_attrs });
 }
 
 /// The driver's own rules, appended after the edition's stylesheet.
@@ -569,4 +655,11 @@ fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
 test {
     _ = pages;
     _ = links;
+    _ = icons;
+    // Analysis is lazy and only the entry point references the write
+    // path, so the test build would otherwise skip it. `main` itself
+    // cannot be pulled in — App.Options drops the `services` default
+    // under test on purpose — but the helpers past App.init can be.
+    _ = &failOnStale;
+    _ = &writeExtras;
 }

@@ -38,8 +38,13 @@ pub fn build(b: *std.Build) void {
     options.addOption([]const u8, "out_dir", out);
     options.addOption([]const u8, "nokre_rev", nokre_git.rev);
     options.addOption(bool, "nokre_dirty", nokre_git.dirty);
+    // No `site_dirty` beside it: the colophon's site clause says "built
+    // atop" precisely because this tree is dirty at generation time by
+    // construction — the rebuild is what dirties it — so the flag would
+    // always be true and admit nothing (the sentence's rationale lives
+    // in content.zig). nokre's flag stays: that checkout is only read,
+    // so dirt there is a genuine finding.
     options.addOption([]const u8, "site_rev", site_git.rev);
-    options.addOption(bool, "site_dirty", site_git.dirty);
 
     const mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -50,6 +55,12 @@ pub fn build(b: *std.Build) void {
             .{ .name = "site_options", .module = options.createModule() },
         },
     });
+
+    // The subset script, importable as text (`@embedFile` in icons.zig):
+    // the ICONS table it subsets the icon face from is what the icon
+    // checks — unit test and generation-time both — read as the ground
+    // truth for what the served woff2 can draw.
+    mod.addAnonymousImport("build-fonts.py", .{ .root_source_file = b.path("tools/build-fonts.py") });
 
     const gen = b.addExecutable(.{ .name = "generate", .root_module = mod });
 

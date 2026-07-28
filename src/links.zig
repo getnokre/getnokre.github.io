@@ -26,6 +26,25 @@ const dom = nok.render.dom;
 pub const repo_url = "https://github.com/getnokre/nokre";
 pub const branch = "main";
 
+/// The site's one posture for a link that leaves it: a new tab. It is
+/// the pair nokre's own serializer writes on external destinations
+/// (`Emitter.hrefExternal`), for the same two reasons — same-tab would
+/// tear down the running app under the live driver and lose a static
+/// page's reader their place, and `noopener noreferrer` severs the
+/// handle the new page would otherwise hold on this window. Decided
+/// here once; the resolver paths and the footer all spend it.
+pub const external_attrs = "target=\"_blank\" rel=\"noopener noreferrer\"";
+
+/// A `.source` target's href, attributes included. The `Refs` hook
+/// hands this code the inside of one `href` attribute — the serializer
+/// writes the opening `href="` before the call and the closing quote
+/// after it — so the only door to more attributes is to close the href
+/// here and let that closing quote finish the pair instead.
+fn writeSourceAnchor(gpa: std.mem.Allocator, em: *dom.Emitter, path: []const u8, dir: bool, frag: []const u8) !void {
+    try em.raw(try sourceHref(gpa, path, dir, frag));
+    try em.raw("\" " ++ external_attrs[0 .. external_attrs.len - "\"".len]);
+}
+
 /// A reference the edition asked this site to resolve, kept for the
 /// link check that runs once every page has been built.
 pub const Seen = struct {
@@ -68,7 +87,7 @@ pub const Resolver = struct {
                 try em.raw("#");
                 try em.text(a);
             },
-            .source => |s| try em.raw(try sourceHref(self.gpa, s.path, s.dir, s.frag)),
+            .source => |s| try writeSourceAnchor(self.gpa, em, s.path, s.dir, s.frag),
         }
     }
 };
@@ -112,7 +131,7 @@ pub const Live = struct {
                 try em.raw("#");
                 try em.text(a);
             },
-            .source => |s| try em.raw(try sourceHref(gpa, s.path, s.dir, s.frag)),
+            .source => |s| try writeSourceAnchor(gpa, em, s.path, s.dir, s.frag),
         }
     }
 };
@@ -260,6 +279,13 @@ pub fn sourceHref(gpa: std.mem.Allocator, path: []const u8, dir: bool, frag: []c
     if (frag.len == 0) return base;
     defer gpa.free(base);
     return std.fmt.allocPrint(gpa, "{s}#{s}", .{ base, frag });
+}
+
+test {
+    // Only the wasm build references `Live`, and analysis is lazy —
+    // without this line `zig build test` would compile every resolver
+    // path except the browser's.
+    _ = &Live.writeHref;
 }
 
 // The generator runs on one arena for the whole process — resolution
