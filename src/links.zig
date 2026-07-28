@@ -68,7 +68,7 @@ pub const Resolver = struct {
                 try em.raw("#");
                 try em.text(a);
             },
-            .source => |s| try em.raw(try sourceHref(self.gpa, s.path, s.dir)),
+            .source => |s| try em.raw(try sourceHref(self.gpa, s.path, s.dir, s.frag)),
         }
     }
 };
@@ -112,7 +112,7 @@ pub const Live = struct {
                 try em.raw("#");
                 try em.text(a);
             },
-            .source => |s| try em.raw(try sourceHref(gpa, s.path, s.dir)),
+            .source => |s| try em.raw(try sourceHref(gpa, s.path, s.dir, s.frag)),
         }
     }
 };
@@ -141,8 +141,10 @@ pub const Target = union(enum) {
     /// A heading on the current screen.
     anchor: []const u8,
     /// A file in the nokre repository. `path` is repo-relative, so the
-    /// build can check it exists before writing a link to it.
-    source: struct { path: []const u8, dir: bool },
+    /// build can check it exists before writing a link to it. `frag` is
+    /// the anchor as on `page` — a line reference like `#L20` means
+    /// nothing to the existence check but everything to the reader.
+    source: struct { path: []const u8, dir: bool, frag: []const u8 },
 };
 
 pub const Error = error{ UnknownRoute, OutOfMemory };
@@ -175,6 +177,7 @@ pub fn resolve(gpa: std.mem.Allocator, dest: []const u8, base: []const u8) Error
     return .{ .source = .{
         .path = std.mem.trimEnd(u8, joined, "/"),
         .dir = joined.len != 0 and joined[joined.len - 1] == '/',
+        .frag = frag,
     } };
 }
 
@@ -249,11 +252,14 @@ pub fn pageHref(gpa: std.mem.Allocator, index: usize, frag: []const u8) ![]const
     return std.fmt.allocPrint(gpa, "{s}#{s}", .{ base, frag });
 }
 
-pub fn sourceHref(gpa: std.mem.Allocator, path: []const u8, dir: bool) ![]const u8 {
-    return std.fmt.allocPrint(gpa, repo_url ++ "/{s}/" ++ branch ++ "/{s}", .{
+pub fn sourceHref(gpa: std.mem.Allocator, path: []const u8, dir: bool, frag: []const u8) ![]const u8 {
+    const base = try std.fmt.allocPrint(gpa, repo_url ++ "/{s}/" ++ branch ++ "/{s}", .{
         if (dir) "tree" else "blob",
         path,
     });
+    if (frag.len == 0) return base;
+    defer gpa.free(base);
+    return std.fmt.allocPrint(gpa, "{s}#{s}", .{ base, frag });
 }
 
 // The generator runs on one arena for the whole process — resolution
@@ -298,6 +304,13 @@ test "destinations outside docs are source files" {
     const t = try resolve(gpa, "../src/core/color.zig", "docs");
     try std.testing.expectEqualStrings("src/core/color.zig", t.source.path);
     try std.testing.expect(!t.source.dir);
+    try std.testing.expectEqualStrings("", t.source.frag);
+
+    // A line reference rides along to the file host, the way a heading
+    // fragment rides to a page.
+    const l = try resolve(gpa, "../src/core/color.zig#L20", "docs");
+    try std.testing.expectEqualStrings("src/core/color.zig", l.source.path);
+    try std.testing.expectEqualStrings("L20", l.source.frag);
 
     const d = try resolve(gpa, "../../deps/qrcodegen/", "docs/internals");
     try std.testing.expectEqualStrings("deps/qrcodegen", d.source.path);

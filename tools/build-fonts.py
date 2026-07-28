@@ -59,7 +59,7 @@ ICONS = {
     "chevron_left": 0xE06E,
     "chevron_up": 0xE070,
     "check": 0xE06C,
-    "copy": 0xE0A6,
+    "copy": 0xE09E,
     "feather": 0xE0BE,
     "milestone": 0xE298,
     "shapes": 0xE4B3,

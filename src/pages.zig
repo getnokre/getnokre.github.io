@@ -93,7 +93,7 @@ pub const all = [_]Page{
     .{
         .name = "getting-started",
         .title = "Getting started",
-        .blurb = "The course: build one app that uses everything, test it as you go, ship it to five platforms.",
+        .blurb = "The course: build one app that uses everything, test it as you go, ship it to six platforms.",
         .icon = .milestone,
         .md = "getting-started.md",
         .track = .consumer,

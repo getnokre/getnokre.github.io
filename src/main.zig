@@ -18,7 +18,7 @@ const content = @import("content.zig");
 const links = @import("links.zig");
 const pages = @import("pages.zig");
 
-const audit = nok.testing.audit_mod;
+const audit = nok.testing.audit;
 const dom = nok.render.dom;
 
 comptime {

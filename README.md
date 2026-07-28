@@ -54,7 +54,7 @@ python3 -m http.server -d docs 8000
 
 A caveat on `-Drepo`: `b.dependency("nokre")` resolves through
 `build.zig.zon`'s `.path = "../nokre"` regardless — the flag redirects
-only the docs/fonts/live.js reads — so it must point at the same
+only the docs and live.js/services.js reads — so it must point at the same
 checkout the zon path names; passing a different one builds against one
 library and renders the other's docs.
 

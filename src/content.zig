@@ -257,10 +257,10 @@ fn home(app: *App) !void {
         &.{ "Platform", "Shell", "Text", "Accessibility" },
         &.{ "macOS", "AppKit", "CoreText", "VoiceOver via AccessKit" },
         &.{ "iOS", "UIKit", "CoreText", "VoiceOver via UIAccessibility" },
-        &.{ "Windows", "Win32", "FreeType", "Narrator/NVDA/JAWS via AccessKit" },
+        &.{ "Windows", "Win32", "FreeType", "Narrator/NVDA/JAWS via AccessKit (UIA)" },
         &.{ "Linux", "Wayland", "FreeType", "Orca/AT-SPI via AccessKit" },
         &.{ "Android", "JNI + SurfaceView", "FreeType", "TalkBack via node provider" },
-        &.{ "Web", "wasm32 + emscripten", "FreeType", "ARIA mirror of the snapshot" },
+        &.{ "Web", "wasm32, no shell", "the browser's", "the DOM itself — nothing to mirror" },
     });
 
     try heading(app, root, .h2, "This site is a nokre app");
@@ -367,13 +367,16 @@ fn palette(site: *Site, app: *App) !void {
     try rows.append(gpa, &.{ "Step", "Light", "Dark", "On paper (light)", "On paper (dark)" });
     inline for (@typeInfo(Gray).@"enum".fields) |f| {
         const g: Gray = @enumFromInt(f.value);
-        try rows.append(gpa, &.{
+        // Duped: the literal's cells are runtime values, so the row
+        // array itself is an iteration-scoped temporary — a pointer to
+        // it would be dangling by the time the table reads it.
+        try rows.append(gpa, try gpa.dupe([]const u8, &.{
             f.name,
             try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(.light)}),
             try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(.dark)}),
             try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, .light)}),
             try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, .dark)}),
-        });
+        }));
     }
     try tableOf(app, root, rows.items);
 

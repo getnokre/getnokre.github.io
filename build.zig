@@ -35,7 +35,6 @@ pub fn build(b: *std.Build) void {
     const options = b.addOptions();
     options.addOption([]const u8, "repo_dir", repo);
     options.addOption([]const u8, "docs_dir", b.pathJoin(&.{ repo, "docs" }));
-    options.addOption([]const u8, "fonts_dir", b.pathJoin(&.{ repo, "src/assets/fonts" }));
     options.addOption([]const u8, "out_dir", out);
     options.addOption([]const u8, "nokre_rev", nokre_git.rev);
     options.addOption(bool, "nokre_dirty", nokre_git.dirty);
