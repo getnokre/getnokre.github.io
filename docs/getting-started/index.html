@@ -523,7 +523,12 @@ fn onSyncResult(ctx: ?*anyopaque, result: h.services.http.Result) void {
             _ = f;
             state.offline = true;
             state.status = &quot;Offline — showing local notes.&quot;;
-            state.app.notify(&quot;Sync failed&quot;, &quot;Your notes are unchanged on this device.&quot;, &quot;notes&quot;) catch {};
+            state.app.notify(.{
+                .title = &quot;Sync failed&quot;,
+                .description = &quot;Your notes are unchanged on this device.&quot;,
+                .route = &quot;notes&quot;,
+                .important = true,
+            }) catch {};
             refreshNotesIfIdle(state);
         },
     }
@@ -536,7 +541,7 @@ fn refreshNotesIfIdle(state: *State) void {
     const current = state.app.router.current() orelse return;
     if (!std.mem.eql(u8, current, &quot;notes&quot;)) return;
     state.app.router.replace(state.app, current) catch {};
-}</code></pre><p>Two things here outlive this app. <code>refreshNotesIfIdle</code> is the guard every asynchronous reply needs: results arrive on the UI thread between events, but the user may have navigated or opened a sheet since the request left — state is updated unconditionally, the <em>rebuild</em> is polite. And the failure leg raises a <strong>notice</strong> — <code>app.notify(title, description, route)</code> — nokre&#39;s persistent, never-timing-out surface that survives navigation and deep-links back; its three states (banner, pane, minimized) are specified in <a class="link" href="/elements/" data-n="154" data-s="9">elements.md</a>.</p><p>The tests own time. Park, inspect, answer — or refuse:</p><pre class="code" tabindex="0" data-n="156"><code>test &quot;sync: the request parks, the canned response is the network&quot; {
+}</code></pre><p>Two things here outlive this app. <code>refreshNotesIfIdle</code> is the guard every asynchronous reply needs: results arrive on the UI thread between events, but the user may have navigated or opened a sheet since the request left — state is updated unconditionally, the <em>rebuild</em> is polite. And the failure leg raises a <strong>notice</strong> — <code>app.notify(.{ ... })</code> — nokre&#39;s persistent, never-timing-out surface that survives navigation and deep-links back. It is <code>important</code> because a failed sync is worth interrupting for; a quiet notice (the default) would wait behind the indicator instead. The three states (banner, pane, minimized) are specified in <a class="link" href="/elements/" data-n="154" data-s="11">elements.md</a>.</p><p>The tests own time. Park, inspect, answer — or refuse:</p><pre class="code" tabindex="0" data-n="156"><code>test &quot;sync: the request parks, the canned response is the network&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
     defer t.deinit();
