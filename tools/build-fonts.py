@@ -91,6 +91,12 @@ ICONS = {
     "square_asterisk": 0xE168,
 }
 
+# The vendor sign-in marks (nokre's LICENSE-Brand.txt): Apple's logo and
+# the Google G's four arcs. No site page draws one today, but the
+# stylesheet nokre emits declares the face, and a site that declares a
+# font serves it — five glyphs subset to almost nothing.
+BRAND = [0xE900, 0xE901, 0xE902, 0xE903, 0xE904]
+
 FACES = [
     ("prose.ttf", "prose.woff2", LATIN, None),
     ("prose-bold.ttf", "prose-bold.woff2", LATIN, None),
@@ -103,6 +109,7 @@ FACES = [
     ("arabic.ttf", "arabic.woff2", ARABIC, None),
     ("arabic-bold.ttf", "arabic-bold.woff2", ARABIC, None),
     ("lucide.ttf", "icons.woff2", None, sorted(ICONS.values())),
+    ("brand.ttf", "brand.woff2", None, BRAND),
 ]
 
 

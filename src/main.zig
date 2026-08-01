@@ -62,6 +62,10 @@ const font_files = [_][]const u8{
     "mono-italic.woff2",  "mono-bolditalic.woff2",
     "arabic.woff2",       "arabic-bold.woff2",
     "icons.woff2",
+    // The vendor sign-in marks: no page here draws one, but the
+    // stylesheet nokre emits declares the face, and a declared face is
+    // served (five glyphs, ~1 KB).
+           "brand.woff2",
 };
 
 pub fn main(init: std.process.Init) !void {

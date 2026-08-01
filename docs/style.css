@@ -11,6 +11,7 @@
 @font-face { font-family: mono; font-style: normal; font-weight: 400; font-display: swap; src: url(/assets/fonts/arabic.woff2) format("woff2"); unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFF; }
 @font-face { font-family: mono; font-style: normal; font-weight: 700; font-display: swap; src: url(/assets/fonts/arabic-bold.woff2) format("woff2"); unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFF; }
 @font-face { font-family: icons; font-weight: 400; font-display: block; src: url(/assets/fonts/icons.woff2) format("woff2"); }
+@font-face { font-family: brand; font-weight: 400; font-display: block; src: url(/assets/fonts/brand.woff2) format("woff2"); }
 
 :root {
   color-scheme: light dark;
@@ -27,6 +28,8 @@
   --g10: #d4d4d4;
   --g11: #eaeaea;
   --g12: #ffffff;
+  --auth-fill: #000000;
+  --auth-ink: #ffffff;
   --ink: var(--g2);
   --dark: var(--g3);
   --mid: var(--g5);
@@ -117,6 +120,8 @@
     --g10: #2c2c2c;
     --g11: #151515;
     --g12: #000000;
+    --auth-fill: #ffffff;
+    --auth-ink: #000000;
   }
 }
 
@@ -136,6 +141,8 @@
   --g10: #2c2c2c;
   --g11: #151515;
   --g12: #000000;
+  --auth-fill: #ffffff;
+  --auth-ink: #000000;
 }
 
 /* ---- reset ------------------------------------------------------ */
@@ -700,6 +707,43 @@ a.link.block {
   color: var(--ink);
 }
 .btn.icon-only[disabled] { background: transparent; color: var(--g6); }
+
+/* A vendor sign-in pill rides the light ramp's true endpoints, not
+   the softened aliases — the reference draws it through a pinned
+   pen (renderer.zig), and `--auth-fill`/`--auth-ink` are that pin,
+   flipping with the appearance so the dark screen gets Apple's
+   white button. `secondary` is exempt: the outlined third style is
+   the ordinary outlined pill. Disabled is exempt too — an inactive
+   control dims into the palette like any other. */
+.btn.auth:not(.secondary):not([disabled]) { background: var(--auth-fill); color: var(--auth-ink); }
+/* Google's themes cross the pin — white pill on the light screen,
+   near-black on the dark — with the hairline border its light
+   button carries. The border byte is the mid gray of the *light*
+   ramp on both themes, exactly the pinned `.g6` stroke the
+   reference draws. */
+.btn.auth.google:not(.secondary):not([disabled]) {
+  background: var(--auth-ink);
+  color: var(--auth-fill);
+  border-color: #808080;
+}
+
+/* The mark that leads a sign-in label: brand-face glyphs standing
+   on the text baseline at cap height, the way the vendor's own
+   button art relates the logo to the words — an icon centres in
+   its em box instead, because an icon is not a letter. */
+.brand-mark { font-family: brand; font-weight: 400; font-style: normal; }
+/* Google's G: four arc glyphs on one advance, overlaid by the grid
+   into one drawing. The colors are the vendor's trademark spec —
+   the ONLY color literals in this stylesheet, matching the
+   renderer's `google_g` table — and they apply only on the live
+   branded pill: a dimmed button's G falls back to currentColor
+   and reads as a silhouette, like the reference. */
+.brand-mark.g { display: inline-grid; }
+.brand-mark.g > span { grid-area: 1 / 1; }
+.btn.auth.google:not(.secondary):not([disabled]) .brand-mark.g > span:nth-child(1) { color: #4285f4; }
+.btn.auth.google:not(.secondary):not([disabled]) .brand-mark.g > span:nth-child(2) { color: #34a853; }
+.btn.auth.google:not(.secondary):not([disabled]) .brand-mark.g > span:nth-child(3) { color: #fbbc05; }
+.btn.auth.google:not(.secondary):not([disabled]) .brand-mark.g > span:nth-child(4) { color: #ea4335; }
 
 /* A percentage fills the pill as the work goes. On a filled button
    the track is `.g7` — already clear of the ground it sits on —
