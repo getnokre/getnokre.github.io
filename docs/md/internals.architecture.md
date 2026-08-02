@@ -34,7 +34,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
 | [src/core/element.zig](../../src/core/element.zig) | the closed element set (`Element` union) |
 | [src/core/tree.zig](../../src/core/tree.zig) | retained tree, generational `NodeId`s |
-| [src/core/layout.zig](../../src/core/layout.zig) | block-flow layout, word wrap, metrics |
+| [src/core/layout.zig](../../src/core/layout.zig) | block-flow layout, word wrap, row wrap (`rowOverflow`), metrics |
 | [src/core/event.zig](../../src/core/event.zig) | pointer (press/release) / key / text / IME / scroll — no hover |
 | [src/core/focus.zig](../../src/core/focus.zig) | document-order focus traversal |
 | [src/core/router.zig](../../src/core/router.zig) | named-screen stack with per-entry arguments, instant rebuilds, the current-route observer |
@@ -58,6 +58,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-edition.md](dom-edition.md)) |
 | [src/render/dom/stylesheet.zig](../../src/render/dom/stylesheet.zig) | that edition's stylesheet, generated from color/text/layout |
 | [src/render/dom/live.zig](../../src/render/dom/live.zig) / [live.js](../../src/render/dom/live.js) | that edition's live driver: the app in a browser, wasm32-freestanding, no Skia |
+| [src/render/dom/emit_css.zig](../../src/render/dom/emit_css.zig) / [serve.zig](../../src/render/dom/serve.zig) | its two host tools, build-time only and in no app: the stylesheet writer, and the server a site is looked at over ([dom-edition.md](dom-edition.md)) |
 | [shim/freestanding](../../shim/freestanding/README.md) | the three headers vendored qrcodegen wants where there is no libc |
 | [src/a11y/semantics.zig](../../src/a11y/semantics.zig) | tree → flat accessibility snapshot |
 | [src/a11y/accesskit.zig](../../src/a11y/accesskit.zig) | adapter over the AccessKit C bindings — VoiceOver, UIA, and AT-SPI are live; iOS (`UIAccessibilityElement`s) and Android (`AccessibilityNodeProvider`) consume the same `flatten` output without AccessKit, and the web needs no bridge at all |
@@ -79,6 +80,8 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/services/iap/iap.zig](../../src/services/iap/iap.zig) | the platform stores: catalog, payment sheet, purchase stream, finish, restore — and `available` where there is no store ([iap.md](iap.md)) |
 | [src/services/open_url/open_url.zig](../../src/services/open_url/open_url.zig) | one verb: hand a URL to the system browser, behind a closed scheme allowlist; external link activation lands here ([services.md](../services.md)) |
 | [src/services/share/share.zig](../../src/services/share/share.zig) | one verb: put the OS share sheet up with UTF-8 text on it — and `available` where there is no sheet ([services.md](../services.md)) |
+| [src/services/notification/notification.zig](../../src/services/notification/notification.zig) | the OS's notification surface: ask, post, schedule, cancel, and one lane back for taps, arrivals and push tokens ([notifications.md](notifications.md)) |
+| [src/services/clock/clock.zig](../../src/services/clock/clock.zig) | one verb: the wall clock in milliseconds since the Unix epoch, UTC — the OS call direct, no shell hook; core and the renderers never call it ([services.md](../services.md)) |
 | [shim/nokre_skia.cpp](../../shim/nokre_skia.cpp) | the entire C surface over Skia |
 
 ## Data flow

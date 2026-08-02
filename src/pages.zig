@@ -157,7 +157,7 @@ pub const all = [_]Page{
     .{
         .name = "roadmap",
         .title = "Roadmap",
-        .blurb = "What's built and what remains: the last services, nokre-owned Skia builds, tooling.",
+        .blurb = "What's built and what remains: the editions a semantic tree still deserves, tooling, Skia packaging.",
         .icon = .map,
         .md = "roadmap.md",
         .track = .consumer,
@@ -215,7 +215,7 @@ pub const all = [_]Page{
     .{
         .name = "internals.skia-build",
         .title = "Skia builds",
-        .blurb = "The path to nokre-owned Skia: FreeType everywhere, and byte-identity across platforms.",
+        .blurb = "How Skia is pinned, built, and shrunk — and why each platform keeps the text scaler it has.",
         .icon = .hammer,
         .md = "internals/skia-build.md",
         .track = .contributor,
@@ -258,6 +258,14 @@ pub const all = [_]Page{
         .blurb = "PKCE, the redirect legs per platform, and the native Sign in with Apple path.",
         .icon = .key,
         .md = "internals/oauth.md",
+        .track = .contributor,
+    },
+    .{
+        .name = "internals.notifications",
+        .title = "Notifications",
+        .blurb = "The OS's surface on six platforms, the two reversals it took, and what each leg cannot promise.",
+        .icon = .bell,
+        .md = "internals/notifications.md",
         .track = .contributor,
     },
     .{

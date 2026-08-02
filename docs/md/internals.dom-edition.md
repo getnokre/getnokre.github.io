@@ -30,9 +30,10 @@ there is only one tree.
 
 The other half is what Skia was buying. What makes nokre's layout
 deterministic is core's integer math and HarfBuzz's advances, not the
-rasterizer — [pixel-model.md](pixel-model.md) says so outright: "the gap
-is now rasterization alone". Skia rasterizes text, axis-aligned lines
-and rounded boxes. A browser already rasterizes those.
+rasterizer — [pixel-model.md](pixel-model.md) says so outright:
+everything upstream of the scaler is identical everywhere, and platforms
+disagree only about the ink inside a glyph's box. Skia rasterizes text,
+axis-aligned lines and rounded boxes. A browser already rasterizes those.
 
 What a browser also gives, and a canvas forfeits: text selection,
 find-in-page, translation, reader mode, print, native IME in a real
@@ -100,6 +101,134 @@ The one thing a consumer's root still owes is a reference to the library
 (`comptime { _ = nokre; }`), because `main` never runs here and without
 it nothing pulls nokre into the build at all.
 
+### The unit is the site, and there is one assembler
+
+The module is half of what a browser needs; the other half is the glue
+that instantiates it, the stylesheet, the faces, and a page. Those are
+not the app's, so they cannot be the app's build's — and for a while
+they were nobody's on the consumer's side: `zig build web` assembled
+them here, `addApp` handed a consumer a bare `.wasm`, and the recipe
+for the rest was a paragraph in getting-started.md. A paragraph is a
+poor place for it. Miss `services.js` out of the set and the failure is
+a blank page in someone's browser, not an error in anyone's build.
+
+So the set lives in exactly one function — `addWebSite` in
+[build.zig](../../build.zig) — which `addApp` calls for every wasm
+target and which nokre's own `web` step calls for the kitchen sink.
+What it writes:
+
+| in the site | where it comes from |
+| --- | --- |
+| the app's module, under `web_wasm` | the consumer's own compile |
+| `live.js`, `live-worker.js`, `services.js` | `src/render/dom`, copied by the build graph |
+| `style.css` | *generated*, by running `emit_css.zig` on the host |
+| `fonts/*.ttf` | `src/assets/fonts` |
+| `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png` | the packaging tree's `web/` corner (packaging.zig) |
+
+Two properties follow, and they are the reason for the shape. Nothing
+in a site can be stale, because nothing in it is a copy a human made:
+the stylesheet is generated from `color.zig`/`text.zig`/`layout.zig` on
+every build, the glue and the faces are graph inputs, and the page is
+an output of the app's declaration. And nothing in a site can be
+*partial*, because a consumer installs one directory rather than
+assembling a list — `App.web`, exactly as they install `App.pkg`. A
+fourth module added to `src/render/dom` is one edit here and it is in
+every consumer's next build.
+
+The page is the declaration's, which is why a web target without one
+fails: `packaging.webIndexHtml` needs a title, and the manifest and
+icons need an identity. The refusal follows the invalid-declaration
+rule the packaging tree already uses — the fail rides the tree's step,
+so a build that never installs the site proceeds and one that does
+fails naming `.pkg`. The kitchen sink is the exception that proves the
+rule: it links zero services by contract, so it cannot declare `.pkg`
+to `addApp` at all, and its site is assembled around the declaration
+handed straight to `addPkgTree` — the arrangement `zig build pkg`
+already used for its manifests.
+
+There is no second host page anywhere. The hand-written one this
+directory used to keep was the same page `webIndexHtml` emits, minus
+an identity, and two of a thing that must agree is one too many.
+
+### The page states what it is allowed to fetch
+
+A site nokre assembles whole is a site nokre can tell the truth about,
+and the truth is short: it loads its own module, four of its own
+scripts, two of its own stylesheets, its own faces and its own icons,
+and it talks to no host it was not told about. That is a
+Content-Security-Policy, and the page carries it as a `<meta>` — the
+per-directive inventory is `packaging.webIndexHtml`, which is the
+emitter, so the policy cannot fall behind the page it rides in.
+
+It belongs here rather than in a consumer's hands for the reason
+`services.js` does. A page a build regenerates is a poor place for a
+hand edit, an app's edge is a different piece of software on every
+consumer's side, and every one of them needs the same policy — so the
+one that is derived from what the edition *does* is worth more than
+whichever one each consumer would have written. `default-src 'none'` is
+what makes it an inventory rather than a wish: a fetch nobody named is
+a fetch nobody makes, and the day this edition needs a new kind of
+request the page fails loudly in a browser rather than quietly widening.
+
+**Two things in the edition moved rather than the policy.** The page
+used to carry its column in a `<style>` block and its mount in an inline
+`<script>`; both are files now (`page.css`, `boot.js`), because
+`script-src 'self'` refusing an inline script is the largest single
+thing a policy buys, and a page that hashed its own two blocks would be
+one no consumer could lift to their edge without carrying hashes that
+change under them.
+
+**One loosening stayed, and it is `style-src`'s.** The serializer writes
+inline style *attributes* on element after element — a list's measured
+gutter, a QR's whole-pixel side, a track's bleed, a container's own gap
+and padding — and every one of them is a number layout just computed,
+so none can be hashed and none can be a stylesheet's guess (the four
+seams above say why each is measured). Nor can they move into script:
+the static driver writes pages that run none, and they must render
+right with the module blocked. So the page splits the directive instead
+of widening it — `style-src-elem 'self'` for the two `<link>`ed sheets,
+which is what refuses an injected `<style>`, and `'unsafe-inline'` left
+only where an attribute needs it.
+
+**`connect-src` is the one directive an app outgrows**, because a fetch
+is the only outbound request an app's own code can make here: no app
+supplies script, style, faces or images to this edition. So it is the
+one seam a consumer gets — `web_connect_src` on `addApp`, a list of
+hosts that joins that directive and no other — and the entries are
+checked before they reach the page (`packaging.badConnectSrc`), because
+a string that lands inside a policy is a string that could end the
+directive it landed in. The default is empty, which is the app's own
+origin and nothing else.
+
+**What a `<meta>` cannot carry, whatever it says.** `frame-ancestors`,
+`report-uri`/`report-to` and `sandbox` are ignored in one by spec, so
+they are the deploying edge's — getting-started.md tells a consumer so
+in as many words, because a page that looked like the whole story would
+be worse than no policy at all. `serve.zig` sends the first of them as a
+header on every response, which is nokre saying at its own dev server
+what it tells a consumer's edge to say. One directive an edge must
+*not* add: `require-trusted-types-for 'script'` would break the live
+driver, whose whole write path is parsing a frame off-document
+(`template.innerHTML`) and patching it in.
+
+### Serving it, which is not optional
+
+A site cannot be opened, only served: `WebAssembly.instantiateStreaming`
+wants `application/wasm` and an ES module import wants a JavaScript
+type, and a `file://` URL supplies neither — both fail as a blank page
+rather than as a message. So the server is part of the edition, not an
+errand left to the reader:
+[serve.zig](../../src/render/dom/serve.zig) is a host tool beside
+`emit_css.zig`, `zig build serve` runs it here, and
+`nokre.addWebServe` gives a consumer the same binary over their own
+`App.web`. It binds loopback only, states the two content types a
+browser refuses to guess, answers `no-store` so a rebuild is one
+refresh away, and resolves a target to a path inside the site or to
+nothing at all. Its two decisions are unit-tested in the file, and
+`main` is referenced by a test so a broken server is caught by
+`zig build test` rather than by a developer who wanted to look at their
+app.
+
 ### Live over a generated page
 
 The two drivers over one page, which is the pairing the split exists
@@ -117,6 +246,13 @@ the edge of one instead of collapsing. Those answers cannot be fixed by
 CSS, because they are not style: they are decisions core made from a
 number. The only repair is to ask again with the right number, which is
 what booting does.
+
+A **wrapping** row is the one that comes out right anyway, for a reason
+worth naming. *Which* rows wrap is `layout.rowOverflow`, a question about
+the children and not about a width, so the serializer answers it with no
+ruler at all; *where* the lines then break is `flex-wrap`'s, which is the
+reader's own metrics in the reader's own window. The fold needs a
+measurement a generator does not have. Wrapping needs none.
 
 What the host document owes, and what it keeps:
 
@@ -197,7 +333,12 @@ redirect, secure_store snapshot) and delivers the boot-time and
 degenerate case that needs no doorway and no seed: both directions are
 plain imports — the `nokre_share_available` probe App.init calls (a
 bool needs no scratch buffer) and the fire-and-forget
-`nokre_share_show` — so services.js is its entire web leg.
+`nokre_share_show` — so services.js is its entire web leg. clock is
+that case reduced once more: one import, `nokre_clock_js_now`, wired to
+`Date.now()` in *both* instances for pkce's reason (an actor runs the
+app's code, so it may stamp what it computes), and named by nothing
+unless an app asks the time — so a module that never reads a clock has
+no clock in its import table at all.
 
 Two rules the glue keeps, because both are silent corruption if broken:
 a pointer handed across is borrowed for the call and anything outliving

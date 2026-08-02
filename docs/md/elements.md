@@ -108,7 +108,65 @@ by hue elsewhere, here the words carry it — "Active", "Owner",
 an empty badge is a floating border saying nothing. For status inside a
 `tile` row, use the tile's `detail` line instead of nesting a badge.
 Semantics: plain static text; assistive tech hears the words, which is
-everything the badge says.
+everything the badge *says*.
+
+An optional `icon` (any [`IconName`](#icon)) leads the chip, on a
+`tile`'s terms: decorative, a field rather than a child node, so the
+mandatory `label` stays the accessible name and no glyph can enter the
+tree to double it. It draws at the chip's own scale and ink (`small`,
+`.ink`), so it opens no styling surface and reaches the contrast gate
+exactly where the label already cleared it.
+
+**It restates; it never states.** "The words carry it" was never about
+whether a chip may hold a glyph — it was the refusal of *state conveyed
+by ornament instead of language*, the same refusal that keeps hue out.
+A mark that means something the words do not is that refusal broken: the
+chip then says less to a reader than to a looker. The check is one
+deletion — take every mark off the screen, and nothing on it has stopped
+being true or knowable. What a glyph buys is recognition in a row that
+gets scanned; a dimension chip's mark restates the dimension its label
+names, a tag chip's restates the family its set is organised by. A chip
+whose words are the whole story and whose glyph is the only clue that
+something failed is the case this paragraph refuses.
+
+Unlike a `tile`, chips carry **no all-or-nothing rule** and no fixed
+band: a tile's mark reserves a `lineHeight` square so a *column* of rows
+starts its words on one x, and chips are intrinsic-width and flow
+inline, where there is no column to hold. So a chip is charged only the
+glyph's own advance plus the icon gap — a flat **20px** at the small
+scale, the same for every glyph in the bundled face (pinned by a test,
+since the guidance below rests on the number).
+
+Twenty pixels is 15% of a long chip and over a third of a short one, on
+an element that is often several across in a row on a 320pt screen. That
+row [wraps](#a-row-too-narrow-for-its-children) rather than clipping, so
+the width a mark takes is spent in *lines* now rather than in pixels off
+the edge — cheaper, and still spent. So: **a mark earns its width where chips are read as a
+set** — a row of tags, a row of dimensions, where the glyphs are what
+lets the eye sort them — and not on a lone chip beside prose, where it
+is 20px spent on a picture of a word already visible next to it.
+
+**A number with a name on it is a badge.** "3 credits", "12 active
+keys", "2 pending" — a quantity and the thing it counts, formatted by
+you (nokre does no number formatting; that is
+[localization.md](localization.md)'s refusal) and handed over as one
+label. That is what the element is: the chip whose *words* carry the
+state, so a labelled scalar is its central case rather than an
+afterthought. Reaching for `text` instead is the mistake this paragraph
+exists to prevent — plain text puts the figure in the prose column at
+prose weight, where nothing distinguishes a live count from a sentence
+about one, and the border a badge draws is exactly what says "this is a
+reading, and it changes".
+
+The one to hand it to `meter` instead is a **fraction of a whole you
+want seen as a fraction**: "5 of 10 uses", "12 of 30 days". Both
+elements put the state in the words, and the split is whether there is a
+whole to be part of and whether being three-quarters through it is worth
+a glance. A count with no ceiling ("3 credits") has no bar to draw and
+takes the chip; a count against a ceiling you are meant to feel takes
+the bar and the full width it needs. Where the ceiling exists but the
+fill would say nothing — "1 of 4 seats", in a row of other chips — the
+badge is still the honest answer, and the words still say all of it.
 
 ### `meter`
 How much of a whole is filled: a full-width bar under words that state
@@ -157,10 +215,45 @@ element bleeds is the framework's decision, not a knob. Negative
 inset buys elsewhere is exactly what declining the advice provides,
 bounded by an edge instead of a number.
 
-A horizontal stack holding nothing but **actions** — `button`s and
-`link`s, in any mix — is a row of actions, and one too narrow for them
-folds instead of running off the edge. See
-[the folded tail](#the-folded-tail-more) below. Nothing opts in.
+#### A row too narrow for its children
+
+A horizontal stack that runs out of line does one of exactly two things,
+and **the row's own children pick which**. There is no field, no wrapper
+and nothing to opt into, so there is no way to be handed the wrong one:
+
+- **A row of actions folds.** Every child a `button` or a `link`, two or
+  more of them: the tail collapses into a `More` control and the row
+  stays one line. [The folded tail](#the-folded-tail-more) has the
+  mechanics.
+- **Every other row wraps.** Children flow along the line and break onto
+  a new one when the next will not fit — greedy, first-fit, in document
+  order, each line `gap` below the last and centered on its own tallest.
+
+The split is what the row *is*. Actions have to stay reachable and a user
+needs all of them, so one row plus a control that opens the rest is the
+honest shape; folding three status chips behind `More` would hide state
+behind a press, and clipping them would hide it outright. Wrapping is
+also the answer for the rows that cannot fold — a lone action, and a row
+of actions inside a sheet, which has no second sheet to fold into.
+
+Width is not an input to the choice. A row is a row of actions or it
+isn't, at every viewport, so resizing the window can change where a line
+breaks or how deep a tail folds, but never which of the two the reader is
+looking at.
+
+Wrapping bounds the problem the way shortening the words never could:
+**a row can always fit, as long as each child fits a line on its own.**
+One that does not — a chip whose label alone exceeds the span — gets a
+line to itself and overflows it. Nothing ahead of it pushes it further
+out and nothing behind it is dragged along, but nokre does not shrink it,
+elide it or refuse it: an oversized chip is over-long *words*, and the
+words are the whole element ([badge](#badge)).
+
+Wrapping changes where marks land and nothing else. No node is added,
+removed or hidden, the focus order is document order either way, and the
+accessibility snapshot of a row that wrapped is identical to the same
+row's on a wider screen. A reader is never told a line broke — because
+nothing about the app did.
 
 ### `box`
 Grouping container: vertical flow, optional 1px border (default on),
@@ -262,7 +355,7 @@ app.tree.get(state.save_id).?.button.in_progress = true;
 app.tree.get(state.save_id).?.button.in_progress = false;
 ```
 
-Nothing clears it for you. nokre has no clock and no notion of what
+Nothing clears it for you. nokre runs no timer and has no notion of what
 your work is, so the state is yours to end — as ordinary a field as the
 label beside it. Clear it on **every** path that ends the work, not just
 the one that succeeds: a button cleared only by the success reply sits
@@ -391,8 +484,10 @@ license — see
 
 Put actions in a horizontal `stack` and nokre shows as many as fit. When
 they don't all fit, the row **folds**: the last completely visible one
-gives up its slot to a control labelled "More", and pressing that opens a
-sheet holding it and everything after it, in the row's own order.
+gives up its slot to a control labelled "More" (the framework's own word,
+`App.Chrome.more` — see [localization.md](localization.md)), and pressing
+that opens a sheet holding it and everything after it, in the row's own
+order.
 
 This is not opt-in and takes no setup — no flag on the stack, no wrapper,
 no width to declare. Any row of actions you have already written folds
@@ -423,8 +518,9 @@ would take the press and leave the original saying the old thing.
 Anything else in the row and it doesn't fold: two arrows with a month
 between them is a pager, not a menu, and folding "March" behind a control
 named for having more would be nonsense. A row of one action doesn't fold
-either — that hides the only action twice. Those rows keep the behavior
-every over-wide row had before the fold existed.
+either — that hides the only action twice. Those rows
+[wrap](#a-row-too-narrow-for-its-children) instead, which is the other
+half of the same rule.
 
 The fold is deliberately one action deeper than the overflow itself. The
 one that was already half off the screen is not the one to replace:
@@ -449,8 +545,8 @@ Details worth knowing:
   already running), in which case the sheet stays where it is.
 - **Not inside a sheet.** There is one sheet at a time, so a row already
   inside one has nowhere to fold to; it keeps every action it was given
-  and clips like any other over-wide content. A sheet is a handful of
-  controls, not a toolbar.
+  and [wraps](#a-row-too-narrow-for-its-children) to a second line. A
+  sheet is a handful of controls, not a toolbar.
 - **The sheet closes if what it lists stops being true.** The window
   grew and the actions are back on the row; it folded deeper and the
   open list no longer names everything hidden; or a folded original
@@ -475,9 +571,11 @@ routed link, because where a link goes is semantics, not a visual
 variant. Setting both, or neither, is rejected at `append`.
 
 ### `toggle`
-On/off state as an iOS-style pill switch: `label`, `on`, `on_toggle`.
-Flipped by tap/Enter/Space; the change applies immediately — a toggle
-never needs a submit button beside it. On: `.ink` track, `.paper` knob
+On/off state as an iOS-style pill switch: `label`, `on`, `on_toggle`,
+`in_progress`. Flipped by tap/Enter/Space; the change applies
+immediately — a toggle never needs a submit button beside it, and one
+whose change has to reach a server before it is true says so with
+`in_progress` rather than borrowing one. On: `.ink` track, `.paper` knob
 at the trailing edge. Off: dimmed `.g11` track, knob at the leading
 edge, both outlined `.g6` — as in `segmented`, the border is what
 carries the WCAG 1.4.11 state. Semantics: a switch (announced on/off),
@@ -491,9 +589,51 @@ collapses: each already carries its own padding, and counting the
 stack's gap on top would hold them three gaps apart. Anything else
 beside one — a pill, a field — keeps the full gap.
 
+`in_progress` is `button`'s state on a switch, and it differs from the
+button's in exactly one place: what stands down is not the words but the
+**switch**. A button's words say what the press will do; a track says
+what the value *is*, and while the work is in flight neither is
+knowable. So the track and its knob give way to `…` — the same mark, the
+same reason — in the slot they occupied, at the size layout already gave
+the row. Nothing else changes: the words stay where they were, the row
+keeps its height and width, and the flip does not reflow the screen out
+from under the finger that made it. It does not dim; busy is not
+unavailable.
+
+The switch stops flipping — tap, Enter, and Space all pass over it — but
+**keeps its focus stop**, for the reason `button`'s does. Assistive tech
+hears the same pair (disabled *and* busy, still named, still reachable)
+and, unlike the button, still hears the **value**: the `…` is a
+rendering, and a reader who cannot see it is owed the state the app
+still holds. In tests, `tap` fails with `error.InProgress` rather than
+flipping nothing quietly.
+
+```zig
+// In the toggle handler: the flip is a request, not a fact — put the
+// value back where the server still has it and say work is running.
+const t = &app.tree.get(state.notify_id).?.toggle;
+t.on = !wanted;
+t.in_progress = true;
+
+// In the reply handler: clear it on every path that ends the work, and
+// move the value only on the one that succeeded.
+t.in_progress = false;
+if (ok) t.on = wanted;
+```
+
+Nothing clears it for you, and a switch left at `…` is worse than a
+button left there: it is the one control on the row that cannot be
+pressed to recover. Clear it on failure and cancellation too.
+
+There is deliberately no `progress_percent` twin: a 20px track has
+nowhere to read a bar, which is the same reason an `icon_only` button is
+refused one. And no `disabled`, still — a switch that cannot be flipped
+at all is a screen that should not be drawing one.
+
 ### `checkbox`
-On/off state as a square check box: `label`, `checked`, `on_toggle`.
-The same interaction as `toggle` — flipped by tap/Enter/Space — but the
+On/off state as a square check box: `label`, `checked`, `on_toggle`,
+`in_progress`. The same interaction as `toggle` — flipped by
+tap/Enter/Space — but the
 opposite contract: checking commits nothing by itself; the choice waits
 for a nearby control to gather it (consent-then-submit, picking members
 from a list). If flipping it takes effect immediately, it should have
@@ -503,6 +643,13 @@ WCAG 1.4.11 pattern. There is no indeterminate state; a "some of these"
 summary is a screen problem, not a control problem. Semantics: a
 checkbox (announced checked/unchecked). Its row is 44px deep for the
 same reason `toggle`'s is.
+
+`in_progress` is `toggle`'s, box for track: the box and its mark stand
+down for `…` in the slot they had, with the same lockout, the same kept
+focus stop, and the same busy announcement. It is the rarer of the two,
+because checking commits nothing by itself — but a box whose row is
+gathered the moment it is ticked has work in flight like any other, and
+nothing else on the row can say so.
 
 ### `radio_group`
 The same exclusive-choice semantics as `segmented` in a different form:
@@ -641,9 +788,34 @@ Each `tile` is its own tab stop carrying `label`, an optional dimmed
 `detail` line beneath it (the row grows by one small line to fit), and
 either a `route` or an `on_press`: a `route` tile renders a trailing
 chevron and navigates like a `link`; an `on_press` tile acts like a
-`button`. Its accessible role follows the same split. Focus is the
-picker's pattern — a heavier stroke hugging the row — because an outset
-ring would collide with the separators.
+`button`. Its accessible role follows the same split. Exactly one of
+the two, held at `append` the way a `link`'s destinations are: setting
+both, or neither, is rejected — with both the route wins and the press
+is never called, and with neither the row is a tab stop that answers
+nothing. Focus is the picker's pattern — a heavier stroke hugging the
+row — because an outset ring would collide with the separators.
+
+An optional `icon` (any [`IconName`](#icon)) leads the row. It is
+**decorative**: the `label` stays the accessible name, and the glyph
+enters no accessibility tree at all — it is a field on the tile, not a
+child node, the shape a `notice`'s icon has and for the same reason
+(nothing there takes focus or answers a press). A row that announced
+both would say its own name twice, and the second saying would be a
+guess: no glyph means one thing, which is why naming a mark is
+deliberate on the standalone `icon` element (its `label`) rather than
+inferred anywhere. Ink and size are the row's — `.ink`, one body line —
+so a mark adds no styling surface and nothing new for the contrast gate
+to prove.
+
+**All the rows of a group carry one or none**; a mixed group is rejected
+at `append` (`TileGroupMixedIcons`), beside the destination rule. The
+mark takes a fixed leading band — a `lineHeight` square plus the icon
+gap, the same box whatever glyph it holds — so a group's words start on
+one column, exactly as a `list`'s marker band makes its items do. Give
+the band to some rows and not others and the column goes ragged, with
+the rows that stepped in reading as subordinate to the ones that did
+not. A `list` cannot have that bug because its markers are derived; a
+tile group's are authored, so the check has to exist.
 
 Reach for tiles where a screen is a list of destinations or row-shaped
 actions (settings screens, detail screens). For an exclusive choice
@@ -820,7 +992,8 @@ the path that encodes it — is [routing.md](routing.md); what follows is
 the chrome.
 
 ### `nav` / `nav_item`
-App-level navigation, installed once — not placed in route builders:
+App-level navigation — a set of places the app always has, declared in
+one call and never placed in route builders:
 
 ```zig
 try app.setNav(&.{
@@ -828,6 +1001,8 @@ try app.setNav(&.{
     .{ .route = "settings", .icon = .settings },
 });
 try app.navigate("library");
+
+app.clearNav(); // and the bar is gone, roster and all
 ```
 
 The nav survives every router rebuild and leads the focus order as the
@@ -836,6 +1011,25 @@ decisions, not the consumer's, and there is no API for either: the bar
 is always the bottom band of the viewport, and whatever it holds — the
 row of destinations, the collapsed chip, the minimized-notices square —
 is measured at its own width and centered there.
+
+**`clearNav` is the counterpart**, and an app needs one whenever its bar
+belongs to a *session* rather than to the app: a rebuild preserves the
+nav deliberately, so nothing short of this takes it down. It removes the
+roster and the node — every destination unreachable, because there is
+nothing left to press — along with whatever was pointing at the bar (an
+open section menu is the collapsed chip's own; focus does not outlive
+the node that held it). Infallible and idempotent: signing out twice
+costs nothing, and neither does clearing a bar that was never
+installed. A later `setNav` puts one back.
+
+**Call both at the transition, not from a builder.** `setNav` installs
+the node first among the root's children wherever the call lands — the
+landmark leads by position, so neither half needs a bare tree, and the
+sign-in and the sign-out can each say their piece. An install that
+lives inside a screen builder runs again on every rebuild of that
+screen, so a rebuild landing after the clear puts the bar back up;
+nokre cannot tell that reinstall from a wanted one, and moving both
+halves out to the transitions is what makes the order stop mattering.
 
 A destination is a `route` — never an action — and an `icon` (any
 [`IconName`](#icon)), and nothing else. **It carries no label**: what a
@@ -936,7 +1130,8 @@ has no leading edge to swap. The section card the chip opens is
 centered on the same group.
 
 The chip is a `combo_box` to assistive tech, not a link: it opens a list
-and takes a choice. Its accessible name is always "Section" and the
+and takes a choice. Its accessible name is the framework's own word for
+it ("Section" in English, `App.Chrome.section` in yours) and the
 current section is its *value*, so the control a screen-reader user
 looks for does not rename itself every time it is used. The list is the
 select's picker in behavior and a card in shape: it stands on the chip's
@@ -1023,7 +1218,10 @@ that element indented past it. The target hangs into the page margin on
 both axes so the *glyph* is what lines up: its leading edge sits on the
 text column, and it centers on that first line's cap region rather than
 its line box, which a heading without descenders reads low against.
-Its accessible name is always "Back"; activation pops one screen
+Its accessible name is the framework's own word for it ("Back" in
+English, `App.Chrome.back` in yours —
+[localization.md](localization.md#the-frameworks-own-words)); activation
+pops one screen
 (`App.navigateBack`). There is nothing to configure and nothing to wire
 — consumers never build their own back control, and a pushed screen
 without one cannot exist. The stack root (depth 1) has nothing to go

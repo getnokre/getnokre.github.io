@@ -47,19 +47,65 @@ daemon's own unlock prompt, which blocks the same way.
 
 ## The caps, derived
 
-- **2048-byte values.** Why this number is the consumer table's row
-  ([../services.md](../services.md)); what internals adds is the
-  naming: http's `BodyTooLarge` precedent — the cap is ours, so the
-  name is ours.
-- **128-byte keys, 64 entries.** Together they bound every buffer to a
-  stack array: `ListBuf` is ~9 KiB, the wasm table 64 × (128 + 2048)
-  ≈ 139 KiB, the base64 sessionStorage mirror ≈ 186 KiB worst case —
-  browser quota unreachable by construction.
+Which platform sets which ceiling is the consumer table's job
+([../services.md](../services.md)); what internals adds is the sizing
+that is *ours*, and the naming.
+
+- **2560-byte values.** Windows' number, pinned on both sides so
+  neither copy can drift off it: a `#error` in windows.c against the C
+  one, an equality test against the Zig one. The *name* stays ours on
+  http's `BodyTooLarge` precedent — the cap is ours to enforce even
+  where the number is not ours to pick.
+- **128-byte keys, 256 entries.** No backend counts entries, so the
+  entry cap is nothing but what the caller-owned buffers hold:
+  `ListBuf` is 36 KiB (32 KiB of key bytes + 4 KiB of slices),
+  `native.list` spends 72 KiB more of its own frame (the packing
+  scratch plus the slice array it sorts), and the wasm table is
+  256 × (128 + 2560) ≈ 673 KiB of linear memory. Frame- and .bss-sized,
+  none of it allocated, against a 1 MiB stack at the tightest (iOS,
+  Windows). The base64 sessionStorage shadow is ~875 KiB of characters
+  worst case against a ~5 MB origin quota — and it is best-effort
+  anyway, so the quota is not a bound the contract can trip over.
+- **Why 256 and not 64.** The number that retired 64 came from the
+  first real consumer: three entries per (cycle, channel) pair, and a
+  user in a dozen circles plus a dozen connections is 24 pairs — 72
+  entries, refused by a 64-entry store. 256 carries 85 such triples.
+  Past that the thing being stored has stopped being a pouch of
+  secrets, and no ceiling nokre picks would make it one.
+- **Why not more than 256.** Every entry of headroom is bought three
+  times: 144 bytes in the caller's `ListBuf` (a key slot plus its
+  slice), 290 in `native.list`'s frame (the doubled scratch and the
+  slice array it sorts), and 2,692 in the wasm table, which is sized
+  entry × (key + value) whether or not a value is ever that big —
+  ~3.1 KiB per entry, of which 2.6 KiB is paid by every linked web
+  build at boot. 1024 entries is a 144 KiB caller buffer, a 290 KiB
+  frame under it on the 1 MiB stacks iOS and Windows give, and a
+  2.6 MiB table. The shapes that would bend that curve each cost more
+  than the capacity is worth: `list` over a caller-sized buffer with a
+  there-was-more flag turns the one verb that must be total into a
+  partial one — and the count `StoreFull` consults is seeded from
+  `list`'s length, so a partial listing is a partial cap; a byte-arena
+  web table decouples entries from the value cap only by making
+  `StoreFull` fire on total bytes, so whether a `set` succeeds would
+  depend on the sizes of unrelated values, and would stop meaning the
+  same thing on every platform; shortening the key cap buys entries in
+  the two key-sized buffers and nothing at all in the table, where the
+  value dominates. An allocator would break all three at once, and it
+  would be the only one in the service.
+- **The pressure to raise it, named.** What would ask for 1024 is the
+  shape the bullet above refuses — an entry count tracking the user's
+  graph — and 1024 postpones it by 4× while charging every app the
+  table. The answer is the one this service already gives values: keep
+  one secret and derive the per-channel material from it. That the derived
+  material then needs somewhere to live is a real gap — nokre ships no
+  general local store — but it is a gap for another service to fill.
+  Inflating the pouch is not how it gets filled: every linked app would
+  pay the table, and only one shape of app would spend it.
 - **StoreFull is the service's line, not the OS's.** `set` of a
   possibly-new key probes for presence; an insert consults the app's
   cached count — seeded by one `list` enumeration on the first insert,
-  adjusted on inserts and deletes thereafter — so the 65th distinct
-  key fails identically on a keychain, in CredMan, in the web table,
+  adjusted on inserts and deletes thereafter — so the key past the cap
+  fails identically on a keychain, in CredMan, in the web table,
   and in the Fake. One O(n) enumeration per app lifetime, not per
   write; cross-process writers could drift the cache, but
   enumerate-then-set was never atomic either, so best-effort is
@@ -162,6 +208,83 @@ a user can inspect and revoke them — which is why an externally
 deleted entry must read as `get → null`, "signed out", never
 "impossible".
 
+That choice is also what sets the whole contract's value ceiling:
+`CredWriteW` refuses a `CredentialBlobSize` past
+`CRED_MAX_CREDENTIAL_BLOB_SIZE` (5 × 512 = 2560) with
+`ERROR_INVALID_PARAMETER`, while no other backend bounds a value at all
+(the per-platform table in [../services.md](../services.md)). The
+alternative was weighed again when the caps were raised, and declined
+again — now with its price named rather than assumed. DPAPI over a file
+in the app's data directory has the same protection boundary
+(user-scoped keys, readable by anything running as that user) and no
+ceiling, but it buys the bigger value three ways nokre will not pay:
+by inventing the container the stateless-native charter forbids, by
+dropping the entries out of the panel where a user can revoke them, and
+by rewriting the one backend no gate in this repo can execute —
+`check-targets` compiles Windows, it never runs it. A 2560-byte secret
+is not a shape any consumer has asked for, and a bigger one is a
+document. So the ceiling is stated instead of engineered around, and
+windows.c `#error`s if the C copy of it drifts.
+
+**Chunking, weighed and worse.** Splitting one logical value across
+several credentials — `ns/key`, `ns/key/1`, … on the same `/` join that
+already cannot alias — meets those objections worse than the file does,
+on every one of them. `CredWriteW` is atomic per blob and nothing is
+atomic across blobs: a crash or a refusal between chunks leaves a value
+no `set` ever wrote, and a torn secret is the one torn value worse than
+absence — half an old key and half a new one decrypts nothing and reads
+as corruption. Making it whole again needs a generation counter and a
+commit record, which is the file format back, now smeared across the OS
+store instead of confined to one file. The panel fares worse, not
+better: DPAPI-over-a-file drops the entry out of the panel, where
+chunking puts N rows into it and makes each separately revocable — a
+user who revokes one chunk has revoked half a secret, and the orphaned
+rest is garbage nothing collects. The property CredMan was chosen *for*
+— revoke means signed out — is the first thing to break. `list` would
+then have to hide the chunk rows, since it may never show a key `get`
+could not be asked for, so the panel and `list` would stop agreeing in
+the direction the contract has no name for. And the entry cap divides:
+chunks consume credentials, so either the count cache counts what
+`list` hides, or `StoreFull` fires at a different entry number on
+Windows than everywhere else — the one error whose whole point is that
+no platform gets a vote. Against all of which it rewrites the backend
+no gate here executes, and unlike the file it does not stop at the C:
+`native.list` and the count cache are shared Zig, so the untestable
+surface grows rather than staying put.
+
+The one variant that survives the atomicity and panel objections is
+worth naming, because it looks like the answer and is not. A credential
+carries up to `CRED_MAX_ATTRIBUTES` (64) attributes of
+`CRED_MAX_VALUE_SIZE` (256) bytes — 16 KiB more, written by the same
+single `CredWriteW`, showing as one panel row with one revoke. It dies
+elsewhere: `CredentialBlob` is the field Windows documents as the
+protected secret, an attribute is metadata, and an attribute's at-rest
+protection is documented nowhere. Splitting a secret across one field
+known to be encrypted and 64 whose protection is unstated is a weaker
+boundary sold as a bigger cap — the opposite of the trade this service
+makes everywhere else. It would also rest on composing two constants
+into behavior neither documents and no gate here can measure: the caps
+that landed came from measurement or from the constant the API itself
+enforces, and `check-targets` compiles Windows without ever running it.
+
+Nor does the ceiling become Windows-only. A cap of 2560 there and
+unbounded elsewhere makes `ValueTooLarge` a fact about the developer's
+laptop: an app that stores fine all through development fails at a
+user's first `set`, and the one property the whole cap doctrine buys —
+one number, one meaning, every platform — is what pays for it. Every
+route past 2560 spends something the store's own users can see: the
+panel, the atomic write, or the single meaning of `StoreFull`. The
+value that does not fit is still a document.
+
+One sharp edge, recorded because it reads like a bug: 2560 is
+written out in windows.c rather than taken from the header in scope,
+because the headers disagree. Vista raised
+`CRED_MAX_CREDENTIAL_BLOB_SIZE` to 5 × 512 and the Windows SDK says so,
+but mingw-w64's `wincred.h` — what `zig build check-targets`
+cross-compiles that file against — still carries the pre-Vista 512.
+Trusting whichever header was in scope would have fired the gate on the
+cross-check and passed it on the build that ships.
+
 `TargetName` = UTF-16(`ns + "/" + key`) — the lowercase charset makes
 the widening trivial and case-insensitive lookup unable to alias two
 contract keys — `CRED_TYPE_GENERIC`, `CRED_PERSIST_LOCAL_MACHINE`
@@ -181,8 +304,8 @@ contract keys — `CRED_TYPE_GENERIC`, `CRED_PERSIST_LOCAL_MACHINE`
 Keychain Access, the CredMan panel, or a second process can write into
 the namespace, and nothing they write is trusted into the contract:
 
-- `nokre_ss_get`'s `value_len` is in/out — capacity in (always 2048 from
-  Zig), stored length out. A blob larger than the capacity returns
+- `nokre_ss_get`'s `value_len` is in/out — capacity in (always
+  `max_value_bytes` from Zig), stored length out. A blob larger than the capacity returns
   `Unavailable`, never truncated bytes: the entry exists but cannot be
   served in-contract, and reporting absence would invite an overwrite.
 - Native `nokre_ss_list` skips entries whose key exceeds 128 bytes (so
@@ -190,14 +313,16 @@ the namespace, and nothing they write is trusted into the contract:
   the Zig side additionally drops any listed key failing `validKey`.
   The service refuses to hallucinate foreign entries into the contract
   — `list` never shows a key `get` could not be asked for.
-- **The determinism bound.** Native list packs up to 256 entries into
-  a 33 KiB stack scratch inside `list()`'s frame; Zig sorts everything
-  received bytewise, then truncates to 64. "The first 64 in sorted
-  order" is therefore deterministic up to 256 externally-visible
-  entries; beyond 256 the subset is unspecified — external-writer
-  territory the OS itself cannot make deterministic, since no OS
-  promises an enumeration order. The wasm table and the Fake are
-  capped at 64 by construction and never hit this.
+- **The determinism bound.** Native list packs up to `2 × max_entries`
+  entries into a 66 KiB stack scratch inside `list()`'s frame; Zig
+  sorts everything received bytewise, then truncates to `max_entries`.
+  This app's own writes can never exceed the cap, so the doubling is
+  pure headroom against external writers: "the first 256 in sorted
+  order" is deterministic up to 512 externally-visible entries; beyond
+  that the subset is unspecified — external-writer territory the OS
+  itself cannot make deterministic, since no OS promises an
+  enumeration order. The wasm table and the Fake are capped at
+  `max_entries` by construction and never hit this.
 
 ## Web: snapshot in, mirror out
 
@@ -234,9 +359,13 @@ cannot drift apart:
    still behaves identically.
 
 On web every outcome is a pure function of arguments + prior calls,
-and `error.Unavailable` never occurs. The price is the table: ~139 KiB
-of wasm memory when linked, paid even for one 20-byte token —
-acceptable while the caps are contract, and they are (see Refusals).
+and `error.Unavailable` never occurs. The price is the table:
+~673 KiB of wasm linear memory when linked (`.bss` — zero bytes of
+download), paid even for one 20-byte token. That is the cost of the
+table being the *truth* rather than a cache: blocked or full storage
+degrades to a dead mirror, never to a store that lies, which is the
+whole reason the web leg has no `Unavailable` to return. It scales
+with the caps, so the caps stay contract (see Refusals).
 
 **Why not OPFS.** Four counts, each sufficient: (1)
 `createSyncAccessHandle()` is itself async, so first access needs a
@@ -270,9 +399,10 @@ which C file build.zig compiles behind it).
 The store, per the frozen constraint: a per-namespace **AES-256-GCM key
 in the AndroidKeyStore** wrapping the ciphertext (`iv ‖ ct+tag`, base64)
 in an app-private `SharedPreferences` file — the OS owns both the key
-and the file, which is stateless in the contract's sense. The 2048-byte
-value cap plus the GCM envelope (12-byte IV + 16-byte tag) fits by
-construction. The key carries **no** user-authentication or
+and the file, which is stateless in the contract's sense. Nothing here
+bounds a value: the ciphertext is a base64 string in a prefs map, so
+the value cap plus the GCM envelope (12-byte IV + 16-byte tag) fits by
+construction, and nothing bounds the entry count either. The key carries **no** user-authentication or
 unlocked-device requirement, so boot reads work whenever the app can run
 (the `AfterFirstUnlockThisDeviceOnly` posture the Apple leg states), and
 per-key biometry stays a refusal. `set` uses `commit()` (synchronous
@@ -311,7 +441,7 @@ unlock) backs list, reading each item's `key` attribute off its
 `GHashTable`.
 
 libsecret's password API stores a NUL-terminated string, but a value is
-arbitrary bytes up to 2048 (embedded NULs included), so values are
+arbitrary bytes up to the cap (embedded NULs included), so values are
 hex-encoded in and decoded out — the round-trip is exact and the stored
 form stays a clean C string. Selection is by `os.tag == .linux` in
 `secure_store.zig` (Android shares the tag but rides its own JNI leg); the
@@ -324,7 +454,7 @@ posture every consumer already handles.
 | libsecret outcome | maps to |
 | --- | --- |
 | `secret_password_lookup_sync` returns NULL, no error | `null` (absent — data, not a failure) |
-| stored value's hex is malformed or decodes past 2048 (an external writer's) | `Unavailable` — the entry exists but cannot be served in-contract |
+| stored value's hex is malformed or decodes past the value cap (an external writer's) | `Unavailable` — the entry exists but cannot be served in-contract |
 | any `GError` (locked keyring, no daemon, denied) | `Unavailable` |
 
 ## Testing: one fake per app, constructed with it
@@ -393,9 +523,11 @@ These are guarantees, not gaps:
 - **No encryption theater on the web.** Client-side JS encryption is
   refused: the key would live beside the data. The web posture is
   honestly weaker and honestly stated instead.
-- **No cap knobs.** 128 / 2048 / 64 are contract, not configuration —
-  they are what makes `ValueTooLarge` mean one thing everywhere. The
-  store-the-session-id argument is consumer-facing
+- **No cap knobs.** 128 / 2560 / 256 are contract, not configuration —
+  they are what makes `ValueTooLarge` mean one thing everywhere, and
+  two of the three are sized to fixed buffers a knob could not move.
+  Raising one is a change to this file and the tables it points at, not
+  a build option. The store-the-session-id argument is consumer-facing
   ([../services.md](../services.md)).
 - **No async shape, no timeout.** Every real backend answers
   in-process; a timeout is a timer, and nokre has none.

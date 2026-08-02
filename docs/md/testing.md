@@ -79,7 +79,32 @@ have already told you so.
 
 `tap(id)`, `tapLabel`, `tapLink(stop)`, `pressKey`, `typeText`,
 `composeText(composition, committed)` (full IME start→update→commit
-sequence), `scroll(id, delta)`, `focusVia(id)`, `edgePanBack()`.
+sequence), `selectOption(group_label, option)`, `scroll(id, delta)`,
+`focusVia(id)`, `edgePanBack()`.
+
+`selectOption` makes an exclusive choice in a `segmented`, a
+`radio_group`, or a `select`, both ends named — the control by its label,
+the option by the words on it, never by index:
+
+```zig
+try t.selectOption("View", "Compact");     // a track
+try t.selectOption("Delivery", "Email");   // a radio group
+try t.selectOption("Country", "Japan");    // a select: opens the picker,
+                                           // then chooses in it
+try t.expectValue("Country", "Japan");
+```
+
+It takes the **keyboard** route for all three, and that is the point: a
+chip scrolled out of an overflowing track and a picker row below the fold
+are both unreachable by a tap at their center, and both are reached by
+stepping, because stepping is what scrolls them into view. Every step
+goes through real dispatch and commits like a user's, so a handler
+watching for `on_select` sees exactly what it would in the app. Choosing
+the option already chosen is the no-op it is for a user. The refusals are
+the usual ones: `error.NotKeyboardReachable` if Tab can't get to the
+control, `error.NotAChoiceControl` if it has no options to choose among
+(tap that one instead), and `error.NoSuchOption` — whose diagnostic lists
+the options that *are* there, so a renamed option reads as a rename.
 
 `edgePanBack` is the whole back gesture — in from the leading edge, past
 the threshold, released ([routing.md](routing.md#the-back-gesture)). A
@@ -102,6 +127,11 @@ that silently lands elsewhere is a lie, not a test:
   [elements.md](elements.md#the-folded-tail-more)). A folded action is
   off the screen, so `getByLabel` does not return it either — the
   listing that comes back says where it went.
+- `error.InProgress` is the one refusal that is not about reaching the
+  control: a `button`, `toggle`, or `checkbox` with `in_progress` set
+  keeps its focus stop on purpose, so the check above lets it through and
+  the press would land nowhere. Settle the work first, or clear the flag
+  if the test meant to press it again.
 - `focusVia` fails with `error.NotKeyboardReachable` if Tab can't reach
   the node — a test that passes only with a mouse is a bug.
 
@@ -326,6 +356,52 @@ locale-dependent screen stays byte-deterministic in a golden test. A
 *running* app is a different matter, which is why nokre's own
 examples carry their locale in state instead of asking the device.
 
+## The wall clock
+
+`clock` is boot state like the locale, and it is the only clock a test
+can reach: under `zig test` the machine's real time is unreachable on
+every platform, so a screen that stamps an instant renders identically
+every run and goldens byte-for-byte. Time moves where the test moves it
+and nowhere else — there is no ticker to move it behind your back.
+
+```zig
+var t = try nok.testing.Harness.initWith(gpa, .{ .w = 320, .h = 480 }, .{
+    .ctx = &state,
+    .build = State.build,
+    // The device's clock at boot; the default is a fixed, fake instant.
+    .clock = .{ .millis = 1_700_000_000_000 },
+});
+
+// "This screen is clockless" — assertable, and true of most of them.
+try std.testing.expectEqual(@as(usize, 0), t.clockReads());
+
+try t.tapLabel("Save");      // the action reads it, and keeps what it read
+_ = try t.getByLabel("Saved at 1700000000000");
+
+try t.advanceClock(std.time.ms_per_hour);   // an hour passes, because we said
+_ = try t.getByLabel("Saved at 1700000000000");  // nothing ran; nothing moved
+try t.tapLabel("Save");
+_ = try t.getByLabel("Saved at 1700003600000");
+```
+
+`advanceClock` takes a **signed** delta, because wall time is not
+monotonic: an NTP correction moves a real device backwards, and an app
+that subtracts two stamps has to survive a negative difference — this is
+the verb that produces one, and the reason there is no monotonic clock
+to hide behind ([services.md](services.md)). Nothing on the app's side
+runs when it is called: a clock has no handler to route to, so the new
+time is simply what the next `now` answers. It still traces and
+re-audits like any driver action, so a trace shows *when* time moved.
+
+`clockNow()` is what `clock.now(&app)` would answer, and `clockReads()`
+is how many times the app has asked — a count, not a journal, since a
+stopped clock answers every read identically. Zero is the interesting
+value: "this build never read the clock" is the app-side spelling of
+what core promises about itself, and looking through the harness does
+not disturb it. A bare test constructs the same fake directly:
+`.services = .{ .clock = .mock(.{ .millis = 1_700_000_000_000 }) }`,
+with `app.services.clock.advance(ms)` as the untraced verb.
+
 ## Sign-in
 
 `oauth` parks like `http` and settles like it: `start` leaves from an
@@ -433,6 +509,56 @@ A bare test constructs the same fake directly: `.services = .{ .iap =
 .mock(.{}) }`, with `app.services.iap.deliverPurchase(p)` as the untraced
 verb (followed by `app.runtime.pumpAll()`).
 
+## Notices
+
+Notices are the one piece of app state the a11y snapshot cannot speak
+for. What is *shown* it covers exactly — the banner, the pane's rows and
+the indicator are elements, and `getByLabel` reaches all three — but a
+**quiet** notice is pending and unrendered, a title `notify` dropped as a
+duplicate leaves no mark at all, and dismiss-all is asserted by an
+absence. So these verbs read the app's own pending list, the way
+`knocks()` and `urlsOpened()` read a mock's journal: it is the whole
+observable effect ([elements.md](elements.md#notice)).
+
+```zig
+try t.tapLabel("Sync");
+try t.failHttp("FetchFailed");            // the app raised a notice
+
+try t.expectNotified("Sync failed");      // raised — banner, pane, or quiet
+_ = try t.getByLabel("Sync failed");      // …and this one is on screen
+
+// Quiet notices never claim the banner: the only thing rendered is the
+// chrome's own indicator, so the title is assertable *only* here.
+try t.expectNotified("Draft saved");
+try t.expectAbsent("Draft saved");
+_ = try t.getByLabel("Show notices");
+
+const pending = t.noticesPending();        // important first, then arrival
+try std.testing.expectEqualStrings("Sync failed", pending[0].title);
+try std.testing.expect(pending[0].important);
+try std.testing.expectEqualStrings("Changes kept locally.", pending[0].description);
+try std.testing.expectEqualStrings("home", pending[0].route);
+```
+
+`expectNotified(title)` is the whole of "was it raised": titles are the
+identity — `notify` dedups on them — so a second `notify` under a title
+already pending is dropped in silence, and the count is the only witness
+that it was:
+
+```zig
+try std.testing.expectEqual(@as(usize, 1), t.noticesPending().len);
+```
+
+`dismissNotice(title)` and `dismissAllNotices()` are the **app-side**
+dismissals — `App.dismissNoticeAt` and `App.dismissAllNotices`, the
+notice that clears itself when the state behind it resolves. Both trace
+and re-audit, so the chrome the dismissal reshaped is asserted like any
+other screen. A dismissal a *user* performs is a press like any other and
+stays one: `tapLabel("Dismiss: Sync failed")` on the control the chrome
+puts on every notice, `tapLabel("Dismiss all notices")` in the pane's
+header. Dismissing by title and never by index is the query rule again —
+an index is a position in a list nobody perceives.
+
 ## Assertions
 
 State assertions read the **a11y snapshot**, not element internals: if an
@@ -460,6 +586,21 @@ expectation can't be met there, a screen reader user can't meet it either.
   Boot a sheetless target with `.share = .{ .available = false }` (the
   Linux desktop, a browser without `navigator.share`) and assert the
   app drew no share affordance.
+- `notificationsRequested()` — everything the app asked the OS to do,
+  in order, from the journaling notification mock: posts and schedules
+  (told apart by `at_millis`), cancels, the permission prompt, and the
+  token request. A refused call never appears, because the OS was never
+  asked, and `askedToNotify()` is the assertion behind "this screen
+  posted without ever asking". What the *user* did is the test's to
+  drive: `grantNotifications()` and `denyNotifications()` answer the
+  prompt — or flip the switch in Settings without one, which is legal
+  and worth testing — `deliverNotificationTap(id, route)` is the tap
+  (call it first to write the launch that started from one),
+  `deliverNotification(id, route)` is one coming due with the app on
+  screen, and `deliverPushToken(token)` is the transport minting one.
+  Boot a device that cannot notify, cannot schedule, or cannot push with
+  `.notification = .{ .available = false }` and its siblings, and assert
+  the app drew around it.
 - `expectTree(expected)` — inline snapshot of the whole laid-out tree in
   the trace format below. On mismatch both trees print; review the
   actual, then paste it into the test.
@@ -513,6 +654,13 @@ with almost any image tool. PPM rather than PGM because the frame is
 RGB for the one colored mark nokre draws (the Google G — see
 [internals/pixel-model.md](internals/pixel-model.md)); everything else
 is r=g=b, so diffs read like the gray ones did.
+
+Goldens need the Skia prebuilt linked into the *test* binary — a link
+`addApp` does not make, because a test binary is not the app binary. One
+line of `build.zig` does it (`nokre.linkSkia`), and the whole recipe —
+that line, the `-Dgolden` / `-Dupdate-goldens` options, and the module
+that carries them — is
+[getting-started.md](getting-started.md#part-12--proof-tree-snapshots-step-traces-goldens).
 
 ```zig
 var surface = try nok.render.skia.Surface.init(480, 640, 1);

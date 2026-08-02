@@ -379,15 +379,23 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   gap: var(--gap);
   padding: var(--pad);
 }
-/* Rows place children at their intrinsic widths and let the row
-   overflow; a run of actions too wide for one folds its tail into
-   the `more` control (overflow.zig) rather than wrapping to a
-   second line, so there is no wrapping to switch on here. */
+/* Rows place children at their intrinsic widths. Which of the two
+   things an over-wide one does is `layout.rowOverflow`, asked in the
+   serializer so both editions read one answer rather than a selector
+   guessing at it: a run of actions folds its tail into the `more`
+   control (overflow.zig) and stays on one line, everything else
+   wraps. `align-content` because the default stretches the lines
+   apart to fill a height the row does not have — they stack at the
+   top, one `gap` apart, the way `layoutWrappingRow` stacks them. */
 .stack.row { flex-direction: row; flex-wrap: nowrap; align-items: center; }
+.stack.row.wrap { flex-wrap: wrap; align-content: flex-start; }
 /* And each child takes its own width. `layoutHorizontalFlow` places
    them at `intrinsicSize` — capped at the row's span, never
    *shared* down to fit it — so a row too full overflows rather than
-   squeezing every item in it a little. */
+   squeezing every item in it a little. A wrapping row's line breaks
+   are the browser's here, and greedy first-fit in core: the same
+   rule over the same intrinsic widths, which is as close as the two
+   editions get on geometry (renderer-editions.md). */
 .stack.row > * { flex: none; max-width: 100%; }
 
 /* A box groups; it does not decorate. Its edge is a wall — the
@@ -579,6 +587,7 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
+  gap: var(--icon-gap);
   font-size: var(--px-small);
   line-height: var(--lh-small);
   padding: var(--badge-pad-v) var(--badge-pad-h);
@@ -896,6 +905,33 @@ input.toggle::after {
 }
 input.toggle:checked { background: var(--ink); border-color: var(--ink); }
 input.toggle:checked::after { border-color: transparent; margin-inline-start: auto; }
+
+/* Work in flight: the track or the box stands down for `…` in the
+   slot it occupied — the reference's `drawControlWait`. The input
+   keeps its box, because the row must not resize when the flip
+   starts or when the result lands, and it keeps being the control:
+   the role, the value and aria-busy all ride on it, and only its
+   *drawing* steps aside. Undoing that drawing is a list of denials
+   because the two controls state so much (the knob is a sized flex
+   item, the check a glyph in the icon face); the rules win on
+   specificity and on order alike. No dimming — busy is not
+   unavailable, and the mark is the only sign the work is happening. */
+.ctl.busy input { background: none; border-color: transparent; padding: 0; }
+.ctl.busy input::after {
+  content: "\2026";
+  visibility: visible;
+  width: 100%;
+  aspect-ratio: auto;
+  margin-inline-start: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: prose;
+  font-size: var(--px-body);
+  line-height: 1;
+  text-align: center;
+  color: var(--ink);
+}
 
 /* A column of tile rows under a label, in the tile group's shape.
    Block flow, not flex: the legend is the label and no engine puts

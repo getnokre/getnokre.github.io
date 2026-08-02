@@ -49,6 +49,8 @@ internals doc.
 | `haptic` | The back gesture's threshold knock. **Framework-internal: no app can call it.** | **Working** — iOS only, the one platform that runs a threshold of nokre's own ([internals/haptics.md](internals/haptics.md)) |
 | `open_url` | One verb: hand a URL (https/http/mailto — a closed set) to the system browser. Fire-and-forget. | **Working** — every shell and the web; nothing links |
 | `share` | One verb: put the OS share sheet up with UTF-8 text on it; the user picks the destination. Fire-and-forget. | **Working** — four native sheets and the web's `navigator.share`; no sheet on the Linux desktop, and `available` says so |
+| `clock` | One verb: the wall clock, in milliseconds since the Unix epoch, UTC. Read on demand. | **Working** — every target; nothing links, and no shell is involved |
+| `notification` | The OS's own notification surface: ask, post, schedule, cancel, and one lane back for taps, arrivals and push tokens. | **Working** — all six platforms for the local half; push on four, and `scheduleAvailable` is false on the Linux desktop and the web |
 
 `haptic` is on this list for completeness, not for use: it is a
 `Services` field because everything platform-flavored is injected and
@@ -72,7 +74,7 @@ screen with no handshake.
 
 Like `package_info` — and unlike `http` — the service links: linking
 costs something real (Security.framework on Apple, advapi32 on
-Windows, a ~139 KiB static table on wasm), and a store is meaningless
+Windows, a ~673 KiB static table on wasm), and a store is meaningless
 without an identity to namespace it, so it requires `pkg_id`:
 
 ```zig
@@ -110,14 +112,37 @@ any path, on any platform. The caps are contract, not configuration:
 | Cap | Value | Why this number |
 | --- | --- | --- |
 | key | 1–128 bytes of `[a-z0-9._-]` | lowercase-only because Windows credential lookup is case-insensitive — `"Token"` and `"token"` would be one entry there and two everywhere else; the set also survives verbatim as a Keychain account, a CredMan target segment, a libsecret attribute, and a JS storage key — one namespace rule, zero escaping |
-| value | ≤ 2048 bytes | the largest power of two under the Windows credential blob limit (`CRED_MAX_CREDENTIAL_BLOB_SIZE`, 2560) — the tightest native bound, enforced on the Zig side everywhere, so `ValueTooLarge` means one thing on every platform |
-| entries | 64 per app | a pouch, not a database — small enough that every buffer is a stack array and browser quota is unreachable by construction |
+| value | ≤ 2560 bytes | Windows sets it: `CRED_MAX_CREDENTIAL_BLOB_SIZE` (5 × 512) is the largest credential blob `CredWriteW` accepts, and no other backend bounds a value anywhere near it. Enforced on the Zig side everywhere, so `ValueTooLarge` means one thing on every platform — the platform's own number, not rounded down to a power of two |
+| entries | 256 per app | nokre's number, not a platform's: no backend counts entries, so the line falls where a whole listing stops fitting a caller's buffer — 256 keys is a 36 KiB `ListBuf`. Sized from a real app's shape (three entries per conversation channel, so ~85 channels), which is also what retired the 64 that came before |
 
 A value that doesn't fit is a document, and documents are refused.
 Store the refresh token or the session id, not the fat JWT: a JWT
 balloons with its claims and expires anyway, while the small
 credential you re-derive everything else from is exactly what belongs
-in a keychain.
+in a keychain. The entry count answers to the same rule: a store whose
+size tracks the user's graph — an entry per channel, per contact, per
+device — has stopped being a pouch, and the way out is one secret with
+the rest derived from it, never a bigger cap. Why neither number moves,
+and what each route past them would cost, is
+[internals/secure_store.md](internals/secure_store.md).
+
+The ceiling is the weakest platform's, and this is which — what each
+backend actually bounds, by the API it calls:
+
+| Platform | Backend | What bounds a value | What bounds the entry count |
+| --- | --- | --- | --- |
+| Windows | Credential Manager — `CredWriteW`, `CRED_TYPE_GENERIC` | **2560 bytes**: `CRED_MAX_CREDENTIAL_BLOB_SIZE`; a larger `CredentialBlobSize` is `ERROR_INVALID_PARAMETER` | nothing documented |
+| macOS / iOS | Keychain — `SecItemAdd`, `kSecClassGenericPassword` | nothing: `kSecValueData` is a `CFData`, and 16 MiB stores and reads back byte-exact (measured, macOS 26) | nothing: 1000 items under one `kSecAttrService` all store and enumerate (measured) |
+| Android | AES-GCM key in the AndroidKeyStore over app-private `SharedPreferences` | nothing: the ciphertext is a base64 string in a prefs map | nothing: prefs is a map |
+| Linux | Secret Service via libsecret — `secret_password_store_sync` | nothing: a secret is a D-Bus byte array (hex-encoded here) | nothing |
+| Web | a table inside the wasm module, shadowed to `sessionStorage` | nokre's table, sized to the contract | nokre's table; the shadow's ~5 MB origin quota is best-effort and can never fail a `set` |
+
+So Windows is the binding constraint, and it binds because of an API
+choice nokre stands by: Credential Manager ships the whole CRUD and
+lists entries in a panel where the user can inspect and revoke them,
+where DPAPI over a private file would have no ceiling and the same
+protection boundary — and would cost both of those. The trade and its
+price are [internals/secure_store.md](internals/secure_store.md).
 
 Errors are closed and per-operation — `get` can never return
 `ValueTooLarge`; each signature states exactly what can go wrong:
@@ -126,7 +151,7 @@ Errors are closed and per-operation — `get` can never return
 | --- | --- | --- |
 | `InvalidKey` | get, set, delete | everywhere, identically — a pure function of the argument, checked before any OS call |
 | `ValueTooLarge` | set | everywhere, identically — the cap is the service's, checked on the Zig side |
-| `StoreFull` | set | everywhere, identically — the 65th *distinct* key; overwriting an existing key never fails with it |
+| `StoreFull` | set | everywhere, identically — the *distinct* key past the entry cap; overwriting an existing key never fails with it |
 | `Unavailable` | all four | platform posture: a locked or denying keychain on Apple, a dead logon session on Windows, a Keystore/crypto fault on Android, a locked or absent Secret Service on Linux — and never on the web |
 
 Only `Unavailable` is environmental, and only `Unavailable` is
@@ -211,7 +236,9 @@ Nothing is read back at runtime; instead the manifests are packaging
 [src/packaging/packaging.zig](../src/packaging/packaging.zig) generate
 them all from this one declaration — `Info.plist`, `AndroidManifest.xml`
 (plus the identity properties Gradle reads), the web page and its app
-manifest, and the app icon in each platform's format — so no file can
+manifest (which a web build folds into the site it hands back —
+[getting-started.md](getting-started.md)), and the app icon in each
+platform's format — so no file can
 become a second source of truth or need hand-writing; generated ones
 stay gitignored. The icon is derived too: a deterministic grayscale
 mark computed from the id
@@ -219,6 +246,34 @@ mark computed from the id
 no-custom-visual-identity refusal ([introduction.md](introduction.md))
 applied to the home screen. The same id draws the same mark everywhere,
 forever; renaming the display name keeps it.
+
+An app that has real art for Apple's platforms declares it, and that is
+the one packaging *input* nokre takes:
+
+```zig
+    .apple_icon = b.path("assets/AppIcon.icon"),   // requires .pkg
+```
+
+The value is an Icon Composer bundle — the `.icon` **directory** Apple's
+tool exports, holding `icon.json` and the layer images it names under
+`Assets/`. That format earns the exception by being a declaration
+itself: appearance (light, dark, tinted), lighting, shadow and the glass
+material are values over vector layers, and every idiom's pixels are
+compiled by Xcode's `actool`, never by nokre — which resamples nothing,
+re-encodes nothing, and models none of the schema. The bundle is checked
+where it is declared (a `.icon` directory, a parseable `icon.json`, every
+layer image it names present) and delivered whole to
+`pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon` — one icon, both
+Apple platforms, which is Icon Composer's own claim, not a duplication
+nokre invented. It replaces the derived appiconset rather than joining
+it: `actool` resolves the app icon by name, and two answers named
+`AppIcon` is one too many. **Xcode 26 is the floor** — an older `actool`
+cannot compile a `.icon` at all, and the answer on one is to declare no
+`apple_icon` and ship the derived mark. Android and the web keep the
+mark either way; `.icon` is an Apple format and nothing else reads it.
+Pointing an Xcode project at the delivered bundle — and what "delivered"
+buys on macOS, which nokre does not bundle — is
+[getting-started.md](getting-started.md).
 
 The native side answers only the question the build cannot: installer
 provenance (app store / TestFlight / direct / bare `dev` binary; `web`
@@ -421,7 +476,10 @@ until the test answers it — and the consumer contract never changes:
 no futures, no locks, no callback off the UI thread. Requests and
 worker messages share one delivery lane, so ordering, thread
 discipline, and the testing story are the same fact, not three
-parallel ones.
+parallel ones. One platform wants the hosts in advance: a web build's
+page allows only the origins its declaration named, so a host reached
+from here is a `web_connect_src` entry there
+([getting-started.md](getting-started.md)).
 
 ```zig
 _ = try nokre.services.http.request(.{
@@ -961,10 +1019,13 @@ Where the service stops is `oauth`'s line. No receipt verification — the
 `token` goes to the app's backend, which calls the App Store Server API or
 the Play Developer API; verifying on the device is verifying with the
 attacker's copy of the key. No entitlement or expiry model — `isActive`,
-renewal windows, and grace periods need a clock, and a timer is a ticker,
-which nokre has none of; `restore` reports what the store says is owned
-right now, with no dates and no arithmetic. No catalog, no price cache, no
-paywall layout, no route table.
+renewal windows, and grace periods are a policy with a schedule behind
+it, and a schedule is a timer, which is a ticker nokre has none of (the
+`clock` service reports the time and `notification.schedule` hands a
+date to the OS; nothing in nokre runs one); `restore`
+reports what the store says is owned right now, with no dates and no
+arithmetic. No catalog, no price cache, no paywall layout, no route
+table.
 
 In tests the mock is one app's fake store: seed a catalog and queries
 answer themselves with fixed price strings, so a paywall renders
@@ -1109,6 +1170,265 @@ refused share journals nothing, because the OS was never asked. Boot a
 sheetless target with `.share = .mock(.{ .available = false })`
 ([testing.md](testing.md)).
 
+### clock: the time, and nothing that ticks
+
+`clock.now(app)` answers the wall clock in milliseconds since the Unix
+epoch, UTC. One verb, one integer, no error, no allocation, and nothing
+to settle:
+
+```zig
+// In an action — a tap, a reply handler — not inside `build`.
+state.saved_at = nokre.services.clock.now(app);
+```
+
+Reading the time is the whole service. What the number *means* is the
+app's: a "saved at" stamp, an age to compare a token's expiry against, a
+created date to sort by. nokre does no arithmetic on it and draws none
+of it.
+
+**Core stays clockless, and that is why this is a service rather than a
+utility.** A frame is a function of state, so a screen that changed
+because time passed changed for a reason no golden can hold still and no
+test can reproduce — which is exactly what the refusals that name a
+clock are protecting: no animation, no fading scrollbar, no
+self-clearing copy mark, no velocity on the back gesture
+([introduction.md](introduction.md)). Nothing in nokre's core or its
+renderers calls this, ever. It is `oauth`'s randomness carve-out
+restated — a service is not core — and it costs the pixel model nothing,
+because a timestamp an app read is app state, and the frame that renders
+it is a frame that renders state like every other.
+
+**Read it in the action; keep what you read.** Nothing stops a `build`
+from calling this — a value with no error has no honest failure to
+raise — but a screen built from the clock is a screen that differs on
+every frame: its golden cannot hold still and two runs of the same test
+disagree. Read the clock where the event happens, put the result in your
+own state, and let `build` render state.
+
+**Milliseconds, UTC, an integer.** Milliseconds is the resolution
+people's events happen at, and an i64 of them spans ±292 million years
+where an i64 of nanoseconds runs out in 2262 and buys precision no app
+that draws text can spend. UTC because a time zone is not a fact about
+the instant: converting to local time means the platform's zone database
+and date formatter, which is the locale library
+[localization.md](localization.md) refuses for producing different bytes
+on different OS versions. The same instant is the same number on all six
+platforms; a human-readable date is the app's to write, as the same doc
+already asks for decimals and dates in messages.
+
+**It can go backwards, and there is no monotonic twin.** An NTP
+correction, a user setting the date, a laptop waking up somewhere else —
+wall time moves in both directions, so an app that subtracts two stamps
+must survive a negative difference. nokre offers no monotonic clock to
+hide behind because there is nothing here to time: no animation, no
+ticker, no frame budget an app can observe, and a second clock would be
+a second thing to explain for a duration nobody is drawing.
+
+**No timers and no scheduling — nokre keeps none, and that is the
+precise claim.** "Call me in 30 seconds" is a ticker, and a nokre app at
+rest costs zero CPU
+([internals/architecture.md](internals/architecture.md)). Expiry
+policies, refresh windows, and retry backoff are the app's, computed
+from stamps it took — the line `oauth` and `iap` already draw, unmoved
+by this service existing. `notification.schedule` is not the exception
+it looks like: it hands a fire date to the *OS* and returns, so the
+countdown belongs to a system that was going to run anyway and the
+process is usually not alive when it fires. Nothing in nokre waits.
+Where no such system exists — the Linux desktop, the web —
+`scheduleAvailable` says so rather than nokre filling in with a timer of
+its own ([internals/notifications.md](internals/notifications.md)
+records the decision).
+
+**Nothing links, and no shell is involved** — clipboard's posture,
+without even clipboard's C hook. There is no header, no build flag, no
+permission and no entitlement anywhere: the call is Zig's own on every
+native family (`clock_gettime(CLOCK_REALTIME)` on macOS, iOS, Android
+and Linux; `GetSystemTimePreciseAsFileTime` on Windows — the precise
+form, because the plain one is quantized to the ~15.6 ms scheduler tick
+and would make two stamps either side of real work read as one instant).
+**On the web** it is `Date.now()` through services.js, implemented by
+both instances the driver runs, so a compute worker can stamp what it
+computes. And unlike `share` there is no `available` to ask: a platform
+without a clock is not one of the six.
+
+In tests the mock is one app's fake clock, and under `zig test` it is
+the *only* clock on every platform — the machine's real time is
+unreachable, so a screen that stamps an instant goldens byte-for-byte.
+Boot it at an instant with `.clock = .{ .millis = … }` (the default is a
+fixed, obviously fake one), move it with `advanceClock(ms)` — signed,
+because a device really does correct backwards — and assert that a
+screen never asked at all with `clockReads()`
+([testing.md](testing.md)).
+
+### notification: the OS's surface, and the interrupt you have to ask for
+
+A message shown **outside** the app — on a lock screen, in a shade, in a
+notification centre — now or at a fire date, raised locally or pushed
+from your server. nokre asks; the OS draws. Not one pixel of it is
+nokre's, which is why a service that reaches someone who put the app
+down costs the pixel model nothing (the share sheet's bargain) and why
+there is no styling surface here to refuse.
+
+```zig
+// Boot, inside build: three synchronous answers, cached at App.init like
+// locale's tag. Draw no notifications row where the device has none.
+const N = nokre.services.notification;
+if (!N.available(app)) return;
+
+// One handler, registered once inside build — the whole inbound lane.
+N.setHandler(app, state, onNotification);
+
+// From a control the user pressed, never at boot: the prompt has one
+// answer per install, and an app that asks before it has shown why gets
+// the reflexive no that cannot be taken back.
+try N.authorize(app);
+
+fn onNotification(ctx: ?*anyopaque, event: N.Event) void {
+    const state: *State = @ptrCast(@alignCast(ctx.?));
+    switch (event) {
+        // The prompt was answered — or the user changed their mind in
+        // Settings while the app ran. `status` is already updated.
+        .authorized => |s| if (s == .granted) requestToken(state),
+        // The user tapped one. May be the first thing that happens in a
+        // launch: the tap is what started the process.
+        .opened => |p| state.app.navigate(p.route) catch {},
+        // One came due with the app on screen. No OS banner is drawn for
+        // it — what to do is yours: raise an in-app notice, refresh a
+        // list, ignore it.
+        .received => |p| state.app.notify(.{ .title = "Updated", .route = p.route }) catch {},
+        // The push transport minted (or rotated) a token. Ship it to
+        // your backend over `http`; nokre speaks to no push service.
+        .push_token => |t| postTokenToBackend(state, t),
+    }
+    state.app.invalidate();
+}
+
+// In an action:
+try N.post(app, .{ .id = "msg.42", .title = "Two new messages", .route = "thread~42" });
+try N.schedule(app, .{ .id = "remind.1", .title = "Stand up" }, nokre.services.clock.now(app) + 30 * 60_000);
+try N.cancel(app, "remind.1"); // idempotent: already gone is success
+```
+
+**The interrupt decision is yours, and you make it twice.**
+`app.notify` interrupts inside the app ([elements.md](elements.md));
+this interrupts outside it. Neither derives from the other, and that is
+deliberate: a framework that turned every in-app notice into a lock-screen
+banner would be deciding, on your behalf, to reach someone who had put
+the app down. `important` is the same word in both places and means the
+same thing — quiet by default, because interrupting is the thing a
+message has to ask for. It selects Android's high-importance channel,
+Apple's time-sensitive interruption level, and the Linux daemon's normal
+urgency; the levels that override Do Not Disturb are deliberately not
+used, because "this one may interrupt" asks for less than that.
+
+**The tap carries a route reference, not a URL.** `deep_link` carries
+URLs precisely because nokre does not interpret them; both ends of this
+wire are nokre's, so what crosses is the reference the router already
+speaks (`thread~42` — [routing.md](routing.md)). Routing stays yours, as
+it is there.
+
+**Authorization is three states, not a bool.** `not_determined` is a
+fresh install where asking is still legal, `denied` is a decision no
+platform lets an app re-prompt its way out of, and only `granted` posts
+anything. Collapsing the first two makes "ask again" an app's most
+tempting bug. The state is cached and re-read whenever the app comes
+forward, so a user who switched it off in Settings is a `.authorized`
+event, not a stale screen.
+
+The caps are contract, not configuration — checked on the Zig side
+before any OS call, so each error means one thing on all six platforms:
+
+| Cap | Value | Why this number |
+| --- | --- | --- |
+| id | 1–64 bytes of `[a-z0-9._-]` | secure_store's charset for secure_store's reason: the id survives verbatim as a `UNNotificationRequest` identifier, an Android tag, a toast's launch argument and a D-Bus lookup key — one namespace rule, zero escaping |
+| title | 1–128 bytes | every platform truncates in display long before this; past it the payload is a document, and a document belongs behind the tap |
+| body | ≤ 512 bytes | the same rule, one line down |
+| route | ≤ 256 bytes | a route reference is a screen name plus identifier arguments, short by construction |
+
+| Error | On | Meaning |
+| --- | --- | --- |
+| `InvalidId` | post, schedule, cancel | outside the charset or the cap — a pure function of the argument |
+| `EmptyTitle` / `TitleTooLarge` / `BodyTooLarge` / `RouteTooLarge` | post, schedule | the caps above |
+| `NotAuthorized` | post, schedule, requestPushToken | `status` is not `granted` |
+| `FireDateInPast` | schedule | the instant has passed. Refused rather than fired immediately, because the platforms disagree — iOS rejects a non-positive interval and Android's alarm fires at once — and one meaning everywhere is worth more than a convenience that hides a clock bug |
+| `Unavailable` | all | the platform posture the three probes already report |
+
+**Three probes, because three different things can be missing.**
+`available` is whether the device notifies at all (false on a Linux
+session with no daemon on the bus, and in a browser without the
+Notification API). `scheduleAvailable` is whether a fire date can be
+handed over — false on the Linux desktop and the web, where nothing
+outlives the process to fire it, and nokre will not fake it with a timer
+of its own that would die with the tab. `pushAvailable` is whether there
+is a push transport: false on the Linux desktop and on Windows, whose
+WNS needs the packaged Store identity nokre does not emit (iap's answer,
+one row over), and false on the web until you declare a VAPID key. All
+three are cached at `App.init` and legal inside `build`, so an app draws
+around what is missing rather than offering a switch that fails.
+
+**Push stops where oauth stops.** The device token comes back — hex on
+APNs, the FCM token on Android, a JSON subscription on the web — and you
+ship it to your own backend over `http`. nokre speaks to no push
+service, holds no credential, and refuses silent (`content-available`)
+payloads: a push that wakes an app to run code with no UI is background
+execution, a different contract with a different owner.
+
+Linking needs identity, like `secure_store` — three platforms' worth at
+once: Android names its channel after the app, Windows derives its
+AppUserModelID from the id, and Apple keys the entitlement to it.
+
+```zig
+const nokre = b.dependency("nokre", .{
+    // ...
+    .pkg_id = @as([]const u8, "com.example.notes"),
+    .notification = true,
+    // Push is its own flag: local notifications derive one permission
+    // and no entitlement, and an app that only reminds locally should
+    // ship neither the entitlement nor the FCM declaration.
+    .notification_push = true,
+    .notification_push_key = @as([]const u8, "BEl62iUYgUiv…"), // web push only
+});
+```
+
+**One permission is derived, and it is the first one a user will see.**
+Android's `POST_NOTIFICATIONS` is *dangerous*: prompted at runtime from
+API 33, refusable, and revocable in Settings afterwards. Every
+permission nokre derived before it was normal and invisible, which is
+why those derivations could be silent and this one is stated here, where
+you read it, rather than only in the emitter. Push adds Apple's
+`aps-environment` entitlement and Android's FCM `<service>`. No
+exact-alarm permission is derived and none will be: `USE_EXACT_ALARM` is
+policed by Play, `SCHEDULE_EXACT_ALARM` is user-revocable, and a
+reminder that fires inside the OS's batching window is the right trade
+for a framework that draws no clock.
+
+**Two platform postures worth knowing before you design around them.** A
+scheduled notification is lost to a reboot on Android alone — alarms do
+not survive one, and re-arming them would mean nokre keeping a durable
+schedule of its own, which is the thing `schedule` exists not to be. And
+on Android, push means the Firebase messaging library: one Maven
+coordinate and one source directory in your own `app/build.gradle`, iap's
+exception restated in the open —
+
+```groovy
+android { sourceSets { main { java.srcDirs += '<nokre>/src/services/notification/java' } } }
+dependencies { implementation 'com.google.firebase:firebase-messaging:24.0.0' }
+```
+
+— and without them `pushAvailable` answers false on Android and nothing
+else changes.
+
+In tests the mock is one app's fake notification centre: every post,
+schedule, cancel, prompt and token request is journaled in order, and
+nothing the *user* does happens until the test says so —
+`grantNotifications`, `denyNotifications`, `deliverNotificationTap`,
+`deliverNotification`, `deliverPushToken` ([testing.md](testing.md)).
+Boot a device with no notifications, no scheduling, or no push with
+`.notification = .mock(.{ .available = false })` and its siblings. The
+wiring — the per-platform legs, the two recorded reversals, and why the
+fire date is the OS's — is
+[internals/notifications.md](internals/notifications.md).
+
 ## Not services
 
 Zig already covers these; adding a service would be re-inventing the
@@ -1134,7 +1454,9 @@ toolchain:
 
 - **ML runtimes** (ONNX and friends): the app links them like any other
   native library. nokre ships no inference.
-- **Payments outside the platform stores**, push notifications,
-  geolocation, camera, microphone, Bluetooth: no current requirement.
-  Each would be a new roster row with this same shape, argued for on its
-  own.
+- **Payments outside the platform stores**, geolocation, camera,
+  microphone, Bluetooth: no current requirement. Each would be a new
+  roster row with this same shape, argued for on its own. Push
+  notifications used to head this list; the row it became, and the
+  record of the reversal, are above and in
+  [internals/notifications.md](internals/notifications.md).

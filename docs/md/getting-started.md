@@ -61,13 +61,18 @@ The same kitchen sink runs in a browser, and that is one command with
 no toolchain behind it:
 
 ```sh
-zig build web
-python3 -m http.server 8000 -d zig-out/web
+zig build serve            # -Dport=9000 if 8000 is taken
 ```
 
-Then open <http://localhost:8000> — it has to be served over http,
-since neither a wasm module nor an ES module loads from a `file://`
-URL. What runs there is the **DOM edition**: the same tree, written as
+Then open <http://localhost:8000>. Serving it is not a nicety: neither a
+wasm module nor an ES module loads from a `file://` URL, so the site has
+to arrive over http — which is why the server is a build step rather
+than a sentence telling you to go and find one. `zig build web` writes
+the same directory to `zig-out/web/` without serving it, and that
+directory is the whole site: nothing else has to go beside it, on this
+machine or on a host.
+
+What runs there is the **DOM edition**: the same tree, written as
 markup and drawn by the browser, in one 200 KB wasm module with no
 Skia in it ([internals/dom-edition.md](internals/dom-edition.md)). It
 is the one platform whose pixels are not nokre's, and the one whose
@@ -85,9 +90,9 @@ Three platform notes before your own project starts:
   Tools — the Skia prebuilt is MSVC-ABI, and build.zig targets
   `x86_64-windows-msvc` automatically. Text rasterizes through FreeType,
   so pixels match the Linux and Android builds rather than macOS/iOS
-  ([internals/skia-build.md](internals/skia-build.md)); the golden suite
-  reflects CoreText until nokre-owned builds land. Narrator, NVDA, and
-  JAWS are wired via the same AccessKit binding as VoiceOver.
+  ([internals/skia-build.md](internals/skia-build.md)); the committed
+  golden suite is CoreText's, so regenerate your own here. Narrator,
+  NVDA, and JAWS are wired via the same AccessKit binding as VoiceOver.
 - **Linux:** the shell is Wayland, and the build wants the usual dev
   packages beside it: `wayland-protocols` plus the `wayland-client`,
   `libxkbcommon`, `dbus-1`, and `libsecret-1` headers. FreeType again,
@@ -135,7 +140,11 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const app = nokre.addApp(b.dependency("nokre", .{}), .{
+    // Named, not inlined: Part 12's golden tests need the dependency
+    // again to link Skia onto their own binary.
+    const nokre_dep = b.dependency("nokre", .{});
+
+    const app = nokre.addApp(nokre_dep, .{
         .name = "notes",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
@@ -1459,6 +1468,25 @@ arrow keys like the rest of Part 10:
 fn onLanguageSelect(ctx: ?*anyopaque, selected: usize) void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
     state.locale = if (selected == 0) .en else .fa;
+    // The three surfaces the app does not write inline: nokre's own
+    // chrome, the names of the screens, and which way the chrome runs.
+    state.app.setChrome(.{ .back = L.tr(state.locale, .back) });
+    state.routes = routesFor(state.locale); // borrowed — it has to outlive the call
+    state.app.setRouteTitles(&state.routes) catch {};
+    state.app.setDirection(L.dir(state.locale));
+}
+
+/// Part 3's table, with the titles coming out of the catalog instead of
+/// out of literals — the only thing `setRouteTitles` accepts about it
+/// changing. Returned by value; the tree copies at `append`, but a route
+/// table is *borrowed*, so hold it in your state (or make it a comptime
+/// array per locale) rather than on the stack.
+fn routesFor(loc: L.Locale) [3]h.RouteDef {
+    return .{
+        .{ .name = "notes", .title = L.tr(loc, .notesTitle), .build = buildNotes },
+        .{ .name = "note", .title = L.tr(loc, .noteTitle), .args = 1, .build = buildNote },
+        .{ .name = "settings", .title = L.tr(loc, .settingsTitle), .build = buildSettings },
+    };
 }
 ```
 
@@ -1485,14 +1513,22 @@ Things worth noticing, because they generalize:
   carry its `few` and `many`. The full list of guarantees and refusals
   (no dates, no floats, no runtime loading):
   [localization.md](localization.md).
-- **What's still English is a choice you can see.** The nav labels
-  (`setNav` chrome), the sign-in screen, statuses, button labels — the
-  same pattern extends to each; the course stops at one screen because
-  the lesson doesn't repeat. Booting in the device's language is the
-  `locale` service ([services.md](services.md)) and two lines in
-  `build`: `state.locale = L.resolve(h.services.locale.tag(app))`, then
-  `app.setDirection(L.dir(state.locale))` to mirror the chrome —
-  [localization.md](localization.md) walks the wiring.
+- **The nav bar and the back control travel too.** A destination's
+  words are its route's `title`, so retitling the table retitles the
+  row, the collapsed chip, and the marker for a screen that is no
+  destination — all from one place, in every language. nokre's own
+  words (Back, Close, the notices chrome) are `setChrome`'s, one struct
+  and one call. Neither is a label on a `Destination`: that would be a
+  second home for a fact the route table already holds.
+  [localization.md](localization.md#the-chrome-nokre-writes) has the
+  whole table.
+- **What's still English is a choice you can see.** The sign-in screen,
+  statuses, button labels — the same pattern extends to each; the
+  course stops at one screen because the lesson doesn't repeat. Booting
+  in the device's language is the `locale` service
+  ([services.md](services.md)) and the same three calls in `build`,
+  starting from `state.locale = L.resolve(h.services.locale.tag(app))`
+  — [localization.md](localization.md) walks the wiring.
 
 The test drives the switch like a user and asserts the translated
 screen through the same a11y snapshot as always:
@@ -1505,9 +1541,8 @@ test "switching the language localizes the notes screen" {
     state.app = &t.app;
 
     try t.tapLabel("Settings");
-    try t.focusVia(try t.getByLabel("Language"));
-    try t.pressKey(.right, .{}); // segmented commits on arrow keys
-    try t.tapLabel("Notes");
+    try t.selectOption("Language", "فارسی"); // names both ends, no arrow counting
+    try t.tapLabel("یادداشت‌ها");             // the destination, already renamed
 
     _ = try t.getByLabel("یادداشت‌ها"); // the heading, translated
     _ = try t.getByLabel("0 از 16 یادداشت"); // fmt: two placeholders
@@ -1578,10 +1613,23 @@ through the production renderer, numbering matched file-for-file.)
 
 Third, **golden screenshot tests**: byte-exact frames, no tolerance, no
 perceptual diffing — the pixel model makes exactness cheap, so any
-variance is a bug by definition. Goldens render through the production
-renderer, which needs the Skia prebuilt, so they live in their own test
-module; importing the *app's* module (not just `app.nokre`) carries the
-Skia link with it. In `build.zig`:
+variance is a bug by definition.
+
+Goldens render through the production renderer, which needs the Skia
+prebuilt — and that is a **link**. A test binary is not the app binary,
+so `addApp`'s wiring never reaches it and `nok.render.skia.Surface` comes
+back as `undefined symbol: _hsk_text_width`.
+`nokre.linkSkia(nokre_dep, golden_tests)` is the line that fixes it: the
+same wiring nokre's own goldens take, so the two cannot drift. There is
+nothing to enable on the dependency — `.skia = true` in `b.dependency`
+configures nokre's *own* steps and has never meant anything to yours.
+
+The other two flags are yours, because it is your test suite. `-Dgolden`
+decides whether the golden tests join the `test` step at all — they need
+the prebuilt fetched, so they are opt-in — and `-Dupdate-goldens` reaches
+`nok.testing.golden.update` through an options module, the only road it
+has, which is what keeps CI from minting baselines. In `build.zig`,
+beside the `addApp` call from Part 1:
 
 ```zig
     const golden = b.option(bool, "golden", "Run golden screenshot tests (needs the Skia prebuilt)") orelse false;
@@ -1600,11 +1648,16 @@ Skia link with it. In `build.zig`:
         golden_opts.addOption(bool, "update_goldens", update_goldens);
         golden_mod.addOptions("build_options", golden_opts);
         const golden_tests = b.addTest(.{ .root_module = golden_mod });
+        nokre.linkSkia(nokre_dep, golden_tests); // the Skia link, on the test binary
         const run_golden = b.addRunArtifact(golden_tests);
         run_golden.setCwd(b.path(".")); // goldens resolve against the project root
         test_step.dependOn(&run_golden.step);
     }
 ```
+
+Run `tools/fetch-deps.sh` once inside the dependency before the first
+golden. Without it the build step fails naming that command, rather than
+failing at link time with a list of missing symbols.
 
 `src/golden_test.zig`:
 
@@ -1637,16 +1690,16 @@ test "golden: the sign-in screen" {
 **Checkpoint:** `zig build test -Dgolden` fails, reporting that
 `tests/goldens/signin.ppm` is *missing* — baselines are never created
 implicitly. Rerun with `-Dupdate-goldens` to create it, open the PPM
-(almost any image tool reads P5), review it, commit it; the plain run
+(almost any image tool reads P6), review it, commit it; the plain run
 now passes byte-exact, and every run after that proves the pixels never
 drifted. On a mismatch the runner writes `<name>.actual.ppm` next to
 the golden for eyeball diffing; if the change was intended, rerun with
 `-Dupdate-goldens` to rewrite the golden in place and review the diff.
-CI runs without `-Dupdate-goldens`, so a lost baseline fails instead of
-silently re-minting — and it must run on the platform that created the
-goldens: byte-identity is per-platform today, so a CI box on any other
-platform fails by design until nokre-owned Skia builds land
-([internals/skia-build.md](internals/skia-build.md)).
+A checking run goes without `-Dupdate-goldens`, so a lost baseline fails
+instead of silently re-minting — and it has to run on the platform that
+created the goldens: byte-identity is per-platform by design, so the same
+suite on another platform fails on purpose
+([internals/pixel-model.md](internals/pixel-model.md)).
 
 ## Part 13 — Every platform
 
@@ -1725,8 +1778,18 @@ Packaging is already done: `zig build` writes `zig-out/pkg/` — an iOS
 `Info.plist` and asset catalog, an `AndroidManifest.xml` with the icon
 res tree, a web page with manifest and icons — all generated from Part
 1's declaration, never hand-written, never committed. The icon is a
-deterministic grayscale mark computed from your app id
-([services.md](services.md)). Part 3's `.deep_link` added to that tree:
+deterministic grayscale mark computed from your app id — unless you have
+real art for Apple's platforms, which is one more line in the same
+declaration:
+
+```zig
+        .apple_icon = b.path("assets/AppIcon.icon"),
+```
+
+pointing at the `.icon` bundle Icon Composer exports. nokre checks it and
+delivers it whole to `pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon`;
+Xcode compiles it, and the contract — including the Xcode 26 floor — is
+[services.md](services.md). Part 3's `.deep_link` added to that tree:
 `ios/App.entitlements` (point Xcode's `CODE_SIGN_ENTITLEMENTS` at it),
 the App-Links `intent-filter` inside the manifest, and a `.well-known/`
 directory with `assetlinks.json` and `apple-app-site-association` — copy
@@ -1744,6 +1807,18 @@ and not in a Gradle log. iOS is not that cheap a check: its build wants
 a macOS host, `deps/skia`, and `xcrun`, so it is verified through the
 Xcode project below.
 
+An executable is what those three are: nokre builds no macOS `.app`, and
+will not — bundling is Xcode's job or your own script's, and a third
+pipeline is one nokre would have to keep correct forever. What it does
+instead is have the icon ready. `pkg/macos/AppIcon.icon` is the same
+bundle iOS gets, delivered where a macOS project can reach it: a wrapper
+target adds it to its Resources and sets
+`ASSETCATALOG_COMPILER_APPICON_NAME` to `AppIcon`, exactly as on iOS
+below, and a hand-rolled `.app` has one directory to hand to `actool`.
+Without an `.apple_icon` there is no `pkg/macos/` at all — the derived
+mark reaches iOS, Android and the web, and macOS has no bundle for it to
+reach.
+
 **iOS.** Build Skia for iOS once, then let Xcode own packaging and
 signing, with a build phase calling `zig build` for the Zig side — the
 kitchen sink's project is the template to copy:
@@ -1760,6 +1835,14 @@ both); `INFOPLIST_FILE` and the asset catalog read from the `pkg/ios`
 tree your install step fills; and `PRODUCT_BUNDLE_IDENTIFIER` must equal
 the declared id — that one duplication belongs to Apple's signing
 machinery, and Xcode fails the build if it disagrees, so drift is loud.
+If you declared an `.apple_icon`, one addition: drag
+`ios/build/pkg/AppIcon.icon` into the project so it joins the target's
+Resources phase. The copied build phase already mirrors it there on every
+build (the template's script does this whether or not an icon is
+declared), and `ASSETCATALOG_COMPILER_APPICON_NAME` already says
+`AppIcon`, which is the name nokre normalizes the bundle to — so that one
+drag is the whole wiring, and the icon still has exactly one source. It
+wants Xcode 26; an older `actool` does not know the format.
 The per-target split of who compiles what is
 [internals/platform-shells.md](internals/platform-shells.md). The
 Simulator needs no signing setup; for your own iPhone, a free Apple ID's
@@ -1779,32 +1862,123 @@ library, and the applicationId, which Gradle reads from the generated
 identity properties so it tracks your declaration. Open the project in
 Android Studio and Run, or `./gradlew installDebug` headlessly.
 
-**Web.** The lightest of the six. There is no native link to arrange,
-no archive to hand on, and no SDK: `addApp` sees a wasm target and
-gives back one module. Add a flag to `build.zig`:
+**Web.** The lightest of the six. There is no native link to arrange, no
+archive to hand on, and no SDK — and nothing to author either: `addApp`
+sees a wasm target and hands back the app *and the site around it*. Add
+a flag to `build.zig`:
 
 ```zig
-    const web = b.option(bool, "web", "Build the wasm module for the web") orelse false;
+    const web = b.option(bool, "web", "Build for the browser") orelse false;
 ```
 
-and pass `.target = if (web) nokre.webTarget(b) else target` to
-`addApp`. `zig build -Dweb` then produces `zig-out/bin/notes.wasm`.
-Serve it beside the four files nokre's own web step copies —
-[live.js](../src/render/dom/live.js),
+pass `.target = if (web) nokre.webTarget(b) else target` to `addApp`,
+and install what comes back beside the packaging tree:
+
+```zig
+    if (app.web) |site| b.installDirectory(.{
+        .source_dir = site,
+        .install_dir = .prefix,
+        .install_subdir = "web",
+    });
+
+    const serve = nokre.addWebServe(nokre_dep, app, .{}); // .port = 8000
+    b.step("serve", "Serve the web build at http://localhost:8000").dependOn(&serve.step);
+```
+
+Two commands from here:
+
+```sh
+zig build -Dweb          # zig-out/web/ — the whole site
+zig build serve -Dweb    # the same site, served at http://localhost:8000
+```
+
+`app.web` is a directory, not a file, and that is the point: the wasm
+module under the name the page loads, the live driver's three modules
+([live.js](../src/render/dom/live.js),
 [live-worker.js](../src/render/dom/live-worker.js),
-[services.js](../src/render/dom/services.js) and a page that calls
-`mount({ wasm, into })` — plus the stylesheet the library generates and
-the faces it serves ([index.html](../src/render/dom/index.html) is the
-whole of that page, and `zig build web`'s step in nokre's `build.zig`
-is the recipe). Everything carries over: keyboard, scrolling, the
-software keyboard, dark mode from the OS, and an accessibility tree
-that is not mirrored anywhere, because it is the page.
+[services.js](../src/render/dom/services.js)), the stylesheet the
+library generates out of its own palette and metrics, the four bundled
+faces, and the page, manifest and icons your Part 1 declaration
+produces. Half a site is not a smaller site — a missing `services.js` is
+a blank page in a browser rather than an error in a build — so there is
+nothing here to copy by hand and nothing that can fall behind the nokre
+you built against. Upload the directory to any static host and you have
+shipped; there is no server-side anything.
+
+Name the `serve` step whether or not the flag is set. Built for a native
+target, `app.web` is null and the step you get says so when it runs,
+which beats `zig build serve` answering "no step named 'serve'".
+
+**The page ships a Content-Security-Policy**, derived from what the site
+actually contains: its own module and scripts, its own two stylesheets,
+its own faces and icons, `'wasm-unsafe-eval'` for the module a browser
+has to compile, and nothing else — `default-src 'none'` is the floor, so
+anything nobody named is refused. You author no HTML, so you do not
+author this either; it is regenerated with the page on every build,
+which is exactly why hand-editing the generated `index.html` would be
+the wrong place to keep one.
+
+One directive is yours, because it is the only one an app can outgrow:
+the hosts it fetches. Declare them where you declared everything else.
+
+```zig
+        .web_connect_src = &.{ "https://api.example.com", "wss://live.example.com" },
+```
+
+Those join `connect-src` and nothing else — an added host grants exactly
+one power and leaves the rest of the policy where it was — and the
+default is empty, which still reaches the origin the app was served
+from. Every host the app talks to needs a line here, including the ones
+it reaches through a service: `http.request`'s URLs, and your OAuth
+provider's *token* endpoint (the sign-in window itself is a navigation,
+which no directive governs). A missing one arrives as the http service's
+ordinary `"FetchFailed"`, with the browser's refusal in the console
+beside it. Entries are CSP sources — `https://api.example.com`,
+`*.example.com` — and a bare `*`, or anything carrying a space, a quote
+or a semicolon, fails the build rather than reaching a page.
+
+**Three directives are your edge's, not the page's**, and nothing the
+page says can change it: `frame-ancestors`, `report-uri`/`report-to` and
+`sandbox` are ignored inside a `<meta>` by specification. So set them
+wherever the site is served from:
+
+- `Content-Security-Policy: frame-ancestors 'none'` — who may frame the
+  app, which is the clickjacking answer a page cannot give about itself.
+  nokre's own `serve` step sends exactly that header, so it is the shape
+  you have been developing against all along.
+- a reporting endpoint, if you want violations from the field.
+- the transport headers a static host owns either way:
+  `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`.
+
+Sending the page's own policy as a header as well is worth it where your
+edge makes it easy: it is a constant apart from your hosts, and a header
+covers every response rather than one document. One thing not to add:
+`require-trusted-types-for 'script'` breaks the live driver, which
+patches each frame in by parsing markup off-document.
+
+Everything carries over: keyboard, scrolling, the software keyboard,
+dark mode from the OS, and an accessibility tree that is not mirrored
+anywhere, because it is the page. Three things do not, and they are the
+web's price rather than a gap to be closed
+([internals/dom-edition.md](internals/dom-edition.md) argues each):
+
+- **No pixel goldens.** Part 12's screenshot tests cover the five native
+  shells and stop at the browser, because the browser owns text metrics:
+  it measures the runs, so it decides where your prose wraps and whether
+  a row of actions folds its tail. Your web build's frames are not its
+  macOS sibling's, and the assertions that do hold there are the
+  semantic ones — the tree, the roles, the labels — which is what the
+  harness checks anyway.
+- **No fractional-scaling refusal.** A browser will hand out a 1.1
+  device pixel ratio and no edition can decline it on your behalf.
+- **System fonts show through.** The four bundled faces are still the
+  only ones nokre asks for, but a codepoint outside them falls back to
+  whatever the reader has.
 
 Text on Windows and Android rasterizes through FreeType rather than
-CoreText, and byte-identity today is per-platform, not across
-platforms — your goldens reflect the platform that created them
-([internals/skia-build.md](internals/skia-build.md)); the web has its
-own answer, which is that its pixels are the browser's. The `worker`
+CoreText, and byte-identity is per-platform rather than across them by
+design — your goldens reflect the platform that created them
+([internals/pixel-model.md](internals/pixel-model.md)). The `worker`
 and `http` services need no porting anywhere: the same app code runs on
 a `std.Thread` or a Web Worker, `std.http.Client` or `fetch`.
 
@@ -1850,8 +2024,8 @@ zig build run-hello -Dskia      # examples (macOS / Windows / Linux)
 zig build run-kitchen-sink -Dskia
 tools/build-skia-ios.sh         # build Skia for iOS from source (once)
 tools/build-skia-android.sh     # build Skia for Android from source (once; needs an NDK)
-zig build web                   # kitchen sink for the browser → zig-out/web/
-python3 -m http.server 8000 -d zig-out/web   # then open http://localhost:8000
+zig build web                   # kitchen sink's site for the browser → zig-out/web/
+zig build serve                 # the same site at http://localhost:8000 (-Dport=…)
 zig build check-targets         # compile-check every platform stub
 ```
 
@@ -1862,6 +2036,7 @@ zig build run                   # the windowed app (macOS / Windows / Linux)
 zig build test                  # headless e2e tests, no dependencies
 zig build test -Dgolden         # + byte-exact golden screenshots
 zig build                       # artifact + generated zig-out/pkg/ manifests
-zig build -Dweb                 # the wasm module the web page loads (zig-out/bin/notes.wasm)
+zig build -Dweb                 # the servable site → zig-out/web/
+zig build serve -Dweb           # the same site at http://localhost:8000
 zig build -Dtarget=aarch64-linux-android  # SDK-free compile check
 ```

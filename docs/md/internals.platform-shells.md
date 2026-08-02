@@ -146,6 +146,37 @@ deep_link and routes on the fragment sees it twice — routing.md says to
 route on one or the other. The export exists only when the app linked
 the service, so a page that never claims a deep link pays nothing.
 
+notification's hooks
+([src/services/notification/notification.h](../../src/services/notification/notification.h))
+are the roster's only two-directional pair: the app asks the OS to show,
+schedule or take back a message, and the OS reports a decision, a tap, an
+arrival or a push token. Placement is split rather than uniform, and each
+half earns it — Apple's leg is service-owned like oauth's (a
+`UNUserNotificationCenter` delegate need not be the app delegate, so one
+file serves macOS and iOS both, and each shell carries only the APNs
+token line UIKit/AppKit hands nowhere else), while Android, Linux and
+Windows are shell-owned like deep_link's, because there the object the OS
+calls back really is the shell's: `NokreActivity` and `NokreView` on
+Android, the very D-Bus connection this Wayland loop already polls on
+Linux, and on Windows a COM activator the shell registers so a tap can
+reach a *closed* app. That Windows registration is a deliberate,
+recorded narrowing of deep_link's refusal to write the registry, scoped
+to two keys ([notifications.md](notifications.md)). The web has no C
+shell: services.js implements the imports and the site's own service
+worker carries what a page cannot — Chrome for Android refuses
+`new Notification()`, and a push arrives with no page open at all.
+
+One service on the roster deliberately asks the shells for *nothing*:
+`clock`. Wall time is a call every OS exposes to the process directly —
+`clock_gettime` on the POSIX family, `GetSystemTimePreciseAsFileTime` on
+Windows, `Date.now()` through services.js on the web — so it has no
+header and no shell hook, and a new shell owes it no line. It is
+recorded here only so the omission reads as a decision rather than a
+gap: a shell that grew a `nokre_clock_*` export would be answering a
+question the process can already answer, which is the redirection this
+document's last paragraph makes in the other direction
+([../services.md](../services.md)).
+
 locale's `nokre_locale_install`
 ([src/services/locale/locale.h](../../src/services/locale/locale.h)) is
 the second inbound hook, and the one a new shell cannot skip: it links
@@ -335,8 +366,8 @@ of the same contract — plain C, message loop, no framework. Its twists:
   target `x86_64-windows-msvc` (build.zig defaults the ABI; Visual
   Studio's C++ Build Tools required) and text rasterizes through the
   prebuilt's FreeType from memory — pixels match the Linux and Android
-  builds, not yet the CoreText platforms
-  ([skia-build.md](skia-build.md)). Two
+  builds, not the CoreText platforms, which is the intended shape
+  ([pixel-model.md](pixel-model.md)). Two
   consequences wired in build.zig: AccessKit's Rust static library
   supplies the compiler intrinsics zig's compiler-rt would duplicate,
   and FreeType's gzip references resolve to a never-runs stub
@@ -624,8 +655,7 @@ path, so an omission is an unresolved symbol rather than a missing
 feature (the contract, including the fire-before-you-return clause, is
 above). Then run the kitchen-sink example and the golden suite; if
 goldens pass, the platform renders byte-identically and the job is done
-— with today's caveat that byte-identity is per-platform
+— remembering that byte-identity is per-platform by design
 ([pixel-model.md](pixel-model.md)): the committed goldens are
 macOS-generated, so a new shell validates against its own regenerated
-set until nokre-owned Skia builds close the gap
-([../roadmap.md](../roadmap.md)).
+set, permanently, rather than waiting for one set to serve everything.

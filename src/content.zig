@@ -159,10 +159,13 @@ fn home(app: *App) !void {
     });
     try text(app, root, "Zig and Skia, rasterized on the CPU. Grayscale only. Every element " ++
         "is semantic, so accessibility is derived from the tree you build " ++
-        "rather than annotated onto it. Two devices with the same logical " ++
-        "screen size render byte-for-byte identical frames — on macOS, " ++
-        "Windows, Linux, iOS, Android, and the web.");
-    try styled(app, root, "Think: apps for a grayscale Kindle.", .{ .ink = .dark });
+        "rather than annotated onto it. Two devices on the same platform " ++
+        "with the same logical screen size render byte-for-byte identical " ++
+        "frames, run after run. Identity across platforms is not the goal: " ++
+        "an app is a semantic tree, and how a device draws that tree is " ++
+        "the device's business.");
+    try styled(app, root, "Think: apps for a grayscale Kindle — and, on the same tree, " ++
+        "for a terminal, a watch face, a panel that refreshes one row at a time.", .{ .ink = .dark });
 
     try code(app, root,
         \\const nok = @import("nokre");
