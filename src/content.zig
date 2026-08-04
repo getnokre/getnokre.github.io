@@ -172,7 +172,8 @@ fn home(app: *App) !void {
     try code(app, root,
         \\const nok = @import("nokre");
         \\
-        \\fn buildHome(_: ?*anyopaque, app: *nok.App) !void {
+        \\fn buildHome(ctx: ?*anyopaque, app: *nok.App) !void {
+        \\    const state: *Notes = @ptrCast(@alignCast(ctx.?));
         \\    const root = app.tree.rootId();
         \\    try app.tree.append(root, .{ .heading = .{
         \\        .content = "Notes",
@@ -183,7 +184,7 @@ fn home(app: *App) !void {
         \\    } });
         \\    try app.tree.append(root, .{ .button = .{
         \\        .label = "New note",
-        \\        .on_press = .{ .call = onNewNote },
+        \\        .on_press = .bind(Notes.newNote, state),
         \\    } });
         \\}
     );

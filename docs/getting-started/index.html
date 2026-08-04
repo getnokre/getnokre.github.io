@@ -82,16 +82,15 @@ pub const State = struct {
     count: u32 = 0,
     app: *h.App = undefined,
     label_id: h.NodeId = .invalid,
-};
 
-fn onIncrement(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
-    state.count += 1;
-    var buf: [32]u8 = undefined;
-    const label = std.fmt.bufPrint(&amp;buf, &quot;Pressed {d} times&quot;, .{state.count}) catch return;
-    state.app.tree.setContent(state.label_id, label) catch return;
-    state.app.invalidate();
-}
+    pub fn increment(state: *State) void {
+        state.count += 1;
+        var buf: [32]u8 = undefined;
+        const label = std.fmt.bufPrint(&amp;buf, &quot;Pressed {d} times&quot;, .{state.count}) catch return;
+        state.app.tree.setContent(state.label_id, label) catch return;
+        state.app.invalidate();
+    }
+};
 
 pub fn buildHome(ctx: ?*anyopaque, app: *h.App) !void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
@@ -100,7 +99,7 @@ pub fn buildHome(ctx: ?*anyopaque, app: *h.App) !void {
     state.label_id = try app.tree.appendId(root, .{ .text = .{ .content = &quot;Pressed 0 times&quot; } });
     try app.tree.append(root, .{ .button = .{
         .label = &quot;Increment&quot;,
-        .on_press = .{ .ctx = state, .call = onIncrement },
+        .on_press = .bind(State.increment, state),
     } });
 }
 
@@ -120,7 +119,7 @@ pub fn main() !void {
     try app.navigate(&quot;home&quot;);
 
     try h.platform.run(&amp;app, .{ .title = .{ .fixed = &quot;Notes&quot; } });
-}</code></pre><p><strong>Checkpoint:</strong> <code>zig build run</code> opens a window titled Notes. Tab reaches the button, Enter presses it, the label counts. (<code>State</code> and <code>buildHome</code> are <code>pub</code> because Part 2&#39;s tests import them.)</p><p>Things worth noticing, because they generalize:</p><ul class="list" style="--list-gutter:17px"><li><p><strong><code>append</code></strong><strong> is where correctness happens.</strong> A button with an empty label, a table row outside a table, text without enough contrast where it sits — all rejected at the call site with a named error. If the tree built, the screen is valid; an automatic audit covers what construction can&#39;t see. The rules are in <a class="link" href="/accessibility/" data-n="1048625" data-s="3">accessibility.md</a>.</p></li><li><p><strong>Actions are context + function pointer.</strong> <code>.{ .ctx = state, .call = onIncrement }</code> — nokre never allocates a closure. Every interactive element takes its action the same way (<code>on_press</code>, <code>on_toggle</code>, <code>on_change</code>, <code>on_select</code>), and a list row&#39;s action can carry the row: <code>.call_indexed</code> plus <code>.index</code> delivers the position back at press time (<a class="link" href="/elements/" data-n="1048622" data-s="16">elements.md</a>, &quot;Actions&quot;).</p></li><li><p><strong>You mutate, then </strong><strong><code>invalidate()</code></strong><strong>.</strong> Nothing renders until state changes and you say so; an app at rest costs zero CPU. Mutate the tree in place (as here, <code>setContent</code>) or rebuild a whole screen — Part 3 adds that second style.</p></li><li><p><strong>Focus, keyboard access, and the a11y tree came for free.</strong> None of that was written above, and none of it can be forgotten.</p></li></ul><p>One aside for the other kind of consumer: headless use — the core model and the testing framework, no window — needs none of <code>addApp</code>; nokre is then an ordinary Zig dependency (<code>mod.addImport(&quot;nokre&quot;, b.dependency(&quot;nokre&quot;, .{ .target = target, .optimize = optimize }).module(&quot;nokre&quot;))</code>), and the <code>pkg_*</code> / <code>secure_store</code> / <code>deep_link</code> build options replace the <code>addApp</code> fields (<a class="link" href="/services/" data-n="1048617" data-s="13">services.md</a>). Everything in this course except <code>zig build run</code> and Part 13 works identically there.</p><h2 id="part-2--your-first-test">Part 2 — Your first test</h2><p>The harness drives the same <code>App</code> your <code>main</code> does — headless, no Skia, no window. The framework is asymmetric on purpose: interactions go through the <em>user&#39;s</em> pipeline (real hit-testing, real dispatch), and assertions read the <em>screen reader&#39;s</em> snapshot — so a test can only pass if an assistive-tech user could do the same thing. The a11y audit runs at init and again after every action.</p><p>Add the test wiring to <code>build.zig</code> — <code>app.nokre</code> is the same configured nokre instance the app links, so tests exercise identical code:</p><pre class="code" tabindex="0" data-n="1048613"><code>    const tests_mod = b.createModule(.{
+}</code></pre><p><strong>Checkpoint:</strong> <code>zig build run</code> opens a window titled Notes. Tab reaches the button, Enter presses it, the label counts. (<code>State</code> and <code>buildHome</code> are <code>pub</code> because Part 2&#39;s tests import them.)</p><p>Things worth noticing, because they generalize:</p><ul class="list" style="--list-gutter:17px"><li><p><strong><code>append</code></strong><strong> is where correctness happens.</strong> A button with an empty label, a table row outside a table, text without enough contrast where it sits — all rejected at the call site with a named error. If the tree built, the screen is valid; an automatic audit covers what construction can&#39;t see. The rules are in <a class="link" href="/accessibility/" data-n="1048625" data-s="3">accessibility.md</a>.</p></li><li><p><strong>Actions are typed methods, bound.</strong> <code>.bind(State.increment, state)</code> pairs a method on your state type with the pointer it runs against — nokre never allocates a closure. Every interactive element takes its action the same way (<code>on_press</code>, <code>on_toggle</code>, <code>on_change</code>, <code>on_select</code>; the latter three hand the method their payload), and a list row&#39;s action can carry the row: <code>.bindAt(State.accept, state, i)</code> delivers the position back at press time (<a class="link" href="/elements/" data-n="1048622" data-s="14">elements.md</a>, &quot;Actions&quot;).</p></li><li><p><strong>You mutate, then </strong><strong><code>invalidate()</code></strong><strong>.</strong> Nothing renders until state changes and you say so; an app at rest costs zero CPU. Mutate the tree in place (as here, <code>setContent</code>) or rebuild a whole screen — Part 3 adds that second style.</p></li><li><p><strong>Focus, keyboard access, and the a11y tree came for free.</strong> None of that was written above, and none of it can be forgotten.</p></li></ul><p>One aside for the other kind of consumer: headless use — the core model and the testing framework, no window — needs none of <code>addApp</code>; nokre is then an ordinary Zig dependency (<code>mod.addImport(&quot;nokre&quot;, b.dependency(&quot;nokre&quot;, .{ .target = target, .optimize = optimize }).module(&quot;nokre&quot;))</code>), and the <code>pkg_*</code> / <code>secure_store</code> / <code>deep_link</code> build options replace the <code>addApp</code> fields (<a class="link" href="/services/" data-n="1048617" data-s="13">services.md</a>). Everything in this course except <code>zig build run</code> and Part 13 works identically there.</p><h2 id="part-2--your-first-test">Part 2 — Your first test</h2><p>The harness drives the same <code>App</code> your <code>main</code> does — headless, no Skia, no window. The framework is asymmetric on purpose: interactions go through the <em>user&#39;s</em> pipeline (real hit-testing, real dispatch), and assertions read the <em>screen reader&#39;s</em> snapshot — so a test can only pass if an assistive-tech user could do the same thing. The a11y audit runs at init and again after every action.</p><p>Add the test wiring to <code>build.zig</code> — <code>app.nokre</code> is the same configured nokre instance the app links, so tests exercise identical code:</p><pre class="code" tabindex="0" data-n="1048613"><code>    const tests_mod = b.createModule(.{
         .root_source_file = b.path(&quot;src/main_test.zig&quot;),
         .target = target,
         .optimize = optimize,
@@ -211,17 +210,17 @@ fn buildSignIn(state: *State, app: *h.App) !void {
     try app.tree.append(form, .{ .text_input = .{
         .label = &quot;Passphrase&quot;,
         .obscured = true,
-        .on_change = .{ .ctx = state, .call = onPassphraseChange },
-        .on_submit = .{ .ctx = state, .call = onSignIn },
+        .on_change = .bind(editPassphrase, state),
+        .on_submit = .bind(signIn, state),
     } });
     try app.tree.append(form, .{ .checkbox = .{
         .label = &quot;Stay signed in on this device&quot;,
         .checked = state.remember,
-        .on_toggle = .{ .ctx = state, .call = onRememberToggle },
+        .on_toggle = .bind(setRemember, state),
     } });
     try app.tree.append(form, .{ .button = .{
         .label = &quot;Sign in&quot;,
-        .on_press = .{ .ctx = state, .call = onSignIn },
+        .on_press = .bind(signIn, state),
     } });
     if (state.signin_status.len != 0) {
         try app.tree.append(root, .{ .text = .{ .content = state.signin_status, .style = .{ .scale = .small, .ink = .dark } } });
@@ -234,19 +233,18 @@ pub fn buildNotes(ctx: ?*anyopaque, app: *h.App) !void {
     // …the signed-in screen, from Part 6 on.
 }
 
-fn onPassphraseChange(ctx: ?*anyopaque, value: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+// Typed handlers, bound above — no `?*anyopaque` cast anywhere. A fn
+// nested in State binds the same way (`.bind(State.signIn, state)`).
+pub fn editPassphrase(state: *State, value: []const u8) void {
     state.passphrase_len = @min(value.len, state.passphrase.len);
     @memcpy(state.passphrase[0..state.passphrase_len], value[0..state.passphrase_len]);
 }
 
-fn onRememberToggle(ctx: ?*anyopaque, checked: bool) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub fn setRemember(state: *State, checked: bool) void {
     state.remember = checked;
 }
 
-fn onSignIn(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub fn signIn(state: *State) void {
     if (!std.mem.eql(u8, state.passphrase[0..state.passphrase_len], &quot;letmein&quot;)) {
         state.signin_status = &quot;Wrong passphrase. (Hint: it&#39;s the one on screen.)&quot;;
         refresh(state);
@@ -275,14 +273,13 @@ fn onSignIn(ctx: ?*anyopaque) void {
             state.signed_in = true;
         }
     }
-    if (!state.signed_in) return buildSignIn(state, app);</code></pre><p>Persist on sign-in (inside <code>onSignIn</code>, after the passphrase check) — and note the degrade: a locked keychain must not gate the session:</p><pre class="code" tabindex="0" data-n="136"><code>    if (state.remember) {
+    if (!state.signed_in) return buildSignIn(state, app);</code></pre><p>Persist on sign-in (inside <code>signIn</code>, after the passphrase check) — and note the degrade: a locked keychain must not gate the session:</p><pre class="code" tabindex="0" data-n="136"><code>    if (state.remember) {
         // `status` is the signed-in screen&#39;s status line — Part 6
         // renders it.
         h.services.secure_store.set(state.app, &quot;auth.token&quot;, &quot;tk_demo&quot;) catch {
             state.status = &quot;Signed in — couldn&#39;t save your session.&quot;;
         };
-    }</code></pre><p>And sign out, wired to a Settings button in Part 10:</p><pre class="code" tabindex="0" data-n="138"><code>fn onSignOut(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+    }</code></pre><p>And sign out, wired to a Settings button in Part 10:</p><pre class="code" tabindex="0" data-n="138"><code>pub fn signOut(state: *State) void {
     // Idempotent: signing out when nothing was stored is still success.
     h.services.secure_store.delete(state.app, &quot;auth.token&quot;) catch {};
     state.signed_in = false;
@@ -382,10 +379,6 @@ pub const Note = struct {
     }
 };
 
-/// ctx for per-row actions: which note a tile press means. Builders
-/// fill one ref per visible row; the action reads it back.
-pub const NoteRef = struct { state: *State, index: usize };
-
 fn addNote(state: *State, text: []const u8) void {
     if (state.note_count == max_notes) return; // full — the meter says so
     const note = &amp;state.notes[state.note_count];
@@ -394,7 +387,6 @@ fn addNote(state: *State, text: []const u8) void {
     state.note_count += 1;
 }</code></pre><p>and the new <code>State</code> fields:</p><pre class="code" tabindex="0" data-n="146"><code>    notes: [max_notes]Note = @splat(.{}),
     note_count: usize = 0,
-    refs: [max_notes]NoteRef = undefined,
     newest_first: bool = true,
     status: []const u8 = &quot;Ready.&quot;,
     offline: bool = false,
@@ -409,12 +401,12 @@ fn addNote(state: *State, text: []const u8) void {
     const actions = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal } });
     try app.tree.append(actions, .{ .button = .{
         .label = &quot;New note&quot;,
-        .on_press = .{ .ctx = state, .call = onOpenNewNote },
+        .on_press = .bind(openNewNote, state),
     } });
     try app.tree.append(actions, .{ .button = .{
         .label = &quot;Sync&quot;, // Part 7
         .form = .{ .secondary = null },
-        .on_press = .{ .ctx = state, .call = onSyncPressed },
+        .on_press = .bind(sync, state),
     } });
     try app.tree.append(root, .{ .text = .{ .content = state.status, .style = .{ .scale = .small, .ink = .dark } } });
 
@@ -426,10 +418,11 @@ fn addNote(state: *State, text: []const u8) void {
         } });
         for (0..state.note_count) |i| {
             const index = if (state.newest_first) state.note_count - 1 - i else i;
-            state.refs[index] = .{ .state = state, .index = index };
+            // A per-row action carries its row as data on the element —
+            // `bindAt` sets it at append, the method receives it at press.
             try app.tree.append(group, .{ .tile = .{
                 .label = state.notes[index].slice(),
-                .on_press = .{ .ctx = &amp;state.refs[index], .call = onOpenNote },
+                .on_press = .bindAt(openNote, state, index),
             } });
         }
     }
@@ -437,8 +430,7 @@ fn addNote(state: *State, text: []const u8) void {
     try app.tree.append(root, .{ .divider = .{} });
     var cap_buf: [32]u8 = undefined;
     const cap = try std.fmt.bufPrint(&amp;cap_buf, &quot;{d} of {d} notes&quot;, .{ state.note_count, max_notes });
-    try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Notice the meter label was formatted into a stack buffer — safe, because the tree copies every string at <code>append</code>; it never borrows your memory. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="149" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is <em>declared</em> to the app, never appended by a screen builder: <code>openSheet</code> takes a builder fn, runs it now, and keeps it — so the framework can build the sheet again whenever it must (a <code>reload</code> under an open sheet, for one). Everything else about its lifecycle is framework-owned too — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="151"><code>fn onOpenNewNote(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+    try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Notice the meter label was formatted into a stack buffer — safe, because the tree copies every string at <code>append</code>; it never borrows your memory. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="149" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is <em>declared</em> to the app, never appended by a screen builder: <code>openSheet</code> takes a builder fn, runs it now, and keeps it — so the framework can build the sheet again whenever it must (a <code>reload</code> under an open sheet, for one). Everything else about its lifecycle is framework-owned too — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="151"><code>pub fn openNewNote(state: *State) void {
     state.draft_len = 0;
     state.app.openSheet(.{ .ctx = state, .call = buildNewNote }) catch return;
 }
@@ -449,23 +441,22 @@ fn buildNewNote(ctx: ?*anyopaque, app: *nokre.App) anyerror!void {
     try app.tree.append(sheet, .{ .text_area = .{
         .label = &quot;Note&quot;,
         .placeholder = &quot;Write it down…&quot;,
-        .on_change = .{ .ctx = state, .call = onDraftChange },
+        .on_change = .bind(editDraft, state),
     } });
     try app.tree.append(sheet, .{ .button = .{
         .label = &quot;Add&quot;,
-        .on_press = .{ .ctx = state, .call = onAddNote },
+        .on_press = .bind(commitDraft, state),
     } });
 }
 
-fn onAddNote(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub fn commitDraft(state: *State) void {
     state.app.dismissSheet();
     if (state.draft_len != 0) {
         addNote(state, state.draft[0..state.draft_len]);
         state.status = &quot;Note added.&quot;;
     }
     refresh(state);
-}</code></pre><p>(This app never needs to know the sheet closed under it, so it declares no <code>on_dismiss</code>; an app whose state records &quot;a sheet is open&quot; gives the builder one, and the framework tells it on Esc, the scrim, and every other closure the consumer did not make — <a class="link" href="/elements/" data-n="152" data-s="3">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>onDraftChange</code> copies like <code>onPassphraseChange</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="155"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
+}</code></pre><p>(This app never needs to know the sheet closed under it, so it declares no <code>on_dismiss</code>; an app whose state records &quot;a sheet is open&quot; gives the builder one, and the framework tells it on Esc, the scrim, and every other closure the consumer did not make — <a class="link" href="/elements/" data-n="152" data-s="3">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> copies like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="155"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
     defer t.deinit();
@@ -499,8 +490,7 @@ test &quot;IME composition lands in the draft like typed text&quot; {
     try t.focusVia(try t.getByLabel(&quot;Note&quot;));
     try t.composeText(&quot;nihongo&quot;, &quot;日本語&quot;); // start → update → commit
     try t.expectValue(&quot;Note&quot;, &quot;日本語&quot;);
-}</code></pre><h2 id="part-7--sync-http">Part 7 — Sync (http)</h2><p>Your sync server doesn&#39;t exist. Build the client anyway: under the harness a request parks instead of touching any socket, and the test supplies the response — the canned answer <em>is</em> the network. One API on every platform, no futures, no locks, exactly one typed <code>Result</code> back on the UI thread (<a class="link" href="/services/" data-n="157" data-s="5">services.md</a>):</p><pre class="code" tabindex="0" data-n="158"><code>fn onSyncPressed(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+}</code></pre><h2 id="part-7--sync-http">Part 7 — Sync (http)</h2><p>Your sync server doesn&#39;t exist. Build the client anyway: under the harness a request parks instead of touching any socket, and the test supplies the response — the canned answer <em>is</em> the network. One API on every platform, no futures, no locks, exactly one typed <code>Result</code> back on the UI thread (<a class="link" href="/services/" data-n="157" data-s="5">services.md</a>):</p><pre class="code" tabindex="0" data-n="158"><code>pub fn sync(state: *State) void {
     _ = h.services.http.request(.{
         .app = state.app,
         .url = &quot;https://api.example.com/notes&quot;,
@@ -647,8 +637,7 @@ fn serve(_: ?*anyopaque, req: nok.services.http.PendingRequest) ?nok.testing.Htt
 /// The closed set of workers this app can spawn — the role routes play
 /// for screens. Root-level, so the web can boot the same artifact in
 /// another thread and find the code; test roots re-export it.
-pub const nokreWorkers = .{Stats};</code></pre><p>Spawn lazily, send from an action, and let the reply land in state:</p><pre class="code" tabindex="0" data-n="167" style="--bleed:16px"><code>fn onStatsPressed(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub const nokreWorkers = .{Stats};</code></pre><p>Spawn lazily, send from an action, and let the reply land in state:</p><pre class="code" tabindex="0" data-n="167" style="--bleed:16px"><code>pub fn countWords(state: *State) void {
     const worker = ensureStats(state) orelse return;
     var corpus: Stats.Corpus = .{ .text = undefined, .len = 0 };
     for (state.notes[0..state.note_count]) |*note| {
@@ -712,20 +701,18 @@ fn ensureStats(state: *State) ?h.workers.Handle(Stats) {
     try app.tree.append(root, .{ .button = .{
         .label = &quot;Delete&quot;,
         .form = .{ .secondary = null },
-        .on_press = .{ .ctx = state, .call = onDeleteNote },
+        .on_press = .bind(deleteNote, state),
     } });
 }
 
-fn onOpenNote(ctx: ?*anyopaque) void {
-    const ref: *NoteRef = @ptrCast(@alignCast(ctx.?));
+pub fn openNote(state: *State, index: usize) void {
     // A stack buffer is enough: the entry copies the reference.
     var buf: [32]u8 = undefined;
-    const dest = std.fmt.bufPrint(&amp;buf, &quot;note~{d}&quot;, .{ref.index}) catch return;
-    ref.state.app.navigate(dest) catch {};
+    const dest = std.fmt.bufPrint(&amp;buf, &quot;note~{d}&quot;, .{index}) catch return;
+    state.app.navigate(dest) catch {};
 }
 
-fn onDeleteNote(ctx: ?*anyopaque) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub fn deleteNote(state: *State) void {
     // The action runs on the note screen, so the entry&#39;s argument is
     // still the one to read.
     const arg = state.app.routeArg(0) orelse return;
@@ -773,18 +760,18 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
             .dark =&gt; 1,
             .auto =&gt; 2,
         },
-        .on_select = .{ .ctx = state, .call = onSchemeSelect },
+        .on_select = .bind(selectScheme, state),
     } });
     try app.tree.append(root, .{ .radio_group = .{
         .label = &quot;Order&quot;,
         .options = &amp;.{ &quot;Newest first&quot;, &quot;Oldest first&quot; },
         .selected = if (state.newest_first) 0 else 1,
-        .on_select = .{ .ctx = state, .call = onOrderSelect },
+        .on_select = .bind(selectOrder, state),
     } });
     try app.tree.append(root, .{ .toggle = .{
         .label = &quot;Show word-count stats&quot;,
         .on = state.show_stats,
-        .on_toggle = .{ .ctx = state, .call = onStatsToggle },
+        .on_toggle = .bind(setShowStats, state),
     } });
 
     try app.tree.append(root, .{ .divider = .{} });
@@ -792,7 +779,7 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
         try app.tree.append(root, .{ .button = .{
             .label = &quot;Sign out&quot;,
             .form = .{ .secondary = null },
-            .on_press = .{ .ctx = state, .call = onSignOut },
+            .on_press = .bind(signOut, state),
         } });
     } else {
         try app.tree.append(root, .{ .text = .{ .content = &quot;Not signed in.&quot; } });
@@ -807,7 +794,7 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
     });
     try app.tree.append(root, .{ .divider = .{} });
     try app.tree.append(root, .{ .text = .{ .content = pkg_line, .style = .{ .family = .mono, .scale = .small, .ink = .dark } } });
-}</code></pre><p>The handlers are one-liners: <code>onSchemeSelect</code> maps the index to <code>state.app.setScheme(…)</code> (dark mode is a scheme, not a style — the palette flips, contrast guarantees hold); <code>onOrderSelect</code> sets <code>state.newest_first</code>; <code>onStatsToggle</code> sets <code>state.show_stats</code>. No <code>refresh</code> needed — the controls carry their own selected state, and the notes screen reads the flags at its next build. The <code>package_info</code> line at the bottom is the declaration from Part 1&#39;s build.zig read back — run the app and it says <code>com.example.notes 0.1.0 (1) — dev</code>.</p><p>Two assertions worth stealing. <code>expectValue</code> reads a segmented control&#39;s selected option straight from the a11y snapshot, and the raw snapshot answers questions the named queries don&#39;t — like <em>document order</em>, the order a screen reader walks:</p><pre class="code" tabindex="0" data-n="182"><code>test &quot;appearance is a segmented control the keyboard drives&quot; {
+}</code></pre><p>The handlers are one-liners typed on <code>*State</code>: <code>selectScheme(state, selected)</code> maps the index to <code>state.app.setScheme(…)</code> (dark mode is a scheme, not a style — the palette flips, contrast guarantees hold); <code>selectOrder</code> sets <code>state.newest_first</code>; <code>setShowStats(state, on)</code> sets <code>state.show_stats</code>. No <code>refresh</code> needed — the controls carry their own selected state, and the notes screen reads the flags at its next build. The <code>package_info</code> line at the bottom is the declaration from Part 1&#39;s build.zig read back — run the app and it says <code>com.example.notes 0.1.0 (1) — dev</code>.</p><p>Two assertions worth stealing. <code>expectValue</code> reads a segmented control&#39;s selected option straight from the a11y snapshot, and the raw snapshot answers questions the named queries don&#39;t — like <em>document order</em>, the order a screen reader walks:</p><pre class="code" tabindex="0" data-n="182"><code>test &quot;appearance is a segmented control the keyboard drives&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
     defer t.deinit();
@@ -880,9 +867,8 @@ const L = h.l10n.Bundle(&amp;.{
         .label = &quot;Language&quot;,
         .options = &amp;.{ &quot;English&quot;, &quot;فارسی&quot; },
         .selected = if (loc(app) == .en) 0 else 1,
-        .on_select = .{ .ctx = state, .call = onLanguageSelect },
-    } });</code></pre><pre class="code" tabindex="0" data-n="201"><code>fn onLanguageSelect(ctx: ?*anyopaque, selected: usize) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+        .on_select = .bind(selectLanguage, state),
+    } });</code></pre><pre class="code" tabindex="0" data-n="201"><code>pub fn selectLanguage(state: *State, selected: usize) void {
     const chosen: L.Locale = if (selected == 0) .en else .fa;
     // The three surfaces the app does not write inline: the names of
     // the screens, nokre&#39;s own chrome, and which way the chrome runs.
