@@ -133,7 +133,7 @@ const app = @import(&quot;main.zig&quot;);
 
 test &quot;pressing Increment updates the label&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, &amp;state, app.buildHome);
+    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .ctx = &amp;state, .build = app.buildHome });
     defer t.deinit();
     state.app = &amp;t.app;
     // The a11y audit already ran, and re-runs after every action below.
@@ -169,12 +169,9 @@ pub fn onDeepLink(ctx: ?*anyopaque, url: []const u8) void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
     const target = h.services.deep_link.fragment(url) orelse &quot;notes&quot;;
     state.app.navigate(target) catch {}; // an unknown route is a no-op, never a crash
-}</code></pre><p>The test injects a link the way a shell would and asserts through the same a11y snapshot as any tap — <code>deliverDeepLink</code> is the launch URL as the first call, then any runtime link:</p><pre class="code" tabindex="0" data-n="121"><code>test &quot;a link routes the app to a section&quot; {
+}</code></pre><p>The test injects a link the way a shell would and asserts through the same a11y snapshot as any tap — <code>deliverDeepLink</code> is the launch URL as the first call, then any runtime link:</p><pre class="code" tabindex="0" data-n="121" style="--bleed:16px"><code>test &quot;a link routes the app to a section&quot; {
     var state = app.State{};
-    var t = try nok.testing.Harness.initWithNav(
-        std.testing.allocator, .{ .w = 480, .h = 640 },
-        &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;,
-    );
+    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
     nok.services.deep_link.setHandler(&amp;t.app, &amp;state, app.onDeepLink);
@@ -249,7 +246,7 @@ pub fn signIn(state: *State) void {
     state.app.refresh(.{});
 }</code></pre><p>Three element choices carry design weight. <code>obscured</code> makes the input a secure field: bullets on screen, value withheld from assistive tech <em>and from test traces</em>. The <code>checkbox</code> is deliberately not a <code>toggle</code>: checking it commits nothing by itself — the Sign in button gathers it (consent-then-submit); a switch that applies immediately would be a <code>toggle</code>, as Part 10 shows. And spans are Markdown&#39;s inline vocabulary, not styling: assistive tech hears one plain text node.</p><p>The test drives it exactly like a user, keyboard-only:</p><pre class="code" tabindex="0" data-n="128" style="--bleed:16px"><code>test &quot;wrong passphrase stays signed out&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(std.testing.allocator, .{ .w = 480, .h = 640 }, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
@@ -278,14 +275,14 @@ pub fn signIn(state: *State) void {
     state.signed_in = false;
     state.status = &quot;Ready.&quot;;
     state.app.router.switchTo(state.app, &quot;notes&quot;) catch {};
-}</code></pre><p>Under <code>zig test</code> the real keychain structurally cannot be reached: every app is constructed with a journaling fake, and the harness seeds it at boot, asserts against it, and injects the one environmental error. These four tests are the store&#39;s whole story:</p><pre class="code" tabindex="0" data-n="139"><code>const gpa = std.testing.allocator;
+}</code></pre><p>Under <code>zig test</code> the real keychain structurally cannot be reached: every app is constructed with a journaling fake, and the harness seeds it at boot, asserts against it, and injects the one environmental error. These four tests are the store&#39;s whole story:</p><pre class="code" tabindex="0" data-n="139" style="--bleed:16px"><code>const gpa = std.testing.allocator;
 const viewport: nok.Size = .{ .w = 480, .h = 640 };
 
 /// Most tests want a returning user: seed the token the keychain would
 /// hold. (Callers set `state.app = &amp;t.app` once the harness has landed
 /// in its final variable.)
 fn signedIn(state: *app.State) !nok.testing.Harness {
-    return nok.testing.Harness.initWith(gpa, viewport, .{
+    return nok.testing.Harness.init(gpa, viewport, .{
         .routes = &amp;app.routes,
         .nav = &amp;app.nav_items,
         .ctx = state,
@@ -296,7 +293,7 @@ fn signedIn(state: *app.State) !nok.testing.Harness {
 
 test &quot;a fresh install boots to sign-in; the stored token skips it&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, viewport, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
     _ = try t.getByLabel(&quot;Passphrase&quot;);
@@ -312,7 +309,7 @@ test &quot;a fresh install boots to sign-in; the stored token skips it&quot; {
 
 test &quot;signing in stores the session; signing out deletes it and nothing else&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, viewport, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
@@ -332,7 +329,7 @@ test &quot;signing in stores the session; signing out deletes it and nothing els
 
 test &quot;unchecking &#39;stay signed in&#39; keeps the keychain empty&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, viewport, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
@@ -348,7 +345,7 @@ test &quot;unchecking &#39;stay signed in&#39; keeps the keychain empty&quot; {
 
 test &quot;a locked keychain degrades to signed-in-for-now&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, viewport, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
@@ -887,9 +884,9 @@ fn settingsTitle(tag: []const u8) []const u8 {
     _ = try t.getByLabel(&quot;یادداشت‌ها&quot;); // the heading, translated
     _ = try t.getByLabel(&quot;0 از 16 یادداشت&quot;); // fmt: two placeholders
     _ = try t.getByLabelContaining(&quot;هنوز چیزی اینجا نیست&quot;); // the empty state
-}</code></pre><h2 id="part-12--proof-tree-snapshots-step-traces-goldens">Part 12 — Proof: tree snapshots, step traces, goldens</h2><p>Three instruments turn &quot;it works&quot; into evidence. First, <code>expectTree</code> pins the whole laid-out screen — role, rect, label, state per node — as an inline snapshot. Write a placeholder, run once, review the printed actual, paste it in:</p><pre class="code" tabindex="0" data-n="218"><code>test &quot;the sign-in screen&#39;s whole laid-out tree, inline&quot; {
+}</code></pre><h2 id="part-12--proof-tree-snapshots-step-traces-goldens">Part 12 — Proof: tree snapshots, step traces, goldens</h2><p>Three instruments turn &quot;it works&quot; into evidence. First, <code>expectTree</code> pins the whole laid-out screen — role, rect, label, state per node — as an inline snapshot. Write a placeholder, run once, review the printed actual, paste it in:</p><pre class="code" tabindex="0" data-n="218" style="--bleed:16px"><code>test &quot;the sign-in screen&#39;s whole laid-out tree, inline&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, viewport, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
@@ -944,7 +941,7 @@ fn settingsTitle(tag: []const u8) []const u8 {
         const run_golden = b.addRunArtifact(golden_tests);
         run_golden.setCwd(b.path(&quot;.&quot;)); // goldens resolve against the project root
         test_step.dependOn(&amp;run_golden.step);
-    }</code></pre><p>Run <code>tools/fetch-deps.sh</code> once inside the dependency before the first golden. Without it the build step fails naming that command, rather than failing at link time with a list of missing symbols.</p><p><code>src/golden_test.zig</code>:</p><pre class="code" tabindex="0" data-n="228"><code>const std = @import(&quot;std&quot;);
+    }</code></pre><p>Run <code>tools/fetch-deps.sh</code> once inside the dependency before the first golden. Without it the build step fails naming that command, rather than failing at link time with a list of missing symbols.</p><p><code>src/golden_test.zig</code>:</p><pre class="code" tabindex="0" data-n="228" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
 const build_options = @import(&quot;build_options&quot;);
 const nok = @import(&quot;nokre&quot;);
 const app = @import(&quot;app&quot;);
@@ -955,7 +952,7 @@ const gpa = std.testing.allocator;
 
 test &quot;golden: the sign-in screen&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.initWithNav(gpa, .{ .w = 480, .h = 640 }, &amp;app.routes, &amp;app.nav_items, &amp;state, &quot;notes&quot;);
+    var t = try nok.testing.Harness.init(gpa, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
     defer t.deinit();
     state.app = &amp;t.app;
 
