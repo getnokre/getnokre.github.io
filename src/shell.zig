@@ -40,8 +40,11 @@ export fn nokre_locale_uninstall() void {}
 /// could activate anything. The external links it writes are anchors —
 /// the reader's browser does the opening, on the reader's machine, long
 /// after this process exited. The export exists because a shell owes it
-/// (src/services/open_url/open_url.h), not because it will ever run.
-export fn nokre_open_url_open(url: [*]const u8, len: usize) void {
+/// (src/services/open_url/open_url.h), not because it will ever run —
+/// and if it somehow did, "did not start" is the truthful answer, since
+/// no browser was asked.
+export fn nokre_open_url_open(url: [*]const u8, len: usize) c_int {
     _ = url;
     _ = len;
+    return 1;
 }
