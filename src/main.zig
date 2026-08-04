@@ -114,10 +114,31 @@ pub fn main(init: std.process.Init) !void {
         // behind them, which is why the framework's Back control is
         // correctly absent (docs/routing.md).
         try app.router.switchTo(&app, p.name);
-        audit.audit(&app) catch |err| {
-            std.debug.print("accessibility audit failed on \"{s}\"\n", .{p.name});
-            return err;
-        };
+        // `collect`, not the `audit` gate: every rule stays fatal here
+        // except `unresolvable_route`, whose authority this site has
+        // deliberately replaced. links.zig is the router's `resolve`
+        // for the HTML edition — destinations name pages, anchors and
+        // source files, not route-table entries — and it already fails
+        // the build on any reference this site cannot honor, which is
+        // a stricter check than the table the rule would consult.
+        {
+            var violations: std.ArrayList(audit.Violation) = .empty;
+            defer violations.deinit(gpa);
+            try audit.collect(&app, &violations);
+            var failed = false;
+            for (violations.items) |v| {
+                if (v.rule == .unresolvable_route) continue;
+                std.debug.print("a11y audit: {s} (node label: \"{s}\")\n", .{
+                    @tagName(v.rule),
+                    app.tree.getConst(v.id).?.label(),
+                });
+                failed = true;
+            }
+            if (failed) {
+                std.debug.print("accessibility audit failed on \"{s}\"\n", .{p.name});
+                return error.A11yAuditFailed;
+            }
+        }
 
         resolver.page = i;
         var out: std.ArrayList(u8) = .empty;
