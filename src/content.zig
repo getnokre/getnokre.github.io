@@ -30,7 +30,9 @@ pub const Site = struct {
 pub const routes = blk: {
     var defs: [pages.all.len]nok.RouteDef = undefined;
     for (pages.all, 0..) |p, i| {
-        defs[i] = .{ .name = p.name, .title = p.title, .build = builderFor(i) };
+        // `.fixed`: the site is English only (src/shell.zig), so no
+        // title is a function of a locale nothing ever chooses.
+        defs[i] = .{ .name = p.name, .title = .{ .fixed = p.title }, .build = builderFor(i) };
     }
     const frozen = defs;
     break :blk frozen;
