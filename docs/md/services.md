@@ -180,7 +180,11 @@ session. (Client-side JS encryption is refused as theater: the key
 would live beside the data.) sessionStorage is also per-tab — a
 duplicated tab forks the store — and `error.Unavailable` never occurs
 on the web: the in-memory table always answers. That asymmetry is
-stated posture, not a bug.
+stated posture, not a bug — and a tested one: nokre boots a real wasm
+app against a stubbed browser on every `zig build test`, including with
+sessionStorage blocked and with it full, where every verb keeps its
+answers and only reload-survival is lost
+([testing.md](testing.md#the-webs-own-gate)).
 
 **macOS dev builds** may show an authorization prompt that shipping
 builds do not. Signed apps (Developer ID / App Store) use the
@@ -197,8 +201,42 @@ Tests never see it (they only reach the fake,
 [testing.md](testing.md)). Packaging note: static-lib consumers (the
 iOS Xcode project) add Security.framework themselves.
 
+**The dev store,** for the binary that drives your app end to end
+outside `zig test`. That binary is the one case the OS store is not
+really yours to use: on macOS an unentitled process is refused the
+data-protection keychain outright and lands in the deprecated legacy
+one — the developer's own login keychain, ACL-bound to a signature that
+changes every rebuild, which is the prompt the paragraph above
+describes — and a headless Linux CI machine runs no keyring daemon at
+all. Declare it and the Keychain / Secret Service leg is replaced by a
+plaintext file:
+
+```zig
+const nokre = b.dependency("nokre", .{
+    .pkg_id = @as([]const u8, "com.example.notes"),
+    .secure_store = true,
+    .secure_store_dev = true, // never in a build you ship
+});
+```
+
+The API does not change, and neither do the caps, the errors or the
+sort order: the swap happens under the four native verbs, so the same
+policy layer runs above it. The file is `$NOKRE_SECURE_STORE_DEV` if
+you set it — one driver run, one store, which is how a run gets a store
+nothing else has touched — otherwise `$HOME/.nokre-dev-store/<pkg_id>`,
+mode 0600, and yours to delete.
+
+It cannot reach a shipping build, and not because you remembered: the
+declaration is refused unless the build is **Debug** and the target is
+**macOS or desktop Linux** (iOS, Android, the web and Windows all fail
+the build — their stores answer any binary already), it is refused
+without `.secure_store`, and the binary that carries it prints one line
+to stderr at every launch saying so. There is no runtime path in at
+all: which backend a binary has is decided when it is compiled.
+
 The wiring — the Keychain/CredMan mappings, the web snapshot/mirror
-flow, and why each refusal holds — is
+flow, the dev store's file format and its four gates, and why each
+refusal holds — is
 [internals/secure_store.md](internals/secure_store.md).
 
 ### clipboard: one verb, write-only
@@ -271,8 +309,8 @@ it: `actool` resolves the app icon by name, and two answers named
 cannot compile a `.icon` at all, and the answer on one is to declare no
 `apple_icon` and ship the derived mark. Android and the web keep the
 mark either way; `.icon` is an Apple format and nothing else reads it.
-Pointing an Xcode project at the delivered bundle — and what "delivered"
-buys on macOS, which nokre does not bundle — is
+Pointing an Xcode project at the delivered bundle — and assembling the
+macOS `.app` around what `pkg/macos/` carries — is
 [getting-started.md](getting-started.md).
 
 The native side answers only the question the build cannot: installer
@@ -470,10 +508,14 @@ shared memory, no futures, no thread pool, no forced kill) — is
 ### http: the network as a message
 
 One API on every platform; behind it the shells wire what they have —
-native blocks one visible thread per request on `std.http.Client`, the
-web hands the job to the browser's `fetch`, tests park the request
-until the test answers it — and the consumer contract never changes:
-no futures, no locks, no callback off the UI thread. Requests and
+native blocks one visible thread per request on `std.http.Client` and
+nothing else (no pool hides under it, deliberately — the reason is
+[internals/http.md](internals/http.md#no-pool-under-the-native-transport),
+and one consequence is that a host's addresses are tried in sequence
+rather than raced), the web hands the job to the browser's `fetch`,
+tests park the request until the test answers it — and the consumer
+contract never changes: no futures, no locks, no callback off the UI
+thread. Requests and
 worker messages share one delivery lane, so ordering, thread
 discipline, and the testing story are the same fact, not three
 parallel ones. One platform wants the hosts in advance: a web build's
@@ -520,7 +562,12 @@ guarantees the failure path eventually runs, so recovery (clearing an
 handling, which now always gets its turn. Under `zig test` the mock
 ignores it: parked requests stay parked until the test answers, so the
 network stays a test input. The verb set is closed — GET, HEAD, POST,
-PUT, PATCH, DELETE — and there is no streaming, no timeout knob, and
+PUT, PATCH, DELETE — and the verb, not the bytes, decides whether a
+request carries a body: POST, PUT and PATCH always do, empty or not
+(`content-length: 0` is a body a server can read as one), and passing
+`body` on any other verb is a programmer error nokre asserts on rather
+than a request one platform would send and the other would refuse.
+There is no streaming, no timeout knob, and
 no per-request configuration surface. Like `worker` — and unlike
 `package_info` — nothing links: the service is always available, and
 an app that never calls it pays nothing.
@@ -628,7 +675,10 @@ one.
 **On the web** the deep link is the URL fragment: a `hashchange` is a
 runtime link, and a fragment present at load is the launch URL, delivered
 once after boot. No entitlement, no server file — the origin already
-proves ownership.
+proves ownership. It is also the one leg here nokre executes rather than
+mocks on its own side: a launch fragment, a later `hashchange`, and a
+percent-encoded payload byte for byte, on every `zig build test`
+([testing.md](testing.md#the-webs-own-gate)).
 
 In tests the mock is one app's fake link source: `deliver(url)` is the
 launch URL as the first call, then any runtime link, journaled in order
@@ -855,7 +905,11 @@ In tests the mock is one app's fake browser: `start` parks and journals
 what the app actually built — so "the app requested the wrong scopes"
 and "the app never sent a PKCE challenge" are assertions — and nothing
 moves until the test says what the user did (`completeAuth`,
-`cancelAuth`, `failAuth`; [testing.md](testing.md)).
+`cancelAuth`, `failAuth`; [testing.md](testing.md)). The web's popup
+flow is additionally executed on nokre's own side — the redirect it
+seeds, the message it accepts, and the three it refuses
+([testing.md](testing.md#the-webs-own-gate)); the native browser
+sessions are still asserted by nothing but their mock.
 
 ### iap: the stores, and the money nokre never formats
 
@@ -967,8 +1021,8 @@ is a pure function of the argument checked before any OS call:
 | product id | 1–128 bytes of `[a-z0-9._]`, leading `[a-z0-9]` | the intersection of the two consoles' rules (Play's is narrower, and lowercase-only) — an id that is legal on the developer's Apple device and rejected by the Play console should fail on the machine that typed it, which is package_info's argument for the app id |
 
 One sheet and one query at a time per app: a second `purchase` is
-`error.PurchaseInFlight` (the sheet is modal, and a person can only be
-buying one thing at once — `oauth`'s argument), a second query is
+`error.PurchaseInFlight` (`oauth`'s `AuthInFlight` argument, sheet for
+sheet), a second query is
 `error.QueryInFlight` (a paywall asks for its whole catalog at once,
 because the id set is a parameter).
 
@@ -1009,11 +1063,20 @@ android { sourceSets { main { java.srcDirs += '<nokre>/src/services/iap/java' } 
 dependencies { implementation 'com.android.billingclient:billing:7.1.1' }
 ```
 
-An app that links no `iap` adds neither. On Play the transaction id *is*
-the purchase token: `getOrderId()` is absent for pending and test
-purchases, and Google's Developer API is keyed by token, so one honest
-value beats a nullable one that vanishes exactly when a purchase is most
-interesting.
+…and a third line, in `gradle.properties`, because that coordinate drags
+AndroidX in and AGP refuses the classpath without it:
+
+```properties
+android.useAndroidX=true
+```
+
+That is the only service whose Android leg forces the flag, and it is
+stated here rather than discovered at the first Gradle sync: the
+kitchen sink never hits it, because the example builds iap's C leg
+without the billing dependency behind it. An app that links no `iap`
+adds none of the three. On Play the transaction id *is* the purchase
+token — it is what your backend verifies with and what `finish` needs;
+the reasons are [internals/iap.md](internals/iap.md)'s.
 
 Where the service stops is `oauth`'s line. No receipt verification — the
 `token` goes to the app's backend, which calls the App Store Server API or
@@ -1135,13 +1198,10 @@ sometimes has `navigator.share` (secure contexts, and not every
 browser/OS pair). Both answer at runtime through `available`, iap's
 shape: an app ships one build tree, and the honest instruction is "do
 not draw the share affordance", not "fork your source". Everywhere
-else the sheet is the OS's own: `NSSharingServicePicker` on macOS,
-`UIActivityViewController` on iOS, the ACTION_SEND chooser on Android
-— always the chooser, so the user picks from everything installed
-rather than whatever won the last "always" — and the WinRT share pane
-on Windows, reached through the OS's own Win32 bridge with no packaging
-identity required (unlike the store, which is why iap answers false on
-Windows and share does not).
+else the sheet is the OS's own — always the system chooser, so the
+user picks from everything installed rather than whatever won the last
+"always". Which sheet each platform shows, and the Win32 bridge to the
+WinRT pane, is [internals/share.md](internals/share.md).
 
 **No geometry in the API.** The sheet is app-level, not
 element-anchored: the platforms that need a rect (the iPad popover,

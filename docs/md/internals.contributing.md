@@ -123,7 +123,8 @@ The authoring rules that keep the shell/service split honest:
   links something (secure_store's Keychain, deep_link's URL
   registration) gates on its `nokre_*_options.linked` and is a curated
   comptime error at the call site when unlinked. A service that links
-  *nothing* — clipboard, locale, open_url, share — has no unlinked state to error on, so
+  *nothing* — clipboard, clock, haptic, http, locale, open_url, share,
+  worker — has no unlinked state to error on, so
   it gets no options module and no build flag: adding one would be
   ceremony over a decision the app never makes. For those, "optional"
   means costing nothing where the platform has no hook (a comptime
@@ -153,8 +154,9 @@ The authoring rules that keep the shell/service split honest:
   `Services` ([services.zig](../../src/services/services.zig)):
   define `Service = if (builtin.is_test) Mock else PlatformService`
   (`services.Stateless` where the release half holds nothing, as
-  clipboard, haptic and secure_store do — writing your own `init`/
-  `deinit` pair is then how a service says it *does* keep state),
+  clipboard, clock, haptic and open_url do — writing your own `init`/
+  `deinit` pair is then how a service says it *does* keep state, which
+  is secure_store's shape: its release half carries the `CountCache`),
   give the mock a `mock(config)` constructor plus `init(gpa)`/`deinit`
   that own its heap state, and wire both into `Services.init`/`deinit`
   — the state lives on the App, applied before `build` runs. The mock
@@ -216,11 +218,65 @@ way. The shell's complete job description is in
   build rather than skipping, because a gate that stands aside quietly
   reports a green nobody can interpret. `-Djs-parse=false` is the way to
   decline it out loud.
+- **One transport on a real socket**, in `zig build test`:
+  [native_test.zig](../../src/services/http/native_test.zig) binds a
+  loopback origin in the test process and puts all six verbs through
+  the native http transport, asserting the bytes that go out. Every
+  other service is proven against its mock, and a mock answers whatever
+  it is asked — which is how a send path that `std.http.Client` asserts
+  on shipped choosing itself by the body's length, panicking every
+  bodiless POST. Where a service's real leg is pure Zig over a socket,
+  a fake is not enough; the threads around it are the next tier's, not
+  this one's, because a gate cannot wait out a 30-second watchdog.
 - **The desktop link**, in `zig build test -Dskia`: the examples are
   built, not just installed. hello links the services that need an
   identity and the kitchen sink links none at all — the shape every app
   starts in, and the shape an undefined symbol in an always-linked shell
   breaks first.
+- **One service's verbs outside `zig test`**, in `zig build test` on a
+  macOS or desktop-Linux host:
+  [tests/dev_store.zig](../../tests/dev_store.zig) is built as an
+  *executable* and run. Under `zig test` a service *is* its mock, so no
+  unit test anywhere reaches secure_store's release dispatch, its
+  `CountCache`, or a store the OS answers — the boundary
+  [testing.md](../testing.md) names. This program constructs a real
+  `App`, drives its screens through `testing.driver`, and puts all four
+  verbs through the dev file store (`.secure_store_dev`,
+  [secure_store.md](secure_store.md)), asserting a boot read, a write
+  that outlives the app that made it, and a delete. It does not make
+  macos.m or windows.c any more executed than they were; it makes the
+  Zig above them so, which was previously proven by nothing.
+
+- **That transport's threads**, in `zig build test` on a native desktop
+  host: [tests/http_stress.zig](../../tests/http_stress.zig) is built as
+  an *executable* and run. Two `App`s in one process put 1920 requests
+  through the real transport at a loopback origin listening on both
+  families, so nokre's delivery pump, its detached transfer and watchdog
+  threads, and std's connect machinery run together — the one
+  arrangement in which the transport's concurrency is the subject rather
+  than the setting. It is sized by measurement, not by taste, because
+  what it holds off is a race: restore the async pool it refuses
+  ([http.md](http.md#no-pool-under-the-native-transport)) and this load
+  crashes the process on 20 runs out of 20. Failures the *machine*
+  produces — no thread to spawn, no ephemeral port left — are counted
+  and reported, never failed on; a resource limit is not a defect.
+- **The three web-only service legs, executed**, in `zig build test`:
+  [tests/web_services.zig](../../tests/web_services.zig) is an ordinary
+  nokre app with deep_link, oauth and secure_store linked, built into a
+  site by the same `addApp` path a consumer takes, and booted by node
+  against [tests/web_browser.mjs](../../tests/web_browser.mjs). What
+  the stub carries, what the site's own modules prove, and what the
+  gate still does not cover is [testing.md](../testing.md)'s "The web's
+  own gate". The design rule is that every assertion reads back what
+  the wasm app recorded through probe exports: a harness that restated
+  a line of the driver would prove that line twice and the real one
+  never. Those three legs exist on no other platform, so `zig test`
+  reaches none of them and `check-targets` compiles them into objects
+  it never runs — the fragment that arrives, the popup that reports to
+  its opener, and the seed that beats the first `build` were, until
+  this gate, asserted by nothing. It rides `-Djs-parse`, because that
+  is one question asked once — node, and the shipped JavaScript really
+  read.
 
 Goldens are byte-exact and must stay byte-identical unless a change is
 intentionally visual — then regenerate, eyeball the image, and commit it

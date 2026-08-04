@@ -743,10 +743,11 @@ a.link.block {
 .brand-mark { font-family: brand; font-weight: 400; font-style: normal; }
 /* Google's G: four arc glyphs on one advance, overlaid by the grid
    into one drawing. The colors are the vendor's trademark spec —
-   the ONLY color literals in this stylesheet, matching the
-   renderer's `google_g` table — and they apply only on the live
-   branded pill: a dimmed button's G falls back to currentColor
-   and reads as a silhouette, like the reference. */
+   the ONLY color literals in this stylesheet, printed from the one
+   table both editions read (`element.google_g_rgb`) — and they
+   apply only on the live branded pill: a dimmed button's G falls
+   back to currentColor and reads as a silhouette, like the
+   reference. */
 .brand-mark.g { display: inline-grid; }
 .brand-mark.g > span { grid-area: 1 / 1; }
 .btn.auth.google:not(.secondary):not([disabled]) .brand-mark.g > span:nth-child(1) { color: #4285f4; }

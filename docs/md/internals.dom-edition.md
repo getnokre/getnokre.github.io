@@ -55,7 +55,7 @@ rather than quietly dropped:
 - **No fractional scaling** is unenforceable here. A browser will hand
   out a 1.1 device pixel ratio and fractional CSS pixels, and no edition
   can refuse them on its behalf.
-- **No system fonts** holds for everything the four bundled faces cover
+- **No system fonts** holds for everything the bundled faces cover
   and no further. A codepoint outside them falls back to whatever the
   reader has, because a browser will not be told otherwise.
 
@@ -120,7 +120,7 @@ What it writes:
 | in the site | where it comes from |
 | --- | --- |
 | the app's module, under `web_wasm` | the consumer's own compile |
-| `live.js`, `live-worker.js`, `services.js` | `src/render/dom`, copied by the build graph |
+| `live.js`, `live-worker.js`, `services.js`, `sw.js` | `src/render/dom`, copied by the build graph |
 | `style.css` | *generated*, by running `emit_css.zig` on the host |
 | `fonts/*.ttf` | `src/assets/fonts` |
 | `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png` | the packaging tree's `web/` corner (packaging.zig) |
@@ -132,8 +132,10 @@ every build, the glue and the faces are graph inputs, and the page is
 an output of the app's declaration. And nothing in a site can be
 *partial*, because a consumer installs one directory rather than
 assembling a list — `App.web`, exactly as they install `App.pkg`. A
-fourth module added to `src/render/dom` is one edit here and it is in
-every consumer's next build.
+new module added to `src/render/dom` is one edit here and it is in
+every consumer's next build. (`sw.js` is the one member that is not a
+module import but a file the origin serves — why every site carries it
+is [notifications.md](notifications.md).)
 
 The page is the declaration's, which is why a web target without one
 fails: `packaging.webIndexHtml` needs a title, and the manifest and
@@ -538,8 +540,10 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   is generated: thirteen grays in two ramps out of `core/color.zig`, six
   type scales out of `core/text.zig`, every padding, radius, target and
   stroke out of `core/layout.zig`, each container's own default gap and
-  padding off the structs in `core/element.zig`, and the page margin off
-  `tree.root_stack`. Nothing is transcribed, so nothing can drift. It is
+  padding off the structs in `core/element.zig`, the brand mark's four
+  arc colours off `element.zig`'s `google_g_rgb`, and the page margin
+  off `tree.root_stack`. Nothing is transcribed, so nothing can drift.
+  It is
   not a styling API and no app may add to it — it is this edition's
   `renderer.zig`.
 
@@ -610,6 +614,19 @@ stand in its place, and both are in
 - **Markup determinism.** The walk is deterministic, so two runs over
   one tree are byte-identical and a review is a *text* diff. That is the
   golden discipline one layer out, and more diffable than a picture.
+
+Both of those stop at the seam. The markup is the serializer's output;
+what the *driver* does with it, and what the service legs on the far
+side of the wasm boundary do, is JavaScript that no Zig test can read.
+A third gate covers that half and only that half:
+[tests/web_services.mjs](../../tests/web_services.mjs) boots a real wasm
+app into the shipped `live.js` under a browser stub and asserts what the
+app recorded — the deep link that arrived, the popup message that ended
+an oauth flow, the seed that beat the first `build`. It asserts nothing
+about how the page looks, which is the one thing this edition traded
+away; [../testing.md](../testing.md#the-webs-own-gate) has the whole
+list, including what it still does not reach (the compute worker, the
+service worker, `fetch`, and the hydration handover).
 
 The closed set is enforced by the language: the switch in `node` has no
 `else`. An element added to `Element` without a case here fails to

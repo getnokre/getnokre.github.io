@@ -269,6 +269,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.share",
+        .title = "Share",
+        .blurb = "Five share sheets, one verb: what each platform's leg hands its OS and what none of them report back.",
+        .icon = .share,
+        .md = "internals/share.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.iap",
         .title = "In-app purchases",
         .blurb = "StoreKit on Apple, Play Billing on Android, and no store anywhere else.",

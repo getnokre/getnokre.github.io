@@ -181,6 +181,15 @@ _ = try t.getByLabel("abacus");      // the stale answer arrived last —
 try t.expectAbsent("apple");         // — and lost
 ```
 
+When several requests leave together, a test that names one by its
+queue position is asserting issue order it never meant to:
+`fulfillHttpPath(suffix, ...)` and `failHttpPath(suffix, name)` answer
+the oldest parked request whose URL ends in `suffix`, and
+`fulfillHttpLastPath` the newest — the screen that re-asks an endpoint
+a sweep behind it already asked. A miss prints every parked URL, so
+the failure says what was actually in flight. A request in hand
+answers header questions itself: `req.headerValue("Authorization")`.
+
 For flows with many requests, `onHttp(ctx, handler)` installs a fake
 server: a function from a parked request to a canned response, a
 failure name, or null — leave it parked. `settleHttp()` runs it over
@@ -234,10 +243,11 @@ store is the *subject* of the test rather than a dependency of it.
 Every app owns a fake store — constructed with it, dead with it at
 `deinit` — and the harness aliases it as `t.store`. Two
 concurrently-driven apps get two fakes with disjoint entries,
-journals, and knobs, by construction: the state is a field of the app,
-not a module, so nothing *can* leak across tests. Under `zig test` the
-fake is the only store that exists, on every platform; the real
-keychain is never an option.
+journals, and knobs; why leakage across tests is unrepresentable
+rather than merely checked is
+[internals/secure_store.md](internals/secure_store.md). Under `zig
+test` the fake is the only store that exists, on every platform; the
+real keychain is never an option.
 
 Boot state goes in at construction: the general `initWith(gpa,
 viewport, opts)` takes a `.store` of type `secure_store.Mock.Config`
@@ -254,11 +264,11 @@ app into a locked keychain. After boot:
 - `expectStored(key, expected)` / `expectStoredAbsent(key)` — assert
   persisted state directly off the fake. No app code runs and nothing
   settles: sync means there is nothing to settle.
-- `setStoreAvailable(bool)` — the keychain locks (or recovers) under
-  the running app. Only `error.Unavailable` is injectable, because
+- `lockStore()` / `unlockStore()` — the keychain locks (or recovers)
+  under the running app. Only `error.Unavailable` is injectable, because
   only `Unavailable` is environmental — the other three errors are
   pure functions of the arguments and occur organically: produce
-  `InvalidKey` by passing `"Bad Key!"`, `StoreFull` by seeding 64
+  `InvalidKey` by passing `"Bad Key!"`, `StoreFull` by seeding 256
   entries.
 - `t.store.journal()` — every call the app made, in program order, so
   tests assert behavior, not just final state: "signs out without
@@ -267,7 +277,7 @@ app into a locked keychain. After boot:
   any platform and are never journaled; calls the availability knobs
   fail and a `StoreFull` set are.
 
-The `setStoreAvailable(false)` test is table stakes, not an edge case:
+The `lockStore()` test is table stakes, not an edge case:
 a locked keychain, an absent Secret Service session on Linux, or a
 Keystore fault on Android all surface as `Unavailable`, and an app
 that degrades gracefully under it is ready everywhere.
@@ -286,7 +296,7 @@ test "stored token skips sign-in; sign-out deletes it; locked keychain degrades"
     // one get at boot, one delete — the app never rewrote the secret:
     try std.testing.expectEqual(@as(usize, 2), t.store.journal().len);
 
-    try t.setStoreAvailable(false);            // keychain locks mid-session
+    try t.lockStore();                         // keychain locks mid-session
     try t.tapLabel("Sign in");                 // the handler's set fails -> error.Unavailable
     _ = try t.getByLabel("Signed in — couldn't save your session");
     try t.expectStoredAbsent("auth.token");    // and nothing leaked into the store
@@ -594,9 +604,9 @@ expectation can't be met there, a screen reader user can't meet it either.
   posted without ever asking". What the *user* did is the test's to
   drive: `grantNotifications()` and `denyNotifications()` answer the
   prompt — or flip the switch in Settings without one, which is legal
-  and worth testing — `deliverNotificationTap(id, route)` is the tap
+  and worth testing — `deliverNotificationTap(.{ .id = …, .route = … })` is the tap
   (call it first to write the launch that started from one),
-  `deliverNotification(id, route)` is one coming due with the app on
+  `deliverNotification` the same payload coming due with the app on
   screen, and `deliverPushToken(token)` is the transport minting one.
   Boot a device that cannot notify, cannot schedule, or cannot push with
   `.notification = .{ .available = false }` and its siblings, and assert
@@ -707,22 +717,149 @@ test, because two hops are substituted rather than executed:
   compile-checks all six; that is the whole of it.
 - **The real services.** Under `zig test` a service *is* its mock:
   `Service = if (builtin.is_test) Mock else PlatformService`. The real
-  keychain, socket, and browser-session code is not merely unused, it is
+  keychain and browser-session code is not merely unused, it is
   not compiled into the test binary. So the mocks are contracts asserted
   against themselves — their fidelity to the platform is asserted by
-  nothing here.
+  nothing *in this harness*. (The one exception is http's native
+  transport, which is pure Zig over a socket and gets its own gate
+  below.)
 
 This is a deliberate boundary, not an oversight. The determinism this
 document keeps promising — no flakiness, byte-exact frames, races
 reproduced identically every run — holds *because* the nondeterministic
 layer is excluded. Widening the harness to reach through a real window
 and a real socket would buy a little coverage and lose the property the
-whole design is built on. The gap is real, and it is nokre's to close on
-its own side, in its own tier — never by making your tests heavier.
+whole design is built on. The gap is nokre's to close on its own side,
+in its own tier — never by making your tests heavier.
+
+That tier now has five gates, all of them on every `zig build test`:
+
+| gate | what reaches a real implementation |
+| --- | --- |
+| `tests/dev_store.zig` | the secure_store verbs, against a store the OS answers (desktop POSIX) |
+| `src/services/http/native_test.zig` | the native http transport's six verbs, over a real loopback socket inside the test binary |
+| `tests/http_stress.zig` | the native http transport's threads, against a loopback socket |
+| `node --check` × 5 | every JavaScript file a web build ships, parsed by the engine that runs it |
+| `tests/web_services.mjs` | the three service legs that exist **only** on the web, executed |
+
+The last one is the newest and the least obvious, so it is spelled out
+below. What no gate reaches is still a real list: the native backends of
+secure_store (Keychain, CredMan, libsecret, the Android Keystore),
+oauth's `ASWebAuthenticationSession` and its Android and loopback legs,
+all four notification systems, StoreKit and Play Billing, and every
+shell's event translation. `zig build check-targets` compiles them; the
+examples link two of them; nothing runs them.
+
+### The web's own gate
+
+`zig build test` builds `tests/web_services.zig` — an ordinary nokre app
+with deep_link, oauth and secure_store linked — into a site the same way
+`addApp` builds a consumer's, then boots that site in node against
+`tests/web_browser.mjs`, a browser stub carrying nothing but platform
+APIs (a document, a location, a session storage, a window that can open
+another and be posted to). The JavaScript under test is the site's own
+`live.js` and `services.js`, imported unmodified; every assertion reads
+back what the *wasm app* recorded through probe exports. So the seam
+that breaks — bytes crossing between Zig and JavaScript — is executed
+rather than analyzed:
+
+- **deep_link** — a launch fragment reaches the handler the app
+  registered in its first `build`, exactly once; every later
+  `hashchange` reaches it too; and a percent-encoded payload with
+  multi-byte characters arrives byte for byte.
+- **oauth** — a press opens the popup with the app's authorize URL and
+  the page's own address as the redirect; the popup's `postMessage` ends
+  the flow and the callback URL lands whole; a message from another
+  origin, from another window on this origin, or of another shape is
+  refused, and the genuine one after them still works; a blocked popup
+  arrives as `PopupBlocked` a task later and never synchronously; a
+  popup the user closes arrives as `cancelled` after the poll's grace;
+  `Handle.cancel` closes the popup and delivers nothing; and a page URL
+  over the redirect cap seeds nothing, so the first sign-in fails with
+  `RedirectTooLong` instead of sending a truncated URI.
+- **secure_store** — the sessionStorage snapshot lands in the in-wasm
+  table before the first `build` reads it; entries from another
+  namespace, out-of-contract keys and values that do not decode are
+  dropped at the door; writes and deletes mirror out under the one
+  prefix, with base64 carrying bytes a string cannot; a value survives a
+  reload and a deleted one does not come back; and a storage that is
+  blocked or full costs reload-survival and nothing else — the table
+  still answers, which is why this leg has no `Unavailable`.
+
+What that gate is **not** is a browser. Layout, styling, the real event
+loop, a real popup's window management and a real storage's quota
+behaviour are the stub's approximations, and nothing there asserts how a
+page *looks* or where text wrapped — the golden tests are that, on the
+desktop editions. Still uncovered on the web specifically: the compute
+worker (`live-worker.js` in a real `Worker`), the service worker
+(`sw.js`, and therefore the notification leg), the http leg's `fetch`,
+the static driver's hydration handover, and IME and scrolling, which
+belong to the browser rather than to a service. Those remain
+browser-only, asserted by no test on either side.
 
 Practically, for your app: an integration bug in nokre's shell or in a
-real service backend will not fail your test suite. Everything above
+native service backend will not fail your test suite. Everything above
 `App.dispatch` will.
+
+## Driving an app outside `zig test`
+
+That own tier is a *driver*: an ordinary executable that constructs a
+real `App`, drives it, and reaches the real services — the program
+shape a shell is, minus the window. It is not the harness with a flag
+turned on, and deliberately not:
+
+- **`Harness` stays inside `zig test`.** Its whole value is that every
+  field is a mock (`t.store`, `lockStore`, the http handler),
+  and mocks exist only under `builtin.is_test` — `Service =
+  if (is_test) Mock else PlatformService` is the roster's rule, not one
+  service's. A `Harness` that compiled in a release build would have to
+  carry every mock into it, which is the exact thing that rule exists to
+  make unrepresentable. So the seam is one layer down.
+- **The driver layer already is that seam.** `testing.driver`,
+  `testing.queries`, `testing.audit`, `testing.trace` and
+  `testing.golden` name no `builtin.is_test` at all and are exported
+  unconditionally. `driver.tap(app, id)`,
+  `queries.queryByLabel(&app.tree, …)` and `audit.audit(app)` work on
+  any `*App`, in any build.
+
+Two things a driver owes that a test does not. It owes the hooks a
+shell owes — `nokre_locale_install` and its pair at minimum, plus
+`nokre_open_url_open` and `nokre_shell_write_clipboard` if its screens
+reach them — exported by the program itself, answering the way a shell
+with nothing to report does. And it owes the `App` a fixed address: a
+press handler holds a `*App`, so build the app into storage that
+outlives the call rather than returning one by value (`Harness` keeps it
+as a field for exactly that reason).
+
+A driver may hold **more than one `App` at a time**, and often should:
+two devices in one process is how a scenario signs out as one user and
+in as another. Nothing in nokre is process-global on an app's behalf —
+the exemptions are the shared `std.Io.Threaded` backends
+([internals/architecture.md](internals/architecture.md) lists them),
+and they are refcounted so that two apps share one and the last one out
+tears it down. Two apps' networks, stores and worker rosters are
+disjoint by construction. The concurrency a second app adds is the same
+concurrency one app fanning out requests adds, and the http transport
+carries a gate of its own for it
+([internals/http.md](internals/http.md#no-pool-under-the-native-transport)):
+`tests/http_stress.zig`, two apps at 1920 real requests, on every
+`zig build test`.
+
+The one service a driver cannot simply use as it stands is
+`secure_store`, and it has its own answer: `.secure_store_dev = true`
+swaps the Keychain or the Secret Service for a plaintext file the driver
+owns, because an unentitled binary is refused the data-protection
+keychain and a headless CI machine runs no keyring daemon
+([services.md](services.md) has the gates that keep it out of a shipping
+build). nokre's own `tests/dev_store.zig` is a worked example of the
+whole shape, and it runs on every `zig build test` on a desktop POSIX
+host — the one place in the repository where the store verbs reach a
+store the OS answers. `tests/http_stress.zig` is the second worked
+example, and the other half of the same tier: the one place where the
+http verbs reach a socket the OS answers. `tests/web_services.zig` is
+the third, in the one place a driver cannot be a Zig program at all —
+the browser, where half of every service leg is JavaScript, so the
+driver is `tests/web_services.mjs` and the app it drives is a wasm site.
 
 What nokre tests for *itself* — and the guarantees those tests prove on
 your behalf — is catalogued in
