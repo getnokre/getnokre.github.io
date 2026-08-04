@@ -413,7 +413,7 @@ fn addNote(state: *State, text: []const u8) void {
     } });
     try app.tree.append(actions, .{ .button = .{
         .label = &quot;Sync&quot;, // Part 7
-        .secondary = true,
+        .form = .{ .secondary = null },
         .on_press = .{ .ctx = state, .call = onSyncPressed },
     } });
     try app.tree.append(root, .{ .text = .{ .content = state.status, .style = .{ .scale = .small, .ink = .dark } } });
@@ -711,7 +711,7 @@ fn ensureStats(state: *State) ?h.workers.Handle(Stats) {
     try app.tree.append(root, .{ .qr = .{ .label = &quot;Scan to take it with you&quot;, .value = note.slice() } });
     try app.tree.append(root, .{ .button = .{
         .label = &quot;Delete&quot;,
-        .secondary = true,
+        .form = .{ .secondary = null },
         .on_press = .{ .ctx = state, .call = onDeleteNote },
     } });
 }
@@ -791,7 +791,7 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
     if (state.signed_in) {
         try app.tree.append(root, .{ .button = .{
             .label = &quot;Sign out&quot;,
-            .secondary = true,
+            .form = .{ .secondary = null },
             .on_press = .{ .ctx = state, .call = onSignOut },
         } });
     } else {

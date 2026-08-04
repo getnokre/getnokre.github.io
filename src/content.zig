@@ -535,7 +535,7 @@ fn gallery(app: *App) !void {
     try heading(app, root, .h3, "button");
     const buttons = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
     try app.tree.append(buttons, .{ .button = .{ .label = "New note" } });
-    try app.tree.append(buttons, .{ .button = .{ .label = "Cancel", .secondary = true } });
+    try app.tree.append(buttons, .{ .button = .{ .label = "Cancel", .form = .{ .secondary = null } } });
     try app.tree.append(buttons, .{ .button = .{ .label = "Delete", .disabled = true } });
 
     try heading(app, root, .h3, "link");
