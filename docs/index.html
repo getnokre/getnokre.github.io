@@ -27,14 +27,14 @@
 
 fn buildHome(_: ?*anyopaque, app: *nok.App) !void {
     const root = app.tree.rootId();
-    _ = try app.tree.append(root, .{ .heading = .{
+    try app.tree.append(root, .{ .heading = .{
         .content = &quot;Notes&quot;,
         .level = .h1,
     } });
-    _ = try app.tree.append(root, .{ .text = .{
+    try app.tree.append(root, .{ .text = .{
         .content = &quot;Everything here is accessible by construction.&quot;,
     } });
-    _ = try app.tree.append(root, .{ .button = .{
+    try app.tree.append(root, .{ .button = .{
         .label = &quot;New note&quot;,
         .on_press = .{ .call = onNewNote },
     } });

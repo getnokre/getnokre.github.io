@@ -61,34 +61,34 @@ fn buildPage(site: *Site, app: *App, i: usize) !void {
 // ------------------------------------------------------------ helpers
 
 fn text(app: *App, parent: NodeId, content: []const u8) !void {
-    _ = try app.tree.append(parent, .{ .text = .{ .content = content } });
+    try app.tree.append(parent, .{ .text = .{ .content = content } });
 }
 
 fn styled(app: *App, parent: NodeId, content: []const u8, style: nok.text.Style) !void {
-    _ = try app.tree.append(parent, .{ .text = .{ .content = content, .style = style } });
+    try app.tree.append(parent, .{ .text = .{ .content = content, .style = style } });
 }
 
 fn spanned(app: *App, parent: NodeId, spans: []const nok.element.Span) !void {
-    _ = try app.tree.append(parent, .{ .text = .{ .spans = spans } });
+    try app.tree.append(parent, .{ .text = .{ .spans = spans } });
 }
 
 fn heading(app: *App, parent: NodeId, level: nok.element.HeadingLevel, content: []const u8) !void {
-    _ = try app.tree.append(parent, .{ .heading = .{ .content = content, .level = level } });
+    try app.tree.append(parent, .{ .heading = .{ .content = content, .level = level } });
 }
 
 fn code(app: *App, parent: NodeId, content: []const u8) !void {
-    _ = try app.tree.append(parent, .{ .code_block = .{ .content = content } });
+    try app.tree.append(parent, .{ .code_block = .{ .content = content } });
 }
 
 fn divider(app: *App, parent: NodeId) !void {
-    _ = try app.tree.append(parent, .{ .divider = .{} });
+    try app.tree.append(parent, .{ .divider = .{} });
 }
 
 fn bullets(app: *App, parent: NodeId, items: []const []const nok.element.Span) !void {
-    const list = try app.tree.append(parent, .{ .list = .{} });
+    const list = try app.tree.appendId(parent, .{ .list = .{} });
     for (items) |item| {
-        const li = try app.tree.append(list, .{ .list_item = .{} });
-        _ = try app.tree.append(li, .{ .text = .{ .spans = item } });
+        const li = try app.tree.appendId(list, .{ .list_item = .{} });
+        try app.tree.append(li, .{ .text = .{ .spans = item } });
     }
 }
 
@@ -109,10 +109,10 @@ fn linkTo(s: []const u8, route: []const u8) nok.element.Span {
 }
 
 fn tiles(app: *App, parent: NodeId, names: []const []const u8) !void {
-    const group = try app.tree.append(parent, .{ .tile_group = .{} });
+    const group = try app.tree.appendId(parent, .{ .tile_group = .{} });
     for (names) |name| {
         const p = pages.find(name).?;
-        _ = try app.tree.append(group, .{ .tile = .{
+        try app.tree.append(group, .{ .tile = .{
             .label = p.title,
             .detail = p.blurb,
             .route = p.name,
@@ -121,7 +121,7 @@ fn tiles(app: *App, parent: NodeId, names: []const []const u8) !void {
 }
 
 fn tableOf(app: *App, parent: NodeId, rows: []const []const []const u8) !void {
-    const table = try app.tree.append(parent, .{ .table = .{} });
+    const table = try app.tree.appendId(parent, .{ .table = .{} });
     for (rows, 0..) |cells, r| {
         try tableRow(app, table, cells, r == 0);
     }
@@ -133,17 +133,17 @@ fn tableOf(app: *App, parent: NodeId, rows: []const []const []const u8) !void {
 /// `<th>`s, and a screen reader associates every cell with a header
 /// that says nothing.
 fn headerlessTableOf(app: *App, parent: NodeId, rows: []const []const []const u8) !void {
-    const table = try app.tree.append(parent, .{ .table = .{} });
+    const table = try app.tree.appendId(parent, .{ .table = .{} });
     for (rows) |cells| {
         try tableRow(app, table, cells, false);
     }
 }
 
 fn tableRow(app: *App, table: NodeId, cells: []const []const u8, header: bool) !void {
-    const row = try app.tree.append(table, .{ .row = .{ .header = header } });
+    const row = try app.tree.appendId(table, .{ .row = .{ .header = header } });
     for (cells) |c| {
-        const cell = try app.tree.append(row, .{ .cell = .{} });
-        _ = try app.tree.append(cell, .{ .text = .{ .content = c } });
+        const cell = try app.tree.appendId(row, .{ .cell = .{} });
+        try app.tree.append(cell, .{ .text = .{ .content = c } });
     }
 }
 
@@ -172,14 +172,14 @@ fn home(app: *App) !void {
         \\
         \\fn buildHome(_: ?*anyopaque, app: *nok.App) !void {
         \\    const root = app.tree.rootId();
-        \\    _ = try app.tree.append(root, .{ .heading = .{
+        \\    try app.tree.append(root, .{ .heading = .{
         \\        .content = "Notes",
         \\        .level = .h1,
         \\    } });
-        \\    _ = try app.tree.append(root, .{ .text = .{
+        \\    try app.tree.append(root, .{ .text = .{
         \\        .content = "Everything here is accessible by construction.",
         \\    } });
-        \\    _ = try app.tree.append(root, .{ .button = .{
+        \\    try app.tree.append(root, .{ .button = .{
         \\        .label = "New note",
         \\        .on_press = .{ .call = onNewNote },
         \\    } });
@@ -200,7 +200,7 @@ fn home(app: *App) !void {
         "and turns each removed capability into a promise that holds for " ++
         "every app built on it.");
 
-    const promises = try app.tree.append(root, .{ .stack = .{ .gap = 8 } });
+    const promises = try app.tree.appendId(root, .{ .stack = .{ .gap = 8 } });
     try promise(app, promises, "Accessible by construction", "Every element is semantic — a heading is structure, a button is a " ++
         "button, a label is mandatory. The accessibility tree and the pixels " ++
         "are both projections of the same semantic tree, so accessibility " ++
@@ -299,7 +299,7 @@ fn home(app: *App) !void {
 }
 
 fn promise(app: *App, parent: NodeId, title: []const u8, body: []const u8) !void {
-    const box = try app.tree.append(parent, .{ .box = .{} });
+    const box = try app.tree.appendId(parent, .{ .box = .{} });
     try heading(app, box, .h3, title);
     try text(app, box, body);
 }
@@ -321,10 +321,10 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
             "the architecture, then the contributor checklists.");
     }
 
-    const group = try app.tree.append(root, .{ .tile_group = .{} });
+    const group = try app.tree.appendId(root, .{ .tile_group = .{} });
     for (pages.all) |p| {
         if (p.track != track) continue;
-        _ = try app.tree.append(group, .{ .tile = .{
+        try app.tree.append(group, .{ .tile = .{
             .label = p.title,
             .detail = p.blurb,
             .route = p.name,
@@ -348,7 +348,7 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
 /// every append-time gate applies to it for free.
 fn document(app: *App, i: usize, source: []const u8) !void {
     const root = app.tree.rootId();
-    _ = try app.tree.append(root, .{ .document = .{
+    try app.tree.append(root, .{ .document = .{
         .label = pages.all[i].title,
         .source = source,
     } });
@@ -372,10 +372,10 @@ fn palette(site: *Site, app: *App) !void {
     // Thirteen filled boxes in a row. A box is the only element that
     // paints a ground, so a swatch is a box — there is no swatch
     // element and there is not going to be one.
-    const strip = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal, .gap = 4 } });
+    const strip = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal, .gap = 4 } });
     inline for (@typeInfo(Gray).@"enum".fields) |f| {
         const g: Gray = @enumFromInt(f.value);
-        _ = try app.tree.append(strip, .{ .box = .{ .fill = g, .border = false, .padding = 18 } });
+        try app.tree.append(strip, .{ .box = .{ .fill = g, .border = false, .padding = 18 } });
     }
     try styled(app, root, "g0 on the left through g12 on the right, in whichever appearance you are reading this in. The dark ramp descends where the light one climbs — that descent is the inversion, which is why no draw site inverts anything. There is no theme switch here because there is none in nokre: both follow the system.", .{
         .scale = .small,
@@ -445,7 +445,7 @@ fn gallery(app: *App) !void {
         "accessibility can be derived rather than annotated. There is no " ++
         "styling API: if an element does not do what you want, the answer is " ++
         "a different composition of these, not a customization hook.");
-    const note = try app.tree.append(root, .{ .box = .{} });
+    const note = try app.tree.appendId(root, .{ .box = .{} });
     try styled(app, note, "The controls below are specimens. They are drawn the way nokre " ++
         "draws them and they take focus the way nokre does; the ones with " ++
         "state — checkbox, toggle, radio, select, fields — really do change " ++
@@ -475,30 +475,30 @@ fn gallery(app: *App) !void {
     try text(app, root, "h1 through h6, mapped to fixed sizes. Headings are structure, not styling — the audit fails a skipped level. Every level draws bold, which is what keeps h5 and h6 reading as headings beside the prose they share a size with.");
 
     try heading(app, root, .h3, "icon");
-    const icons = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
-    _ = try app.tree.append(icons, .{ .icon = .{ .name = .shapes, .label = "Shapes" } });
-    _ = try app.tree.append(icons, .{ .icon = .{ .name = .ruler, .label = "Ruler" } });
-    _ = try app.tree.append(icons, .{ .icon = .{ .name = .accessibility, .label = "Accessibility" } });
-    _ = try app.tree.append(icons, .{ .icon = .{ .name = .flask_conical, .label = "Flask" } });
-    _ = try app.tree.append(icons, .{ .icon = .{ .name = .globe, .ink = .mid } });
+    const icons = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
+    try app.tree.append(icons, .{ .icon = .{ .name = .shapes, .label = "Shapes" } });
+    try app.tree.append(icons, .{ .icon = .{ .name = .ruler, .label = "Ruler" } });
+    try app.tree.append(icons, .{ .icon = .{ .name = .accessibility, .label = "Accessibility" } });
+    try app.tree.append(icons, .{ .icon = .{ .name = .flask_conical, .label = "Flask" } });
+    try app.tree.append(icons, .{ .icon = .{ .name = .globe, .ink = .mid } });
     try styled(app, root, "One named Lucide glyph, laid out as a square line-height box. An empty label means decorative, and decorative means hidden from assistive tech; a named one is announced and must clear the same contrast gate as text.", .{ .ink = .mid, .scale = .small });
 
     try heading(app, root, .h3, "divider");
     try divider(app, root);
 
     try heading(app, root, .h3, "badge");
-    const badges = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
-    _ = try app.tree.append(badges, .{ .badge = .{ .label = "Active" } });
-    _ = try app.tree.append(badges, .{ .badge = .{ .label = "Owner" } });
-    _ = try app.tree.append(badges, .{ .badge = .{ .label = "3 pending" } });
+    const badges = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
+    try app.tree.append(badges, .{ .badge = .{ .label = "Active" } });
+    try app.tree.append(badges, .{ .badge = .{ .label = "Owner" } });
+    try app.tree.append(badges, .{ .badge = .{ .label = "3 pending" } });
     try styled(app, root, "Where color-coded chips carry state by hue elsewhere, here the words carry it.", .{ .ink = .mid, .scale = .small });
 
     try heading(app, root, .h3, "meter");
-    _ = try app.tree.append(root, .{ .meter = .{ .label = "12 of 30 days", .value = 12, .max = 30 } });
+    try app.tree.append(root, .{ .meter = .{ .label = "12 of 30 days", .value = 12, .max = 30 } });
     try styled(app, root, "The label is mandatory and is what assistive tech hears; the fill only restates it. Never animated — for indeterminate waiting, write \"Loading…\" as text.", .{ .ink = .mid, .scale = .small });
 
     try heading(app, root, .h3, "qr");
-    _ = try app.tree.append(root, .{ .qr = .{
+    try app.tree.append(root, .{ .qr = .{
         .label = "This site",
         .value = "https://getnokre.github.io",
     } });
@@ -510,13 +510,13 @@ fn gallery(app: *App) !void {
     try text(app, root, "Vertical or horizontal flow, with a gap and a padding. The tree root is a vertical stack.");
 
     try heading(app, root, .h3, "box");
-    const outer = try app.tree.append(root, .{ .box = .{} });
+    const outer = try app.tree.appendId(root, .{ .box = .{} });
     try text(app, outer, "Grouping container: an optional 1px border, a padding, an optional fill. Boxes group; they do not decorate.");
-    const inner = try app.tree.append(outer, .{ .box = .{ .fill = .g11 } });
+    const inner = try app.tree.appendId(outer, .{ .box = .{ .fill = .g11 } });
     try text(app, inner, "A box's edge is a wall: the margin advice stops at it, so nothing ever bleeds across a border.");
 
     try heading(app, root, .h3, "scroll_region");
-    const region = try app.tree.append(root, .{ .scroll_region = .{ .height = 120 } });
+    const region = try app.tree.appendId(root, .{ .scroll_region = .{ .height = 120 } });
     try text(app, region, "A viewport over vertically flowing children, clipped, with a 2px indicator reflecting the offset.");
     try text(app, region, "The bar has two tones, switched by state and never by time: emphasized while its surface is engaged, quiet at rest.");
     try text(app, region, "At rest the primary \"more is there\" affordance is the content itself, cut mid-element at the viewport edge — which is why the audit fails a fixed-height region whose top edge cuts nothing visible.");
@@ -531,30 +531,30 @@ fn gallery(app: *App) !void {
     });
 
     try heading(app, root, .h3, "button");
-    const buttons = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
-    _ = try app.tree.append(buttons, .{ .button = .{ .label = "New note" } });
-    _ = try app.tree.append(buttons, .{ .button = .{ .label = "Cancel", .secondary = true } });
-    _ = try app.tree.append(buttons, .{ .button = .{ .label = "Delete", .disabled = true } });
+    const buttons = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal, .gap = 8 } });
+    try app.tree.append(buttons, .{ .button = .{ .label = "New note" } });
+    try app.tree.append(buttons, .{ .button = .{ .label = "Cancel", .secondary = true } });
+    try app.tree.append(buttons, .{ .button = .{ .label = "Delete", .disabled = true } });
 
     try heading(app, root, .h3, "link");
-    _ = try app.tree.append(root, .{ .link = .{ .label = "The routing contract", .route = "routing" } });
+    try app.tree.append(root, .{ .link = .{ .label = "The routing contract", .route = "routing" } });
 
     try heading(app, root, .h3, "toggle");
-    _ = try app.tree.append(root, .{ .toggle = .{ .label = "Sync over cellular", .on = true } });
+    try app.tree.append(root, .{ .toggle = .{ .label = "Sync over cellular", .on = true } });
 
     try heading(app, root, .h3, "checkbox");
-    _ = try app.tree.append(root, .{ .checkbox = .{ .label = "Remember this device", .checked = true } });
-    _ = try app.tree.append(root, .{ .checkbox = .{ .label = "Send crash reports" } });
+    try app.tree.append(root, .{ .checkbox = .{ .label = "Remember this device", .checked = true } });
+    try app.tree.append(root, .{ .checkbox = .{ .label = "Send crash reports" } });
 
     try heading(app, root, .h3, "radio_group");
-    _ = try app.tree.append(root, .{ .radio_group = .{
+    try app.tree.append(root, .{ .radio_group = .{
         .label = "Export format",
         .options = &.{ "Markdown", "Plain text", "HTML" },
         .selected = 0,
     } });
 
     try heading(app, root, .h3, "segmented");
-    _ = try app.tree.append(root, .{ .segmented = .{
+    try app.tree.append(root, .{ .segmented = .{
         .label = "View",
         .options = &.{ "All", "Starred", "Archived" },
         .selected = 1,
@@ -562,38 +562,38 @@ fn gallery(app: *App) !void {
     try styled(app, root, "An exclusive choice among 2+ fixed options — radiogroup semantics, not tabs. There is deliberately no tablist element: nokre rebuilds subtrees instantly, so co-existing tab panels never exist and tablist semantics would be a lie.", .{ .ink = .mid, .scale = .small });
 
     try heading(app, root, .h3, "select");
-    _ = try app.tree.append(root, .{ .select = .{
+    try app.tree.append(root, .{ .select = .{
         .label = "Sort by",
         .options = &.{ "Recently edited", "Recently created", "Title" },
         .selected = 0,
     } });
 
     try heading(app, root, .h3, "text_input");
-    _ = try app.tree.append(root, .{ .text_input = .{ .label = "Title", .value = "Grocery list" } });
+    try app.tree.append(root, .{ .text_input = .{ .label = "Title", .value = "Grocery list" } });
 
     try heading(app, root, .h3, "text_area");
-    _ = try app.tree.append(root, .{ .text_area = .{
+    try app.tree.append(root, .{ .text_area = .{
         .label = "Note",
         .placeholder = "Whitespace is preserved; the field grows to three lines and then scrolls.",
     } });
 
     try heading(app, root, .h3, "copyable");
-    _ = try app.tree.append(root, .{ .copyable = .{
+    try app.tree.append(root, .{ .copyable = .{
         .label = "Recovery code",
         .value = "K7QM-2XPD-9ATV-6BLR",
     } });
     try styled(app, root, "Activation is intrinsic — it writes the value to the platform clipboard. There is no action to wire, so it cannot be miswired.", .{ .ink = .mid, .scale = .small });
 
     try heading(app, root, .h3, "tile_group and tile");
-    const group = try app.tree.append(root, .{ .tile_group = .{
+    const group = try app.tree.appendId(root, .{ .tile_group = .{
         .description = "Reach for tiles where a screen is a list of destinations or row-shaped actions.",
     } });
-    _ = try app.tree.append(group, .{ .tile = .{
+    try app.tree.append(group, .{ .tile = .{
         .label = "Accessibility",
         .detail = "Derivation, enforcement, the audit",
         .route = "accessibility",
     } });
-    _ = try app.tree.append(group, .{ .tile = .{
+    try app.tree.append(group, .{ .tile = .{
         .label = "Testing",
         .detail = "Harness, queries, golden screenshots",
         .route = "testing",
@@ -607,7 +607,7 @@ fn gallery(app: *App) !void {
     });
 
     try heading(app, root, .h3, "blockquote");
-    const quote = try app.tree.append(root, .{ .blockquote = .{} });
+    const quote = try app.tree.appendId(root, .{ .blockquote = .{} });
     try text(app, quote, "The attribution is words inside the quote, not a field on it: a quote whose source only a border implies is a quote whose source nobody hears.");
     try styled(app, quote, "— docs/elements.md", .{ .ink = .mid, .scale = .small });
 
@@ -661,7 +661,7 @@ fn colophon(app: *App) !void {
         "audit before a byte of markup is written.");
 
     try heading(app, root, .h2, "How a page is made");
-    const steps = try app.tree.append(root, .{ .list = .{ .ordered = true } });
+    const steps = try app.tree.appendId(root, .{ .list = .{ .ordered = true } });
     try step(app, steps, "One App is constructed with a route table of every page on this site. Duplicate or malformed route names fail there, in App.init, rather than at first navigation.");
     try step(app, steps, "The generator switches to each route in turn — switchTo, the motion the web shell uses for an inbound link, which is exactly what a visitor arriving at a static page has.");
     try step(app, steps, "The route's builder appends elements. Documentation pages append one document element holding nokre's own Markdown, which the parser expands into ordinary elements inside append.");
@@ -705,7 +705,7 @@ fn colophon(app: *App) !void {
     try spanned(app, root, provenance);
 
     try heading(app, root, .h2, "The door was left open on purpose");
-    const quote = try app.tree.append(root, .{ .blockquote = .{} });
+    const quote = try app.tree.appendId(root, .{ .blockquote = .{} });
     try text(app, quote, "A renderer is an interpretation of the semantic tree, the way a " ++
         "browser interprets HTML. It may draw each element however it likes, " ++
         "with capabilities the Skia edition refuses, so long as the semantics " ++
@@ -829,6 +829,6 @@ fn stamp(comptime rev: []const u8, comptime dirty: bool) []const nok.element.Spa
 }
 
 fn step(app: *App, list: NodeId, body: []const u8) !void {
-    const li = try app.tree.append(list, .{ .list_item = .{} });
-    _ = try app.tree.append(li, .{ .text = .{ .content = body } });
+    const li = try app.tree.appendId(list, .{ .list_item = .{} });
+    try app.tree.append(li, .{ .text = .{ .content = body } });
 }

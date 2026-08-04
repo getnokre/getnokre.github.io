@@ -92,9 +92,9 @@ fn onIncrement(ctx: ?*anyopaque) void {
 pub fn buildHome(ctx: ?*anyopaque, app: *h.App) !void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
     const root = app.tree.rootId();
-    _ = try app.tree.append(root, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
-    state.label_id = try app.tree.append(root, .{ .text = .{ .content = &quot;Pressed 0 times&quot; } });
-    _ = try app.tree.append(root, .{ .button = .{
+    try app.tree.append(root, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
+    state.label_id = try app.tree.appendId(root, .{ .text = .{ .content = &quot;Pressed 0 times&quot; } });
+    try app.tree.append(root, .{ .button = .{
         .label = &quot;Increment&quot;,
         .on_press = .{ .ctx = state, .call = onIncrement },
     } });
@@ -194,30 +194,30 @@ pub fn onDeepLink(ctx: ?*anyopaque, url: []const u8) void {
 
 fn buildSignIn(state: *State, app: *h.App) !void {
     const root = app.tree.rootId();
-    _ = try app.tree.append(root, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
-    _ = try app.tree.append(root, .{ .text = .{ .spans = &amp;.{
+    try app.tree.append(root, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
+    try app.tree.append(root, .{ .text = .{ .spans = &amp;.{
         .{ .text = &quot;Welcome. The passphrase is &quot; },
         .{ .text = &quot;letmein&quot;, .code = true },
         .{ .text = &quot; — this is a course app, not a bank.&quot; },
     } } });
-    const form = try app.tree.append(root, .{ .box = .{} });
-    _ = try app.tree.append(form, .{ .text_input = .{
+    const form = try app.tree.appendId(root, .{ .box = .{} });
+    try app.tree.append(form, .{ .text_input = .{
         .label = &quot;Passphrase&quot;,
         .obscured = true,
         .on_change = .{ .ctx = state, .call = onPassphraseChange },
         .on_submit = .{ .ctx = state, .call = onSignIn },
     } });
-    _ = try app.tree.append(form, .{ .checkbox = .{
+    try app.tree.append(form, .{ .checkbox = .{
         .label = &quot;Stay signed in on this device&quot;,
         .checked = state.remember,
         .on_toggle = .{ .ctx = state, .call = onRememberToggle },
     } });
-    _ = try app.tree.append(form, .{ .button = .{
+    try app.tree.append(form, .{ .button = .{
         .label = &quot;Sign in&quot;,
         .on_press = .{ .ctx = state, .call = onSignIn },
     } });
     if (state.signin_status.len != 0) {
-        _ = try app.tree.append(root, .{ .text = .{ .content = state.signin_status, .style = .{ .scale = .small, .ink = .dark } } });
+        try app.tree.append(root, .{ .text = .{ .content = state.signin_status, .style = .{ .scale = .small, .ink = .dark } } });
     }
 }
 
@@ -393,54 +393,54 @@ fn addNote(state: *State, text: []const u8) void {
     offline: bool = false,
     draft: [max_note_len]u8 = undefined,
     draft_len: usize = 0,</code></pre><p>The signed-in half of <code>buildNotes</code>:</p><pre class="code" tabindex="0" data-n="145"><code>    const root = app.tree.rootId();
-    const title_row = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal } });
-    _ = try app.tree.append(title_row, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
+    const title_row = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal } });
+    try app.tree.append(title_row, .{ .heading = .{ .content = &quot;Notes&quot;, .level = .h1 } });
     if (state.offline) {
-        _ = try app.tree.append(title_row, .{ .badge = .{ .label = &quot;Offline&quot; } });
+        try app.tree.append(title_row, .{ .badge = .{ .label = &quot;Offline&quot; } });
     }
 
-    const actions = try app.tree.append(root, .{ .stack = .{ .axis = .horizontal } });
-    _ = try app.tree.append(actions, .{ .button = .{
+    const actions = try app.tree.appendId(root, .{ .stack = .{ .axis = .horizontal } });
+    try app.tree.append(actions, .{ .button = .{
         .label = &quot;New note&quot;,
         .on_press = .{ .ctx = state, .call = onOpenNewNote },
     } });
-    _ = try app.tree.append(actions, .{ .button = .{
+    try app.tree.append(actions, .{ .button = .{
         .label = &quot;Sync&quot;, // Part 7
         .secondary = true,
         .on_press = .{ .ctx = state, .call = onSyncPressed },
     } });
-    _ = try app.tree.append(root, .{ .text = .{ .content = state.status, .style = .{ .scale = .small, .ink = .dark } } });
+    try app.tree.append(root, .{ .text = .{ .content = state.status, .style = .{ .scale = .small, .ink = .dark } } });
 
     if (state.note_count == 0) {
-        _ = try app.tree.append(root, .{ .text = .{ .content = &quot;Nothing here yet. Press “New note” to write the first one.&quot; } });
+        try app.tree.append(root, .{ .text = .{ .content = &quot;Nothing here yet. Press “New note” to write the first one.&quot; } });
     } else {
-        const group = try app.tree.append(root, .{ .tile_group = .{
+        const group = try app.tree.appendId(root, .{ .tile_group = .{
             .description = &quot;Tap a note to read, share, or delete it.&quot;,
         } });
         for (0..state.note_count) |i| {
             const index = if (state.newest_first) state.note_count - 1 - i else i;
             state.refs[index] = .{ .state = state, .index = index };
-            _ = try app.tree.append(group, .{ .tile = .{
+            try app.tree.append(group, .{ .tile = .{
                 .label = state.notes[index].slice(),
                 .on_press = .{ .ctx = &amp;state.refs[index], .call = onOpenNote },
             } });
         }
     }
 
-    _ = try app.tree.append(root, .{ .divider = .{} });
+    try app.tree.append(root, .{ .divider = .{} });
     var cap_buf: [32]u8 = undefined;
     const cap = try std.fmt.bufPrint(&amp;cap_buf, &quot;{d} of {d} notes&quot;, .{ state.note_count, max_notes });
-    _ = try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Notice the meter label was formatted into a stack buffer — safe, because the tree copies every string at <code>append</code>; it never borrows your memory. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="146" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is created through the app, never appended by a builder, and its lifecycle is framework-owned — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="148"><code>fn onOpenNewNote(ctx: ?*anyopaque) void {
+    try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Notice the meter label was formatted into a stack buffer — safe, because the tree copies every string at <code>append</code>; it never borrows your memory. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="146" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is created through the app, never appended by a builder, and its lifecycle is framework-owned — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="148"><code>fn onOpenNewNote(ctx: ?*anyopaque) void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
     const app = state.app;
     state.draft_len = 0;
     const sheet = app.presentSheet(&quot;New note&quot;) catch return;
-    _ = app.tree.append(sheet, .{ .text_area = .{
+    app.tree.append(sheet, .{ .text_area = .{
         .label = &quot;Note&quot;,
         .placeholder = &quot;Write it down…&quot;,
         .on_change = .{ .ctx = state, .call = onDraftChange },
     } }) catch return;
-    _ = app.tree.append(sheet, .{ .button = .{
+    app.tree.append(sheet, .{ .button = .{
         .label = &quot;Add&quot;,
         .on_press = .{ .ctx = state, .call = onAddNote },
     } }) catch return;
@@ -693,12 +693,12 @@ fn ensureStats(state: *State) ?h.workers.Handle(Stats) {
     const root = app.tree.rootId();
     // The framework&#39;s Back control shares this heading&#39;s line — a pushed
     // screen without a way back cannot exist.
-    _ = try app.tree.append(root, .{ .heading = .{ .content = &quot;Note&quot;, .level = .h1 } });
-    _ = try app.tree.append(root, .{ .text = .{ .content = note.slice() } });
-    _ = try app.tree.append(root, .{ .divider = .{} });
-    _ = try app.tree.append(root, .{ .copyable = .{ .label = &quot;Copy this note&quot;, .value = note.slice() } });
-    _ = try app.tree.append(root, .{ .qr = .{ .label = &quot;Scan to take it with you&quot;, .value = note.slice() } });
-    _ = try app.tree.append(root, .{ .button = .{
+    try app.tree.append(root, .{ .heading = .{ .content = &quot;Note&quot;, .level = .h1 } });
+    try app.tree.append(root, .{ .text = .{ .content = note.slice() } });
+    try app.tree.append(root, .{ .divider = .{} });
+    try app.tree.append(root, .{ .copyable = .{ .label = &quot;Copy this note&quot;, .value = note.slice() } });
+    try app.tree.append(root, .{ .qr = .{ .label = &quot;Scan to take it with you&quot;, .value = note.slice() } });
+    try app.tree.append(root, .{ .button = .{
         .label = &quot;Delete&quot;,
         .secondary = true,
         .on_press = .{ .ctx = state, .call = onDeleteNote },
@@ -752,9 +752,9 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
 }</code></pre><h2 id="part-10--settings-segmented-radio_group-toggle-package_info">Part 10 — Settings: segmented, radio_group, toggle, package_info</h2><p>Settings is where the three commit contracts sit side by side: a <code>segmented</code> control the user switches repeatedly (appearance), a <code>radio_group</code> for a choice made in place (sort order) — both commit on arrow keys, immediately — and a <code>toggle</code>, the switch that applies now (contrast with Part 4&#39;s checkbox, which waited for Sign in):</p><pre class="code" tabindex="0" data-n="175"><code>pub fn buildSettings(ctx: ?*anyopaque, app: *h.App) !void {
     const state: *State = @ptrCast(@alignCast(ctx.?));
     const root = app.tree.rootId();
-    _ = try app.tree.append(root, .{ .heading = .{ .content = &quot;Settings&quot;, .level = .h1 } });
+    try app.tree.append(root, .{ .heading = .{ .content = &quot;Settings&quot;, .level = .h1 } });
 
-    _ = try app.tree.append(root, .{ .segmented = .{
+    try app.tree.append(root, .{ .segmented = .{
         .label = &quot;Appearance&quot;,
         .options = &amp;.{ &quot;Light&quot;, &quot;Dark&quot;, &quot;Automatic&quot; },
         .selected = switch (app.scheme) {
@@ -764,27 +764,27 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
         },
         .on_select = .{ .ctx = state, .call = onSchemeSelect },
     } });
-    _ = try app.tree.append(root, .{ .radio_group = .{
+    try app.tree.append(root, .{ .radio_group = .{
         .label = &quot;Order&quot;,
         .options = &amp;.{ &quot;Newest first&quot;, &quot;Oldest first&quot; },
         .selected = if (state.newest_first) 0 else 1,
         .on_select = .{ .ctx = state, .call = onOrderSelect },
     } });
-    _ = try app.tree.append(root, .{ .toggle = .{
+    try app.tree.append(root, .{ .toggle = .{
         .label = &quot;Show word-count stats&quot;,
         .on = state.show_stats,
         .on_toggle = .{ .ctx = state, .call = onStatsToggle },
     } });
 
-    _ = try app.tree.append(root, .{ .divider = .{} });
+    try app.tree.append(root, .{ .divider = .{} });
     if (state.signed_in) {
-        _ = try app.tree.append(root, .{ .button = .{
+        try app.tree.append(root, .{ .button = .{
             .label = &quot;Sign out&quot;,
             .secondary = true,
             .on_press = .{ .ctx = state, .call = onSignOut },
         } });
     } else {
-        _ = try app.tree.append(root, .{ .text = .{ .content = &quot;Not signed in.&quot; } });
+        try app.tree.append(root, .{ .text = .{ .content = &quot;Not signed in.&quot; } });
     }
 
     // Identity is declared once in build.zig and baked in everywhere;
@@ -794,8 +794,8 @@ fn onDeleteNote(ctx: ?*anyopaque) void {
     const pkg_line = try std.fmt.bufPrint(&amp;pkg_buf, &quot;{s} {s} ({d}) — {s}&quot;, .{
         pkg.id, pkg.version, pkg.build, @tagName(pkg.installer),
     });
-    _ = try app.tree.append(root, .{ .divider = .{} });
-    _ = try app.tree.append(root, .{ .text = .{ .content = pkg_line, .style = .{ .family = .mono, .scale = .small, .ink = .dark } } });
+    try app.tree.append(root, .{ .divider = .{} });
+    try app.tree.append(root, .{ .text = .{ .content = pkg_line, .style = .{ .family = .mono, .scale = .small, .ink = .dark } } });
 }</code></pre><p>The handlers are one-liners: <code>onSchemeSelect</code> maps the index to <code>state.app.setScheme(…)</code> (dark mode is a scheme, not a style — the palette flips, contrast guarantees hold); <code>onOrderSelect</code> sets <code>state.newest_first</code>; <code>onStatsToggle</code> sets <code>state.show_stats</code>. No <code>refresh</code> needed — the controls carry their own selected state, and the notes screen reads the flags at its next build. The <code>package_info</code> line at the bottom is the declaration from Part 1&#39;s build.zig read back — run the app and it says <code>com.example.notes 0.1.0 (1) — dev</code>.</p><p>Two assertions worth stealing. <code>expectValue</code> reads a segmented control&#39;s selected option straight from the a11y snapshot, and the raw snapshot answers questions the named queries don&#39;t — like <em>document order</em>, the order a screen reader walks:</p><pre class="code" tabindex="0" data-n="178"><code>test &quot;appearance is a segmented control the keyboard drives&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
@@ -854,16 +854,16 @@ test &quot;settings commit immediately: order flips the list&quot; {
 const L = h.l10n.Bundle(&amp;.{
     @embedFile(&quot;l10n/notes_en.arb&quot;), // first source = the template
     @embedFile(&quot;l10n/notes_fa.arb&quot;),
-});</code></pre><p>The current language is one more field in <code>State</code>, changed like any other state:</p><pre class="code" tabindex="0" data-n="189"><code>    locale: L.Locale = L.default_locale,</code></pre><p>In <code>buildNotes</code>&#39; signed-in half, the literals become lookups. The heading and the empty state are <code>tr</code> — messages with no placeholders, returned as constant slices, no buffer:</p><pre class="code" tabindex="0" data-n="191"><code>    _ = try app.tree.append(title_row, .{ .heading = .{ .content = L.tr(state.locale, .notesTitle), .level = .h1 } });</code></pre><pre class="code" tabindex="0" data-n="192"><code>    if (state.note_count == 0) {
-        _ = try app.tree.append(root, .{ .text = .{ .content = L.tr(state.locale, .emptyState) } });
+});</code></pre><p>The current language is one more field in <code>State</code>, changed like any other state:</p><pre class="code" tabindex="0" data-n="189"><code>    locale: L.Locale = L.default_locale,</code></pre><p>In <code>buildNotes</code>&#39; signed-in half, the literals become lookups. The heading and the empty state are <code>tr</code> — messages with no placeholders, returned as constant slices, no buffer:</p><pre class="code" tabindex="0" data-n="191"><code>    try app.tree.append(title_row, .{ .heading = .{ .content = L.tr(state.locale, .notesTitle), .level = .h1 } });</code></pre><pre class="code" tabindex="0" data-n="192"><code>    if (state.note_count == 0) {
+        try app.tree.append(root, .{ .text = .{ .content = L.tr(state.locale, .emptyState) } });
     } else {
         var desc_buf: [160]u8 = undefined;
         const desc = try L.fmt(&amp;desc_buf, state.locale, .noteCount, .{ .count = state.note_count });
-        const group = try app.tree.append(root, .{ .tile_group = .{ .description = desc } });
+        const group = try app.tree.appendId(root, .{ .tile_group = .{ .description = desc } });
         // …the tiles loop, unchanged.
     }</code></pre><p>and the meter label&#39;s <code>std.fmt.bufPrint</code> from Part 6 becomes <code>fmt</code> — same stack buffer habit, because the tree copies at <code>append</code>:</p><pre class="code" tabindex="0" data-n="194"><code>    var cap_buf: [64]u8 = undefined;
     const cap = try L.fmt(&amp;cap_buf, state.locale, .noteCapacity, .{ .count = state.note_count, .max = max_notes });
-    _ = try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Settings grows the picker — options are native language names, so a reader lost in the wrong locale can find their own; it commits on arrow keys like the rest of Part 10:</p><pre class="code" tabindex="0" data-n="196"><code>    _ = try app.tree.append(root, .{ .segmented = .{
+    try app.tree.append(root, .{ .meter = .{ .label = cap, .value = @intCast(state.note_count), .max = max_notes } });</code></pre><p>Settings grows the picker — options are native language names, so a reader lost in the wrong locale can find their own; it commits on arrow keys like the rest of Part 10:</p><pre class="code" tabindex="0" data-n="196"><code>    try app.tree.append(root, .{ .segmented = .{
         .label = &quot;Language&quot;,
         .options = &amp;.{ &quot;English&quot;, &quot;فارسی&quot; },
         .selected = if (state.locale == .en) 0 else 1,
