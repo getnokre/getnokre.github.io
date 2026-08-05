@@ -134,8 +134,8 @@ fn home(app: *App) !void {
         "are both projections of the same semantic tree, so accessibility " ++
         "cannot be added and cannot be omitted. What construction cannot " ++
         "verify, an automatic audit catches.");
-    try promise(promises, "Deterministic to the pixel", "Same logical viewport, same bytes — across runs, machines and " ++
-        "platforms. Layout is integer math; rendering has no GPU, no " ++
+    try promise(promises, "Deterministic to the pixel", "Same logical viewport, same bytes — across runs and machines, " ++
+        "on the platform that drew them. Layout is integer math; rendering has no GPU, no " ++
         "hinting, no subpixel tricks. Screenshots are therefore tests: " ++
         "byte-exact, no tolerance, no perceptual diffing.");
     try promise(promises, "Testable end to end, headless", "nokre ships its own e2e framework, driving the real app through the " ++
