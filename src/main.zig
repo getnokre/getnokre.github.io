@@ -16,6 +16,7 @@ const opts = @import("site_options");
 
 const content = @import("content.zig");
 const icons = @import("icons.zig");
+const css_check = @import("css.zig");
 const links = @import("links.zig");
 const pages = @import("pages.zig");
 
@@ -32,7 +33,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 30;
+const nokre_revision = 31;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -62,12 +63,13 @@ comptime {
 const viewport: nok.Size = .{ .w = 1280, .h = 1024 };
 
 /// The live driver's browser half, published beside the pages
-/// (`docs/internals/dom-edition.md`). The set is nokre's own statement
-/// of it, not a re-typed list: this site once re-typed two of the four
-/// and shipped a service-worker registration that 404ed on every page
-/// load — the list is the library's contract, so it comes from the
-/// library.
-const driver_files = dom.driver_files;
+/// (`docs/internals/dom-edition.md`). The set *and its bytes* are
+/// nokre's own statement of it, not a re-typed list and not a path into
+/// a checkout: this site once re-typed two of the four and shipped a
+/// service-worker registration that 404ed on every page load — the set
+/// is the library's contract, so it comes from the library, and so do
+/// the files.
+const driver_sources = dom.driver_sources;
 
 const font_files = [_][]const u8{
     "prose.woff2",        "prose-bold.woff2",
@@ -121,7 +123,7 @@ pub fn main(init: std.process.Init) !void {
     var resolver: links.Resolver = .{ .gpa = gpa, .seen = &seen };
 
     var documents = try gpa.alloc([]const u8, pages.all.len);
-    var anchors = try gpa.alloc([][]const u8, pages.all.len);
+    var anchors = try gpa.alloc([]const []const u8, pages.all.len);
 
     for (pages.all, 0..) |p, i| {
         // switchTo, not push: a visitor arriving at a page has nothing
@@ -151,7 +153,6 @@ pub fn main(init: std.process.Init) !void {
             }
         }
 
-        resolver.page = i;
         var out: std.ArrayList(u8) = .empty;
         var em: dom.Emitter = .{
             .gpa = gpa,
@@ -169,10 +170,13 @@ pub fn main(init: std.process.Init) !void {
         };
         try writeDocument(&em, i);
         documents[i] = out.items;
-        // The ids the edition minted, kept past the emitter that owns
-        // them: they are what another page's `#anchor` has to name.
-        anchors[i] = try gpa.dupe([]const u8, em.ids.items);
-        for (anchors[i]) |*id| id.* = try gpa.dupe(u8, id.*);
+        // The anchors this page exports — what another page's `#frag`
+        // has to name. The edition hands them over whole
+        // (internals/dom-edition.md, "A heading is an address"); reading
+        // the emitter's own dedup bookkeeping and deep-copying it before
+        // `deinit` was this site holding bookkeeping and calling it an
+        // answer.
+        anchors[i] = try em.takeAnchors(gpa);
         em.deinit();
     }
 
@@ -222,12 +226,23 @@ pub fn main(init: std.process.Init) !void {
     // unit tests (icons.zig); this proves this output against the list.
     // The stylesheet is composed here, before anything is written, so
     // its own icon escapes face the same check the documents do.
-    var css: std.ArrayList(u8) = .empty;
-    try dom.stylesheet.write(gpa, &css, .{});
-    try css.appendSlice(gpa, shell_css);
+    const css = try stylesheet(gpa);
+
+    // ---- the stylesheet check ------------------------------------
+    //
+    // Custom properties inherit, so a `var(--x)` the shell's rules spend
+    // outside `.nokre` resolves to nothing unless something declares it
+    // at `:root` — and a declaration that resolves to nothing is dropped
+    // whole, silently. This site shipped its footer unpadded across the
+    // window that way once (css.zig). Here as well as in the unit test
+    // below, because the two ask about different things: the test asks
+    // whether the sheet *this site is written against* is sound, and
+    // this asks it of the bytes about to be written, which is where a
+    // nokre that moved a property deeper would show up.
+    try checkStylesheet(gpa, css);
 
     const subset = try icons.parse(gpa, icons.py);
-    const emitted = try icons.collectEmitted(gpa, documents, css.items);
+    const emitted = try icons.collectEmitted(gpa, documents, css);
     var uncovered: usize = 0;
     for (emitted) |cp| {
         if (icons.covered(subset, cp)) continue;
@@ -251,7 +266,7 @@ pub fn main(init: std.process.Init) !void {
 
     try cwd.writeFile(io, .{
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "style.css" }),
-        .data = css.items,
+        .data = css,
     });
 
     try cwd.createDirPath(io, try std.fs.path.join(gpa, &.{ out_dir, "assets/fonts" }));
@@ -264,18 +279,19 @@ pub fn main(init: std.process.Init) !void {
         });
     }
 
-    // The driver, out of the same checkout the documents come from —
-    // copied rather than vendored, for the reason the fonts are: a
-    // second copy of a library file in this repository is a copy that
-    // can be older than the library.
+    // The driver, out of the library itself — its bytes, not a path
+    // into a checkout. Copied rather than vendored for the reason the
+    // fonts are (a second copy of a library file in this repository is
+    // a copy that can be older than the library), and now not located
+    // either: `dom.driver_sources` carries name and bytes together, so
+    // this site no longer knows or cares which directory of nokre they
+    // live in.
     var script_bytes: usize = 0;
-    for (driver_files) |f| {
-        const src = try std.fs.path.join(gpa, &.{ opts.repo_dir, "src/render/dom", f });
-        const bytes = try cwd.readFileAlloc(io, src, gpa, .limited(1 << 20));
-        script_bytes += bytes.len;
+    for (driver_sources) |src| {
+        script_bytes += src.bytes.len;
         try cwd.writeFile(io, .{
-            .sub_path = try std.fs.path.join(gpa, &.{ out_dir, f }),
-            .data = bytes,
+            .sub_path = try std.fs.path.join(gpa, &.{ out_dir, src.name }),
+            .data = src.bytes,
         });
     }
 
@@ -529,6 +545,52 @@ fn footer(em: *dom.Emitter) !void {
     , .{ links.repo_url, links.branch, links.external_attrs, links.repo_url, links.external_attrs });
 }
 
+/// The external-link mark's rule, split out of `shell_css` for exactly
+/// one reason — the sheet's own comment above it already says what the
+/// mark is for. The codepoint is nokre's, spelled as a CSS escape by
+/// derivation rather than typed:
+/// `IconName`'s enum value *is* the font codepoint (nokre's
+/// icon_names.zig), so this cannot name a glyph the face does not draw,
+/// and the generation-time icon check that reads CSS escapes is proving
+/// this against the served subset rather than against a literal that
+/// agreed with itself.
+const external_mark_css = std.fmt.comptimePrint(
+    \\
+    \\a.link[href^="https://"]::after {{
+    \\  content: "\{x}";
+    \\  font-family: icons;
+    \\  font-size: var(--px-small);
+    \\  margin-inline-start: 2px;
+    \\  vertical-align: -0.05em;
+    \\}}
+    \\
+, .{@intFromEnum(nok.element.IconName.arrow_up_right)});
+
+/// The one sheet this site serves: the edition's, then the shell's own
+/// document rules. One home, because the check below and the generator
+/// must be asking about the same bytes.
+fn stylesheet(gpa: std.mem.Allocator) ![]const u8 {
+    var out: std.ArrayList(u8) = .empty;
+    errdefer out.deinit(gpa);
+    try dom.stylesheet.write(gpa, &out, .{});
+    try out.appendSlice(gpa, shell_css);
+    return out.toOwnedSlice(gpa);
+}
+
+/// Every custom property the shell's rules spend must be declared at
+/// `:root`, because those rules apply to the document and a property
+/// published deeper — nokre puts `--pad` and `--gap` on `.nokre` — does
+/// not inherit upward. See css.zig for the footer this caught.
+fn checkStylesheet(gpa: std.mem.Allocator, css: []const u8) !void {
+    const unresolvable = try css_check.unresolvable(gpa, css, shell_css);
+    if (unresolvable.len == 0) return;
+    for (unresolvable) |name| {
+        std.debug.print("shell CSS spends {s}, which nothing declares at :root\n", .{name});
+    }
+    std.debug.print("{d} custom propert(ies) resolve to nothing outside .nokre — their whole declarations are dropped\n", .{unresolvable.len});
+    return error.UnresolvableCssVar;
+}
+
 /// The driver's own rules, appended after the edition's stylesheet.
 /// Everything here is about the *document* — its reading column, the
 /// skip link, the footer — and none of it restyles an element: there is
@@ -598,13 +660,7 @@ const shell_css =
     \\   for one either; a page that cites a source file has to say where
     \\   it is sending you. The glyph is Lucide's arrow-up-right out of the
     \\   same icon face, and it is decorative — the words are the link. */
-    \\a.link[href^="https://"]::after {
-    \\  content: "\e04d";
-    \\  font-family: icons;
-    \\  font-size: var(--px-small);
-    \\  margin-inline-start: 2px;
-    \\  vertical-align: -0.05em;
-    \\}
+++ external_mark_css ++
     \\
     \\.skip {
     \\  position: absolute;
@@ -688,10 +744,44 @@ fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
     });
 }
 
+test "the external-link mark is nokre's codepoint, spelled as the sheet spells it" {
+    // The escape used to be typed. It is derived now, so this pins the
+    // *spelling* — lowercase hex, no trailing space — which is what the
+    // generation-time icon scan reads to prove the glyph is in the
+    // served subset (icons.zig). A `{x}` that formatted differently
+    // would leave that scan quietly covering nothing.
+    try std.testing.expect(std.mem.indexOf(u8, external_mark_css, "content: \"\\e04d\";") != null);
+    try std.testing.expectEqual(@as(u21, 0xe04d), @intFromEnum(nok.element.IconName.arrow_up_right));
+}
+
+test "every custom property the shell spends is one the document root carries" {
+    // The regression this exists for is invisible: `var(--pad)` in the
+    // footer was valid CSS that resolved to nothing, which drops the
+    // whole declaration — so the footer ran unpadded and uncapped
+    // across the window and every page still passed every check. The
+    // sheet is deterministic and needs no filesystem, so the guard is a
+    // unit test as well as a generation-time one.
+    const gpa = std.testing.allocator;
+    const css = try stylesheet(gpa);
+    defer gpa.free(css);
+    const unresolvable = try css_check.unresolvable(gpa, css, shell_css);
+    defer gpa.free(unresolvable);
+    for (unresolvable) |name| {
+        std.debug.print("shell CSS spends {s}, which nothing declares at :root\n", .{name});
+    }
+    try std.testing.expectEqual(@as(usize, 0), unresolvable.len);
+    // …and the scan found something to check, so a rename in nokre that
+    // emptied the sheet could not pass this by saying nothing.
+    const used = try css_check.varsUsed(gpa, shell_css);
+    defer gpa.free(used);
+    try std.testing.expect(used.len > 10);
+}
+
 test {
     _ = pages;
     _ = links;
     _ = icons;
+    _ = css_check;
     // Analysis is lazy and only the entry point references the write
     // path, so the test build would otherwise skip it. `main` itself
     // cannot be pulled in — App.Options drops the `services` default

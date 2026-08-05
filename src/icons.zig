@@ -14,6 +14,8 @@
 const std = @import("std");
 const nok = @import("nokre");
 
+const dom = nok.render.dom;
+
 /// The subset script, as text — the same bytes the laptop's subset run
 /// executes, wired in build.zig as a file import. Embedding rather than
 /// reading at run time keeps the pair in one compile: a stale copy of
@@ -176,4 +178,36 @@ test "the scans read the two spellings icons ship in" {
     }, "input.check::after { content: \"\\e04d\"; margin: 0 }");
     defer gpa.free(emitted);
     try std.testing.expectEqualSlices(u21, &.{ 0xE06C, 0xE04D }, emitted);
+}
+
+test "a real emitter's icon lands in the scan, so the entity spelling is pinned" {
+    // The check above spells `&#xE06C;` by hand, which proves the
+    // scanner and nothing else: if the edition ever wrote a private-use
+    // codepoint raw, or as `&#57452;`, or in lowercase hex, the scan
+    // would go on passing while covering nothing — and the failure it
+    // exists to prevent (a glyph missing from the subset, drawn as tofu
+    // on every reader's screen) is invisible to every other check,
+    // because the tree only ever knows names. So one icon makes the
+    // whole round trip: element, emitter, markup, scan.
+    const gpa = std.testing.allocator;
+    var app = try nok.App.init(gpa, .{
+        .viewport = .{ .w = 400, .h = 400 },
+        .services = .mocks(),
+    });
+    defer app.deinit();
+    try nok.cursor.root(&app).icon(.{ .name = .house, .label = "Home" });
+
+    var out: std.ArrayList(u8) = .empty;
+    defer out.deinit(gpa);
+    var em: dom.Emitter = .{ .gpa = gpa, .app = &app, .out = &out };
+    defer em.deinit();
+    try dom.content(&em);
+
+    const emitted = try collectEmitted(gpa, &.{out.items}, "");
+    defer gpa.free(emitted);
+    try std.testing.expectEqualSlices(u21, &.{@intFromEnum(nok.element.IconName.house)}, emitted);
+    // …and it is in the subset, which is the thing generation checks.
+    const subset = try parse(gpa, py);
+    defer gpa.free(subset);
+    try std.testing.expect(covered(subset, @intFromEnum(nok.element.IconName.house)));
 }

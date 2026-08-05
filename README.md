@@ -54,9 +54,11 @@ python3 -m http.server -d docs 8000
 
 A caveat on `-Drepo`: `b.dependency("nokre")` resolves through
 `build.zig.zon`'s `.path = "../nokre"` regardless — the flag redirects
-only the docs and live.js/services.js reads — so it must point at the same
-checkout the zon path names; passing a different one builds against one
-library and renders the other's docs.
+only the reads that go through the filesystem, which is the Markdown and
+the source-file existence check behind every `[x](../src/…)` link (the
+driver's own files come out of the library as bytes, not out of a path)
+— so it must point at the same checkout the zon path names; passing a
+different one builds against one library and renders the other's docs.
 
 The build fails, rather than publishing something wrong, when:
 
@@ -69,7 +71,18 @@ The build fails, rather than publishing something wrong, when:
   an anchor no heading on the target page has, or a source file that is
   not in the repository;
 - an element has no case in the edition's writer — the set is closed
-  there too, and the switch has no `else`.
+  there too, and the switch has no `else`;
+- an icon reaches the output whose codepoint is not in
+  `tools/build-fonts.py`'s ICONS, and so is not in the served woff2
+  subset: it would draw as tofu on every reader's screen, and nothing
+  that reads the tree can see it, because the tree only knows names;
+- the shell's own CSS spends a custom property nothing declares at
+  `:root`: those rules apply to the document, outside `.nokre`, and a
+  `var()` that resolves to nothing takes its whole declaration with it
+  — silently, which is how the footer once shipped unpadded across the
+  window;
+- a page or a `docs/md/*.md` source is left published that no route
+  writes any more, after a rename or a removal.
 
 ## Layout
 
@@ -80,6 +93,7 @@ The build fails, rather than publishing something wrong, when:
 | `src/links.zig` | The site's `dom.Refs`: what a document's `[label](dest)` points at, recorded for the link check. |
 | `src/main.zig` | The static driver: the app, the audit, the page shell, and the files it writes. |
 | `src/web.zig` | The live one: the same app, as a wasm module, with the three decls nokre's live driver looks for. |
+| `src/css.zig` | The stylesheet guard: which custom properties the document root carries, and which the shell's own rules spend. |
 | `src/shell.zig` | The one C hook every non-test build links. This generator is a platform shell; the wasm module is not. |
 | `tools/build-fonts.py` | Subsets nokre's bundled faces into the woff2 files in `assets/fonts/`. |
 
@@ -118,8 +132,12 @@ can carry the hash of the commit that contains it.
 
 `docs/` holds the pages, the generated stylesheet, the faces, each
 document's Markdown (`docs/md/` — what a live page seeds itself from),
-and the two build outputs of the live half: `app.wasm`, and nokre's own
-`live.js` + `services.js` copied from the checkout. A committed binary,
+and the build outputs of the live half: `app.wasm`, and the four files
+of nokre's driver — `live.js`, `live-worker.js`, `services.js` and
+`sw.js` — written straight out of the library (`dom.driver_sources`).
+The set is the library's statement of itself, never a list here: this
+site once re-typed it, shipped two of the four, and 404ed its
+service-worker registration on every page load. A committed binary,
 because the published tree *is* the site: there is no build running
 anywhere but here.
 

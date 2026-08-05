@@ -71,21 +71,26 @@ pub const Seen = struct {
 pub const Resolver = struct {
     gpa: std.mem.Allocator,
     seen: *std.ArrayList(Seen),
-    /// The page being written. Set before each screen.
-    page: usize = 0,
 
     pub fn refs(self: *Resolver) dom.Refs {
         return .{ .ctx = self, .resolve = resolveHook };
     }
 
-    fn resolveHook(ctx: ?*anyopaque, _: *dom.Emitter, route: []const u8) anyerror!dom.Dest {
+    /// Which page a reference is *from* comes from the app the emitter
+    /// is walking, the same way the live resolver below reads it. It
+    /// used to be a `page` field the generator set before each screen —
+    /// a second statement of what the router already knew, and one that
+    /// could be a screen behind without anything failing. One
+    /// resolution mechanism, spent by both drivers.
+    fn resolveHook(ctx: ?*anyopaque, em: *dom.Emitter, route: []const u8) anyerror!dom.Dest {
         const self: *Resolver = @ptrCast(@alignCast(ctx.?));
-        const p = pages.all[self.page];
+        const from = currentPage(em.app) orelse return error.UnknownRoute;
+        const p = pages.all[from];
         const target = resolve(self.gpa, route, baseOf(p)) catch |err| {
             std.debug.print("unknown route \"{s}\" on page \"{s}\"\n", .{ route, p.name });
             return err;
         };
-        try self.seen.append(self.gpa, .{ .from = self.page, .raw = route, .target = target });
+        try self.seen.append(self.gpa, .{ .from = from, .raw = route, .target = target });
         return destOf(self.gpa, target);
     }
 };
@@ -119,7 +124,7 @@ pub const Live = struct {
         _ = self.arena.reset(.retain_capacity);
         const gpa = self.arena.allocator();
 
-        const from = pages.indexOf(currentName(em.app)) orelse return dom.Refs.fragment(null, em, route);
+        const from = currentPage(em.app) orelse return dom.Refs.fragment(null, em, route);
         const target = resolve(gpa, route, baseOf(pages.all[from])) catch {
             return dom.Refs.fragment(null, em, route);
         };
@@ -127,14 +132,14 @@ pub const Live = struct {
     }
 };
 
-/// The route the app is on, without its arguments. No screen here takes
-/// any — every page is a flat name (pages.zig) — but a reference is a
-/// reference, and reading one as a name would be a bug waiting for the
-/// first screen that does.
-fn currentName(app: *const nok.App) []const u8 {
-    const ref = app.router.currentRef() orelse return "";
-    const cut = std.mem.indexOfScalar(u8, ref, nok.router.arg_separator) orelse ref.len;
-    return ref[0..cut];
+/// The page the app is on: `Router.current()` is exactly the name
+/// without its arguments, so nothing here splits a reference by hand.
+/// No screen on this site takes an argument — every page is a flat name
+/// (pages.zig) — but reading a reference *as* a name would be a bug
+/// waiting for the first one that does, and the router has already
+/// answered the question.
+fn currentPage(app: *const nok.App) ?usize {
+    return pages.indexOf(app.router.current() orelse return null);
 }
 
 /// The directory a page's Markdown lives in, for relative destinations.
@@ -332,6 +337,70 @@ test "destinations outside docs are source files" {
     const d = try resolve(gpa, "../../deps/qrcodegen/", "docs/internals");
     try std.testing.expectEqualStrings("deps/qrcodegen", d.source.path);
     try std.testing.expect(d.source.dir);
+}
+
+const LinkDest = struct { route: []const u8 };
+
+fn buildLink(ctx: ?*anyopaque, app: *nok.App) anyerror!void {
+    const dest: *const LinkDest = @ptrCast(@alignCast(ctx.?));
+    try nok.cursor.root(app).link(.{ .label = "See", .route = dest.route });
+}
+
+const resolver_routes = [_]nok.RouteDef{
+    .{ .name = "routing", .title = .{ .fixed = "Routing" }, .build = buildLink },
+    .{ .name = "internals.dom-edition", .title = .{ .fixed = "DOM edition" }, .build = buildLink },
+};
+
+test "the resolver reads which page a reference is from off the app" {
+    // It used to be a `page` field the generator set before each
+    // screen — a second statement of what the router already knew, and
+    // one nothing would notice being a screen behind. What proves the
+    // difference is `baseOf`: the *same* bare destination resolves to
+    // two different pages depending on which document it is written in,
+    // so a stale `from` is a wrong answer rather than a slower one.
+    const gpa = std.testing.allocator;
+    var arena = testArena();
+    defer arena.deinit();
+    var seen: std.ArrayList(Seen) = .empty;
+    defer seen.deinit(arena.allocator());
+    var resolver: Resolver = .{ .gpa = arena.allocator(), .seen = &seen };
+
+    var dest: LinkDest = .{ .route = "../elements.md" };
+    var app = try nok.App.init(gpa, .{
+        .viewport = .{ .w = 900, .h = 600 },
+        .routes = &resolver_routes,
+        .ctx = &dest,
+        .services = .mocks(),
+    });
+    defer app.deinit();
+
+    for ([_][]const u8{ "routing", "internals.dom-edition" }) |page| {
+        try app.switchTo(page);
+        var out: std.ArrayList(u8) = .empty;
+        defer out.deinit(gpa);
+        var em: dom.Emitter = .{
+            .gpa = gpa,
+            .app = &app,
+            .out = &out,
+            .options = .{ .refs = resolver.refs() },
+        };
+        defer em.deinit();
+        try dom.content(&em);
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), seen.items.len);
+    // From `routing` (which lives in docs/), `../elements.md` leaves the
+    // documentation tree entirely and is a repository file…
+    try std.testing.expectEqual(pages.indexOf("routing").?, seen.items[0].from);
+    try std.testing.expectEqualStrings("elements.md", seen.items[0].target.source.path);
+    // …and from `internals.dom-edition` (docs/internals/) the same eleven
+    // bytes are `docs/elements.md`, a page this site publishes. Nothing
+    // but `from` changed between the two.
+    try std.testing.expectEqual(pages.indexOf("internals.dom-edition").?, seen.items[1].from);
+    try std.testing.expectEqualStrings(
+        "elements",
+        pages.all[seen.items[1].target.page.index].name,
+    );
 }
 
 test "a doc this site does not publish fails the build" {

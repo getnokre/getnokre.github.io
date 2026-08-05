@@ -17,7 +17,7 @@ const pages = @import("pages.zig");
 
 const App = nok.App;
 const Cursor = nok.Cursor;
-const Span = nok.element.Span;
+const Span = nok.Span;
 
 /// What the builders read: the Markdown sources, loaded once, indexed
 /// by page. Injected as the app's `ctx` — nokre never allocates
@@ -159,7 +159,7 @@ fn home(app: *App) !void {
             .{ .text = "No color. ", .strong = true },
             .{ .text = "Thirteen fixed grays, five semantic aliases, two independent ramps. The whole palette is proven against WCAG contrast in unit tests — floor " },
             .{ .text = "and", .emphasis = true },
-            .{ .text = " ceiling, because past a point more contrast stops buying legibility and starts costing comfort." },
+            .{ .text = " ceiling, because past a point more contrast stops buying legibility and starts costing comfort. One honest asterisk, framework-drawn: the Google sign-in button's multicolour G, a trademark whose owner refuses a gray variant. Nothing an app can reach paints in color." },
         },
         &.{
             .{ .text = "No system fonts. ", .strong = true },
