@@ -42,13 +42,12 @@ pub const routes = blk: {
     break :blk frozen;
 };
 
-fn builderFor(comptime i: usize) *const fn (?*anyopaque, *App) anyerror!void {
-    return struct {
-        fn build(ctx: ?*anyopaque, app: *App) anyerror!void {
-            const site: *Site = @ptrCast(@alignCast(ctx.?));
+fn builderFor(comptime i: usize) nok.RouteDef.Build {
+    return nok.Routes(Site).builder(struct {
+        fn build(site: *Site, app: *App) anyerror!void {
             return buildPage(site, app, i);
         }
-    }.build;
+    }.build);
 }
 
 fn buildPage(site: *Site, app: *App, i: usize) !void {
@@ -102,8 +101,7 @@ fn home(app: *App) !void {
     try b.codeBlock(
         \\const nok = @import("nokre");
         \\
-        \\fn buildHome(ctx: ?*anyopaque, app: *nok.App) !void {
-        \\    const state: *Notes = @ptrCast(@alignCast(ctx.?));
+        \\fn buildHome(state: *Notes, app: *nok.App) !void {
         \\    const b = app.root();
         \\    try b.heading(.h1, "Notes");
         \\    try b.text("Everything here is accessible by construction.");

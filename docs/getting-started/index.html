@@ -92,8 +92,11 @@ pub const State = struct {
     }
 };
 
-pub fn buildHome(ctx: ?*anyopaque, app: *h.App) !void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub const routes = h.Routes(State).table(&amp;.{
+    .{ .name = &quot;home&quot;, .title = .{ .fixed = &quot;Home&quot; }, .build = buildHome },
+});
+
+pub fn buildHome(state: *State, app: *h.App) !void {
     const b = app.root();
     try b.heading(.h1, &quot;Notes&quot;);
     state.label_id = try app.tree.appendId(b.at, .{ .text = .{ .content = &quot;Pressed 0 times&quot; } });
@@ -111,7 +114,7 @@ pub fn main() !void {
     var state = State{};
     var app = try h.App.init(gpa, .{
         .viewport = .{ .w = 480, .h = 640 },
-        .routes = &amp;.{.{ .name = &quot;home&quot;, .title = .{ .fixed = &quot;Home&quot; }, .build = buildHome }},
+        .routes = &amp;routes,
         .ctx = &amp;state,
     });
     defer app.deinit();
@@ -133,18 +136,23 @@ const app = @import(&quot;main.zig&quot;);
 
 test &quot;pressing Increment updates the label&quot; {
     var state: app.State = .{};
-    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .ctx = &amp;state, .build = app.buildHome });
+    var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{
+        .ctx = &amp;state,
+        // The screen is typed against your state, so the fixture lowers
+        // it the same way the route table does.
+        .build = nok.Routes(app.State).builder(app.buildHome),
+    });
     defer t.deinit();
     state.app = &amp;t.app;
     // The a11y audit already ran, and re-runs after every action below.
 
     try t.tapLabel(&quot;Increment&quot;); // real hit-test, real dispatch
     _ = try t.getByLabel(&quot;Pressed 1 times&quot;); // asserted via the a11y snapshot
-}</code></pre><p><strong>Checkpoint:</strong> <code>zig build test</code> passes in milliseconds, on any machine, with no native dependencies.</p><p>Two habits to form now. First, <code>state.app = &amp;t.app</code> comes <em>after</em> the harness is in its final variable — actions dereference that pointer, and a harness returned from a helper function has moved. Second, trust the diagnostics: a failed <code>getByLabel</code> prints every labeled node on screen, so a typo diagnoses itself, and <code>tap</code> refuses actions a user couldn&#39;t perform (<code>NotVisible</code>, <code>Obscured</code>, <code>NotInteractive</code>) rather than silently landing elsewhere. The full query and driver surface is <a class="link" href="/testing/" data-n="1048609" data-s="15">testing.md</a>.</p><h2 id="part-3--screens-and-navigation">Part 3 — Screens and navigation</h2><p>Notes has two sections and one pushed screen. Screens are named routes, each a builder; navigation is a stack. Replace the single-route setup:</p><pre class="code" tabindex="0" data-n="1048608"><code>pub const routes = [_]h.RouteDef{
+}</code></pre><p><strong>Checkpoint:</strong> <code>zig build test</code> passes in milliseconds, on any machine, with no native dependencies.</p><p>Two habits to form now. First, <code>state.app = &amp;t.app</code> comes <em>after</em> the harness is in its final variable — actions dereference that pointer, and a harness returned from a helper function has moved. Second, trust the diagnostics: a failed <code>getByLabel</code> prints every labeled node on screen, so a typo diagnoses itself, and <code>tap</code> refuses actions a user couldn&#39;t perform (<code>NotVisible</code>, <code>Obscured</code>, <code>NotInteractive</code>) rather than silently landing elsewhere. The full query and driver surface is <a class="link" href="/testing/" data-n="1048609" data-s="15">testing.md</a>.</p><h2 id="part-3--screens-and-navigation">Part 3 — Screens and navigation</h2><p>Notes has two sections and one pushed screen. Screens are named routes, each a builder; navigation is a stack. Replace the single-route setup:</p><pre class="code" tabindex="0" data-n="1048608"><code>pub const routes = h.Routes(State).table(&amp;.{
     .{ .name = &quot;notes&quot;, .title = .{ .fixed = &quot;Notes&quot; }, .build = buildNotes },
     .{ .name = &quot;note&quot;, .title = .{ .fixed = &quot;Note&quot; }, .args = 1, .build = buildNote }, // pushed detail — Part 9
     .{ .name = &quot;settings&quot;, .title = .{ .fixed = &quot;Settings&quot; }, .build = buildSettings }, // Part 10
-};
+});
 
 pub const nav_items = [_]h.Destination{
     .{ .route = &quot;notes&quot;, .icon = .notebook_pen },
@@ -216,8 +224,7 @@ fn buildSignIn(state: *State, app: *h.App) !void {
     }
 }
 
-pub fn buildNotes(ctx: ?*anyopaque, app: *h.App) !void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+pub fn buildNotes(state: *State, app: *h.App) !void {
     if (!state.signed_in) return buildSignIn(state, app);
     // …the signed-in screen, from Part 6 on.
 }
@@ -677,8 +684,7 @@ fn ensureStats(state: *State) ?h.workers.Handle(Stats) {
     _ = try t.getByLabel(&quot;Counting…&quot;); // sent, not yet landed
     try t.settleWorkers(); // every queued message runs, every reply lands
     _ = try t.getByLabelContaining(&quot;3 words across 1 notes&quot;);
-}</code></pre><p>One wiring rule: workers resolve their wire ids through the <em>root module</em>, so <code>main_test.zig</code> re-exports the registry — <code>pub const nokreWorkers = app.nokreWorkers;</code> — and so does any other test root you add.</p><h2 id="part-9--the-note-screen-copyable-qr-delete">Part 9 — The note screen: copyable, qr, delete</h2><p>The pushed detail screen pairs the clipboard path with the camera path — same value, two ways out — and closes the loop on deletion. Which note it shows rides in the reference — <code>note~2</code>, formatted where the tile is wired and read back with <code>routeArg</code> — never in a <code>selected</code> field on state, which would remember the depth and forget which note it was (<a class="link" href="/routing/#references" data-n="173" data-s="7">routing.md</a> is the argument):</p><pre class="code" tabindex="0" data-n="174"><code>pub fn buildNote(ctx: ?*anyopaque, app: *h.App) !void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+}</code></pre><p>One wiring rule: workers resolve their wire ids through the <em>root module</em>, so <code>main_test.zig</code> re-exports the registry — <code>pub const nokreWorkers = app.nokreWorkers;</code> — and so does any other test root you add.</p><h2 id="part-9--the-note-screen-copyable-qr-delete">Part 9 — The note screen: copyable, qr, delete</h2><p>The pushed detail screen pairs the clipboard path with the camera path — same value, two ways out — and closes the loop on deletion. Which note it shows rides in the reference — <code>note~2</code>, formatted where the tile is wired and read back with <code>routeArg</code> — never in a <code>selected</code> field on state, which would remember the depth and forget which note it was (<a class="link" href="/routing/#references" data-n="173" data-s="7">routing.md</a> is the argument):</p><pre class="code" tabindex="0" data-n="174"><code>pub fn buildNote(state: *State, app: *h.App) !void {
     const arg = app.routeArg(0) orelse return; // arity is declared, so it is there
     const index = std.fmt.parseInt(usize, arg, 10) catch return;
     // `at` is bounds-checked: a reference can outlive the note it names
@@ -741,8 +747,7 @@ pub fn deleteNote(state: *State) void {
     try t.expectRoute(&quot;notes&quot;);
     try t.expectAbsent(&quot;The wifi password is hunter2&quot;);
     _ = try t.getByLabel(&quot;0 of 16 notes&quot;);
-}</code></pre><h2 id="part-10--settings-segmented-radio_group-toggle-package_info">Part 10 — Settings: segmented, radio_group, toggle, package_info</h2><p>Settings is where the three commit contracts sit side by side: a <code>segmented</code> control the user switches repeatedly (appearance), a <code>radio_group</code> for a choice made in place (sort order) — both commit on arrow keys, immediately — and a <code>toggle</code>, the switch that applies now (contrast with Part 4&#39;s checkbox, which waited for Sign in):</p><pre class="code" tabindex="0" data-n="179"><code>pub fn buildSettings(ctx: ?*anyopaque, app: *h.App) !void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+}</code></pre><h2 id="part-10--settings-segmented-radio_group-toggle-package_info">Part 10 — Settings: segmented, radio_group, toggle, package_info</h2><p>Settings is where the three commit contracts sit side by side: a <code>segmented</code> control the user switches repeatedly (appearance), a <code>radio_group</code> for a choice made in place (sort order) — both commit on arrow keys, immediately — and a <code>toggle</code>, the switch that applies now (contrast with Part 4&#39;s checkbox, which waited for Sign in):</p><pre class="code" tabindex="0" data-n="179"><code>pub fn buildSettings(state: *State, app: *h.App) !void {
     const b = app.root();
     try b.heading(.h1, &quot;Settings&quot;);
 
@@ -865,11 +870,11 @@ const L = h.l10n.Bundle(&amp;.{
     state.app.setLocale(L.tag(chosen)) catch {};
     state.app.setChrome(.{ .back = L.tr(chosen, .back) });
     state.app.setDirection(L.dir(chosen));
-}</code></pre><p>And Part 3&#39;s table grows title <em>functions</em> — one table, every language, nothing to re-hand on a change. A <code>.fixed</code> title says one language forever; <code>.of_locale</code> is read wherever the title is shown, in whatever locale is chosen by then:</p><pre class="code" tabindex="0" data-n="203"><code>const routes = [_]h.RouteDef{
+}</code></pre><p>And Part 3&#39;s table grows title <em>functions</em> — one table, every language, nothing to re-hand on a change. A <code>.fixed</code> title says one language forever; <code>.of_locale</code> is read wherever the title is shown, in whatever locale is chosen by then:</p><pre class="code" tabindex="0" data-n="203"><code>const routes = h.Routes(State).table(&amp;.{
     .{ .name = &quot;notes&quot;, .title = .{ .of_locale = notesTitle }, .build = buildNotes },
     .{ .name = &quot;note&quot;, .title = .{ .of_locale = noteTitle }, .args = 1, .build = buildNote },
     .{ .name = &quot;settings&quot;, .title = .{ .of_locale = settingsTitle }, .build = buildSettings },
-};
+});
 
 fn notesTitle(tag: []const u8) []const u8 {
     return L.tr(L.resolve(tag), .notesTitle);

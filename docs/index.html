@@ -25,8 +25,7 @@
 <main id="content" class="nokre has-chrome page">
 <h1 id="nokre">nokre</h1><p class="s-h3 g5">A deliberately limited GUI library: text, lines, and boxes.</p><p>Zig and Skia, rasterized on the CPU. Grayscale only. Every element is semantic, so accessibility is derived from the tree you build rather than annotated onto it. Two devices on the same platform with the same logical screen size render byte-for-byte identical frames, run after run. Identity across platforms is not the goal: an app is a semantic tree, and how a device draws that tree is the device&#39;s business.</p><p class="g3">Think: apps for a grayscale Kindle — and, on the same tree, for a terminal, a watch face, a panel that refreshes one row at a time.</p><pre class="code" tabindex="0" data-n="9"><code>const nok = @import(&quot;nokre&quot;);
 
-fn buildHome(ctx: ?*anyopaque, app: *nok.App) !void {
-    const state: *Notes = @ptrCast(@alignCast(ctx.?));
+fn buildHome(state: *Notes, app: *nok.App) !void {
     const b = app.root();
     try b.heading(.h1, &quot;Notes&quot;);
     try b.text(&quot;Everything here is accessible by construction.&quot;);
