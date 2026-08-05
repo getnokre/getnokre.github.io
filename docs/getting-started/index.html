@@ -420,13 +420,19 @@ fn addNote(state: *State, text: []const u8) bool {
 
     try b.divider();
     const cap = try app.tree.fmt(&quot;{d} of {d} notes&quot;, .{ state.notes.len, max_notes });
-    try b.meter(.{ .label = cap, .value = @intCast(state.notes.len), .max = max_notes });</code></pre><p>Notice the meter label was formatted with <code>tree.fmt</code> — straight into the tree&#39;s own arena, so there is no buffer to size and no way to truncate; the slice stays valid for the tree&#39;s lifetime like every other stored string. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="149" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is <em>declared</em> to the app, never appended by a screen builder: <code>openSheet</code> takes a builder fn, runs it now, and keeps it — so the framework can build the sheet again whenever it must (a <code>reload</code> under an open sheet, for one). Everything else about its lifecycle is framework-owned too — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="151"><code>pub fn openNewNote(state: *State) void {
+    try b.meter(.{ .label = cap, .value = @intCast(state.notes.len), .max = max_notes });</code></pre><p>Notice the meter label was formatted with <code>tree.fmt</code> — straight into the tree&#39;s own arena, so there is no buffer to size and no way to truncate; the slice stays valid for the tree&#39;s lifetime like every other stored string. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/elements/" data-n="149" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is <em>declared</em> to the app, never appended by a screen builder: <code>openSheetAs</code> takes a name and a builder fn, runs it now, and keeps it — so the framework can build the sheet again whenever it must (a <code>reload</code> under an open sheet, for one). Everything else about its lifecycle is framework-owned too — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="151"><code>/// This app&#39;s sheets, named. One member and it still earns the enum:
+/// the name is what lets `app.sheetTagAs(Sheet, state)` say an open
+/// sheet is *this* state&#39;s, and 0 is reserved for a sheet with no name.
+const Sheet = enum(u32) { new_note = 1 };
+
+pub fn openNewNote(state: *State) void {
     state.draft = .{};
-    state.app.openSheet(.{ .ctx = state, .call = buildNewNote }) catch return;
+    state.app.openSheetAs(Sheet.new_note, buildNewNote, state) catch return;
 }
 
-fn buildNewNote(ctx: ?*anyopaque, app: *nokre.App) anyerror!void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+// A sheet builder is written like a screen builder — the state typed,
+// the name only where there are several sheets to tell apart.
+fn buildNewNote(state: *State, app: *nokre.App) !void {
     // `presentSheet` hands back the sheet&#39;s node; `app.at` is the
     // cursor standing on it.
     const sheet = app.at(try app.presentSheet(&quot;New note&quot;));
@@ -442,7 +448,6 @@ fn buildNewNote(ctx: ?*anyopaque, app: *nokre.App) anyerror!void {
 }
 
 pub fn commitDraft(state: *State) void {
-    state.app.dismissSheet();
     // `blank` is empty-or-whitespace: a draft of nothing but spaces is
     // nothing, and a form asking that question is why the verb exists.
     if (!state.draft.blank()) {
@@ -455,8 +460,10 @@ pub fn commitDraft(state: *State) void {
         else
             &quot;No room — this app holds 16 notes.&quot;;
     }
-    state.app.refresh(.{});
-}</code></pre><p>(This app has one sheet and no closure work to do, so it declares neither a <code>tag</code> nor an <code>on_dismiss</code>: whether a sheet is up is already the framework&#39;s answer — <code>app.openSheetTag()</code> — and <code>on_dismiss</code> exists for the work a closure owes, not for recording it. A controller with several sheets names each with <code>tag</code> — <a class="link" href="/elements/" data-n="152" data-s="11">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> is one <code>state.draft.set(value)</code>, like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="155"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
+    // Write the state, then close: `closeSheet` takes the sheet down
+    // and rebuilds the screen behind it from what you just wrote.
+    state.app.closeSheet();
+}</code></pre><p>(This app has no closure work to do, so it declares no <code>on_dismiss</code>: whether its sheet is up is already the framework&#39;s answer — <code>app.sheetTagAs(Sheet, state)</code> — and <code>on_dismiss</code> exists for the work a closure owes, not for recording it. A controller with several sheets lists them all in that one enum and its builder takes the name as a third parameter — <a class="link" href="/elements/" data-n="152" data-s="7">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> is one <code>state.draft.set(value)</code>, like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="155"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
     defer t.deinit();
