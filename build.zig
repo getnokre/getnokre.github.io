@@ -76,9 +76,10 @@ pub fn build(b: *std.Build) void {
     // tree *is* the site — there is no CI and no server, so a build
     // artifact is committed like everything else here.
     //
-    // `live.js` and `services.js` are copied by the generator, out of
-    // the same checkout the documents come from: one place decides what
-    // this site is made of.
+    // The driver files (`dom.driver_files` — nokre's own statement of
+    // the set) are copied by the generator, out of the same checkout
+    // the documents come from: one place decides what this site is
+    // made of.
     const live = nokre_build.addApp(dep, .{
         .name = "nokre-site",
         .root_source_file = b.path("src/web.zig"),

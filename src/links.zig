@@ -31,18 +31,23 @@ pub const branch = "main";
 /// (`Emitter.hrefExternal`), for the same two reasons — same-tab would
 /// tear down the running app under the live driver and lose a static
 /// page's reader their place, and `noopener noreferrer` severs the
-/// handle the new page would otherwise hold on this window. Decided
-/// here once; the resolver paths and the footer all spend it.
+/// handle the new page would otherwise hold on this window. The
+/// resolvers below no longer write it — a `.external` destination gets
+/// it from the emitter itself — so its one remaining spender is the
+/// footer, the raw HTML the tree has no element for.
 pub const external_attrs = "target=\"_blank\" rel=\"noopener noreferrer\"";
 
-/// A `.source` target's href, attributes included. The `Refs` hook
-/// hands this code the inside of one `href` attribute — the serializer
-/// writes the opening `href="` before the call and the closing quote
-/// after it — so the only door to more attributes is to close the href
-/// here and let that closing quote finish the pair instead.
-fn writeSourceAnchor(gpa: std.mem.Allocator, em: *dom.Emitter, path: []const u8, dir: bool, frag: []const u8) !void {
-    try em.raw(try sourceHref(gpa, path, dir, frag));
-    try em.raw("\" " ++ external_attrs[0 .. external_attrs.len - "\"".len]);
+/// A resolved target as the destination nokre's `Refs` hook answers
+/// with: pages and anchors are this site's own hrefs, a source file is
+/// an external URL — and the emitter writes the whole attribute either
+/// way, external posture included. The one conversion, shared by both
+/// resolvers, where each used to write its own bytes.
+fn destOf(gpa: std.mem.Allocator, target: Target) !dom.Dest {
+    return switch (target) {
+        .page => |t| .{ .internal = try pageHref(gpa, t.index, t.frag) },
+        .anchor => |a| .{ .internal = try std.fmt.allocPrint(gpa, "#{s}", .{a}) },
+        .source => |s| .{ .external = try sourceHref(gpa, s.path, s.dir, s.frag) },
+    };
 }
 
 /// A reference the edition asked this site to resolve, kept for the
@@ -55,9 +60,9 @@ pub const Seen = struct {
 };
 
 /// The site's `dom.Refs`: nokre's edition hands over a route reference
-/// and this decides what `href` it becomes.
+/// and this decides what destination it names.
 ///
-/// The edition's own default writes `#note~42`, the fragment the web
+/// The edition's own default answers `#note~42`, the fragment the web
 /// shell mirrors routes into — right for one page holding a whole app,
 /// wrong for a site that publishes one file per screen. So this
 /// installs the other answer, and records what it resolved on the way
@@ -70,10 +75,10 @@ pub const Resolver = struct {
     page: usize = 0,
 
     pub fn refs(self: *Resolver) dom.Refs {
-        return .{ .ctx = self, .write = writeHref };
+        return .{ .ctx = self, .resolve = resolveHook };
     }
 
-    fn writeHref(ctx: ?*anyopaque, em: *dom.Emitter, route: []const u8) anyerror!void {
+    fn resolveHook(ctx: ?*anyopaque, _: *dom.Emitter, route: []const u8) anyerror!dom.Dest {
         const self: *Resolver = @ptrCast(@alignCast(ctx.?));
         const p = pages.all[self.page];
         const target = resolve(self.gpa, route, baseOf(p)) catch |err| {
@@ -81,14 +86,7 @@ pub const Resolver = struct {
             return err;
         };
         try self.seen.append(self.gpa, .{ .from = self.page, .raw = route, .target = target });
-        switch (target) {
-            .page => |t| try em.raw(try pageHref(self.gpa, t.index, t.frag)),
-            .anchor => |a| {
-                try em.raw("#");
-                try em.text(a);
-            },
-            .source => |s| try writeSourceAnchor(self.gpa, em, s.path, s.dir, s.frag),
-        }
+        return destOf(self.gpa, target);
     }
 };
 
@@ -113,10 +111,10 @@ pub const Live = struct {
     arena: std.heap.ArenaAllocator,
 
     pub fn refs(self: *Live) dom.Refs {
-        return .{ .ctx = self, .write = writeHref };
+        return .{ .ctx = self, .resolve = resolveHook };
     }
 
-    fn writeHref(ctx: ?*anyopaque, em: *dom.Emitter, route: []const u8) anyerror!void {
+    fn resolveHook(ctx: ?*anyopaque, em: *dom.Emitter, route: []const u8) anyerror!dom.Dest {
         const self: *Live = @ptrCast(@alignCast(ctx.?));
         _ = self.arena.reset(.retain_capacity);
         const gpa = self.arena.allocator();
@@ -125,14 +123,7 @@ pub const Live = struct {
         const target = resolve(gpa, route, baseOf(pages.all[from])) catch {
             return dom.Refs.fragment(null, em, route);
         };
-        switch (target) {
-            .page => |t| try em.raw(try pageHref(gpa, t.index, t.frag)),
-            .anchor => |a| {
-                try em.raw("#");
-                try em.text(a);
-            },
-            .source => |s| try writeSourceAnchor(gpa, em, s.path, s.dir, s.frag),
-        }
+        return destOf(gpa, target);
     }
 };
 
@@ -285,7 +276,7 @@ test {
     // Only the wasm build references `Live`, and analysis is lazy —
     // without this line `zig build test` would compile every resolver
     // path except the browser's.
-    _ = &Live.writeHref;
+    _ = &Live.resolveHook;
 }
 
 // The generator runs on one arena for the whole process — resolution

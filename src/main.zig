@@ -32,7 +32,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 12;
+const nokre_revision = 13;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -61,11 +61,13 @@ comptime {
 /// first paint, which is the same lie pointing the other way.
 const viewport: nok.Size = .{ .w = 1280, .h = 1024 };
 
-/// The live driver's browser half: the module the page boots and the
-/// shell hooks it calls a linked service out through. Both are nokre's
-/// own files, published beside the pages
-/// (`docs/internals/dom-edition.md`).
-const driver_files = [_][]const u8{ "live.js", "services.js" };
+/// The live driver's browser half, published beside the pages
+/// (`docs/internals/dom-edition.md`). The set is nokre's own statement
+/// of it, not a re-typed list: this site once re-typed two of the four
+/// and shipped a service-worker registration that 404ed on every page
+/// load — the list is the library's contract, so it comes from the
+/// library.
+const driver_files = dom.driver_files;
 
 const font_files = [_][]const u8{
     "prose.woff2",        "prose-bold.woff2",
@@ -126,8 +128,8 @@ pub fn main(init: std.process.Init) !void {
         // behind them, which is why the framework's Back control is
         // correctly absent (docs/routing.md).
         try app.router.switchTo(&app, p.name);
-        // `collect`, not the `audit` gate: every rule stays fatal here
-        // except `unresolvable_route`, whose authority this site has
+        // `collect` with `unresolvable_route` skipped: every other rule
+        // stays fatal here, and that one's authority this site has
         // deliberately replaced. links.zig is the router's `resolve`
         // for the HTML edition — destinations name pages, anchors and
         // source files, not route-table entries — and it already fails
@@ -136,17 +138,14 @@ pub fn main(init: std.process.Init) !void {
         {
             var violations: std.ArrayList(audit.Violation) = .empty;
             defer violations.deinit(gpa);
-            try audit.collect(&app, &violations);
-            var failed = false;
-            for (violations.items) |v| {
-                if (v.rule == .unresolvable_route) continue;
-                std.debug.print("a11y audit: {s} (node label: \"{s}\")\n", .{
-                    @tagName(v.rule),
-                    app.tree.getConst(v.id).?.label(),
-                });
-                failed = true;
-            }
-            if (failed) {
+            try audit.collect(&app, &violations, .{ .skip = &.{.unresolvable_route} });
+            if (violations.items.len != 0) {
+                for (violations.items) |v| {
+                    std.debug.print("a11y audit: {s} (node label: \"{s}\")\n", .{
+                        @tagName(v.rule),
+                        app.tree.getConst(v.id).?.label(),
+                    });
+                }
                 std.debug.print("accessibility audit failed on \"{s}\"\n", .{p.name});
                 return error.A11yAuditFailed;
             }

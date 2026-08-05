@@ -650,7 +650,7 @@ fn colophon(app: *App) !void {
     const provenance = comptime prov: {
         const lead: []const Span =
             &.{.{ .text = "And which sources those were is stamped rather than assumed: " ++
-                "this page was generated from nokre at " }};
+            "this page was generated from nokre at " }};
         const mid: []const Span = &.{.{ .text = " and built atop " }};
         const site_clause: []const Span = &.{.{ .text = opts.site_rev, .code = true }};
         const tail: []const Span = &.{.{ .text = " of this repository." }};
@@ -748,7 +748,7 @@ fn colophon(app: *App) !void {
         .{ "JavaScript", "nokre's own live driver and nothing else. No framework, no dependency, no analytics, no cookies." },
         .{ "Before it runs", "The whole page. Content, links, chrome — the script changes what is measured, not what is there." },
         .{ "With it off", "The same page, wrapped for a 1280-pixel window." },
-        .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the live driver and the services module it imports, one wasm module, and — on a documentation page — its Markdown." },
+        .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the live driver, the services module it imports, the service worker it registers, one wasm module, and — on a documentation page — its Markdown." },
         .{ "Trackers, cookies, consent", "None, so no banner asking about any." },
         .{ "Appearance", "Follows the system, both ramps generated." },
         .{ "Print", "Chrome drops out; the content is the page." },
