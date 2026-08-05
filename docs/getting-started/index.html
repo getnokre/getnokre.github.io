@@ -447,7 +447,7 @@ pub fn commitDraft(state: *State) void {
         state.status = &quot;Note added.&quot;;
     }
     state.app.refresh(.{});
-}</code></pre><p>(This app never needs to know the sheet closed under it, so it declares no <code>on_dismiss</code>; an app whose state records &quot;a sheet is open&quot; gives the builder one, and the framework tells it on Esc, the scrim, and every other closure the consumer did not make — <a class="link" href="/elements/" data-n="151" data-s="3">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> copies like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="154"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
+}</code></pre><p>(This app has one sheet and no closure work to do, so it declares neither a <code>tag</code> nor an <code>on_dismiss</code>: whether a sheet is up is already the framework&#39;s answer — <code>app.openSheetTag()</code> — and <code>on_dismiss</code> exists for the work a closure owes, not for recording it. A controller with several sheets names each with <code>tag</code> — <a class="link" href="/elements/" data-n="151" data-s="11">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> copies like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="154"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
     var state: app.State = .{};
     var t = try signedIn(&amp;state);
     defer t.deinit();
@@ -523,7 +523,7 @@ fn onSyncResult(ctx: ?*anyopaque, _: u64, result: h.services.http.Result) void {
                 .description = &quot;Your notes are unchanged on this device.&quot;,
                 .route = &quot;notes&quot;,
                 .important = true,
-            }) catch {};
+            });
             state.app.refresh(.{ .route = &quot;notes&quot; });
         },
     }
