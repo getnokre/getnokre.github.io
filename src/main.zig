@@ -33,13 +33,29 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 36;
+const nokre_revision = 37;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
         .{ nokre_revision, nok.revision },
     ));
 }
+
+/// Where this site is published: scheme and host, no trailing slash.
+///
+/// One constant because it had been four copies — the canonical, the
+/// `og:url`, the sitemap's `<loc>` and robots.txt's `Sitemap:` — and a
+/// site that moved host would have had to find all four, with nothing
+/// anywhere to say it had missed one. It is *config*, which is why it
+/// lives here and not in nokre: the library joins it to a path and
+/// checks the join, and has no way to know or guess the value
+/// (`dom.Meta.origin`).
+///
+/// The fifth occurrence of this string in the tree is not a copy of
+/// this and must not become one: content.zig's `qr` example draws a QR
+/// code *of* this site on the elements page. That is content — a thing
+/// a reader points a camera at — not a destination the document claims.
+const origin = "https://getnokre.github.io";
 
 /// The width the first frame is drawn for.
 ///
@@ -421,10 +437,14 @@ fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const 
 fn writeDocument(em: *dom.Emitter, i: usize) !void {
     const p = pages.all[i];
     const home = std.mem.eql(u8, p.name, "home");
+    // This page's path, from this site's own resolver — the same
+    // function every in-page link goes through, so a page's canonical
+    // and the links pointing at it cannot name different addresses.
+    const canonical = try links.pageHref(em.gpa, i, "");
 
     var head: std.ArrayList(u8) = .empty;
     defer head.deinit(em.gpa);
-    try writeHead(em, &head, i);
+    try writeHead(em, &head);
 
     var below: std.ArrayList(u8) = .empty;
     defer below.deinit(em.gpa);
@@ -437,6 +457,30 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
             try std.fmt.allocPrint(em.gpa, "{s} — nokre", .{p.title}),
         .description = p.blurb,
         .stylesheet = "/style.css",
+        // What this page tells a crawler and a link preview. The two
+        // destinations are this site's — where it is published, and
+        // what this page's path is — and nokre's half is that they
+        // cannot come apart: `og:url` is the canonical because there is
+        // one `path` behind both, and the 404 page says `null` rather
+        // than carrying a URL with a flag beside it.
+        //
+        // No `image`. This site has no artwork to preview with — the
+        // favicon is a 32px mark and an SVG, which no card renderer
+        // draws — and an absent image is a real answer here rather than
+        // a gap: it is what makes the card `summary` instead of a
+        // large-image frame with nothing in it.
+        .meta = .{
+            .origin = origin,
+            // The 404 body is served at whatever URL missed, never at
+            // its own address. Same posture as the sitemap in
+            // writeExtras, which skips this page too.
+            .path = if (p.kind == .not_found) null else canonical,
+            .site_name = "nokre",
+            // The card shows the site's name beside the headline, so
+            // the `<title>`'s " — nokre" suffix there would be the site
+            // named twice.
+            .title = if (home) "nokre" else p.title,
+        },
         .head = head.items,
         // The mount points are this site's own names, which is why they
         // are parameters and not something the library picked. They are
@@ -459,9 +503,17 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
     });
 }
 
-/// The head seam: everything about *this site's* document that nokre
-/// has no way to know — where it published its favicon and its faces,
-/// and what URL each page claims.
+/// The head seam: what is left of this site's own head once nokre
+/// writes the parts that have invariants — where it published its
+/// favicon and its faces, and nothing else.
+///
+/// It used to carry the canonical and the Open Graph block too. Those
+/// moved to `dom.Meta` (`writeDocument` above), which is not this site
+/// losing a destination: it still states its own origin and its own
+/// path. What it stopped stating is the *relationship* between them —
+/// that `og:url` is the canonical, that both are absolute, and that a
+/// page with no URL of its own has neither — which is what a second
+/// static consumer would otherwise have re-derived from scratch.
 ///
 /// Built into a buffer of the driver's own and handed over as bytes.
 /// The emitter is a second one over that buffer (`Emitter.fragment`),
@@ -469,11 +521,7 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
 /// seam is bytes rather than a callback because a hook holding `em.out`
 /// could write anywhere, and "into the head" is the one thing it would
 /// then be unable to say.
-fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8), i: usize) !void {
-    const p = pages.all[i];
-    const home = std.mem.eql(u8, p.name, "home");
-    const canonical = try links.pageHref(em.gpa, i, "");
-
+fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8)) !void {
     var h = em.fragment(out);
     defer h.deinit();
 
@@ -482,26 +530,6 @@ fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8), i: usize) !void {
         \\<link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
         \\
     );
-    // The 404 page is served at whatever URL missed, never at its own
-    // address — a canonical (or og:url) naming /notfound/ would claim a
-    // URL nobody is meant to arrive at. Same posture as the sitemap in
-    // writeExtras, which skips this page too.
-    if (p.kind != .not_found) {
-        try h.print("<link rel=\"canonical\" href=\"https://getnokre.github.io{s}\">\n", .{canonical});
-    }
-    try h.raw(
-        \\<meta property="og:type" content="website">
-        \\<meta property="og:site_name" content="nokre">
-        \\
-    );
-    if (p.kind != .not_found) {
-        try h.print("<meta property=\"og:url\" content=\"https://getnokre.github.io{s}\">\n", .{canonical});
-    }
-    try h.raw("<meta property=\"og:title\" content=\"");
-    try h.text(if (home) "nokre" else p.title);
-    try h.raw("\">\n<meta property=\"og:description\" content=\"");
-    try h.text(p.blurb);
-    try h.raw("\">\n");
 }
 
 /// Where a page's Markdown is published, for its own boot to fetch.
@@ -672,7 +700,7 @@ fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
     for (pages.all, 0..) |p, i| {
         if (p.kind == .not_found) continue;
         const href = try links.pageHref(gpa, i, "");
-        try map.print(gpa, "<url><loc>https://getnokre.github.io{s}</loc></url>\n", .{href});
+        try map.print(gpa, "<url><loc>" ++ origin ++ "{s}</loc></url>\n", .{href});
     }
     try map.appendSlice(gpa, "</urlset>\n");
     try cwd.writeFile(io, .{
@@ -682,7 +710,7 @@ fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
 
     try cwd.writeFile(io, .{
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "robots.txt" }),
-        .data = "User-agent: *\nAllow: /\nSitemap: https://getnokre.github.io/sitemap.xml\n",
+        .data = "User-agent: *\nAllow: /\nSitemap: " ++ origin ++ "/sitemap.xml\n",
     });
 
     // A mark made of what the library draws: a box, and lines of text
