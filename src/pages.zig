@@ -158,6 +158,14 @@ pub const all = [_]Page{
         .track = .consumer,
     },
     .{
+        .name = "static-sites",
+        .title = .titleStaticSites,
+        .blurb = .blurbStaticSites,
+        .icon = .file_text,
+        .md = "static-sites.md",
+        .track = .consumer,
+    },
+    .{
         .name = "testing",
         .title = .titleTesting,
         .blurb = .blurbTesting,

@@ -40,6 +40,10 @@
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/localization/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/localization/"/>
 </url>
+<url><loc>https://getnokre.github.io/en/static-sites/</loc>
+<xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/static-sites/"/>
+<xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/static-sites/"/>
+</url>
 <url><loc>https://getnokre.github.io/en/testing/</loc>
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/testing/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/testing/"/>
