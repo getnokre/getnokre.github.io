@@ -9,6 +9,20 @@
 //! The order of events is the point: build the tree, audit the tree,
 //! resolve every reference against the route table, and only then write
 //! a file. A page that would have been wrong is a build that fails.
+//!
+//! It runs that whole pass **once per locale in the catalog**
+//! (l10n.zig), and publishes every page at `/{tag}/…` — the default
+//! locale included, with no bare-default copy anywhere. What stands at
+//! each unprefixed path instead is nokre's chooser (`dom.localeStub`),
+//! so every URL this site published before the axis existed still
+//! resolves and lands on the copy in the reader's own language. A
+//! prefixed URL is never redirected: one address showing different
+//! content to different readers is what breaks sharing and
+//! canonicalisation both.
+//!
+//! The prefix is this driver's, entirely. nokre computes no path here —
+//! it takes the ones `links.zig` answers with, joins them to the origin
+//! and checks the join.
 
 const std = @import("std");
 const nok = @import("nokre");
@@ -17,11 +31,21 @@ const opts = @import("site_options");
 const content = @import("content.zig");
 const icons = @import("icons.zig");
 const css_check = @import("css.zig");
+const l10n = @import("l10n.zig");
 const links = @import("links.zig");
 const pages = @import("pages.zig");
 
 const audit = nok.testing.audit;
 const dom = nok.render.dom;
+const L = l10n.L;
+
+/// This page's alternate set: one URL per locale, plus the `x-default`
+/// that names the chooser. One value per route, built once before
+/// anything is written and handed to both writers that spend it — the
+/// head's `hreflang` block and the sitemap's `<xhtml:link>`s — which is
+/// what makes them the same set rather than two derivations that agree
+/// today (`dom.Alternates`).
+const AlternateSet = dom.Alternates(L).Set;
 
 comptime {
     // This generator is a platform shell; it owes the hooks a shell
@@ -51,10 +75,16 @@ comptime {
 /// checks the join, and has no way to know or guess the value
 /// (`dom.Meta.origin`).
 ///
-/// The fifth occurrence of this string in the tree is not a copy of
-/// this and must not become one: content.zig's `qr` example draws a QR
-/// code *of* this site on the elements page. That is content — a thing
-/// a reader points a camera at — not a destination the document claims.
+/// The locale axis added a fifth spender rather than a fifth copy —
+/// every chooser stub says where it stands (`writeStub`'s `published`),
+/// which is what puts a real `hreflang` block on it — and it reads this
+/// constant like the other four.
+///
+/// The one occurrence of this string in the tree that is *not* a copy
+/// of this and must not become one: content.zig's `qr` example draws a
+/// QR code *of* this site on the elements page. That is content — a
+/// thing a reader points a camera at — not a destination the document
+/// claims.
 const origin = "https://getnokre.github.io";
 
 /// The width the first frame is drawn for.
@@ -134,84 +164,164 @@ pub fn main(init: std.process.Init) !void {
     }
     try app.setNav(&destinations);
 
-    // ---- every screen ------------------------------------------------
+    // ---- the alternate sets ------------------------------------------
+    //
+    // Before any page is written, because two writers spend each one and
+    // the whole point of the type is that they spend the *same* value.
+    // A route's set is a property of the route and not of the copy — the
+    // English page and the Persian page of one route carry byte-identical
+    // blocks — which is why this is indexed by page and not by page and
+    // locale, and why reciprocity is not something anything here checks.
+    var alternates = try gpa.alloc([]const dom.Alternate, pages.all.len);
+    for (pages.all, 0..) |p, i| {
+        // The 404 body is served at whatever URL missed and has no
+        // address of its own, so it has no set of addresses either.
+        // Empty rather than absent, so no reader of this array has to
+        // remember the exception — and it is what the library requires
+        // anyway: `alternates.check` refuses a non-empty set on a page
+        // whose `Meta.path` is null, because a page nobody is meant to
+        // arrive at cannot be a member of a set.
+        if (p.kind == .not_found) {
+            alternates[i] = &.{};
+            continue;
+        }
+        var spec: dom.Alternates(L) = .{ .stub = try links.stubHref(gpa, i), .paths = undefined };
+        inline for (l10n.locales) |loc| {
+            @field(spec.paths, @tagName(loc)) = try links.pageHref(gpa, loc, i, "");
+        }
+        const set = try gpa.create(AlternateSet);
+        set.* = spec.set();
+        alternates[i] = set;
+    }
+
+    // ---- every screen, once per locale -------------------------------
     var seen: std.ArrayList(links.Seen) = .empty;
     var resolver: links.Resolver = .{ .gpa = gpa, .seen = &seen };
 
-    var documents = try gpa.alloc([]const u8, pages.all.len);
-    var anchors = try gpa.alloc([]const []const u8, pages.all.len);
+    var documents: [l10n.locales.len][][]const u8 = undefined;
+    var anchors: [l10n.locales.len][][]const []const u8 = undefined;
+    for (&documents) |*d| d.* = try gpa.alloc([]const u8, pages.all.len);
+    for (&anchors) |*a| a.* = try gpa.alloc([]const []const u8, pages.all.len);
 
-    for (pages.all, 0..) |p, i| {
-        // switchTo, not push: a visitor arriving at a page has nothing
-        // behind them, which is why the framework's Back control is
-        // correctly absent (docs/routing.md).
-        try app.router.switchTo(&app, p.name);
-        // `collect` with `unresolvable_route` skipped: every other rule
-        // stays fatal here, and that one's authority this site has
-        // deliberately replaced. links.zig is the router's `resolve`
-        // for the HTML edition — destinations name pages, anchors and
-        // source files, not route-table entries — and it already fails
-        // the build on any reference this site cannot honor, which is
-        // a stricter check than the table the rule would consult.
-        {
-            var violations: std.ArrayList(audit.Violation) = .empty;
-            defer violations.deinit(gpa);
-            try audit.collect(&app, &violations, .{ .skip = &.{.unresolvable_route} });
-            if (violations.items.len != 0) {
-                for (violations.items) |v| {
-                    std.debug.print("a11y audit: {s} (node label: \"{s}\")\n", .{
-                        @tagName(v.rule),
-                        app.tree.getConst(v.id).?.label(),
-                    });
+    for (l10n.locales, 0..) |loc, li| {
+        // The three lines docs/localization.md documents, in the order
+        // it documents them. `setChrome` is what puts nokre's own words
+        // — the Back control, the section chip, the notices pane — in
+        // this catalog rather than on the library's English defaults,
+        // and `L.chrome` derives one reserved key per `Chrome` field at
+        // comptime, so a word the library grows is a build error here
+        // and never a shipped English string on a Persian page.
+        // `setDirection` is the one of the three that is silent when
+        // forgotten, which is why it is written even where every
+        // bundled locale is left-to-right.
+        try app.setLocale(L.tag(loc));
+        app.setChrome(L.chrome(loc));
+        app.setDirection(L.dir(loc));
+
+        for (pages.all, 0..) |p, i| {
+            // switchTo, not push: a visitor arriving at a page has nothing
+            // behind them, which is why the framework's Back control is
+            // correctly absent (docs/routing.md).
+            try app.router.switchTo(&app, p.name);
+            // `collect` with `unresolvable_route` skipped: every other rule
+            // stays fatal here, and that one's authority this site has
+            // deliberately replaced. links.zig is the router's `resolve`
+            // for the HTML edition — destinations name pages, anchors and
+            // source files, not route-table entries — and it already fails
+            // the build on any reference this site cannot honor, which is
+            // a stricter check than the table the rule would consult.
+            {
+                var violations: std.ArrayList(audit.Violation) = .empty;
+                defer violations.deinit(gpa);
+                try audit.collect(&app, &violations, .{ .skip = &.{.unresolvable_route} });
+                if (violations.items.len != 0) {
+                    for (violations.items) |v| {
+                        std.debug.print("a11y audit: {s} (node label: \"{s}\")\n", .{
+                            @tagName(v.rule),
+                            app.tree.getConst(v.id).?.label(),
+                        });
+                    }
+                    std.debug.print("accessibility audit failed on \"{s}\" in {s}\n", .{ p.name, L.tag(loc) });
+                    return error.A11yAuditFailed;
                 }
-                std.debug.print("accessibility audit failed on \"{s}\"\n", .{p.name});
-                return error.A11yAuditFailed;
             }
-        }
 
+            var out: std.ArrayList(u8) = .empty;
+            var em: dom.Emitter = .{
+                .gpa = gpa,
+                .app = &app,
+                .out = &out,
+                // Node ids, which a page written to a file has no use for
+                // on its own — but this one is the first frame of a live
+                // app, and identity across frames is what turns the boot
+                // into a patch instead of a replacement. Without them the
+                // driver cannot tell that the heading in the file and the
+                // heading it just built are the same heading, replaces the
+                // subtree wholesale, and takes the reader's scroll position
+                // — the anchor they arrived at — with it.
+                .options = .{ .refs = resolver.refs(), .node_ids = true },
+            };
+            try writeDocument(&em, loc, i, alternates[i]);
+            documents[li][i] = out.items;
+            // The anchors this page exports — what another page's `#frag`
+            // has to name. The edition hands them over whole
+            // (internals/dom-edition.md, "A heading is an address"); reading
+            // the emitter's own dedup bookkeeping and deep-copying it before
+            // `deinit` was this site holding bookkeeping and calling it an
+            // answer.
+            anchors[li][i] = try em.takeAnchors(gpa);
+            em.deinit();
+        }
+    }
+
+    // ---- the chooser stubs -------------------------------------------
+    //
+    // One page at every unprefixed path, which is where every link
+    // written before this site had a locale axis still points. nokre
+    // writes them: the resolution is the bundle's own, transcribed once
+    // in the library and held to `L.resolve`'s answers by a gate there,
+    // and a driver that rolled its own would be a second policy
+    // (`dom.localeStub`). What this file supplies is the two things the
+    // library cannot know — where each locale's copy is published, and
+    // what each language is called in itself.
+    var stubs = try gpa.alloc([]const u8, pages.all.len);
+    for (pages.all, 0..) |p, i| {
+        // The 404 has no unprefixed address to stand at: the host
+        // serves its body at whatever URL missed, so there is no link
+        // anywhere to preserve and nothing for a chooser to choose
+        // between.
+        if (p.kind == .not_found) {
+            stubs[i] = "";
+            continue;
+        }
         var out: std.ArrayList(u8) = .empty;
-        var em: dom.Emitter = .{
-            .gpa = gpa,
-            .app = &app,
-            .out = &out,
-            // Node ids, which a page written to a file has no use for
-            // on its own — but this one is the first frame of a live
-            // app, and identity across frames is what turns the boot
-            // into a patch instead of a replacement. Without them the
-            // driver cannot tell that the heading in the file and the
-            // heading it just built are the same heading, replaces the
-            // subtree wholesale, and takes the reader's scroll position
-            // — the anchor they arrived at — with it.
-            .options = .{ .refs = resolver.refs(), .node_ids = true },
-        };
-        try writeDocument(&em, i);
-        documents[i] = out.items;
-        // The anchors this page exports — what another page's `#frag`
-        // has to name. The edition hands them over whole
-        // (internals/dom-edition.md, "A heading is an address"); reading
-        // the emitter's own dedup bookkeeping and deep-copying it before
-        // `deinit` was this site holding bookkeeping and calling it an
-        // answer.
-        anchors[i] = try em.takeAnchors(gpa);
-        em.deinit();
+        var em: dom.Emitter = .{ .gpa = gpa, .app = &app, .out = &out };
+        defer em.deinit();
+        try writeStub(&em, i);
+        stubs[i] = out.items;
     }
 
     // ---- the link check ----------------------------------------------
     var broken: usize = 0;
     for (seen.items) |ref| {
+        // A reference is checked against the anchors of the copy it was
+        // written on: a heading id is derived from the words of the
+        // heading, so it is a per-locale fact and a set shared across
+        // locales would pass a Persian `#frag` against English ids.
+        const page_anchors = anchors[@intFromEnum(ref.locale)];
         switch (ref.target) {
             .page => |t| {
-                if (t.frag.len != 0 and !has(anchors[t.index], t.frag)) {
-                    std.debug.print("{s}: \"{s}\" names no heading on \"{s}\"\n", .{
-                        pages.all[ref.from].name, ref.raw, pages.all[t.index].name,
+                if (t.frag.len != 0 and !has(page_anchors[t.index], t.frag)) {
+                    std.debug.print("{s} ({s}): \"{s}\" names no heading on \"{s}\"\n", .{
+                        pages.all[ref.from].name, L.tag(ref.locale), ref.raw, pages.all[t.index].name,
                     });
                     broken += 1;
                 }
             },
             .anchor => |a| {
-                if (!has(anchors[ref.from], a)) {
-                    std.debug.print("{s}: \"#{s}\" names no heading on this page\n", .{
-                        pages.all[ref.from].name, a,
+                if (!has(page_anchors[ref.from], a)) {
+                    std.debug.print("{s} ({s}): \"#{s}\" names no heading on this page\n", .{
+                        pages.all[ref.from].name, L.tag(ref.locale), a,
                     });
                     broken += 1;
                 }
@@ -257,8 +367,26 @@ pub fn main(init: std.process.Init) !void {
     // nokre that moved a property deeper would show up.
     try checkStylesheet(gpa, css);
 
+    // Every byte of markup this run publishes, in one list: each
+    // locale's copy of each page, and the stubs. The stubs are in it
+    // because they are pages a reader can land on — an icon escape that
+    // only ever appeared on one would be tofu nothing else here looks
+    // at.
+    var markup = try gpa.alloc([]const u8, l10n.locales.len * pages.all.len + pages.all.len);
+    var n_markup: usize = 0;
+    for (documents) |per_locale| for (per_locale) |d| {
+        markup[n_markup] = d;
+        n_markup += 1;
+    };
+    for (stubs) |s| {
+        if (s.len == 0) continue;
+        markup[n_markup] = s;
+        n_markup += 1;
+    }
+    markup = markup[0..n_markup];
+
     const subset = try icons.parse(gpa, icons.py);
-    const emitted = try icons.collectEmitted(gpa, documents, css);
+    const emitted = try icons.collectEmitted(gpa, markup, css);
     var uncovered: usize = 0;
     for (emitted) |cp| {
         if (icons.covered(subset, cp)) continue;
@@ -274,10 +402,19 @@ pub fn main(init: std.process.Init) !void {
     const out_dir = opts.out_dir;
     try cwd.createDirPath(io, out_dir);
 
+    for (l10n.locales, 0..) |loc, li| {
+        for (pages.all, 0..) |p, i| {
+            const path = try outPath(gpa, out_dir, loc, p) orelse continue;
+            if (std.fs.path.dirname(path)) |dir| try cwd.createDirPath(io, dir);
+            try cwd.writeFile(io, .{ .sub_path = path, .data = documents[li][i] });
+        }
+    }
+
     for (pages.all, 0..) |p, i| {
-        const path = try outPath(gpa, out_dir, p);
+        if (stubs[i].len == 0) continue;
+        const path = try stubPath(gpa, out_dir, p);
         if (std.fs.path.dirname(path)) |dir| try cwd.createDirPath(io, dir);
-        try cwd.writeFile(io, .{ .sub_path = path, .data = documents[i] });
+        try cwd.writeFile(io, .{ .sub_path = path, .data = stubs[i] });
     }
 
     try cwd.writeFile(io, .{
@@ -324,13 +461,15 @@ pub fn main(init: std.process.Init) !void {
         });
     }
 
-    try writeExtras(gpa, io, cwd, out_dir);
+    try writeExtras(gpa, io, cwd, out_dir, alternates);
     try failOnStale(gpa, io, cwd, out_dir);
 
-    std.debug.print("{d} screens, {d} references, {d} bytes of markup, {d} bytes of driver\n", .{
+    std.debug.print("{d} locale(s), {d} screens each, {d} stubs, {d} references, {d} bytes of markup, {d} bytes of driver\n", .{
+        l10n.locales.len,
         pages.all.len,
+        n_markup - l10n.locales.len * pages.all.len,
         seen.items.len,
-        total(documents),
+        total(markup),
         script_bytes,
     });
 }
@@ -357,10 +496,20 @@ fn has(list: []const []const u8, needle: []const u8) bool {
 /// ones fail the build rather than being deleted: what a page on its
 /// way out becomes — a redirect, a removal commit somebody reviews — is
 /// the operator's decision, same fail-forward posture as every other
-/// check here. The walk is scoped to the two shapes this run writes,
-/// `<route>/index.html` and `md/<route>.md`; everything else in the
-/// tree (assets/, the driver files, app.wasm, the extras, 404.html and
-/// the root index.html) has a fixed name and a writer of its own.
+/// check here.
+///
+/// The walk is scoped to the shapes this run writes, and the locale
+/// axis added one level to two of them: `<locale>/index.html` and
+/// `<locale>/<route>/index.html` are the pages, `<route>/index.html` is
+/// that route's chooser stub, and `md/<route>.md` is its source.
+/// Everything else in the tree (assets/, the driver files, app.wasm,
+/// the extras, 404.html and the root index.html) has a fixed name and a
+/// writer of its own.
+///
+/// A locale that leaves the catalog is caught by the same walk without
+/// a rule of its own: `docs/de/` stops being a locale directory the
+/// moment `site_de.arb` is removed, so it falls to the stub test, and
+/// `de` is not a route.
 fn failOnStale(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
     var stale: usize = 0;
 
@@ -369,6 +518,10 @@ fn failOnStale(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
     var it = root.iterate();
     while (try it.next(io)) |entry| {
         if (entry.kind != .directory) continue;
+        if (isPublishedLocale(entry.name)) {
+            stale += try staleInLocale(gpa, io, cwd, out_dir, entry.name);
+            continue;
+        }
         const index = try std.fs.path.join(gpa, &.{ out_dir, entry.name, "index.html" });
         cwd.access(io, index, .{}) catch continue;
         if (writesPageDir(entry.name)) continue;
@@ -397,21 +550,87 @@ fn failOnStale(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []c
     }
 }
 
-/// Whether this run wrote `<name>/index.html`: the name must be a
+/// One locale directory's own sweep. Its `index.html` is that locale's
+/// home page and needs no test; every directory inside it must be a
+/// route publishing in the directory shape, which is the same predicate
+/// the stubs answer to — home lands at the locale root and the 404 page
+/// is not per-locale at all.
+fn staleInLocale(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    cwd: std.Io.Dir,
+    out_dir: []const u8,
+    tag: []const u8,
+) !usize {
+    var stale: usize = 0;
+    const dir_path = try std.fs.path.join(gpa, &.{ out_dir, tag });
+    var dir = try cwd.openDir(io, dir_path, .{ .iterate = true });
+    defer dir.close(io);
+    var it = dir.iterate();
+    while (try it.next(io)) |entry| {
+        if (entry.kind != .directory) continue;
+        const index = try std.fs.path.join(gpa, &.{ dir_path, entry.name, "index.html" });
+        cwd.access(io, index, .{}) catch continue;
+        if (writesPageDir(entry.name)) continue;
+        std.debug.print("stale page: {s} — no route writes it\n", .{index});
+        stale += 1;
+    }
+    return stale;
+}
+
+/// Whether `<name>` is a directory this site publishes a locale under —
+/// asked of the catalog and of nothing else, so the answer cannot
+/// disagree with the set the pages were generated for.
+fn isPublishedLocale(name: []const u8) bool {
+    for (l10n.locales) |loc| {
+        if (std.mem.eql(u8, L.tag(loc), name)) return true;
+    }
+    return false;
+}
+
+/// Whether this run wrote `<name>/index.html` under a locale, and a
+/// chooser stub at `<name>/index.html` beside them: the name must be a
 /// route, and one publishing in the directory shape — home lands at the
-/// root and the 404 page at `404.html` (`outPath`), so directories by
-/// those names would be stale like any other.
+/// locale's root (and its stub at the site's) and the 404 page at
+/// `404.html`, so directories by those names would be stale like any
+/// other.
 fn writesPageDir(name: []const u8) bool {
     const p = pages.find(name) orelse return false;
     return !std.mem.eql(u8, p.name, "home") and p.kind != .not_found;
 }
 
-fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const u8 {
+/// Where one locale's copy of a page lands. Every page is prefixed, the
+/// default locale included: there is no bare-default copy anywhere, and
+/// the unprefixed path belongs to the chooser (`stubPath`).
+///
+/// **`null` is the 404 body on every locale but the template's**, and
+/// it is the one place the axis does not multiply a file. A static host
+/// serves one document for a URL that missed — GitHub Pages looks for
+/// `404.html` at the site root and nowhere else — so a per-locale copy
+/// would be a file nothing can ever request. It is written in the
+/// template's language for the same reason the chooser is: nothing
+/// about a URL that missed says what its reader reads.
+fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, loc: L.Locale, p: pages.Page) !?[]const u8 {
+    const tag = L.tag(loc);
+    if (p.kind == .not_found) {
+        if (loc != L.default_locale) return null;
+        return try std.fs.path.join(gpa, &.{ out_dir, "404.html" });
+    }
+    if (std.mem.eql(u8, p.name, "home")) {
+        return try std.fmt.allocPrint(gpa, "{s}/{s}/index.html", .{ out_dir, tag });
+    }
+    return try std.fmt.allocPrint(gpa, "{s}/{s}/{s}/index.html", .{ out_dir, tag, p.name });
+}
+
+/// Where a page's chooser stub lands: the path the page itself used to
+/// be published at, exactly. That is what makes the move free — every
+/// inbound link and every cross-doc fragment written against the old
+/// scheme still resolves, and lands on the copy in the reader's own
+/// language instead of a 404.
+fn stubPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const u8 {
     if (std.mem.eql(u8, p.name, "home")) {
         return std.fs.path.join(gpa, &.{ out_dir, "index.html" });
     }
-    // The host looks for this one by file name, not by route name.
-    if (p.kind == .not_found) return std.fs.path.join(gpa, &.{ out_dir, "404.html" });
     return std.fmt.allocPrint(gpa, "{s}/{s}/index.html", .{ out_dir, p.name });
 }
 
@@ -434,13 +653,13 @@ fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const 
 /// have. A doc page hands its Markdown over the same way (`seed`): the
 /// live driver rebuilds the tree from the route's own builder, that
 /// builder expands the source, and a build cannot wait for a fetch.
-fn writeDocument(em: *dom.Emitter, i: usize) !void {
+fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Alternate) !void {
     const p = pages.all[i];
     const home = std.mem.eql(u8, p.name, "home");
     // This page's path, from this site's own resolver — the same
     // function every in-page link goes through, so a page's canonical
     // and the links pointing at it cannot name different addresses.
-    const canonical = try links.pageHref(em.gpa, i, "");
+    const canonical = try links.pageHref(em.gpa, loc, i, "");
 
     var head: std.ArrayList(u8) = .empty;
     defer head.deinit(em.gpa);
@@ -448,14 +667,11 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
 
     var below: std.ArrayList(u8) = .empty;
     defer below.deinit(em.gpa);
-    try footer(em, &below);
+    try footer(em, loc, &below);
 
     try dom.document(em, .{
-        .title = if (home)
-            "nokre — a deliberately limited GUI library"
-        else
-            try std.fmt.allocPrint(em.gpa, "{s} — nokre", .{p.title}),
-        .description = p.blurb,
+        .title = try documentTitle(em.gpa, loc, i),
+        .description = L.trAny(loc, p.blurb),
         .stylesheet = "/style.css",
         // What this page tells a crawler and a link preview. The two
         // destinations are this site's — where it is published, and
@@ -475,11 +691,20 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
             // its own address. Same posture as the sitemap in
             // writeExtras, which skips this page too.
             .path = if (p.kind == .not_found) null else canonical,
+            // Every address this page also lives at: its own copy per
+            // locale, and the `x-default` naming the chooser. It used
+            // to be `&.{}` and the ground for that has since become
+            // false — a page with one language still had one URL then,
+            // and the prefix-plus-stub scheme gives every page two that
+            // are different *in kind*. A crawler told nothing about the
+            // pair guesses at the relationship and may index the
+            // chooser as a duplicate of the page it points at.
+            .alternates = alts,
             .site_name = "nokre",
             // The card shows the site's name beside the headline, so
             // the `<title>`'s " — nokre" suffix there would be the site
             // named twice.
-            .title = if (home) "nokre" else p.title,
+            .title = if (home) "nokre" else L.trAny(loc, p.title),
         },
         .head = head.items,
         // The mount points are this site's own names, which is why they
@@ -493,7 +718,7 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
         // from `rootClass` — this half is the reading column, and it is
         // the site's.
         .content_class = "page",
-        .skip = "Skip to content",
+        .skip = L.tr(loc, .skipToContent),
         .body_end = below.items,
         .boot = .{
             .wasm = "/app.wasm",
@@ -542,20 +767,112 @@ fn sourceUrl(gpa: std.mem.Allocator, p: pages.Page) ![]const u8 {
 
 /// The body seam: what stands below the app and inside the document.
 /// Same shape as the head's, and for the same reason.
-fn footer(em: *dom.Emitter, out: *std.ArrayList(u8)) !void {
+///
+/// Its one internal link is resolved rather than typed. It used to read
+/// `/colophon/` as a literal, which was the same address `pageHref`
+/// answered with — and the locale axis is exactly the change that makes
+/// a literal and a resolver diverge, silently, on every page of the
+/// site. There is now one function that says where a page is.
+///
+/// The sentence around it is split at the link the way nokre's own
+/// `Chrome.open_prefix` is split: a runtime format string is a
+/// placeholder a translator can drop or reorder, and joining costs the
+/// reordering a few languages would want to buy words that cannot be
+/// wrong. The full stop after the link stays in the format, beside the
+/// `" — nokre"` a title takes — punctuation the driver adds around what
+/// the catalog said, which is the line `Document.title` already draws.
+fn footer(em: *dom.Emitter, loc: L.Locale, out: *std.ArrayList(u8)) !void {
     var f = em.fragment(out);
     defer f.deinit();
+    const colophon = try links.pageHref(em.gpa, loc, pages.indexOf("colophon").?, "");
     // The two repository links leave the site, so they carry the pair
     // every external link here carries (`links.external_attrs`).
     try f.print(
         \\<footer>
-        \\<span>MIT licensed. Documentation rendered from the repository at
-        \\<a href="{s}/tree/{s}/docs" {s}>docs/</a>.</span>
-        \\<span><a href="{s}" {s}>Source on GitHub</a></span>
-        \\<span><a href="/colophon/">How this site is built</a></span>
+        \\<span>{s}
+        \\<a href="{s}/tree/{s}/docs" {s}>{s}</a>.</span>
+        \\<span><a href="{s}" {s}>{s}</a></span>
+        \\<span><a href="{s}">{s}</a></span>
         \\</footer>
         \\
-    , .{ links.repo_url, links.branch, links.external_attrs, links.repo_url, links.external_attrs });
+    , .{
+        L.tr(loc, .footerLicense),
+        links.repo_url,
+        links.branch,
+        links.external_attrs,
+        L.tr(loc, .footerDocsDir),
+        links.repo_url,
+        links.external_attrs,
+        L.tr(loc, .footerSource),
+        colophon,
+        L.tr(loc, .footerColophon),
+    });
+}
+
+/// The page at every unprefixed path: the chooser this site's readers
+/// and its old inbound links land on.
+///
+/// nokre writes the document, the script and the no-JS links; what this
+/// supplies is the pair the library cannot derive — where each locale's
+/// copy of *this* page is published, and what each language is called
+/// in its own language. Neither is a list of tags: `choices` has one
+/// field per bundled locale, generated from the catalog, so a locale
+/// this site publishes and forgets here is a compile error.
+///
+/// **The identity case needs no branch.** With one locale the stub's
+/// only choice is the page it stands beside, and a reader is sent
+/// there; a stub that ever stood at one of its own choices would be
+/// told so by the library's own guard, which compares against the
+/// resolved URL and navigates nowhere rather than spinning.
+///
+/// It is in no locale — that is what it is for — so every word on it
+/// comes from `L.default_locale`, which is also the language the script
+/// falls back to and the one nokre stamps on its root element.
+fn writeStub(em: *dom.Emitter, i: usize) !void {
+    const gpa = em.gpa;
+    const def = L.default_locale;
+
+    var choices: @FieldType(dom.LocaleStub(L), "choices") = undefined;
+    inline for (l10n.locales) |loc| {
+        @field(choices, @tagName(loc)) = .{
+            .href = try links.pageHref(gpa, loc, i, ""),
+            // The language's name in that language, out of that
+            // language's own catalog — the one form a reader who cannot
+            // read this page can act on, and not a table of language
+            // names this site would otherwise have had to keep.
+            .label = comptime L.tr(loc, .language),
+        };
+    }
+
+    var head: std.ArrayList(u8) = .empty;
+    defer head.deinit(gpa);
+    try writeHead(em, &head);
+
+    try dom.localeStub(em, L, .{
+        // The same `<title>` its own page carries, in the template's
+        // language: this is that page at its language-neutral address,
+        // and what tells a crawler the two are variants rather than
+        // duplicates is the alternate set below, not a different
+        // sentence in the tab.
+        .title = try documentTitle(gpa, def, i),
+        .stylesheet = "/style.css",
+        .heading = L.tr(def, .chooseLanguage),
+        .head = head.items,
+        // Where this page is, which is the whole of what it takes to
+        // put the alternate set on it: `choices` is already one path
+        // per locale, and `x-default` is this address because a chooser
+        // is what `x-default` means. Nothing is restated.
+        .published = .{ .origin = origin, .path = try links.stubHref(gpa, i) },
+        .choices = choices,
+    });
+}
+
+/// A page's `<title>`, in one locale. One writer, because the copy and
+/// its chooser must not disagree about what the page is called.
+fn documentTitle(gpa: std.mem.Allocator, loc: L.Locale, i: usize) ![]const u8 {
+    const p = pages.all[i];
+    if (std.mem.eql(u8, p.name, "home")) return L.tr(loc, .documentTitleHome);
+    return std.fmt.allocPrint(gpa, "{s} — nokre", .{L.trAny(loc, p.title)});
 }
 
 /// The external-link mark's rule, split out of `shell_css` for exactly
@@ -690,25 +1007,40 @@ const shell_css =
 
 // ------------------------------------------------------------- extras
 
-fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
+fn writeExtras(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    cwd: std.Io.Dir,
+    out_dir: []const u8,
+    alternates: []const []const dom.Alternate,
+) !void {
     // The `<urlset>` is nokre's to write and this site's to publish:
     // the XML escape, the `xhtml` namespace, the spec's two limits and
-    // — once there is more than one locale — the check that every
-    // alternate a page names was actually published are all things one
-    // file can see and no page can (`dom.Sitemap`). What stays here is
-    // where the bytes go, which is the same line the document writer
-    // draws.
+    // the check that every alternate a page names was actually
+    // published are all things one file can see and no page can
+    // (`dom.Sitemap`). What stays here is where the bytes go, which is
+    // the same line the document writer draws.
     //
-    // One locale, so every page has one URL and `&.{}` is the honest
-    // alternate set: a choice between addresses is what an `hreflang`
-    // block describes, and this site offers none. That changes when the
-    // locale axis and its stubs arrive, and the call does not.
+    // The set each entry carries is the *same array* the page's own
+    // head was written from, not a second derivation over the same
+    // rule. Item 7 shaped this call so the axis would not change it,
+    // and the axis did not: what changed is that `&.{}` became a real
+    // set.
+    //
+    // The chooser stubs are not entries. The closure rule exempts
+    // `x-default` for exactly this reason — whether a chooser is itself
+    // indexed is publishing policy — and this site's answer is that a
+    // sitemap lists content, of which there is one URL per page per
+    // language. The stubs are still reachable, still annotated, and
+    // still the `x-default` every entry names.
     var map: std.ArrayList(u8) = .empty;
     var sm: dom.Sitemap = .init(gpa, origin);
     defer sm.deinit();
-    for (pages.all, 0..) |p, i| {
-        if (p.kind == .not_found) continue;
-        try sm.url(try links.pageHref(gpa, i, ""), &.{});
+    for (l10n.locales) |loc| {
+        for (pages.all, 0..) |p, i| {
+            if (p.kind == .not_found) continue;
+            try sm.url(try links.pageHref(gpa, loc, i, ""), alternates[i]);
+        }
     }
     try sm.write(&map);
     try cwd.writeFile(io, .{
@@ -801,4 +1133,10 @@ test {
     // under test on purpose — but the helpers past App.init can be.
     _ = &failOnStale;
     _ = &writeExtras;
+    // The locale axis's own half of that write path: where a copy lands,
+    // where its chooser lands, and what writes the chooser.
+    _ = &outPath;
+    _ = &stubPath;
+    _ = &writeStub;
+    _ = &documentTitle;
 }

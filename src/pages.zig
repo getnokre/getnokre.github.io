@@ -1,14 +1,23 @@
 //! The site's route table.
 //!
-//! Every page is a nokre route, and the URL is the route's name — flat,
-//! one segment, no directories. That is `docs/routing.md`'s **no paths**
-//! refusal taken at its word: a reference names a screen and says
-//! nothing about where the screen sits, so `internals.pixel-model` is a
-//! name with a dot in it and not a path with a level in it. The router
-//! never reads the dot as a level, and neither does this site.
+//! Every page is a nokre route, and the route's name is its one URL
+//! segment — flat, no directories. That is `docs/routing.md`'s **no
+//! paths** refusal taken at its word: a reference names a screen and
+//! says nothing about where the screen sits, so `internals.pixel-model`
+//! is a name with a dot in it and not a path with a level in it. The
+//! router never reads the dot as a level, and neither does this site.
+//!
+//! What stands in front of that segment is the locale, and it is not
+//! this file's business either: `links.zig` puts it there and nothing
+//! in a route name knows it exists. Nothing here holds words, only
+//! catalog keys — a route table is the one part of a site the locale
+//! axis multiplies, so it is the one part that must not be written in a
+//! language.
 
 const std = @import("std");
 const nok = @import("nokre");
+
+const L = @import("l10n.zig").L;
 
 pub const IconName = nok.element.IconName;
 
@@ -39,11 +48,21 @@ pub const Page = struct {
     /// keeps them from disagreeing.
     name: []const u8,
     /// `RouteDef.title`: what the chrome calls this screen. Declared
-    /// once here, so the nav and the page cannot differ about it.
-    title: []const u8,
+    /// once here, so the nav and the page cannot differ about it — and
+    /// a catalog key rather than words, because this site has a locale
+    /// axis and a title is a function of it (`Title.of_locale`,
+    /// content.zig's `routes`).
+    ///
+    /// The key is not free-form: `keyName` below derives it from the
+    /// route name and a test holds every entry to that, so a page
+    /// cannot end up wearing another page's title. Written out rather
+    /// than computed here so a typo is a compile error at the entry
+    /// that made it.
+    title: L.Key,
     /// One line. Used as the tile's detail in an index, and as the
-    /// page's meta description — the same sentence in both places.
-    blurb: []const u8,
+    /// page's meta description — the same sentence in both places, and
+    /// a catalog key for the same reason `title` is.
+    blurb: L.Key,
     icon: IconName,
     kind: Kind = .doc,
     /// Path under nokre's `docs/`, for `.doc` pages.
@@ -61,22 +80,22 @@ pub const destinations = [_][]const u8{ "home", "docs", "internals" };
 pub const all = [_]Page{
     .{
         .name = "home",
-        .title = "Home",
-        .blurb = "A deliberately limited GUI library: text, lines, and boxes.",
+        .title = .titleHome,
+        .blurb = .blurbHome,
         .icon = .house,
         .kind = .home,
     },
     .{
         .name = "docs",
-        .title = "Docs",
-        .blurb = "Build and ship an app: the philosophy, the course, and one reference per surface.",
+        .title = .titleDocs,
+        .blurb = .blurbDocs,
         .icon = .book_open,
         .kind = .docs_index,
     },
     .{
         .name = "internals",
-        .title = "Internals",
-        .blurb = "How the promises are kept inside: the layer cake, the pixel contract, the shells.",
+        .title = .titleInternals,
+        .blurb = .blurbInternals,
         .icon = .wrench,
         .kind = .internals_index,
     },
@@ -84,80 +103,80 @@ pub const all = [_]Page{
     // ---- consumer track ----
     .{
         .name = "introduction",
-        .title = "Introduction",
-        .blurb = "The philosophy: what nokre refuses, and what each refusal buys.",
+        .title = .titleIntroduction,
+        .blurb = .blurbIntroduction,
         .icon = .feather,
         .md = "introduction.md",
         .track = .consumer,
     },
     .{
         .name = "getting-started",
-        .title = "Getting started",
-        .blurb = "The course: build one app that uses everything, test it as you go, ship it to six platforms.",
+        .title = .titleGettingStarted,
+        .blurb = .blurbGettingStarted,
         .icon = .milestone,
         .md = "getting-started.md",
         .track = .consumer,
     },
     .{
         .name = "elements",
-        .title = "Elements",
-        .blurb = "The closed element set: each element's meaning, its visual spec, and when to reach for it.",
+        .title = .titleElements,
+        .blurb = .blurbElements,
         .icon = .shapes,
         .md = "elements.md",
         .track = .consumer,
     },
     .{
         .name = "routing",
-        .title = "Routing",
-        .blurb = "Screens as named builders, navigation as a stack, and references that carry no path.",
+        .title = .titleRouting,
+        .blurb = .blurbRouting,
         .icon = .signpost,
         .md = "routing.md",
         .track = .consumer,
     },
     .{
         .name = "markdown",
-        .title = "Markdown",
-        .blurb = "The document element: the subset it parses, and the rule that everything else degrades.",
+        .title = .titleMarkdown,
+        .blurb = .blurbMarkdown,
         .icon = .pilcrow,
         .md = "markdown.md",
         .track = .consumer,
     },
     .{
         .name = "accessibility",
-        .title = "Accessibility",
-        .blurb = "The a11y contract: how the snapshot is derived, what construction refuses, what the audit catches.",
+        .title = .titleAccessibility,
+        .blurb = .blurbAccessibility,
         .icon = .accessibility,
         .md = "accessibility.md",
         .track = .consumer,
     },
     .{
         .name = "localization",
-        .title = "Localization",
-        .blurb = "ARB catalogs at comptime, ICU messages, right-to-left, and what the compiler checks.",
+        .title = .titleLocalization,
+        .blurb = .blurbLocalization,
         .icon = .languages,
         .md = "localization.md",
         .track = .consumer,
     },
     .{
         .name = "testing",
-        .title = "Testing",
-        .blurb = "The headless e2e harness: semantic queries, the input driver, byte-exact golden screenshots.",
+        .title = .titleTesting,
+        .blurb = .blurbTesting,
         .icon = .flask_conical,
         .md = "testing.md",
         .track = .consumer,
     },
     .{
         .name = "services",
-        .title = "Services",
-        .blurb = "Optional OS capabilities beyond the window, and each one's consumer contract.",
+        .title = .titleServices,
+        .blurb = .blurbServices,
         .icon = .package,
         .md = "services.md",
         .track = .consumer,
     },
     .{
         .name = "roadmap",
-        .title = "Roadmap",
-        .blurb = "What's built and what remains: the editions a semantic tree still deserves, tooling, Skia packaging.",
+        .title = .titleRoadmap,
+        .blurb = .blurbRoadmap,
         .icon = .map,
         .md = "roadmap.md",
         .track = .consumer,
@@ -166,120 +185,120 @@ pub const all = [_]Page{
     // ---- contributor track ----
     .{
         .name = "internals.architecture",
-        .title = "Architecture",
-        .blurb = "The layer cake and the module map: what may depend on what, and why.",
+        .title = .titleInternalsArchitecture,
+        .blurb = .blurbInternalsArchitecture,
         .icon = .layers,
         .md = "internals/architecture.md",
         .track = .contributor,
     },
     .{
         .name = "internals.contributing",
-        .title = "Contributing",
-        .blurb = "The checklists: a new element, a new service, and what each one owes the rest.",
+        .title = .titleInternalsContributing,
+        .blurb = .blurbInternalsContributing,
         .icon = .git_branch,
         .md = "internals/contributing.md",
         .track = .contributor,
     },
     .{
         .name = "internals.pixel-model",
-        .title = "The pixel model",
-        .blurb = "The normative contract behind same viewport ⇒ same bytes: the ramps, the geometry, the type scale.",
+        .title = .titleInternalsPixelModel,
+        .blurb = .blurbInternalsPixelModel,
         .icon = .ruler,
         .md = "internals/pixel-model.md",
         .track = .contributor,
     },
     .{
         .name = "internals.platform-shells",
-        .title = "Platform shells",
-        .blurb = "The six shells and the contract each keeps: window, input, IME, clipboard, screen reader.",
+        .title = .titleInternalsPlatformShells,
+        .blurb = .blurbInternalsPlatformShells,
         .icon = .monitor,
         .md = "internals/platform-shells.md",
         .track = .contributor,
     },
     .{
         .name = "internals.renderer-editions",
-        .title = "Renderer editions",
-        .blurb = "Why a second renderer is possible, which seams keep it possible, and what it would owe the first.",
+        .title = .titleInternalsRendererEditions,
+        .blurb = .blurbInternalsRendererEditions,
         .icon = .component,
         .md = "internals/renderer-editions.md",
         .track = .contributor,
     },
     .{
         .name = "internals.dom-edition",
-        .title = "The DOM edition",
-        .blurb = "The second renderer: the same tree walk written as markup, and what it keeps.",
+        .title = .titleInternalsDomEdition,
+        .blurb = .blurbInternalsDomEdition,
         .icon = .code,
         .md = "internals/dom-edition.md",
         .track = .contributor,
     },
     .{
         .name = "internals.skia-build",
-        .title = "Skia builds",
-        .blurb = "How Skia is pinned, built, and shrunk — and why each platform keeps the text scaler it has.",
+        .title = .titleInternalsSkiaBuild,
+        .blurb = .blurbInternalsSkiaBuild,
         .icon = .hammer,
         .md = "internals/skia-build.md",
         .track = .contributor,
     },
     .{
         .name = "internals.workers",
-        .title = "Workers",
-        .blurb = "Long-lived compute actors off the UI thread: typed messages in, typed replies out.",
+        .title = .titleInternalsWorkers,
+        .blurb = .blurbInternalsWorkers,
         .icon = .cpu,
         .md = "internals/workers.md",
         .track = .contributor,
     },
     .{
         .name = "internals.haptics",
-        .title = "Haptics",
-        .blurb = "The one knock nokre fires, why it is the framework's and not an app's.",
+        .title = .titleInternalsHaptics,
+        .blurb = .blurbInternalsHaptics,
         .icon = .zap,
         .md = "internals/haptics.md",
         .track = .contributor,
     },
     .{
         .name = "internals.http",
-        .title = "HTTP",
-        .blurb = "The request lane: the native transport, the web leg, and what the mock journals.",
+        .title = .titleInternalsHttp,
+        .blurb = .blurbInternalsHttp,
         .icon = .globe,
         .md = "internals/http.md",
         .track = .contributor,
     },
     .{
         .name = "internals.secure_store",
-        .title = "Secure store",
-        .blurb = "Keychain, Credential Manager, libsecret: one contract over five very different vaults.",
+        .title = .titleInternalsSecureStore,
+        .blurb = .blurbInternalsSecureStore,
         .icon = .lock,
         .md = "internals/secure_store.md",
         .track = .contributor,
     },
     .{
         .name = "internals.oauth",
-        .title = "OAuth",
-        .blurb = "PKCE, the redirect legs per platform, and the native Sign in with Apple path.",
+        .title = .titleInternalsOauth,
+        .blurb = .blurbInternalsOauth,
         .icon = .key,
         .md = "internals/oauth.md",
         .track = .contributor,
     },
     .{
         .name = "internals.notifications",
-        .title = "Notifications",
-        .blurb = "The OS's surface on six platforms, the two reversals it took, and what each leg cannot promise.",
+        .title = .titleInternalsNotifications,
+        .blurb = .blurbInternalsNotifications,
         .icon = .bell,
         .md = "internals/notifications.md",
         .track = .contributor,
     },
     .{
         .name = "internals.share",
-        .title = "Share",
-        .blurb = "Five share sheets, one verb: what each platform's leg hands its OS and what none of them report back.",
+        .title = .titleInternalsShare,
+        .blurb = .blurbInternalsShare,
         .icon = .share,
         .md = "internals/share.md",
         .track = .contributor,
     },
     .{
         .name = "internals.iap",
-        .title = "In-app purchases",
-        .blurb = "StoreKit on Apple, Play Billing on Android, and no store anywhere else.",
+        .title = .titleInternalsIap,
+        .blurb = .blurbInternalsIap,
         .icon = .credit_card,
         .md = "internals/iap.md",
         .track = .contributor,
@@ -288,29 +307,29 @@ pub const all = [_]Page{
     // ---- pages this site adds ----
     .{
         .name = "gallery",
-        .title = "Every element",
-        .blurb = "The closed set, drawn once each — the whole vocabulary on one screen.",
+        .title = .titleGallery,
+        .blurb = .blurbGallery,
         .icon = .shapes,
         .kind = .gallery,
     },
     .{
         .name = "palette",
-        .title = "Palette and scale",
-        .blurb = "Thirteen grays, two ramps, six type scales — read out of nokre's own source.",
+        .title = .titlePalette,
+        .blurb = .blurbPalette,
         .icon = .palette,
         .kind = .palette,
     },
     .{
         .name = "notfound",
-        .title = "Not found",
-        .blurb = "No screen answers to that name.",
+        .title = .titleNotfound,
+        .blurb = .blurbNotfound,
         .icon = .ban,
         .kind = .not_found,
     },
     .{
         .name = "colophon",
-        .title = "Colophon",
-        .blurb = "This site is a nokre app. What that means, and where the edition stops short.",
+        .title = .titleColophon,
+        .blurb = .blurbColophon,
         .icon = .square_asterisk,
         .kind = .colophon,
     },
@@ -325,6 +344,58 @@ pub fn indexOf(name: []const u8) ?usize {
 
 pub fn find(name: []const u8) ?*const Page {
     return if (indexOf(name)) |i| &all[i] else null;
+}
+
+/// The catalog key a route's `prefix` message lives under: the prefix,
+/// then the route name camel-cased at the three bytes a name may hold
+/// as separators — `internals.pixel-model`'s title is
+/// `titleInternalsPixelModel`, `internals.secure_store`'s is
+/// `titleInternalsSecureStore`.
+///
+/// The same shape nokre derives its own reserved keys with
+/// (`l10n.zig`'s `chromeKeyName`, `chromeCurrentScreen` from
+/// `current_screen`), and here for the same purpose: the route name and
+/// the key it reads under are one fact, so a page renamed without its
+/// messages renamed fails the test below rather than quietly showing
+/// another page's words.
+pub fn keyName(comptime prefix: []const u8, comptime name: []const u8) []const u8 {
+    comptime var out: []const u8 = prefix;
+    comptime var upper = true;
+    inline for (name) |c| {
+        if (c == '.' or c == '-' or c == '_') {
+            upper = true;
+            continue;
+        }
+        out = out ++ &[_]u8{if (upper) std.ascii.toUpper(c) else c};
+        upper = false;
+    }
+    return out;
+}
+
+test "every page's title and blurb read the key its own name derives" {
+    // Two comptime string builds per page over 32 pages, each a branch
+    // per byte of the route name.
+    @setEvalBranchQuota(20_000);
+    inline for (all) |p| {
+        try std.testing.expectEqual(
+            @field(L.Key, keyName("title", p.name)),
+            p.title,
+        );
+        try std.testing.expectEqual(
+            @field(L.Key, keyName("blurb", p.name)),
+            p.blurb,
+        );
+    }
+}
+
+test "no route is named after a locale this site publishes" {
+    // A route called `en` would publish `/en/index.html` from two
+    // writers — the locale directory's home page and that route's own
+    // page under it — and the second would land at `/en/en/`. The
+    // collision is silent in the output and loud here.
+    inline for (@import("l10n.zig").locales) |loc| {
+        try std.testing.expect(indexOf(L.tag(loc)) == null);
+    }
 }
 
 test "every declared destination is a route" {

@@ -21,6 +21,7 @@ const std = @import("std");
 const nok = @import("nokre");
 const pages = @import("pages.zig");
 
+const L = @import("l10n.zig").L;
 const dom = nok.render.dom;
 
 pub const repo_url = "https://github.com/getnokre/nokre";
@@ -42,9 +43,9 @@ pub const external_attrs = "target=\"_blank\" rel=\"noopener noreferrer\"";
 /// an external URL — and the emitter writes the whole attribute either
 /// way, external posture included. The one conversion, shared by both
 /// resolvers, where each used to write its own bytes.
-fn destOf(gpa: std.mem.Allocator, target: Target) !dom.Dest {
+fn destOf(gpa: std.mem.Allocator, loc: L.Locale, target: Target) !dom.Dest {
     return switch (target) {
-        .page => |t| .{ .internal = try pageHref(gpa, t.index, t.frag) },
+        .page => |t| .{ .internal = try pageHref(gpa, loc, t.index, t.frag) },
         .anchor => |a| .{ .internal = try std.fmt.allocPrint(gpa, "#{s}", .{a}) },
         .source => |s| .{ .external = try sourceHref(gpa, s.path, s.dir, s.frag) },
     };
@@ -54,6 +55,11 @@ fn destOf(gpa: std.mem.Allocator, target: Target) !dom.Dest {
 /// link check that runs once every page has been built.
 pub const Seen = struct {
     from: usize,
+    /// Which copy of the site the reference was written on. A heading
+    /// id is derived from the heading's words, so what a `#frag` may
+    /// name is a per-locale fact — one anchor set shared across the
+    /// axis would check a Persian fragment against English ids and pass.
+    locale: L.Locale,
     /// Exactly as the document wrote it, for the error message.
     raw: []const u8,
     target: Target,
@@ -86,14 +92,28 @@ pub const Resolver = struct {
         const self: *Resolver = @ptrCast(@alignCast(ctx.?));
         const from = currentPage(em.app) orelse return error.UnknownRoute;
         const p = pages.all[from];
+        const loc = localeOf(em.app);
         const target = resolve(self.gpa, route, baseOf(p)) catch |err| {
             std.debug.print("unknown route \"{s}\" on page \"{s}\"\n", .{ route, p.name });
             return err;
         };
-        try self.seen.append(self.gpa, .{ .from = from, .raw = route, .target = target });
-        return destOf(self.gpa, target);
+        try self.seen.append(self.gpa, .{ .from = from, .locale = loc, .raw = route, .target = target });
+        return destOf(self.gpa, loc, target);
     }
 };
+
+/// Which locale's copy of the site a reference is being resolved for.
+///
+/// Read off the app rather than carried beside it, exactly the way
+/// `currentPage` reads the route: the generator's loop sets the locale
+/// with `App.setLocale` before it builds a screen, and the live driver
+/// is handed the page's own locale by `mount` — so both drivers have
+/// one answer and neither states it twice. A generator field would be
+/// the second statement that can be an iteration behind, which is the
+/// defect the `page` field already was.
+fn localeOf(app: *const nok.App) L.Locale {
+    return L.of(app).locale;
+}
 
 /// The same resolution, for the same site, running in a browser.
 ///
@@ -128,7 +148,7 @@ pub const Live = struct {
         const target = resolve(gpa, route, baseOf(pages.all[from])) catch {
             return dom.Refs.fragment(null, em, route);
         };
-        return destOf(gpa, target);
+        return destOf(gpa, localeOf(em.app), target);
     }
 };
 
@@ -255,16 +275,80 @@ fn normalize(gpa: std.mem.Allocator, base: []const u8, rel: []const u8) error{Ou
     return out.toOwnedSlice(gpa);
 }
 
-/// The absolute path a page is served at: one flat segment, or the root.
-pub fn pageHref(gpa: std.mem.Allocator, index: usize, frag: []const u8) ![]const u8 {
+/// The absolute path one locale's copy of a page is served at:
+/// `/{tag}/`, or `/{tag}/{route}/`.
+///
+/// **The prefix is this file's and nokre computes none of it.** The
+/// library takes paths and joins them to an origin; which segments a
+/// site puts in front of a route is the driver's whole (`dom.Alternates`
+/// says so in as many words, and item 6 refused to grow one). The
+/// segment is `L.tag(loc)` rather than a string typed here, so the
+/// directory a page lands in, the `hreflang` on the link to it and the
+/// `lang` on the page itself are one fact out of the catalog.
+///
+/// Every locale gets a prefix, the default one included, and the
+/// unprefixed path is `stubHref` — a real page in every language, and
+/// one address that is about the reader. `/en/x` is never redirected.
+pub fn pageHref(gpa: std.mem.Allocator, loc: L.Locale, index: usize, frag: []const u8) ![]const u8 {
     const p = pages.all[index];
+    const tag = L.tag(loc);
     const base = if (std.mem.eql(u8, p.name, "home"))
-        try gpa.dupe(u8, "/")
+        try std.fmt.allocPrint(gpa, "/{s}/", .{tag})
     else
-        try std.fmt.allocPrint(gpa, "/{s}/", .{p.name});
+        try std.fmt.allocPrint(gpa, "/{s}/{s}/", .{ tag, p.name });
     if (frag.len == 0) return base;
     defer gpa.free(base);
     return std.fmt.allocPrint(gpa, "{s}#{s}", .{ base, frag });
+}
+
+/// The unprefixed path — where this page's chooser stub stands, and
+/// where every link written before the locale axis existed still points.
+///
+/// It is the path `pageHref` used to answer with, unchanged, which is
+/// what makes the move free for a reader: `/accessibility/` still
+/// resolves, and what it now holds is a page that sends them to the
+/// copy in their own language (`dom.localeStub`). It is also what
+/// `x-default` names, because that is what a chooser is.
+pub fn stubHref(gpa: std.mem.Allocator, index: usize) ![]const u8 {
+    const p = pages.all[index];
+    if (std.mem.eql(u8, p.name, "home")) return gpa.dupe(u8, "/");
+    return std.fmt.allocPrint(gpa, "/{s}/", .{p.name});
+}
+
+test "a page's path is its stub's path with a locale in front of it" {
+    // The property that made the URL move free, stated where it can
+    // fail: every address this site published before the axis is still
+    // an address, and the copy it chooses between is the same path with
+    // one segment prepended. A scheme that drifted — a localized slug, a
+    // stub at a different route — would break here rather than in a
+    // reader's bookmark.
+    var arena = testArena();
+    defer arena.deinit();
+    const gpa = arena.allocator();
+    inline for (@import("l10n.zig").locales) |loc| {
+        for (pages.all, 0..) |p, i| {
+            if (p.kind == .not_found) continue;
+            const stub = try stubHref(gpa, i);
+            const page = try pageHref(gpa, loc, i, "");
+            const want = try std.fmt.allocPrint(gpa, "/{s}{s}", .{ L.tag(loc), stub });
+            try std.testing.expectEqualStrings(want, page);
+            // …and the stub is what a pre-axis link named: the root for
+            // home, `/<route>/` for everything else.
+            const before = if (std.mem.eql(u8, p.name, "home"))
+                try gpa.dupe(u8, "/")
+            else
+                try std.fmt.allocPrint(gpa, "/{s}/", .{p.name});
+            try std.testing.expectEqualStrings(before, stub);
+        }
+    }
+}
+
+test "a fragment rides on the locale's copy, not on the chooser" {
+    var arena = testArena();
+    defer arena.deinit();
+    const i = pages.indexOf("testing").?;
+    const href = try pageHref(arena.allocator(), L.default_locale, i, "the-input-driver");
+    try std.testing.expectEqualStrings("/en/testing/#the-input-driver", href);
 }
 
 pub fn sourceHref(gpa: std.mem.Allocator, path: []const u8, dir: bool, frag: []const u8) ![]const u8 {

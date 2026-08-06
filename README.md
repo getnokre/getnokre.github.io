@@ -32,7 +32,7 @@ leaves you the 1280-pixel reading of the page rather than an empty one.
 > element set, behavior, focus model, a11y tree — are conveyed
 > faithfully.
 
-`/colophon/` is the long version, including the two places this
+`/en/colophon/` is the long version, including the two places this
 edition stops short.
 
 ## Build
@@ -81,14 +81,51 @@ The build fails, rather than publishing something wrong, when:
   `var()` that resolves to nothing takes its whole declaration with it
   — silently, which is how the footer once shipped unpadded across the
   window;
-- a page or a `docs/md/*.md` source is left published that no route
-  writes any more, after a rename or a removal.
+- a page, a chooser stub, a locale directory or a `docs/md/*.md`
+  source is left published that no route and no bundled locale writes
+  any more, after a rename, a removal or a locale leaving the catalog.
+
+## URLs
+
+Every page lives at `/{locale}/…` — `/en/`, `/en/accessibility/`,
+`/en/internals.dom-edition/` — and there is one locale today. The
+default locale is prefixed like any other: there is no bare-default copy
+of anything, and a prefixed URL is never redirected, because one address
+showing different content to different readers breaks sharing and
+canonicalisation both.
+
+What stands at each *unprefixed* path is a chooser (`dom.localeStub`):
+`/accessibility/` is a real page that resolves the reader's
+`navigator.language` against the bundled set — with nokre's own
+`Bundle.resolve` rule, transcribed once in the library and held to it by
+a gate there — and sends them to their copy, carrying the query and the
+fragment across. With JavaScript off it is a list of languages, so
+nobody is stranded. It is what every page's `hreflang="x-default"`
+names, and it is why moving the URLs cost no inbound link: every address
+this site published before the axis existed still resolves.
+
+The 404 body is the one page with no address of its own. GitHub Pages
+looks for `404.html` at the site root and nowhere else, so there is one,
+in the template's language, with no canonical and no alternates — it is
+served at whatever URL missed.
+
+The catalog holds every string this repository's Zig writes: the page
+titles and blurbs, nokre's own chrome words (`L.chrome`, one reserved
+key per `Chrome` field, so a word the library grows is a build error
+here rather than shipped English), the skip link, the footer, the 404
+body and the chooser's words. It does **not** hold nokre's `docs/*.md`,
+which are rendered into 25 of the 32 pages and stay one language, nor
+the prose of the screens this site builds by hand. That is deliberate:
+a documentation site adding a second language localizes its frame first
+and its documents on a translator's schedule, and this is what the first
+of those two days looks like.
 
 ## Layout
 
 | Path | What it is |
 | --- | --- |
-| `src/pages.zig` | The route table: one flat name per screen, and its title, blurb and glyph. |
+| `src/pages.zig` | The route table: one flat name per screen, its glyph, and the catalog keys its title and blurb read under. |
+| `src/l10n.zig` | The catalog and the locale axis: one ARB source, so one locale — and the only place the set of published locales is named. |
 | `src/content.zig` | Every screen this site adds, as nokre trees. No templates and no HTML. |
 | `src/links.zig` | The site's `dom.Refs`: what a document's `[label](dest)` points at, recorded for the link check. |
 | `src/main.zig` | The static driver: the app, the audit, the page shell, and the files it writes. |

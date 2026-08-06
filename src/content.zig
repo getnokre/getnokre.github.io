@@ -15,6 +15,7 @@ const nok = @import("nokre");
 const opts = @import("site_options");
 const pages = @import("pages.zig");
 
+const L = @import("l10n.zig").L;
 const App = nok.App;
 const Cursor = nok.Cursor;
 const Span = nok.Span;
@@ -34,13 +35,32 @@ pub const Site = struct {
 pub const routes = blk: {
     var defs: [pages.all.len]nok.RouteDef = undefined;
     for (pages.all, 0..) |p, i| {
-        // `.fixed`: the site is English only (src/shell.zig), so no
-        // title is a function of a locale nothing ever chooses.
-        defs[i] = .{ .name = p.name, .title = .{ .fixed = p.title }, .build = builderFor(i) };
+        defs[i] = .{ .name = p.name, .title = .{ .of_locale = titleOf(i) }, .build = builderFor(i) };
     }
     const frozen = defs;
     break :blk frozen;
 };
+
+/// One route's title as a function of the app's locale — `Title`'s
+/// other arm, and the reason the page table holds catalog keys.
+///
+/// `.fixed` was right while the site had one language and no axis; it
+/// is wrong the moment there is a loop, because the nav roster, the
+/// collapsed chip and the off-roster plate all read a title through
+/// this and would keep answering in whatever language the literal was
+/// written in. The tag arrives raw — `""` included, which `resolve`
+/// reads as the template — so nothing here has to defend against a
+/// locale nobody chose.
+fn titleOf(comptime i: usize) *const fn ([]const u8) []const u8 {
+    return struct {
+        fn text(tag: []const u8) []const u8 {
+            // `trAny` and not `tr`: the key is a value in a table, so a
+            // comptime one would mean a switch with 32 arms written by
+            // hand. Same constant bytes either way.
+            return L.trAny(L.resolve(tag), pages.all[i].title);
+        }
+    }.text;
+}
 
 fn builderFor(comptime i: usize) nok.RouteDef.Build {
     return nok.Routes(Site).builder(struct {
@@ -66,13 +86,14 @@ fn buildPage(site: *Site, app: *App, i: usize) !void {
 /// The tile rows for a list of page names — the one loop several pages
 /// share because the *data* is shared (the page table), not because the
 /// syntax was heavy.
-fn pageTiles(b: Cursor, names: []const []const u8) !void {
+fn pageTiles(app: *App, b: Cursor, names: []const []const u8) !void {
+    const loc = L.of(app);
     const group = try b.tileGroup(.{});
     for (names) |name| {
         const p = pages.find(name).?;
         try group.tile(.{
-            .label = p.title,
-            .detail = p.blurb,
+            .label = loc.trAny(p.title),
+            .detail = loc.trAny(p.blurb),
             .route = p.name,
         });
     }
@@ -228,7 +249,7 @@ fn home(app: *App) !void {
     });
 
     try b.heading(.h2, "Start here");
-    try pageTiles(b, &.{ "introduction", "getting-started", "gallery", "palette", "docs" });
+    try pageTiles(app, b, &.{ "introduction", "getting-started", "gallery", "palette", "docs" });
 }
 
 /// One promise card: the composition is the content of home's middle
@@ -256,22 +277,23 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
             "the architecture, then the contributor checklists.");
     }
 
+    const loc = L.of(app);
     const group = try b.tileGroup(.{});
     for (pages.all) |p| {
         if (p.track != track) continue;
         try group.tile(.{
-            .label = p.title,
-            .detail = p.blurb,
+            .label = loc.trAny(p.title),
+            .detail = loc.trAny(p.blurb),
             .route = p.name,
         });
     }
 
     if (track == .consumer) {
         try b.heading(.h2, "Also here");
-        try pageTiles(b, &.{ "gallery", "palette", "internals" });
+        try pageTiles(app, b, &.{ "gallery", "palette", "internals" });
     } else {
         try b.heading(.h2, "Also here");
-        try pageTiles(b, &.{ "palette", "colophon", "docs" });
+        try pageTiles(app, b, &.{ "palette", "colophon", "docs" });
     }
 }
 
@@ -283,7 +305,11 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
 /// every append-time gate applies to it for free.
 fn document(app: *App, i: usize, source: []const u8) !void {
     try app.root().document(.{
-        .label = pages.all[i].title,
+        // The label is the site's and is localized; the source is
+        // nokre's own Markdown and is not. That is the whole shape of a
+        // documentation site on the day it grows a second language, and
+        // it is stated rather than apologised for (l10n.zig).
+        .label = L.of(app).trAny(pages.all[i].title),
         .source = source,
     });
 }
@@ -766,20 +792,31 @@ fn colophon(app: *App) !void {
         "own source text, markers and all — that is the rule that makes " ++
         "parsing bytes nobody reviewed safe, and it is exactly what a nokre " ++
         "app would put on screen. Nothing here quietly cleans it up first.");
-    try pageTiles(b, &.{ "internals.renderer-editions", "internals.pixel-model", "markdown" });
+    try pageTiles(app, b, &.{ "internals.renderer-editions", "internals.pixel-model", "markdown" });
 }
 
 // ------------------------------------------------------------ not found
 
+/// The one screen this file builds by hand whose words are in the
+/// catalog. Every other hand-built screen here is prose — an argument,
+/// a gallery, a colophon — and prose is content, which this site keeps
+/// where the Markdown beside it is kept: in one language. A 404 body is
+/// not prose. It is the sentence a reader gets when they have arrived
+/// from anywhere at all, which is the one place a language they cannot
+/// read is a dead end rather than a page they can skip.
 fn notFound(app: *App) !void {
     const b = app.root();
-    try b.heading(.h1, "Not found");
+    const loc = L.of(app);
+    try b.heading(.h1, loc.trAny(pages.find("notfound").?.title));
     try b.spanned(&.{
-        .{ .text = "No screen answers to that name. In an app this is " },
+        .{ .text = loc.tr(.notFoundLead) },
+        // Not a message: `error.UnknownRoute` is an identifier out of
+        // nokre's own source, which is the same in every language and
+        // is drawn as code for exactly that reason.
         .{ .text = "error.UnknownRoute", .code = true },
-        .{ .text = ", and the router leaves you where you were rather than taking you somewhere nobody asked for. A web server has nowhere to leave you, so here is the way back." },
+        .{ .text = loc.tr(.notFoundTail) },
     });
-    try pageTiles(b, &.{ "home", "docs", "internals" });
+    try pageTiles(app, b, &.{ "home", "docs", "internals" });
 }
 
 /// One checkout's clause in the provenance sentence: the short hash,

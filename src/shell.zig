@@ -12,9 +12,15 @@
 //! shell — the browser is — and the locale service's own web leg
 //! exports the lane the driver seeds `navigator.language` through.
 //!
-//! The tag it reports is `en`, flat. The site is English only, and a
-//! shell that lies about the device locale would be a strange thing for
-//! a page about determinism to ship.
+//! The tag it reports is `en`, flat — and it decides nothing. A
+//! generator writes every page of every locale its catalog carries
+//! (main.zig's loop over `l10n.locales`), so which language a page is
+//! in comes from the axis and never from the machine the build ran on;
+//! this hook answers for that machine, which is a claim about a laptop
+//! and not about the site. Reporting anything else would be a shell
+//! lying about the device, which is a strange thing for a page about
+//! determinism to ship — and a build whose output depended on the
+//! answer would be a stranger one.
 
 const std = @import("std");
 
