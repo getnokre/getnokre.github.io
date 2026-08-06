@@ -313,7 +313,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   line-height: var(--lh-body);
 }
 
-/* The tree root is a vertical stack; a driver puts `nokre` on
+/* The tree root is a vertical stack; a driver puts `rootClass` on
    whatever it wraps the screen in. Its padding and gap are the root
    stack's own fields, not a page style — `tree.root_stack` is where
    both numbers live. */
@@ -1666,5 +1666,10 @@ a.link[href^="https://"]::after {
 @media print {
   .nav, .skip { display: none; }
   main.page { max-width: none; }
-  .nokre.has-chrome, footer { padding-bottom: var(--page-pad); }
+  /* The bottom reserve exists for the fixed nav, which the rule
+     above just removed from the page. Named by the mount point's
+     own id rather than by nokre's classes: the id is this
+     generator's, the classes are the library's, and an id outranks
+     the compound class selector the reserve is written on. */
+  #content, footer { padding-bottom: var(--page-pad); }
 }

@@ -33,7 +33,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 32;
+const nokre_revision = 33;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -478,7 +478,14 @@ fn writeDocument(em: *dom.Emitter, i: usize) !void {
     // costs the document nothing — every layer inside it is fixed, so
     // the div has no size and no effect on where any of them land.
     try dom.chrome(em);
-    try em.raw("\n</div>\n<main id=\"content\" class=\"nokre has-chrome page\">\n");
+    // The class list is nokre's — `rootClass` hands back the whole
+    // attribute value, including whether this screen owes the bottom
+    // reserve — and `page` beside it is the site's own. Typing the
+    // library's half here was a string this file could get wrong with
+    // nothing to fail: a page with the reserve it does not owe, or
+    // without the one it does, reads as a layout bug pages away from
+    // the typo.
+    try em.print("\n</div>\n<main id=\"content\" class=\"{s} page\">\n", .{dom.rootClass(em)});
     try dom.content(em);
     try em.raw("\n</main>\n");
     try footer(em);
@@ -678,7 +685,12 @@ const shell_css =
     \\@media print {
     \\  .nav, .skip { display: none; }
     \\  main.page { max-width: none; }
-    \\  .nokre.has-chrome, footer { padding-bottom: var(--page-pad); }
+    \\  /* The bottom reserve exists for the fixed nav, which the rule
+    \\     above just removed from the page. Named by the mount point's
+    \\     own id rather than by nokre's classes: the id is this
+    \\     generator's, the classes are the library's, and an id outranks
+    \\     the compound class selector the reserve is written on. */
+    \\  #content, footer { padding-bottom: var(--page-pad); }
     \\}
     \\
 ;
