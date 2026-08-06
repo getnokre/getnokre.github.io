@@ -33,7 +33,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 38;
+const nokre_revision = 39;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -691,18 +691,26 @@ const shell_css =
 // ------------------------------------------------------------- extras
 
 fn writeExtras(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
+    // The `<urlset>` is nokre's to write and this site's to publish:
+    // the XML escape, the `xhtml` namespace, the spec's two limits and
+    // — once there is more than one locale — the check that every
+    // alternate a page names was actually published are all things one
+    // file can see and no page can (`dom.Sitemap`). What stays here is
+    // where the bytes go, which is the same line the document writer
+    // draws.
+    //
+    // One locale, so every page has one URL and `&.{}` is the honest
+    // alternate set: a choice between addresses is what an `hreflang`
+    // block describes, and this site offers none. That changes when the
+    // locale axis and its stubs arrive, and the call does not.
     var map: std.ArrayList(u8) = .empty;
-    try map.appendSlice(gpa,
-        \\<?xml version="1.0" encoding="UTF-8"?>
-        \\<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-        \\
-    );
+    var sm: dom.Sitemap = .init(gpa, origin);
+    defer sm.deinit();
     for (pages.all, 0..) |p, i| {
         if (p.kind == .not_found) continue;
-        const href = try links.pageHref(gpa, i, "");
-        try map.print(gpa, "<url><loc>" ++ origin ++ "{s}</loc></url>\n", .{href});
+        try sm.url(try links.pageHref(gpa, i, ""), &.{});
     }
-    try map.appendSlice(gpa, "</urlset>\n");
+    try sm.write(&map);
     try cwd.writeFile(io, .{
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "sitemap.xml" }),
         .data = map.items,
