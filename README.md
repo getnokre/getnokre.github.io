@@ -114,7 +114,7 @@ titles and blurbs, nokre's own chrome words (`L.chrome`, one reserved
 key per `Chrome` field, so a word the library grows is a build error
 here rather than shipped English), the skip link, the footer, the 404
 body and the chooser's words. It does **not** hold nokre's `docs/*.md`,
-which are rendered into 25 of the 32 pages and stay one language, nor
+which are rendered into most of the pages and stay one language, nor
 the prose of the screens this site builds by hand. That is deliberate:
 a documentation site adding a second language localizes its frame first
 and its documents on a translator's schedule, and this is what the first

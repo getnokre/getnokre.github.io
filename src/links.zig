@@ -281,10 +281,12 @@ fn normalize(gpa: std.mem.Allocator, base: []const u8, rel: []const u8) error{Ou
 /// **The prefix is this file's and nokre computes none of it.** The
 /// library takes paths and joins them to an origin; which segments a
 /// site puts in front of a route is the driver's whole (`dom.Alternates`
-/// says so in as many words, and item 6 refused to grow one). The
-/// segment is `L.tag(loc)` rather than a string typed here, so the
-/// directory a page lands in, the `hreflang` on the link to it and the
-/// `lang` on the page itself are one fact out of the catalog.
+/// says so in as many words, and the per-locale generation loop that
+/// would have made a prefix scheme the library's business was refused
+/// rather than written — docs/internals/dom-edition.md, "The locale
+/// axis"). The segment is `L.tag(loc)` rather than a string typed here,
+/// so the directory a page lands in, the `hreflang` on the link to it
+/// and the `lang` on the page itself are one fact out of the catalog.
 ///
 /// Every locale gets a prefix, the default one included, and the
 /// unprefixed path is `stubHref` — a real page in every language, and

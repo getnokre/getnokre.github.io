@@ -1023,9 +1023,9 @@ fn writeExtras(
     //
     // The set each entry carries is the *same array* the page's own
     // head was written from, not a second derivation over the same
-    // rule. Item 7 shaped this call so the axis would not change it,
-    // and the axis did not: what changed is that `&.{}` became a real
-    // set.
+    // rule. Taking it as an argument is what let the locale axis land
+    // without touching this call: what changed is that `&.{}` became a
+    // real set.
     //
     // The chooser stubs are not entries. The closure rule exempts
     // `x-default` for exactly this reason — whether a chooser is itself

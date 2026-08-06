@@ -55,8 +55,8 @@ fn titleOf(comptime i: usize) *const fn ([]const u8) []const u8 {
     return struct {
         fn text(tag: []const u8) []const u8 {
             // `trAny` and not `tr`: the key is a value in a table, so a
-            // comptime one would mean a switch with 32 arms written by
-            // hand. Same constant bytes either way.
+            // comptime one would mean a switch with an arm per page,
+            // written by hand. Same constant bytes either way.
             return L.trAny(L.resolve(tag), pages.all[i].title);
         }
     }.text;

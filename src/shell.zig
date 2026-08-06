@@ -1,7 +1,8 @@
 //! The generator is a platform shell.
 //!
-//! nokre's six shells all do the same two things: hand the app events,
-//! and take the frame it renders (docs/internals/platform-shells.md).
+//! nokre's five shells all do the same two things: hand the app events,
+//! and take the frame it renders (docs/internals/platform-shells.md,
+//! which holds the count of record).
 //! This one has no events and its frame is HTML, but it sits in exactly
 //! the same seat, so it owes the same C hooks a shell owes — today
 //! that is the locale pair a native build links (install, and the

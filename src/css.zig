@@ -141,8 +141,6 @@ fn appendUnique(gpa: std.mem.Allocator, out: *std.ArrayList([]const u8), name: [
     try out.append(gpa, name);
 }
 
-// ---- tests ----
-
 const testing = std.testing;
 
 /// `expectEqualSlices` over slices-of-slices compares pointers, not

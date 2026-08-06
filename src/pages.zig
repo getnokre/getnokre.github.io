@@ -381,8 +381,8 @@ pub fn keyName(comptime prefix: []const u8, comptime name: []const u8) []const u
 }
 
 test "every page's title and blurb read the key its own name derives" {
-    // Two comptime string builds per page over 32 pages, each a branch
-    // per byte of the route name.
+    // Two comptime string builds for every page in the table, each a
+    // branch per byte of the route name.
     @setEvalBranchQuota(20_000);
     inline for (all) |p| {
         try std.testing.expectEqual(

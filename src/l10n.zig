@@ -15,10 +15,11 @@
 //! a word nokre grows is a compile error here rather than shipped
 //! English), the skip link, the footer, the 404 page's body, and the
 //! chooser stub's words. Not in the catalog: nokre's `docs/*.md`, which
-//! are rendered into 25 of the 32 pages and stay one language, and the
-//! prose of the screens this site builds by hand (content.zig's home,
-//! indexes, gallery, palette and colophon) — those are page *bodies*,
-//! the same category as the Markdown beside them in the route table.
+//! are rendered into most of this site's pages and stay one language,
+//! and the prose of the screens this site builds by hand (content.zig's
+//! home, indexes, gallery, palette and colophon) — those are page
+//! *bodies*, the same category as the Markdown beside them in the route
+//! table.
 //!
 //! A one-locale site whose pages are English documents and whose frame
 //! is a catalog is not half-finished; it is exactly the shape a docs
