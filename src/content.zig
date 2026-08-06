@@ -219,7 +219,7 @@ fn home(app: *App) !void {
         "frame renders when state changes, and otherwise nothing runs.", .{ .ink = .mid });
 
     try b.heading(.h2, "Six platforms, full parity");
-    try b.text("All six shells are working: window, input, IME, clipboard, and a " ++
+    try b.text("All five shells are working: window, input, IME, clipboard, and a " ++
         "screen reader on each. What differs at a glance is the text scaler " ++
         "and the accessibility backend.");
     const platforms = try b.table();
@@ -273,7 +273,7 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
     } else {
         try b.heading(.h1, "Work on nokre");
         try b.text("How the promises are kept inside: the layer rules, the pixel " ++
-            "contract, the six shells, and the per-service wiring. Start with " ++
+            "contract, the five shells, and the per-service wiring. Start with " ++
             "the architecture, then the contributor checklists.");
     }
 
