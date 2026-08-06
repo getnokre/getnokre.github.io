@@ -928,14 +928,41 @@ Ids only, never an anchor control beside the heading: a control the tree
 does not have is a control assistive tech would announce that the app
 never wrote, and the element set is closed here too.
 
+**Derived is the default, not the only way.** A pure function of the
+words is a different address in every language a page is published in,
+which is fine until something outside the document names one — an app
+store's account-deletion policy pointing at `#delete-account` in three
+locales at once. A heading may state its own address instead
+(`element.Heading.anchor`; the argument and the shape it beat are
+[static-sites.md](../static-sites.md), "A heading id is a destination").
+Two things change here and nothing else does:
+
+- The stated value goes in verbatim, and `Options.heading_ids` does not
+  suppress it. That flag governs a guess the library was making; a
+  destination the driver stated is not the flag's to drop.
+- `headingId` mints it into the same roster, and a name already there is
+  `AnchorError.AnchorTaken` rather than a `-1`. Only *derived* slugs
+  take the suffix. Document order is the whole of the arbitration: a
+  stated anchor reached after its name is gone fails the build, and a
+  derived slug reaching a name a stated anchor already took gets
+  numbered as any repeat would. Neither order moves a stated address,
+  which is the only property being defended.
+
+The grammar a stated anchor has to satisfy — an ASCII letter, then ASCII
+letters, digits, `-`, `_`, `.` (`element.Heading.validAnchor`) — is
+checked at `Tree.append`, not here: it is a fact about one element, and
+every construction rule in nokre runs at the append that builds it.
+What *this* file can see, and no single append can, is whether the name
+is free.
+
 What a document *exports* — the anchors another page may name — is
-`Emitter.takeAnchors(gpa)`. The emitter keeps the same list internally
-as the suffix bookkeeping above, but "which anchors does this page
-publish" is a question about the document, and a generator that answers
-it by reaching into an emitter's field and deep-copying it before
-`deinit` is holding bookkeeping and calling it an answer. Ownership
-transfers on the call, and it is called once, when the document is
-finished.
+`Emitter.takeAnchors(gpa)`, derived and stated alike. The emitter keeps
+the same list internally as the suffix bookkeeping above, but "which
+anchors does this page publish" is a question about the document, and a
+generator that answers it by reaching into an emitter's field and
+deep-copying it before `deinit` is holding bookkeeping and calling it an
+answer. Ownership transfers on the call, and it is called once, when the
+document is finished.
 
 ### IME
 
@@ -1020,6 +1047,20 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   diffs the static page by exactly that rule, which is what carries
   the reader's scroll, focus, and caret through the handover. The ids
   are a hydration contract, not decoration.
+
+  **And the ids are only half of it: a mount's children have to *be*
+  the frame's nodes.** The diff walks siblings in order, so one newline
+  written inside a mount for the file's own readability is a text node
+  the frame does not have — the walk pairs the file's first child
+  against the frame's second, disagrees, and replaces it, and every
+  sibling after it. Nothing looks wrong afterwards, which is how a
+  driver ships it: the markup is right, the ids are right, and the boot
+  was a repaint. So `document` writes both mounts tight —
+  `<div id="chrome">` and `<main …>` are followed immediately by the
+  region and closed immediately after it — and
+  [document_test.zig](../../src/render/dom/document_test.zig) asserts
+  the two seams as bytes against `chrome` and `content` themselves. A
+  driver placing the regions itself owes the same tightness.
 - **`Refs`.** How a route reference becomes an `href`, as a `ctx` +
   function pointer like every other action in nokre. The hook resolves
   a route to a `Dest` — `internal` (a plain href) or `external` (the

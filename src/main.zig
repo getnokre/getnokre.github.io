@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 40;
+const nokre_revision = 44;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -869,6 +869,20 @@ fn writeStub(em: *dom.Emitter, i: usize) !void {
 
 /// A page's `<title>`, in one locale. One writer, because the copy and
 /// its chooser must not disagree about what the page is called.
+///
+/// Not `app.title()`, though nokre grew that accessor for a static
+/// driver to spend here. Two reasons, and the second is the one that
+/// decides it. The chooser has no built screen to read a title off —
+/// `writeStub` runs after the per-locale loop, over an app standing on
+/// whatever page it finished on — so reading the tree would split the
+/// one writer this function exists to be. And a `<title>` here is not
+/// the screen's title: it is that plus the site's name, and home's is a
+/// sentence of its own. The suffix is the driver's, which is nokre's own
+/// reason for not defaulting `Document.title` to the screen's.
+///
+/// Nothing is restated either way: `p.title` is the same declaration the
+/// router now draws the page's `h1` from, so there is no second copy of
+/// the words to go stale.
 fn documentTitle(gpa: std.mem.Allocator, loc: L.Locale, i: usize) ![]const u8 {
     const p = pages.all[i];
     if (std.mem.eql(u8, p.name, "home")) return L.tr(loc, .documentTitleHome);

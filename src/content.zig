@@ -9,6 +9,16 @@
 //! it fails to build. There is deliberately no helper layer between
 //! these builders and the cursor — the framework's vocabulary is the
 //! site's vocabulary.
+//!
+//! No builder here writes the page's top. The router draws it from
+//! `RouteDef.title` before the builder runs, and level 1 is refused to
+//! everything else (`error.HeadingAtTitleLevel`), so a screen's own
+//! sections open at `h2`. Three answers to that, and each says which it
+//! is: the pages whose title the nav's word already is say nothing, the
+//! two whose reader-facing words differ restate with `app.setTitle`
+//! (`home`, `index`), and the documentation pages stand the title down
+//! altogether because their source opens with the heading it would
+//! repeat (`document`).
 
 const std = @import("std");
 const nok = @import("nokre");
@@ -104,7 +114,10 @@ fn pageTiles(app: *App, b: Cursor, names: []const []const u8) !void {
 fn home(app: *App) !void {
     const b = app.root();
 
-    try b.heading(.h1, "nokre");
+    // The nav calls this screen "Home", which is what a roster of
+    // destinations can call it and what the chip and the plate need.
+    // The page is the library's own name, so it restates.
+    try app.setTitle("nokre");
     try b.styled("A deliberately limited GUI library: text, lines, and boxes.", .{
         .scale = .h3,
         .ink = .mid,
@@ -124,7 +137,6 @@ fn home(app: *App) !void {
         \\
         \\fn buildHome(state: *Notes, app: *nok.App) !void {
         \\    const b = app.root();
-        \\    try b.heading(.h1, "Notes");
         \\    try b.text("Everything here is accessible by construction.");
         \\    try b.button(.{
         \\        .label = "New note",
@@ -264,14 +276,16 @@ fn promise(parent: Cursor, title: []const u8, body: []const u8) !void {
 
 fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
     const b = app.root();
+    // "Docs" and "Internals" are what the nav has room for; an index
+    // page has room to say what its track is for, so both restate.
     if (track == .consumer) {
-        try b.heading(.h1, "Build an app");
+        try app.setTitle("Build an app");
         try b.text("Everything needed to build and ship one: the philosophy, the " ++
             "course, and one reference per surface. Each fact has exactly one " ++
             "home — these pages complement the internals track, they never " ++
             "duplicate it.");
     } else {
-        try b.heading(.h1, "Work on nokre");
+        try app.setTitle("Work on nokre");
         try b.text("How the promises are kept inside: the layer rules, the pixel " ++
             "contract, the five shells, and the per-service wiring. Start with " ++
             "the architecture, then the contributor checklists.");
@@ -303,7 +317,19 @@ fn index(app: *App, track: @FieldType(pages.Page, "track")) !void {
 /// exactly as an app would hand it a fetched terms-of-service: the
 /// parser runs inside `append`, expands into ordinary elements, and
 /// every append-time gate applies to it for free.
+///
+/// **These screens draw no title.** The router would draw the route's,
+/// and nokre's Markdown files open with a `#` naming the file — so on
+/// most of these pages the drawn heading and the source's first heading
+/// are the same words, one line apart, and the copy this site could
+/// remove is the drawn one. Standing it down loses no naming: the
+/// localized title is still the `<title>`, still the nav's chip, still
+/// the off-roster plate, and still this document's accessible name on
+/// the line below. `setTitle("")` is the only way to say "none", and
+/// saying it is what makes a page that opens at `h2` a stated shape
+/// rather than a skipped level (nokre's routing.md, accessibility.md).
 fn document(app: *App, i: usize, source: []const u8) !void {
+    try app.setTitle("");
     try app.root().document(.{
         // The label is the site's and is localized; the source is
         // nokre's own Markdown and is not. That is the whole shape of a
@@ -321,7 +347,6 @@ fn palette(site: *Site, app: *App) !void {
     const b = app.root();
     const Gray = nok.Gray;
 
-    try b.heading(.h1, "Palette and scale");
     try b.text("Thirteen steps, two ramps, six type scales. A step is a semantic " ++
         "position rather than a byte: each appearance supplies its own ramp, " ++
         "and the dark one is deliberately not the light one reversed. " ++
@@ -407,7 +432,6 @@ fn palette(site: *Site, app: *App) !void {
 fn gallery(app: *App) !void {
     const b = app.root();
 
-    try b.heading(.h1, "Every element");
     try b.text("The complete, closed set. Every element carries its semantics with " ++
         "it — role, label and state are intrinsic, which is why " ++
         "accessibility can be derived rather than annotated. There is no " ++
@@ -440,7 +464,7 @@ fn gallery(app: *App) !void {
     });
 
     try b.heading(.h3, "heading");
-    try b.text("h1 through h6, mapped to fixed sizes. Headings are structure, not styling — the audit fails a skipped level. Every level draws bold, which is what keeps h5 and h6 reading as headings beside the prose they share a size with.");
+    try b.text("h2 through h6, mapped to fixed sizes. Level 1 is the page's title — stated at the route table and drawn by the library, which is the heading at the top of this page — so a builder cannot write one. Headings are structure, not styling — the audit fails a skipped level. Every level draws bold, which is what keeps h5 and h6 reading as headings beside the prose they share a size with.");
 
     try b.heading(.h3, "icon");
     const icons = try b.stack(.{ .axis = .horizontal, .gap = 8 });
@@ -628,7 +652,6 @@ fn gallery(app: *App) !void {
 fn colophon(app: *App) !void {
     const b = app.root();
 
-    try b.heading(.h1, "Colophon");
     try b.text("This site is a nokre app that renders to HTML. Not a site about " ++
         "nokre with a nokre-ish stylesheet: every page is a real element " ++
         "tree, built by a route builder with the same signature an app's " ++
@@ -807,7 +830,6 @@ fn colophon(app: *App) !void {
 fn notFound(app: *App) !void {
     const b = app.root();
     const loc = L.of(app);
-    try b.heading(.h1, loc.trAny(pages.find("notfound").?.title));
     try b.spanned(&.{
         .{ .text = loc.tr(.notFoundLead) },
         // Not a message: `error.UnknownRoute` is an identifier out of

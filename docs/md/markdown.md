@@ -27,9 +27,9 @@ applies to parsed content for free. **The parser's error path is
 `append`'s.** A document the tree refuses fails at the call site, whole,
 leaving nothing half-built behind.
 
-The label is explicit and mandatory. Deriving a name from the first `h1`
-fails on documents that do not open with one, and legal text often does
-not. The source is copied like every other string ([tree.zig](../src/core/tree.zig)
+The label is explicit and mandatory. Deriving a name from the source's
+first heading fails on documents that do not open with one, and legal
+text often does not. The source is copied like every other string ([tree.zig](../src/core/tree.zig)
 never borrows consumer memory), so an app may free its response buffer
 the moment `append` returns.
 
@@ -112,6 +112,17 @@ on semantics — the table is the whole of it:
   covers — more parser for no more meaning.
 - **Marked-up link labels** (`[**Terms**](terms)`). See below: one link
   is one focus stop, and that is the constraint, not an omission.
+- **Heading attributes** (`## Rights {#delete-account}`). A heading can
+  state its own address — `Heading.anchor`, [elements.md](elements.md) —
+  but not from Markdown: the syntax is Kramdown's and PHP Markdown
+  Extra's, not CommonMark's and not GitHub's, so a `document`'s source
+  was not written against it and inventing a spelling here would be a
+  second grammar for a field the tree already has. A page with a
+  contractual anchor in it builds that heading, and the source around
+  it stays Markdown. Written anyway, the braces come through as part of
+  the heading's words and are slugged with them
+  (`rights-delete-account`) — visibly wrong on the page rather than
+  silently wrong in the address.
 
 Three more things degrade rather than fail, because content nokre does
 not control must never be able to raise:
@@ -127,15 +138,16 @@ not control must never be able to raise:
 
 ## Heading levels are rebased
 
-The first heading depth in a document becomes `h1`, and each distinct
-deeper depth the next level:
+The first heading depth in a document becomes the document's
+`base_level`, and each distinct deeper depth the next level. With the
+default base of `h2`:
 
 | Source | Rendered |
 | --- | --- |
-| `## Opening` | `h1` |
-| `#### Jumped` | `h2` |
-| `##### Deeper` | `h3` |
-| `## Back up` | `h1` |
+| `## Opening` | `h2` |
+| `#### Jumped` | `h3` |
+| `##### Deeper` | `h4` |
+| `## Back up` | `h2` |
 
 Fetched Markdown routinely opens at `##` or jumps `h2` → `h4`, which
 would trip the `heading_level_skipped` audit rule
@@ -143,6 +155,45 @@ would trip the `heading_level_skipped` audit rule
 Rebasing preserves the real outline and leaves the rule intact for
 app-authored trees — it is not a loophole, because it only applies
 inside a `document`.
+
+### The page's top is not the source's to claim
+
+A `document` never renders an `h1`, and `.base_level = .h1` is refused
+at `append` (`error.HeadingAtTitleLevel`). Level 1 belongs to what the
+screen is called — stated once, drawn by the library above everything
+the builder appends ([routing.md](routing.md), "The page says what the
+screen is called"). A body is what hangs under that, so the default
+base is `h2`, and the ordinary case needs no field at all:
+
+```zig
+try app.setTitle(article.title);   // or nothing: the route's title stands
+try b.document(.{ .label = article.title, .source = body });
+```
+
+Sections come out `h2`, their subsections `h3`, and the page has one
+top. **This is what the old `multiple_h1` audit rule was for**, and why
+that rule is gone: a fetched body used to rebase every `##` onto `h1`
+and mint one top per section, which the audit reported after the fact.
+Now the shape cannot be built.
+
+`base_level` survives for the one case that is still editorial: a body
+that belongs to a *section* rather than to the page.
+
+```zig
+try b.heading(.h2, "Appendix");
+try b.document(.{ .label = "Schedule A", .source = body, .base_level = .h3 });
+```
+
+nokre does not derive that from the tree, and the reason is worth
+keeping: headings here are flat, so "one deeper than the heading before
+me" would file a document that is a *sibling* of the preceding section
+as its child. The library keeps the relationship it can check — a base
+too deep is `heading_level_skipped`, so a base that skips a level fails
+a test rather than shipping; a base too shallow is no longer statable.
+
+Past `h6` there is no ladder left: a base of `h4` renders `h4`, `h5`,
+`h6`, then `h6` for everything deeper. That is the same flattening a
+seven-level source already takes from `h2`, and it never skips.
 
 ## Destinations: routes, and the external allowlist
 
