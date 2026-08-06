@@ -33,7 +33,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 33;
+const nokre_revision = 34;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -401,133 +401,107 @@ fn outPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const 
 
 // ------------------------------------------------------------ the shell
 
-/// Everything outside the screen is the driver's, not the tree's.
-/// nokre's shells own the window and hand the app events; this one owns
-/// the document a browser needs around a screen — a title, a
-/// description, a skip link, and the one kind of link nokre has no
-/// element for.
+/// Everything outside the screen is the driver's, not the tree's — and
+/// "outside the screen" is now a much smaller place than it was.
+/// `dom.document` writes the file: the doctype, the root element's
+/// language and direction, the head's fixed half, the two mount points,
+/// the skip link, and the boot script that turns the file into the
+/// app's first frame. What is left here is what this site invented —
+/// the ids it mounts into, the URLs it publishes things at, the words on
+/// its skip link, and the two seams' worth of markup nokre has no
+/// element and no opinion for.
 ///
-/// The chrome goes first: the nav leads the focus order as the
-/// navigation landmark, which is a property of the tree and not of
-/// where CSS ends up putting the bar.
+/// The upgrade the boot script carries is the whole reason the pair
+/// exists: everything above it is a complete page — it reads, it
+/// navigates, it prints — and what follows makes it *true*, because a
+/// generated page is a screen measured at a width the reader may not
+/// have. A doc page hands its Markdown over the same way (`seed`): the
+/// live driver rebuilds the tree from the route's own builder, that
+/// builder expands the source, and a build cannot wait for a fetch.
 fn writeDocument(em: *dom.Emitter, i: usize) !void {
+    const p = pages.all[i];
+    const home = std.mem.eql(u8, p.name, "home");
+
+    var head: std.ArrayList(u8) = .empty;
+    defer head.deinit(em.gpa);
+    try writeHead(em, &head, i);
+
+    var below: std.ArrayList(u8) = .empty;
+    defer below.deinit(em.gpa);
+    try footer(em, &below);
+
+    try dom.document(em, .{
+        .title = if (home)
+            "nokre — a deliberately limited GUI library"
+        else
+            try std.fmt.allocPrint(em.gpa, "{s} — nokre", .{p.title}),
+        .description = p.blurb,
+        .stylesheet = "/style.css",
+        .head = head.items,
+        // The mount points are this site's own names, which is why they
+        // are parameters and not something the library picked. They are
+        // also two rather than one: the live driver patches the
+        // framework's layers as one region and the screen as another,
+        // and a region is an element.
+        .chrome_id = "chrome",
+        .content_id = "content",
+        // Beside nokre's own class list, which `dom.document` writes
+        // from `rootClass` — this half is the reading column, and it is
+        // the site's.
+        .content_class = "page",
+        .skip = "Skip to content",
+        .body_end = below.items,
+        .boot = .{
+            .wasm = "/app.wasm",
+            .addressing = .documents,
+            .seed = if (p.md.len != 0) try sourceUrl(em.gpa, p) else "",
+        },
+    });
+}
+
+/// The head seam: everything about *this site's* document that nokre
+/// has no way to know — where it published its favicon and its faces,
+/// and what URL each page claims.
+///
+/// Built into a buffer of the driver's own and handed over as bytes.
+/// The emitter is a second one over that buffer (`Emitter.fragment`),
+/// so the escape is the same one the rest of the document gets; the
+/// seam is bytes rather than a callback because a hook holding `em.out`
+/// could write anywhere, and "into the head" is the one thing it would
+/// then be unable to say.
+fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8), i: usize) !void {
     const p = pages.all[i];
     const home = std.mem.eql(u8, p.name, "home");
     const canonical = try links.pageHref(em.gpa, i, "");
 
-    try em.raw(
-        \\<!doctype html>
-        \\<html lang="en">
-        \\<head>
-        \\<meta charset="utf-8">
-        \\<meta name="viewport" content="width=device-width, initial-scale=1">
-        \\<title>
+    var h = em.fragment(out);
+    defer h.deinit();
+
+    try h.raw(
+        \\<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        \\<link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
+        \\
     );
-    if (home) {
-        try em.raw("nokre — a deliberately limited GUI library");
-    } else {
-        try em.text(p.title);
-        try em.raw(" — nokre");
-    }
-    try em.raw("</title>\n<meta name=\"description\" content=\"");
-    try em.text(p.blurb);
-    try em.raw("\">\n");
     // The 404 page is served at whatever URL missed, never at its own
     // address — a canonical (or og:url) naming /notfound/ would claim a
     // URL nobody is meant to arrive at. Same posture as the sitemap in
     // writeExtras, which skips this page too.
     if (p.kind != .not_found) {
-        try em.print("<link rel=\"canonical\" href=\"https://getnokre.github.io{s}\">\n", .{canonical});
+        try h.print("<link rel=\"canonical\" href=\"https://getnokre.github.io{s}\">\n", .{canonical});
     }
-    // theme-color is paper, read from the same ramp the favicon below
-    // (writeExtras) reads — a hardcoded pair here would sit still while
-    // a ramp change moved every page behind it.
-    const paper = nok.Gray.paper;
-    try em.print(
-        \\<link rel="stylesheet" href="/style.css">
-        \\<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        \\<link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
-        \\<meta name="theme-color" media="(prefers-color-scheme: light)" content="#{x:0>2}{x:0>2}{x:0>2}">
-        \\<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#{x:0>2}{x:0>2}{x:0>2}">
+    try h.raw(
         \\<meta property="og:type" content="website">
         \\<meta property="og:site_name" content="nokre">
         \\
-    , .{
-        paper.byte(.light), paper.byte(.light), paper.byte(.light),
-        paper.byte(.dark),  paper.byte(.dark),  paper.byte(.dark),
-    });
+    );
     if (p.kind != .not_found) {
-        try em.print("<meta property=\"og:url\" content=\"https://getnokre.github.io{s}\">\n", .{canonical});
+        try h.print("<meta property=\"og:url\" content=\"https://getnokre.github.io{s}\">\n", .{canonical});
     }
-    try em.raw("<meta property=\"og:title\" content=\"");
-    try em.text(if (home) "nokre" else p.title);
-    try em.raw("\">\n<meta property=\"og:description\" content=\"");
-    try em.text(p.blurb);
-    try em.raw(
-        \\">
-        \\</head>
-        \\<body>
-        \\<a class="skip" href="#content">Skip to content</a>
-        \\<div id="chrome">
-        \\
-    );
-
-    // The chrome goes in a mount point of its own rather than loose in
-    // the body: the live driver patches the framework's layers as one
-    // region and the screen as another, and a region is an element. It
-    // costs the document nothing — every layer inside it is fixed, so
-    // the div has no size and no effect on where any of them land.
-    try dom.chrome(em);
-    // The class list is nokre's — `rootClass` hands back the whole
-    // attribute value, including whether this screen owes the bottom
-    // reserve — and `page` beside it is the site's own. Typing the
-    // library's half here was a string this file could get wrong with
-    // nothing to fail: a page with the reserve it does not owe, or
-    // without the one it does, reads as a layout bug pages away from
-    // the typo.
-    try em.print("\n</div>\n<main id=\"content\" class=\"{s} page\">\n", .{dom.rootClass(em)});
-    try dom.content(em);
-    try em.raw("\n</main>\n");
-    try footer(em);
-    try boot(em, i);
-    try em.raw("</body>\n</html>\n");
-}
-
-/// The upgrade, one script tag wide.
-///
-/// Everything above this line is a complete page: it reads, it
-/// navigates, it prints, and it needs nothing that follows. What
-/// follows makes it *true* — a generated page is a screen measured at a
-/// width the reader may not have, and only the browser knows the width
-/// the reader does have. Boot hands the same app the same route, the
-/// measured decisions are retaken against the real column, and the nav
-/// roster that could not fit collapses instead of running off the edge.
-///
-/// A doc page also hands over its Markdown. The driver rebuilds the
-/// tree from the route's own builder — that is what makes it the same
-/// app rather than a script over some HTML — and that builder expands
-/// the source, so the source has to be in hand before the first build.
-/// One file per page, fetched alongside the module rather than
-/// compiled into it: a reader of one page is not owed the download of
-/// every other.
-fn boot(em: *dom.Emitter, i: usize) !void {
-    const p = pages.all[i];
-    try em.raw(
-        \\<script type="module">
-        \\import { mount } from "/live.js";
-        \\mount({
-        \\  wasm: "/app.wasm",
-        \\  into: document.getElementById("chrome"),
-        \\  content: document.getElementById("content"),
-        \\  addressing: "documents",
-        \\  route: "
-    );
-    try em.text(p.name);
-    try em.raw("\",\n");
-    if (p.md.len != 0) {
-        try em.print("  seed: \"{s}\",\n", .{try sourceUrl(em.gpa, p)});
-    }
-    try em.raw("});\n</script>\n");
+    try h.raw("<meta property=\"og:title\" content=\"");
+    try h.text(if (home) "nokre" else p.title);
+    try h.raw("\">\n<meta property=\"og:description\" content=\"");
+    try h.text(p.blurb);
+    try h.raw("\">\n");
 }
 
 /// Where a page's Markdown is published, for its own boot to fetch.
@@ -538,10 +512,14 @@ fn sourceUrl(gpa: std.mem.Allocator, p: pages.Page) ![]const u8 {
     return std.fmt.allocPrint(gpa, "/md/{s}.md", .{p.name});
 }
 
-fn footer(em: *dom.Emitter) !void {
+/// The body seam: what stands below the app and inside the document.
+/// Same shape as the head's, and for the same reason.
+fn footer(em: *dom.Emitter, out: *std.ArrayList(u8)) !void {
+    var f = em.fragment(out);
+    defer f.deinit();
     // The two repository links leave the site, so they carry the pair
     // every external link here carries (`links.external_attrs`).
-    try em.print(
+    try f.print(
         \\<footer>
         \\<span>MIT licensed. Documentation rendered from the repository at
         \\<a href="{s}/tree/{s}/docs" {s}>docs/</a>.</span>
@@ -669,28 +647,15 @@ const shell_css =
     \\   same icon face, and it is decorative — the words are the link. */
 ++ external_mark_css ++
     \\
-    \\.skip {
-    \\  position: absolute;
-    \\  inset-inline-start: var(--page-pad);
-    \\  top: calc(-1 * var(--touch) - 16px);
-    \\  z-index: 5;
-    \\  padding: var(--button-pad-v) var(--button-pad-h);
-    \\  border-radius: var(--radius);
-    \\  background: var(--ink);
-    \\  color: var(--paper);
-    \\  text-decoration: none;
-    \\}
-    \\.skip:focus { top: var(--page-pad); }
-    \\
+    \\/* The skip link and the fixed chrome are nokre's in print as well
+    \\   as on screen — the anchor comes out of `dom.document` and the
+    \\   sheet parks it, hides it on paper and drops the bottom reserve
+    \\   with the nav it was reserved for. What is left here is the two
+    \\   document rules that were never the library's: this site's
+    \\   reading column, and its own footer's reserve. */
     \\@media print {
-    \\  .nav, .skip { display: none; }
     \\  main.page { max-width: none; }
-    \\  /* The bottom reserve exists for the fixed nav, which the rule
-    \\     above just removed from the page. Named by the mount point's
-    \\     own id rather than by nokre's classes: the id is this
-    \\     generator's, the classes are the library's, and an id outranks
-    \\     the compound class selector the reserve is written on. */
-    \\  #content, footer { padding-bottom: var(--page-pad); }
+    \\  footer { padding-bottom: var(--page-pad); }
     \\}
     \\
 ;

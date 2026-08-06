@@ -1559,6 +1559,53 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .picker-item:focus-visible,
 .picker-item:focus-visible + .picker-item { box-shadow: none; }
 
+/* ---- the document ------------------------------------------------ */
+
+/* Two rules that are about the *page*, not about an element, and the
+   only two: they exist because `document.zig` writes a page. An
+   edition mounted into someone else's document still emits them and
+   they still match nothing there — a host that wrote no skip link
+   has no `.skip`, and print has always been allowed to say a fixed
+   bar is not on paper. Neither reaches `body` or `:root`, which is
+   where restyling a host would start. */
+
+/* The skip link: off-screen until it is focused, then the first
+   thing on the page. It is the library's element (`document.zig`)
+   and therefore the library's rule — a driver that wrote the anchor
+   and forgot the CSS ships a permanent link across the top of every
+   page, which is a failure nothing in a build would catch. Its
+   parked position is one target plus the page margin above the top
+   edge, both read rather than guessed, so a taller target cannot
+   leave a sliver of it showing. */
+.skip {
+  position: absolute;
+  inset-inline-start: var(--page-pad);
+  top: calc(-1 * var(--touch) - var(--page-pad));
+  /* Above every framework layer: the bars sit at 2 and the modal
+     surfaces with their scrims at 3, and a skip link the nav covers
+     is a skip link that does not exist. */
+  z-index: 5;
+  padding: var(--button-pad-v) var(--button-pad-h);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+}
+.skip:focus { top: var(--page-pad); }
+
+/* Print. Nothing `position: fixed` belongs on paper — it lands on
+   the first sheet over the content and on no other sheet at all —
+   so the nav goes, and the reserve the screen kept for it goes with
+   it or every printout ends in an inch of nothing. The skip link
+   goes because there is no keyboard on paper. The modal layers are
+   deliberately left: a sheet that is open is content the reader is
+   looking at, and a printout that dropped it would be printing a
+   screen nobody is on. */
+@media print {
+  .nav, .skip { display: none; }
+  .nokre.has-chrome { padding-bottom: var(--pad); }
+}
+
 .stack { --pad: 0px; --gap: 8px; }
 .box { --pad: 12px; }
 
@@ -1650,26 +1697,13 @@ a.link[href^="https://"]::after {
   vertical-align: -0.05em;
 }
 
-.skip {
-  position: absolute;
-  inset-inline-start: var(--page-pad);
-  top: calc(-1 * var(--touch) - 16px);
-  z-index: 5;
-  padding: var(--button-pad-v) var(--button-pad-h);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--paper);
-  text-decoration: none;
-}
-.skip:focus { top: var(--page-pad); }
-
+/* The skip link and the fixed chrome are nokre's in print as well
+   as on screen — the anchor comes out of `dom.document` and the
+   sheet parks it, hides it on paper and drops the bottom reserve
+   with the nav it was reserved for. What is left here is the two
+   document rules that were never the library's: this site's
+   reading column, and its own footer's reserve. */
 @media print {
-  .nav, .skip { display: none; }
   main.page { max-width: none; }
-  /* The bottom reserve exists for the fixed nav, which the rule
-     above just removed from the page. Named by the mount point's
-     own id rather than by nokre's classes: the id is this
-     generator's, the classes are the library's, and an id outranks
-     the compound class selector the reserve is written on. */
-  #content, footer { padding-bottom: var(--page-pad); }
+  footer { padding-bottom: var(--page-pad); }
 }
