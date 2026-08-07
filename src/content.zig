@@ -630,7 +630,7 @@ fn gallery(app: *App) !void {
     try b.spanned(&.{
         .{ .text = "The bar at the bottom of this page is a " },
         .{ .text = "nav", .code = true },
-        .{ .text = ": two to five destinations, installed once and preserved across every router rebuild. It carries no labels of its own — what a screen is called is its route's title, declared once at the route table, so the nav and the screen cannot disagree. This screen is none of the destinations, so it names itself with the trailing " },
+        .{ .text = ": a closed roster of destinations, installed once and preserved across every router rebuild. It carries no labels of its own — what a screen is called is its route's title, declared once at the route table, so the nav and the screen cannot disagree. This screen is none of the destinations, so it names itself with the trailing " },
         .{ .text = "nav_here", .code = true },
         .{ .text = " plate, which is a label and not a link." },
     });

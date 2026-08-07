@@ -313,6 +313,39 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   line-height: var(--lh-body);
 }
 
+/* …and the one page where "its host" names nobody. `dom.document`
+   writes the doctype, the head and the body, so there is no
+   surrounding authority to defer to: the page is nokre's, and it
+   says so on the root element (`class_names.document_attr`). The
+   live driver never stamps it, so the refusal above is untouched
+   for every app mounted in a document it did not write — this is
+   the same asymmetry `dir` already has, read the same way.
+
+   What it turns around is exactly the block above, plus the paper
+   under it: a `body_end` footer inherits nokre's ink, family, size
+   and measure instead of the browser's default serif, and the band
+   of page beside it is `--paper` rather than the UA canvas.
+
+   And it stops at inheritance, deliberately. A driver's own list
+   keeps its markers, its own anchor keeps the UA's underline and
+   colour, its own table keeps the UA's borders — those are the
+   browser's decisions about markup nokre neither wrote nor has an
+   element for, and normalizing them would make this file a second
+   stylesheet a consumer has to reason about rather than one block
+   that hands a seam the page's type. Every declaration here is
+   inherited or paints the page; none of them reaches into a shape
+   the driver chose. */
+:root[data-nokre="document"] body {
+  color: var(--ink);
+  font-family: prose;
+  font-size: var(--px-body);
+  line-height: var(--lh-body);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* The tree root is a vertical stack; a driver puts `rootClass` on
    whatever it wraps the screen in. Its padding and gap are the root
    stack's own fields, not a page style — `tree.root_stack` is where
@@ -1313,9 +1346,9 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 
 /* The collapsed chip needs no rule of its own: it is one control
    standing in for the bar, and the bar centres what it holds at
-   that thing's own width whether it is five destinations or one
-   chip. Pinned to the pane's leading edge instead, it sat at one
-   end of a wide display with the notices control at the other.
+   that thing's own width whether it is a whole roster or one chip.
+   Pinned to the pane's leading edge instead, it sat at one end of
+   a wide display with the notices control at the other.
    `layoutNavChrome` centres the same group. */
 
 /* The banner owns the bottom pane — the nav is hidden and inert

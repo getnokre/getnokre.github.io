@@ -71,10 +71,16 @@ pub const Page = struct {
     track: enum { none, consumer, contributor } = .none,
 };
 
-/// The three nav destinations, in bar order. A closed 2–5 set, per
-/// `setNav` — everything else on this site is an off-roster screen and
-/// names itself with a `nav_here` plate, which is the framework's job
-/// and not this file's.
+/// The three nav destinations, in bar order. A closed set, floored and
+/// capped by `setNav` — the cap is `nav.max_nav_items`, which nokre
+/// derives rather than picks, so it is cited and not copied here.
+/// Everything else on this site is an off-roster screen and names
+/// itself with a `nav_here` plate, which is the framework's job and not
+/// this file's.
+///
+/// Every one of them wears a mark (`Page.icon`, required by this file),
+/// which is one of the two uniform rosters `setNav` accepts — a mixture
+/// is `error.NavIconsMixed`.
 pub const destinations = [_][]const u8{ "home", "docs", "internals" };
 
 pub const all = [_]Page{
