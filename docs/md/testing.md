@@ -867,9 +867,70 @@ Workflow:
    golden for eyeball diffing. If the change is intended, rerun with
    `-Dupdate-goldens` to rewrite the golden, then review the diff and
    commit.
-4. There is no tolerance and no perceptual diffing, deliberately. The
+4. Not every assertion in this tier wants a baseline. A golden is only
+   as good as the eye that reviewed it, and some defects make a
+   perfectly plausible picture — a Persian number rendered backwards is
+   one, and it passed every gate here for as long as the renderer has
+   existed. So "the first digit of a Persian number is the one that was
+   written first" compares the leading columns of a shaped run against
+   the same digit drawn alone: the first glyph of a run starts at the
+   pen, so the two must be identical, and a reversed run cannot be. No
+   file to review, and it fails on the defect rather than on anything
+   that changes around it.
+5. There is no tolerance and no perceptual diffing, deliberately. The
    pixel model ([internals/pixel-model.md](internals/pixel-model.md))
    makes exactness cheap; any variance is a bug by definition.
+
+## The revision's own gate
+
+`nokre.revision` is what four pins in three repositories assert, and it is
+hand-bumped. A hand-bumped constant is only as good as the memory behind it:
+revision 53 shipped `dom.Csp`, `dom.CspError`, `Document.csp` and
+`LocaleStub.csp` and left the number at 52. Every gate here passed. It surfaced
+a revision later, when a consumer tried to move its own pin and the build told
+it the truth.
+
+So the surface is written down. `src/surface.zig` walks every public
+declaration reachable from the root module — namespaces, types, their fields
+and whether each has a default, enum and error members, function signatures,
+and the values of scalar constants — into one deterministic document, and
+`src/surface_test.zig` holds `src/public_surface.txt` to it on every
+`zig build test`.
+
+**The revision is a line inside that document, not a header beside it.** It is
+what makes the omission impossible rather than merely visible:
+
+- Surface matches the record: pass.
+- Surface moved and `nokre.revision` did not: **fail, and write nothing**. There
+  is no `.actual` to move into place, so the only way forward is to bump the
+  constant. This is the case that shipped once.
+- `nokre.revision` moved: the live surface is written to
+  `src/public_surface.txt.actual` and the test fails naming the first line that
+  differs. Review that diff — it *is* the contract change, stated — then
+  `mv` it over the record and commit both.
+
+Every revision bump therefore touches two files, which is the point: the record
+says which revision it is the surface of.
+
+**What counts as the surface is everything a consumer can name.** Zig has no
+`pub(crate)`, so a helper that is `pub` for a sibling module is reachable at
+`nokre.layout.pageColumn` and is contract whether or not anyone meant it to be.
+Measured against the twenty-five most recent commits touching `src/`, that costs
+a bump on about one in ten that no consumer could have observed. Take it: a bump
+nobody needed is an integer and a scheduled adoption; a bump nobody made is a
+consumer compiling against a library it did not expect. Over-bumping is the
+sanctioned direction, and the failure message says so.
+
+Enum members are in the record because a `switch` without an `else` is
+exhaustive — adding one member breaks every consumer that switches on that enum,
+which makes `IconName`'s glyph list contract by the same rule as anything else.
+
+Two limits, both stated where the walk is. The document is read under `zig test`
+on the host that runs it, so a decl that forks on `builtin.is_test` or on the OS
+is recorded in that flavour (goldens are host-specific for the same reason). And
+it is the surface's *shape*, never its meaning: a function whose signature stands
+still while its behaviour moves is a contract change no walk can see, and that
+bump is still a judgement.
 
 ## Where the harness stops
 
@@ -903,7 +964,7 @@ and a real socket would buy a little coverage and lose the property the
 whole design is built on. The gap is nokre's to close on its own side,
 in its own tier — never by making your tests heavier.
 
-That tier now has six gates, five on every `zig build test` and one on
+That tier now has seven gates, five on every `zig build test` and two on
 every `zig build test -Dskia`:
 
 | gate | what reaches a real implementation |
@@ -914,14 +975,36 @@ every `zig build test -Dskia`:
 | `tests/capture.zig` | a `Device`-driven app's artifacts, out of a process with no window — and the PNG read back by a decoder that is not the encoder (`-Dskia`, desktop) |
 | `node --check` × 5 | every JavaScript file a web build ships, parsed by the engine that runs it |
 | `tests/web_services.mjs` | the three service legs that exist **only** on the web, executed |
+| `tests/example_screens.zig` | every screen of every example, built and audited through the example's own entry point (`-Dskia`, one driver per example) |
 
 The web one is the least obvious, so it is spelled out below.
 What no gate reaches is still a real list: the native backends of
 secure_store (Keychain, CredMan, libsecret, the Android Keystore),
 oauth's `ASWebAuthenticationSession` and its Android and loopback legs,
 all four notification systems, StoreKit and Play Billing, and every
-shell's event translation. `zig build check-targets` compiles them; the
-examples link two of them; nothing runs them.
+shell's event translation. `zig build check-targets` compiles them and the
+examples link two of them — a link is not a call, and what a shell does
+when the OS hands it an event is still reached by nothing here.
+
+What the examples' link no longer covers alone is their own code. A route
+builder is called by nothing until a window opens, so one that raises
+compiled, linked, installed and passed every gate in this repository —
+measured, by making the kitchen sink's `buildHome` raise unconditionally
+and watching `zig build test`, `zig build test -Dskia -Dgolden` and
+`zig build check-targets` all stay green. `tests/example_screens.zig`
+closes that: an executable per example, standing the app up through the
+`nokreWebBuild` the live driver boots through, then walking the route
+table *that app is carrying* and building and auditing every screen on
+it. The table is read off the app rather than restated, so a route added
+to an example is covered by having been added. Its first clean run failed
+— the kitchen sink's home screen carried a button and a tile both labelled
+"Save", `duplicate_interactive_label`, on the screen that exists to
+demonstrate every element nokre has.
+
+On macOS an identity-carrying example is driven inside an assembled
+bundle, for the same reason its `run-` step is: hello's screen prints
+what `package_info` answers, and outside a bundle that question raises an
+NSException before a screen exists to fail.
 
 ### The web's own gate
 
