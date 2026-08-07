@@ -763,6 +763,23 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
             .addressing = .documents,
             .seed = if (p.md.len != 0) try sourceUrl(em.gpa, p) else "",
         },
+        // The policy this page carries about itself, and a `<meta>` is
+        // the only vehicle this repository has for one: Pages serves
+        // the committed tree as it stands and takes no header
+        // configuration from here (README, "Publishing"). So the three
+        // directives a `<meta>` cannot carry are simply unstated —
+        // there is no edge of this site's to state them at
+        // (`../nokre/docs/static-sites.md`).
+        //
+        // Every directive in it is nokre's, derived from the rest of
+        // this value; what a driver supplies is the hosts its app
+        // fetches beyond its own origin, and this site has none.
+        // Everything a page here asks for is a file this site
+        // publishes — the module, the driver's own files, and a doc
+        // page's `seed` above — and the wasm half links no service that
+        // talks to anything (web.zig). A host named here would be a
+        // power granted to nobody.
+        .csp = .{},
     });
 }
 
@@ -852,6 +869,14 @@ fn writeStub(em: *dom.Emitter, i: usize) !void {
         .stylesheet = "/style.css",
         .heading = L.tr(def, .chooseLanguage),
         .head = head.items,
+        // The same request the pages make, over a much shorter page,
+        // and it comes out a narrower policy without this driver saying
+        // so: a chooser loads one script of the library's over a list
+        // of links, compiles nothing and boots nothing, so it is handed
+        // none of the powers a page that runs the app is. Nothing on it
+        // fetches, which is also why it may not name a host and does
+        // not (`dom.CspError.ConnectSrcWithoutBoot`).
+        .csp = .{},
         // Where this page is, which is the whole of what it takes to
         // put the alternate set on it: `choices` is already one path
         // per locale, and `x-default` is this address because a chooser
