@@ -5,13 +5,20 @@
 //! CSS custom properties inherit, so `var(--x)` in a rule outside the
 //! subtree that declares `--x` resolves to nothing — and a declaration
 //! whose value resolves to nothing is dropped whole, silently. This
-//! site shipped exactly that: the footer and the skip link are body
+//! site shipped exactly that: the footer and the skip link were body
 //! children, they were written with `var(--pad)`, and `--pad` is the
 //! root stack's own field, published by nokre on `.nokre` and nowhere
 //! above it. Every `padding` and `max-width` those two rules carried
 //! was thrown away, so the footer ran unpadded across the whole window
-//! for as long as nobody looked (main.zig's own comment at the rules
-//! that replaced it).
+//! for as long as nobody looked (main.zig's own comment at the rule
+//! that replaced them).
+//!
+//! The footer is not a body child any more — it is content, so it is a
+//! stack in the screen (content.zig's `footer`) — and the skip link is,
+//! which changes nothing here. One rule outside `.nokre` is as able to
+//! spend a name nothing declares as two were, and the day this site
+//! writes its second is the day it would otherwise have to remember
+//! this on its own.
 //!
 //! Nothing catches that: it is valid CSS, the generator's output is
 //! byte-identical run to run, and the pages pass every audit — the

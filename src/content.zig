@@ -23,6 +23,7 @@
 const std = @import("std");
 const nok = @import("nokre");
 const opts = @import("site_options");
+const links = @import("links.zig");
 const pages = @import("pages.zig");
 
 const L = @import("l10n.zig").L;
@@ -81,7 +82,7 @@ fn builderFor(comptime i: usize) nok.RouteDef.Build {
 }
 
 fn buildPage(site: *Site, app: *App, i: usize) !void {
-    return switch (pages.all[i].kind) {
+    try switch (pages.all[i].kind) {
         .home => home(app),
         .docs_index => index(app, .consumer),
         .internals_index => index(app, .contributor),
@@ -91,6 +92,82 @@ fn buildPage(site: *Site, app: *App, i: usize) !void {
         .not_found => notFound(app),
         .doc => document(app, i, site.sources[i]),
     };
+    try footer(app);
+}
+
+/// What every page ends with: the licence, where the documents come
+/// from, and the two links a reader who wants the repository or the
+/// method is looking for.
+///
+/// **It is here rather than in the driver, and that is the change.** It
+/// used to be markup the static driver spliced below the app and inside
+/// the document — `Document.body_end` — and it was billed for that
+/// three times over: it rendered in the browser's default serif because
+/// bytes outside `.nokre` are styled by nobody, the fixed nav band
+/// covered 73px of it on a phone because the clearance is padding
+/// *inside* the screen, and nothing anywhere audited it or resolved its
+/// one internal destination. A footer is a stack of links and a
+/// sentence, which is content; the seam was the only way to opt out of
+/// four things that were already true of everything in the tree
+/// (`../nokre/docs/static-sites.md`, "A seam is for what does not
+/// render"). Appended by the page builder, it opts back in, and nothing
+/// in the library had to grant it.
+///
+/// One call site, at the end of `buildPage`, for the reason the header
+/// has one: every page gets it, and a page that is owed it and does not
+/// have it should not be possible to write. That includes the 404 body,
+/// which is a screen like any other. The chooser stubs have no builder
+/// and no footer — they are nokre's own document, three links and a
+/// script, and a reader is on one for as long as it takes to redirect.
+///
+/// **The licence sentence keeps its inline link.** The prose is the
+/// content: what "docs/" is is what the words around it say, and three
+/// bare links in a column would be the same destinations with the
+/// sentence deleted. So it is one `text` whose spans carry the link —
+/// `Span.external`, because the documentation tree is on GitHub and a
+/// span's other arm resolves against this app's route table. The split
+/// at the link is nokre's own `Chrome.open_prefix` split, trailing
+/// space and all: a runtime format string is a placeholder a translator
+/// can drop or reorder, and joining costs the reordering a few
+/// languages would want to buy words that cannot be wrong. The full
+/// stop after the link is not in the catalog, beside the `" — nokre"` a
+/// title takes — punctuation put around what the catalog said.
+///
+/// **No `lang` on anything here.** This site bundles one locale, so
+/// every word in this stack is the document's own language, and
+/// `lang=""` is not an omission in HTML — it is the claim "unknown".
+/// The one place the criterion would bite is a language row naming each
+/// locale in its own language, and this site does not publish one: what
+/// stands at every unprefixed path is nokre's chooser, which writes its
+/// own anchors and their own tags (`dom.localeStub`).
+fn footer(app: *App) !void {
+    const loc = L.of(app);
+    const f = try app.root().stack(.{});
+    // The rule the old footer drew with `border-top: var(--border) solid
+    // var(--g10)` in the shell's own sheet, which is the same rule nokre
+    // draws for a `divider` — so this is the site's one styling decision
+    // here stated as the element that means it, rather than as CSS
+    // reaching into a box the library owns.
+    //
+    // It is not decoration. A document page ends in a paragraph, and
+    // the licence sentence is set in exactly the same face at exactly
+    // the same size directly under it: without the rule a reader takes
+    // "MIT licensed…" for the document's own last line, which is what
+    // the small dimmed type behind a border used to prevent and what
+    // moving into the tree gave up. The type is the library's to decide
+    // and this is not asking for it back; the break is the site's.
+    try f.divider();
+    try f.spanned(&.{
+        .{ .text = loc.tr(.footerLicense) },
+        .{ .text = loc.tr(.footerDocsDir), .external = links.docs_dir_url },
+        .{ .text = "." },
+    });
+    try f.link(.{ .label = loc.tr(.footerSource), .external = links.repo_url });
+    // The one destination that stays on the site, so it is a route and
+    // not a URL: `Refs` answers with this locale's copy of the page
+    // (links.zig), the build fails if the name is not a page, and the
+    // live driver resolves the same name the same way.
+    try f.link(.{ .label = loc.tr(.footerColophon), .route = "colophon" });
 }
 
 /// The tile rows for a list of page names — the one loop several pages
@@ -851,4 +928,122 @@ fn stamp(comptime rev: []const u8, comptime dirty: bool) []const Span {
         &.{ .{ .text = rev, .code = true }, .{ .text = " (with uncommitted changes)" } }
     else
         &.{.{ .text = rev, .code = true }};
+}
+
+// ------------------------------------------------------------- tests
+
+const dom = nok.render.dom;
+const testing = std.testing;
+
+/// One built screen as markup, resolved the way the generator resolves
+/// it. The site's `Refs` and not the edition's default, because half of
+/// what these tests are about is that the footer's internal destination
+/// goes through the route table at build time — the default would
+/// answer `#colophon` and pass an assertion about a link to nowhere.
+///
+/// Everything is on one arena and nothing is freed: `Resolver` hands
+/// back slices of intermediate joins, which is the shape the generator
+/// itself runs in (links.zig's own tests say it the same way).
+fn renderPage(arena: std.mem.Allocator, name: []const u8) ![]const u8 {
+    var sources: [pages.all.len][]const u8 = @splat("");
+    var site: Site = .{ .gpa = arena, .sources = &sources };
+    var app = try nok.App.init(testing.allocator, .{
+        .viewport = .{ .w = 900, .h = 600 },
+        .routes = &routes,
+        .ctx = &site,
+        .services = .mocks(),
+    });
+    defer app.deinit();
+    try app.switchTo(name);
+
+    var seen: std.ArrayList(links.Seen) = .empty;
+    var resolver: links.Resolver = .{ .gpa = arena, .seen = &seen };
+    var out: std.ArrayList(u8) = .empty;
+    var em: dom.Emitter = .{
+        .gpa = arena,
+        .app = &app,
+        .out = &out,
+        .options = .{ .refs = resolver.refs() },
+    };
+    defer em.deinit();
+    try dom.content(&em);
+    return out.items;
+}
+
+test "the licence sentence keeps its link inside the prose" {
+    // The one thing about this footer that a stack of links cannot say.
+    // What `docs/` *is* is what the words on either side of it say, so
+    // the sentence is one text whose spans carry the destination — and
+    // flattening it into a fourth bare link, which is the shape the
+    // library's own description of a footer suggests, would publish the
+    // three destinations with the sentence deleted.
+    //
+    // The full stop is outside the anchor and the space before it is
+    // inside the catalog's own message (`footerLicense`, trailing space,
+    // nokre's `Chrome.open_prefix` split). Both are spellings a joiner
+    // gets wrong silently, and both read as a typo rather than a bug.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const html = try renderPage(arena.allocator(), "colophon");
+    try testing.expect(std.mem.indexOf(u8, html, "<p>MIT licensed. Documentation rendered from the repository at " ++
+        "<a class=\"link\" href=\"https://github.com/getnokre/nokre/tree/main/docs\"" ++
+        " target=\"_blank\" rel=\"noopener noreferrer\"") != null);
+    try testing.expect(std.mem.indexOf(u8, html, ">docs/</a>.</p>") != null);
+}
+
+test "the footer's outbound links are external and its own page is a route" {
+    // The three destinations, each said the way its kind is said. The
+    // two that leave carry the pair nokre writes for `.external` — this
+    // site used to write those bytes itself, and the footer was the last
+    // place it did (links.zig) — and the one that does not leave is a
+    // route name, resolved against the table by `Refs` into this
+    // locale's copy of the page. A literal `/colophon/` would have been
+    // the pre-axis address, which is a chooser now and not the page.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const html = try renderPage(arena.allocator(), "gallery");
+    try testing.expect(std.mem.indexOf(u8, html, "<a class=\"link block\" href=\"https://github.com/getnokre/nokre\"" ++
+        " target=\"_blank\" rel=\"noopener noreferrer\"") != null);
+    try testing.expect(std.mem.indexOf(u8, html, "Source on GitHub</a>") != null);
+    try testing.expect(std.mem.indexOf(u8, html, "href=\"/en/colophon/\"") != null);
+    // One locale, so nothing here is in another language and nothing
+    // says it is: `lang=""` is the claim "unknown", not silence.
+    try testing.expect(std.mem.indexOf(u8, html, "lang=") == null);
+}
+
+test "every screen ends with the footer, the 404 body included" {
+    // One call site at the end of `buildPage` is what makes this true of
+    // a page nobody remembered — which is the half the seam could not
+    // do, since a driver that forgot a page simply wrote it without one.
+    // The 404 body is the page that proves it: it is a screen like any
+    // other and is reached from anywhere at all.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    for (pages.all) |p| {
+        const html = try renderPage(arena.allocator(), p.name);
+        const mark = std.mem.indexOf(u8, html, "How this site is built") orelse {
+            std.debug.print("no footer on page \"{s}\"\n", .{p.name});
+            return error.TestUnexpectedResult;
+        };
+        // Last, and nothing after it but the closing tags the emitter
+        // owes: a footer appended before the screen's own content would
+        // still be *present* and would still be wrong.
+        try testing.expect(std.mem.indexOf(u8, html[mark..], "<hr>") == null);
+        try testing.expectEqualStrings("</a></div>", html[html.len - "</a></div>".len ..]);
+    }
+}
+
+test "the footer is a stack, not a landmark this edition has no element for" {
+    // nokre serializes a `stack` as a `div` and has no `<footer>` — that
+    // call is measured in `../nokre/docs/static-sites.md` ("The
+    // `contentinfo` landmark is the loss, and it is a small one"), and
+    // this site satisfies 2.4.1 twice over without it: the skip link
+    // `dom.document` writes, and the roster as a `nav` landmark ahead of
+    // the content. What this pins is that nothing here reintroduces the
+    // tag by hand, which is what the seam made possible.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const html = try renderPage(arena.allocator(), "home");
+    try testing.expect(std.mem.indexOf(u8, html, "<footer") == null);
+    try testing.expect(std.mem.indexOf(u8, html, "contentinfo") == null);
 }

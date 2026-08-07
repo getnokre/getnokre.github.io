@@ -325,19 +325,19 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    the same asymmetry `dir` already has, read the same way.
 
    What it turns around is exactly the block above, plus the paper
-   under it: a `body_end` footer inherits nokre's ink, family, size
-   and measure instead of the browser's default serif, and the band
-   of page beside it is `--paper` rather than the UA canvas.
+   under it. The paper is the load-bearing half: a driver that
+   centred the screen in a reading column of its own leaves a band
+   of `body` down each side, and unpainted that band is the UA
+   canvas — a white margin around a black page on the dark ramp.
+   The type reaches the one element outside both mounts, which is
+   the skip link.
 
-   And it stops at inheritance, deliberately. A driver's own list
-   keeps its markers, its own anchor keeps the UA's underline and
-   colour, its own table keeps the UA's borders — those are the
-   browser's decisions about markup nokre neither wrote nor has an
-   element for, and normalizing them would make this file a second
-   stylesheet a consumer has to reason about rather than one block
-   that hands a seam the page's type. Every declaration here is
-   inherited or paints the page; none of them reaches into a shape
-   the driver chose. */
+   And it stops at inheritance, deliberately. Every declaration
+   here is inherited or paints the page; none of them reaches into
+   a shape somebody else chose. Normalizing the browser's own
+   decisions about markup nokre did not write would make this file
+   a second stylesheet a consumer has to reason about, and there is
+   no such markup in a page this edition writes any more. */
 :root[data-nokre="document"] body {
   color: var(--ink);
   font-family: prose;
@@ -1785,21 +1785,16 @@ input.check::after { content: "\e06c"; }
 .nokre > .icon-button.back:has(+ :is(h6, .s-small)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h6, .s-small)) { top: calc(var(--page-pad) + -14px); }
 
 /* The clear space bottom chrome owes the page, at the four widths it is asked. */
-:root body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
-:root body.has-seam:has(.nokre.has-chrome) { padding-bottom: var(--chrome-reserve); }
-:root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
-:root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
+:root .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+:root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
 
 @media (max-width: 560px) {
-  :root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
-  :root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: var(--chrome-reserve); }
+  :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
 }
 
 @media print {
-  :root body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
-  :root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
+  :root .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
 }
 
 /* ---- the page ---------------------------------------------------- */
@@ -1850,42 +1845,25 @@ html { background: var(--paper); overflow-x: clip; }
    fixed layer, laid out against the viewport rather than against
    this box, and nothing else is ever mounted here. */
 /* `--page-pad` and not `--pad`: the short name is the root stack's
-   own field, published on `.nokre` and nowhere above it. The footer
-   and the skip link are body children rather than stacks, so every
-   `var(--pad)` they were written with resolved to nothing — and a
-   custom property that resolves to nothing takes its whole
-   declaration with it. The footer had therefore been running
-   unpadded and uncapped across the window, which is the one thing
-   these two rules exist to prevent. */
-#chrome, main.page, footer {
+   own field, published on `.nokre` and nowhere above it. The skip
+   link is a body child rather than a stack, so every `var(--pad)`
+   it was written with resolved to nothing — and a custom property
+   that resolves to nothing takes its whole declaration with it.
+
+   The footer used to be the other body child, and the other half of
+   that bug: it ran unpadded and uncapped across the window for as
+   long as nobody looked. It is not a body child any more and needs
+   nothing here. A footer is content, so it is a stack of links and a
+   sentence inside the screen (`content.footer`) — inside this
+   column, inside `.nokre` where `--pad` is declared, and inside the
+   padding that clears the fixed band, which is the one arithmetic
+   this sheet had been copying out of nokre's `:root` to pay for
+   itself (`../nokre/docs/static-sites.md`, "A seam is for what does
+   not render"). */
+#chrome, main.page {
   max-width: calc(var(--page-col) + 2 * var(--page-pad));
   margin-inline: auto;
 }
-
-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--page-gap) var(--page-pad);
-  margin-top: var(--page-pad);
-  padding: var(--page-pad);
-  border-top: var(--border) solid var(--g10);
-  font-size: var(--px-small);
-  line-height: var(--lh-small);
-  color: var(--mid);
-}
-footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-
-/* No bottom reserve here, and the absence is the library's answer
-   rather than an omission. This footer stands below the mount the
-   app is in and outside it, so at the widths the roster is a fixed
-   band it owed that band a clearance — and the rule that paid it
-   read three of nokre's `:root` properties and its breakpoint back
-   out, which is a copy of the edition's arithmetic and drifts the
-   first time a metric moves. The edition is told what stands here
-   instead — `body_end` is non-empty, so `<body>` carries `has-seam`
-   — and lands the clear space on the document, under the last thing
-   in it (`../nokre/docs/static-sites.md`, "A footer in the seam is
-   the last thing in the document"). */
 
 /* The only links on this site that leave it. nokre navigates its own
    screens and nothing else, so it has no element for one and no mark

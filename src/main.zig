@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 48;
+const nokre_revision = 50;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -647,8 +647,16 @@ fn stubPath(gpa: std.mem.Allocator, out_dir: []const u8, p: pages.Page) ![]const
 /// the skip link, and the boot script that turns the file into the
 /// app's first frame. What is left here is what this site invented —
 /// the ids it mounts into, the URLs it publishes things at, the words on
-/// its skip link, and the two seams' worth of markup nokre has no
+/// its skip link, and the one seam's worth of markup nokre has no
 /// element and no opinion for.
+///
+/// One seam, and it was two. The other took the footer, and a footer is
+/// content: a stack of links and a sentence, which the library can style,
+/// clear, audit and resolve routes for the moment it is in the tree
+/// instead of beside it. It is `content.footer` now, appended by the
+/// page builder like everything else on the page, and nothing here
+/// stands below the screen (`../nokre/docs/static-sites.md`, "A seam is
+/// for what does not render").
 ///
 /// The upgrade the boot script carries is the whole reason the pair
 /// exists: everything above it is a complete page — it reads, it
@@ -668,10 +676,6 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
     var head: std.ArrayList(u8) = .empty;
     defer head.deinit(em.gpa);
     try writeHead(em, &head);
-
-    var below: std.ArrayList(u8) = .empty;
-    defer below.deinit(em.gpa);
-    try footer(em, loc, &below);
 
     try dom.document(em, .{
         .title = try documentTitle(em.gpa, loc, i),
@@ -723,7 +727,6 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
         // the site's.
         .content_class = "page",
         .skip = L.tr(loc, .skipToContent),
-        .body_end = below.items,
         // Every page, and that is a decision and not the default.
         //
         // nokre reads off the tree whether a page *needs* a runtime and
@@ -795,50 +798,6 @@ fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8)) !void {
 /// same key with a directory in front of it.
 fn sourceUrl(gpa: std.mem.Allocator, p: pages.Page) ![]const u8 {
     return std.fmt.allocPrint(gpa, "/md/{s}.md", .{p.name});
-}
-
-/// The body seam: what stands below the app and inside the document.
-/// Same shape as the head's, and for the same reason.
-///
-/// Its one internal link is resolved rather than typed. It used to read
-/// `/colophon/` as a literal, which was the same address `pageHref`
-/// answered with — and the locale axis is exactly the change that makes
-/// a literal and a resolver diverge, silently, on every page of the
-/// site. There is now one function that says where a page is.
-///
-/// The sentence around it is split at the link the way nokre's own
-/// `Chrome.open_prefix` is split: a runtime format string is a
-/// placeholder a translator can drop or reorder, and joining costs the
-/// reordering a few languages would want to buy words that cannot be
-/// wrong. The full stop after the link stays in the format, beside the
-/// `" — nokre"` a title takes — punctuation the driver adds around what
-/// the catalog said, which is the line `Document.title` already draws.
-fn footer(em: *dom.Emitter, loc: L.Locale, out: *std.ArrayList(u8)) !void {
-    var f = em.fragment(out);
-    defer f.deinit();
-    const colophon = try links.pageHref(em.gpa, loc, pages.indexOf("colophon").?, "");
-    // The two repository links leave the site, so they carry the pair
-    // every external link here carries (`links.external_attrs`).
-    try f.print(
-        \\<footer>
-        \\<span>{s}
-        \\<a href="{s}/tree/{s}/docs" {s}>{s}</a>.</span>
-        \\<span><a href="{s}" {s}>{s}</a></span>
-        \\<span><a href="{s}">{s}</a></span>
-        \\</footer>
-        \\
-    , .{
-        L.tr(loc, .footerLicense),
-        links.repo_url,
-        links.branch,
-        links.external_attrs,
-        L.tr(loc, .footerDocsDir),
-        links.repo_url,
-        links.external_attrs,
-        L.tr(loc, .footerSource),
-        colophon,
-        L.tr(loc, .footerColophon),
-    });
 }
 
 /// The page at every unprefixed path: the chooser this site's readers
@@ -968,9 +927,14 @@ fn checkStylesheet(gpa: std.mem.Allocator, css: []const u8) !void {
 }
 
 /// The driver's own rules, appended after the edition's stylesheet.
-/// Everything here is about the *document* — its reading column, the
-/// skip link, the footer — and none of it restyles an element: there is
-/// no styling API to reach for, on this edition either.
+/// Everything here is about the *document* — its reading column, its
+/// paper, the print sheet and the mark on an outbound link — and none of
+/// it restyles an element: there is no styling API to reach for, on this
+/// edition either. It is shorter by the footer's rules, which is what
+/// moving the footer into the tree bought: the block that centred it,
+/// bordered it, sized it and re-inked it was a driver styling its own
+/// content because the seam had put that content outside everything
+/// that would otherwise have done it.
 const shell_css =
     \\
     \\/* ---- the page ---------------------------------------------------- */
@@ -1021,42 +985,25 @@ const shell_css =
     \\   fixed layer, laid out against the viewport rather than against
     \\   this box, and nothing else is ever mounted here. */
     \\/* `--page-pad` and not `--pad`: the short name is the root stack's
-    \\   own field, published on `.nokre` and nowhere above it. The footer
-    \\   and the skip link are body children rather than stacks, so every
-    \\   `var(--pad)` they were written with resolved to nothing — and a
-    \\   custom property that resolves to nothing takes its whole
-    \\   declaration with it. The footer had therefore been running
-    \\   unpadded and uncapped across the window, which is the one thing
-    \\   these two rules exist to prevent. */
-    \\#chrome, main.page, footer {
+    \\   own field, published on `.nokre` and nowhere above it. The skip
+    \\   link is a body child rather than a stack, so every `var(--pad)`
+    \\   it was written with resolved to nothing — and a custom property
+    \\   that resolves to nothing takes its whole declaration with it.
+    \\
+    \\   The footer used to be the other body child, and the other half of
+    \\   that bug: it ran unpadded and uncapped across the window for as
+    \\   long as nobody looked. It is not a body child any more and needs
+    \\   nothing here. A footer is content, so it is a stack of links and a
+    \\   sentence inside the screen (`content.footer`) — inside this
+    \\   column, inside `.nokre` where `--pad` is declared, and inside the
+    \\   padding that clears the fixed band, which is the one arithmetic
+    \\   this sheet had been copying out of nokre's `:root` to pay for
+    \\   itself (`../nokre/docs/static-sites.md`, "A seam is for what does
+    \\   not render"). */
+    \\#chrome, main.page {
     \\  max-width: calc(var(--page-col) + 2 * var(--page-pad));
     \\  margin-inline: auto;
     \\}
-    \\
-    \\footer {
-    \\  display: flex;
-    \\  flex-wrap: wrap;
-    \\  gap: var(--page-gap) var(--page-pad);
-    \\  margin-top: var(--page-pad);
-    \\  padding: var(--page-pad);
-    \\  border-top: var(--border) solid var(--g10);
-    \\  font-size: var(--px-small);
-    \\  line-height: var(--lh-small);
-    \\  color: var(--mid);
-    \\}
-    \\footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-    \\
-    \\/* No bottom reserve here, and the absence is the library's answer
-    \\   rather than an omission. This footer stands below the mount the
-    \\   app is in and outside it, so at the widths the roster is a fixed
-    \\   band it owed that band a clearance — and the rule that paid it
-    \\   read three of nokre's `:root` properties and its breakpoint back
-    \\   out, which is a copy of the edition's arithmetic and drifts the
-    \\   first time a metric moves. The edition is told what stands here
-    \\   instead — `body_end` is non-empty, so `<body>` carries `has-seam`
-    \\   — and lands the clear space on the document, under the last thing
-    \\   in it (`../nokre/docs/static-sites.md`, "A footer in the seam is
-    \\   the last thing in the document"). */
     \\
     \\/* The only links on this site that leave it. nokre navigates its own
     \\   screens and nothing else, so it has no element for one and no mark
@@ -1189,13 +1136,16 @@ test "every custom property the shell spends is one the document root carries" {
     }
     try std.testing.expectEqual(@as(usize, 0), unresolvable.len);
     // …and the scan found something to check, so a rename in nokre that
-    // emptied the sheet could not pass this by saying nothing. A floor
-    // and not a count: it came down when the footer stopped reserving
-    // its own space out of the band's metrics, and a bound that has to
-    // be retuned every time a rule moves is a bound nobody trusts.
+    // emptied the sheet could not pass this by saying nothing. Not a
+    // count and not a floor either any more. It was `> 5`; it was
+    // retuned once when the footer stopped reserving its own space out
+    // of the band's metrics, and it would have had to be retuned again
+    // when the footer's own rules left with the seam. A bound that moves
+    // every time a rule moves is a bound nobody trusts, and all this
+    // assertion was ever asking is whether the scan found anything.
     const used = try css_check.varsUsed(gpa, shell_css);
     defer gpa.free(used);
-    try std.testing.expect(used.len > 5);
+    try std.testing.expect(used.len != 0);
 }
 
 test {
@@ -1203,12 +1153,24 @@ test {
     _ = links;
     _ = icons;
     _ = css_check;
+    // Every screen, and the footer under all of them. It was not on
+    // this list while the footer was markup here and the builders had
+    // nothing to assert about: a file whose tests nothing references is
+    // a file whose tests do not run, and the suite says so by passing.
+    _ = content;
     // Analysis is lazy and only the entry point references the write
     // path, so the test build would otherwise skip it. `main` itself
     // cannot be pulled in — App.Options drops the `services` default
     // under test on purpose — but the helpers past App.init can be.
     _ = &failOnStale;
     _ = &writeExtras;
+    // The page shell itself, which was not on this list and should have
+    // been: analysis is lazy, `writeDocument` is reached only from
+    // `main`, and so the whole of what this driver hands `dom.document`
+    // was invisible to `zig build test`. The revision that deleted the
+    // body seam is what showed it — the pin bumped, every test passed,
+    // and `zig build site` then failed on a field that no longer exists.
+    _ = &writeDocument;
     // The locale axis's own half of that write path: where a copy lands,
     // where its chooser lands, and what writes the chooser.
     _ = &outPath;

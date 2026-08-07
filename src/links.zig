@@ -27,16 +27,25 @@ const dom = nok.render.dom;
 pub const repo_url = "https://github.com/getnokre/nokre";
 pub const branch = "main";
 
-/// The site's one posture for a link that leaves it: a new tab. It is
-/// the pair nokre's own serializer writes on external destinations
-/// (`Emitter.hrefExternal`), for the same two reasons — same-tab would
-/// tear down the running app under the live driver and lose a static
-/// page's reader their place, and `noopener noreferrer` severs the
-/// handle the new page would otherwise hold on this window. The
-/// resolvers below no longer write it — a `.external` destination gets
-/// it from the emitter itself — so its one remaining spender is the
-/// footer, the raw HTML the tree has no element for.
-pub const external_attrs = "target=\"_blank\" rel=\"noopener noreferrer\"";
+/// The documentation tree this site renders its pages from, on GitHub —
+/// the footer's one inline destination (`content.footer`).
+///
+/// `sourceHref` builds the same shape for a file a document cites, and
+/// it stays a function because a path and a `#L20` arrive at runtime.
+/// This one is a constant because the footer's sentence names a fixed
+/// directory, and a constant is what a `Span.external` wants: no
+/// allocation and no lifetime, on a builder the live driver runs once
+/// per frame.
+///
+/// There is no `external_attrs` here any more. `target="_blank"` and
+/// `rel="noopener noreferrer"` were this site's own bytes for as long
+/// as it wrote raw anchors; the last of those was the footer, and the
+/// emitter has written the pair on every `.external` destination since
+/// (`Emitter.hrefExternal`). The site now says only *where* a link goes
+/// and the library says what that means — which also means the footer's
+/// outbound links wear the same external mark every other one on the
+/// site wears, having quietly gone without it while they were markup.
+pub const docs_dir_url = repo_url ++ "/tree/" ++ branch ++ "/docs";
 
 /// A resolved target as the destination nokre's `Refs` hook answers
 /// with: pages and anchors are this site's own hrefs, a source file is
