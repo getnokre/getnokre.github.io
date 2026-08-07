@@ -1665,7 +1665,7 @@ input.check::after { content: "\e06c"; }
   /* The bar has no ground: no track, no fill, no hairline. The
      nav is its items and nothing else, each on a plate of its
      own, with 8px of page showing between them. */
-  .nav:not(.no-boot) {
+  .nav {
     position: fixed;
     inset-inline: 0;
     bottom: 0;
@@ -1679,17 +1679,57 @@ input.check::after { content: "\e06c"; }
     pointer-events: none;
   }
   /* A *row* of destinations is measured and centred on the
-     viewport as one group, and here it does not wrap:
-     `navCollapses` asks whether the roster fits on one line and
-     gives the nav its collapsed shape when it does not, so a
-     second line is a state the library has already ruled out —
-     for a screen whose window it measured. */
-  .nav:not(.no-boot) .nav-row {
+     viewport as one group, and here it does not wrap. The band
+     is a fixed one-line strip over the page and the reserve
+     below repeats its height to the pixel, so a second line is
+     the page's last line standing behind the destinations.
+
+     Which leaves the row that will not make a line, and the
+     answer is that it scrolls. Not clipping, which is what a
+     nowrap row in a fixed layer does left alone — the ends hang
+     past both screen edges and no gesture reaches them, and
+     that is what a phone got on any page whose roster was
+     measured against a wider window than the reader's. Not
+     wrapping, for the reserve. A driver still has the better
+     answer at this width and takes it — `navCollapses` gives
+     the nav its chip, and a chip always fits — but that is an
+     upgrade over a shape that already works, not the thing the
+     shape depends on. Nothing in this block asks whether
+     anything is running.
+
+     `justify-content` comes off the row for it. A centred
+     scroll container overflows *both* ends and the leading one
+     is unreachable: the classic way a scrolling row loses its
+     first item. The layer above centres the row as a whole
+     instead, which is the same picture while it fits — a flex
+     item is its content's width — and packs to the start the
+     moment it does not. */
+  .nav-row {
     flex-wrap: nowrap;
-    justify-content: center;
     gap: var(--nav-item-gap);
     pointer-events: auto;
+    overflow-x: auto;
+    /* One axis non-visible makes the other `auto`. The row is
+       exactly its pills' height and the focus ring is drawn
+       *inside* the plate (below), so there is nothing here to
+       scroll or to clip on that axis. */
+    overflow-y: hidden;
+    /* A swipe that runs out of strip is not a swipe back
+       through the browser's history. */
+    overscroll-behavior-inline: contain;
+    /* The one thing this answer gives up. A scrollbar in here is
+       height, and height in a fixed band is content resting
+       behind the bar: the reserve is arithmetic and cannot see
+       it, where `.seg-track`'s own gutter is in the page and is
+       simply taller. What is left carries it — a pill cut off
+       at the screen edge, which is the affordance
+       `.seg-track.bled` argues for at its own edge — and a
+       browser scrolls a focused destination into view, so the
+       keyboard reaches every one of them whatever a pointer
+       finds. */
+    scrollbar-width: none;
   }
+  .nav-row::-webkit-scrollbar { display: none; }
   /* Pills: the corner is half the slot's height, derived rather
      than fixed, so the shape follows the slot instead of
      drifting back to a rounded rectangle the next time the row
@@ -1702,7 +1742,7 @@ input.check::after { content: "\e06c"; }
      .g10, under the 1.4.11 floor. The plate is the mark here,
      so the regular face carries the words: bold *and* a fill
      would be two marks for one state. */
-  .nav:not(.no-boot) .chip {
+  .chip {
     height: var(--nav-slot);
     padding-inline: calc(var(--nav-item-pad-h) - var(--border));
     border: var(--border) solid transparent;
@@ -1710,11 +1750,13 @@ input.check::after { content: "\e06c"; }
     background: var(--g11);
     font-weight: 400;
   }
-  .nav:not(.no-boot) .chip.current { background: var(--g10); border-color: var(--mid); }
+  .chip.current { background: var(--g10); border-color: var(--mid); }
   /* A plate has an edge of its own, so focus takes it over
      rather than drawing a second line beside it — the rule the
-     header leaves to the band (`sheet`, the focus block). */
-  .nav:not(.no-boot) .chip:focus-visible {
+     header leaves to the band (`sheet`, the focus block). It is
+     drawn *inside* that edge, which is also what lets the row
+     above be a scroll container without clipping a ring. */
+  .chip:focus-visible {
     outline: var(--focus) solid var(--ink);
     outline-offset: calc(-1 * var(--focus));
     border-color: transparent;
@@ -1724,7 +1766,7 @@ input.check::after { content: "\e06c"; }
      nothing may *rest* behind the destinations. The OS band is
      inside `--bar-bottom`, exactly as `navBarBottomPad` puts it
      there. */
-  :root:has(.nav:not(.no-boot)) .nokre.has-chrome {
+  :root:has(.nav) .nokre.has-chrome {
     padding-bottom: calc(
       var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
     );

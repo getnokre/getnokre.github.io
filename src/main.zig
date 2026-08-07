@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 46;
+const nokre_revision = 47;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -103,9 +103,13 @@ const origin = "https://getnokre.github.io";
 /// in flight — and it is the desktop reading, deliberately: it is the
 /// one a crawler, a previewer and a printed page take. The cost is
 /// stated rather than hidden: a phone with JavaScript off gets a roster
-/// measured for a window it does not have, and the bar overflows. A
-/// narrow number would trade that for a collapsed nav on every desktop
-/// first paint, which is the same lie pointing the other way.
+/// measured for a window it does not have. What that costs is a band
+/// the reader drags sideways to reach the far end of, rather than a row
+/// with its ends hanging past both screen edges — the sheet answers a
+/// row that will not fit by scrolling it, and that answer needs nothing
+/// running (`../nokre/docs/static-sites.md`). A narrow number would
+/// trade the whole thing for a collapsed nav on every desktop first
+/// paint, which is the same lie pointing the other way.
 const viewport: nok.Size = .{ .w = 1280, .h = 1024 };
 
 /// The live driver's browser half, published beside the pages
@@ -720,6 +724,31 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
         .content_class = "page",
         .skip = L.tr(loc, .skipToContent),
         .body_end = below.items,
+        // Every page, and that is a decision and not the default.
+        //
+        // nokre reads off the tree whether a page *needs* a runtime and
+        // refuses one that needs one and has no boot (`dom.needsRuntime`,
+        // `error.PageNeedsBoot`). It is a floor, though, not a ceiling: a
+        // page may carry a boot for a need no tree can show. Most pages
+        // here are below that floor — prose and links publish whole — and
+        // they carry one anyway, for two needs the tree cannot state.
+        //
+        // The nav's shape is the first. The file was measured against
+        // 1280 pixels and the reader's window is whatever it is; above
+        // the cap the header wraps and nothing is owed, but below it the
+        // band's own answer to a row that will not fit is to scroll, and
+        // the chip is what a driver *upgrades* that to. A prose page is
+        // read on a phone as often as the gallery is, so it is owed the
+        // upgrade as much — which is the colophon's "an upgrade and not
+        // a requirement", said about the whole site and not about six
+        // pages of it.
+        //
+        // A document page's Markdown is the second, and it is the
+        // concrete one. `seed` is fetched by that page's own boot and by
+        // nothing else — addressing is `.documents`, so no screen here
+        // ever builds another screen — so a doc page that did not boot
+        // would leave the source it was generated from published at an
+        // address nothing requests.
         .boot = .{
             .wasm = "/app.wasm",
             .addressing = .documents,
