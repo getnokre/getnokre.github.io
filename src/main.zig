@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 45;
+const nokre_revision = 46;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -910,6 +910,33 @@ const external_mark_css = std.fmt.comptimePrint(
     \\
 , .{@intFromEnum(nok.element.IconName.arrow_up_right)});
 
+/// The footer's clear space under the bar, at the widths there is a bar
+/// to clear. Split out of `shell_css` because the breakpoint is derived
+/// rather than typed, the way the mark's codepoint above is.
+///
+/// nokre reserves that space on the mount its app is in (`has-chrome`),
+/// and this site's footer stands below that mount and outside it — so
+/// the last block on the page owes the fixed band the same clearance,
+/// or its last line reads through the destinations. The calc is the
+/// edition's own, spelled the way its sheet spells it.
+///
+/// Only where the roster is a band. Where it is a header it stands in
+/// flow at the top and has taken its space there, and the same reserve
+/// at the bottom would be a nav's height of nothing under the last line
+/// of every page.
+///
+/// The width is `metrics.sheet_max_w`, read off the library rather than
+/// re-typed. It is the one the edition's sheet turns the two shapes on,
+/// and a second 560 here would be two numbers that have to agree with
+/// nothing anywhere saying so.
+const footer_reserve_css = std.fmt.comptimePrint(
+    \\
+    \\@media (max-width: {d}px) {{
+    \\  footer {{ padding-bottom: calc(var(--nav-content-gap) + var(--nav-slot) + var(--nav-bar-pad-b) + var(--page-pad)); }}
+    \\}}
+    \\
+, .{nok.layout.metrics.sheet_max_w});
+
 /// The one sheet this site serves: the edition's, then the shell's own
 /// document rules. One home, because the check below and the generator
 /// must be asking about the same bytes.
@@ -972,6 +999,22 @@ const shell_css =
     \\   width nobody is looking at. So the step at 900px is not a page
     \\   style: it is core being handed a wider viewport and answering
     \\   those questions again against it. */
+    \\/* The chrome mount is in the column for the same reason, and that
+    \\   half is the driver's to say: nokre stands the roster on the
+    \\   page's own 16px margin *inside whatever box the driver mounted
+    \\   the chrome into*, and this site mounted the chrome and the screen
+    \\   into two boxes. A library that guessed at the second one's width
+    \\   would be styling a box it has never heard of, `chrome` being a
+    \\   name invented here (`../nokre/docs/static-sites.md`, "What is
+    \\   still the driver's is the column"). Uncapped, the header's first
+    \\   word takes its 16px off the *window's* edge while the `h1` it is
+    \\   written above takes its own off a centred column — the
+    \\   misalignment `--page-col` exists to prevent, reaching the one
+    \\   element it had never been applied to.
+    \\
+    \\   It costs the band nothing at a phone's width: there the nav is a
+    \\   fixed layer, laid out against the viewport rather than against
+    \\   this box, and nothing else is ever mounted here. */
     \\/* `--page-pad` and not `--pad`: the short name is the root stack's
     \\   own field, published on `.nokre` and nowhere above it. The footer
     \\   and the skip link are body children rather than stacks, so every
@@ -980,7 +1023,7 @@ const shell_css =
     \\   declaration with it. The footer had therefore been running
     \\   unpadded and uncapped across the window, which is the one thing
     \\   these two rules exist to prevent. */
-    \\main.page, footer {
+    \\#chrome, main.page, footer {
     \\  max-width: calc(var(--page-col) + 2 * var(--page-pad));
     \\  margin-inline: auto;
     \\}
@@ -991,13 +1034,14 @@ const shell_css =
     \\  gap: var(--page-gap) var(--page-pad);
     \\  margin-top: var(--page-pad);
     \\  padding: var(--page-pad);
-    \\  padding-bottom: calc(var(--nav-content-gap) + var(--nav-slot) + var(--nav-bar-pad-b) + var(--page-pad));
     \\  border-top: var(--border) solid var(--g10);
     \\  font-size: var(--px-small);
     \\  line-height: var(--lh-small);
     \\  color: var(--mid);
     \\}
     \\footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+    \\
+++ footer_reserve_css ++
     \\
     \\/* The only links on this site that leave it. nokre navigates its own
     \\   screens and nothing else, so it has no element for one and no mark
