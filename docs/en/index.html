@@ -20,7 +20,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
 </head>
-<body>
+<body class="has-seam">
 <a class="skip" href="#content">Skip to content</a>
 <div id="chrome"><nav class="nav" aria-label="Sections"><div class="nav-row"><a class="chip current" href="/en/" aria-current="page" data-n="2"><span class="icon" aria-hidden="true">&#xE0F5;</span>Home</a><a class="chip" href="/en/docs/" data-n="3"><span class="icon g3" aria-hidden="true">&#xE05F;</span>Docs</a><a class="chip" href="/en/internals/" data-n="4"><span class="icon g3" aria-hidden="true">&#xE1B1;</span>Internals</a></div></nav></div>
 <main id="content" class="nokre has-chrome page"><h1 id="nokre">nokre</h1><p class="s-h3 g5">A deliberately limited GUI library: text, lines, and boxes.</p><p>Zig and Skia, rasterized on the CPU. Grayscale only. Every element is semantic, so accessibility is derived from the tree you build rather than annotated onto it. Two devices on the same platform with the same logical screen size render byte-for-byte identical frames, run after run. Identity across platforms is not the goal: an app is a semantic tree, and how a device draws that tree is the device&#39;s business.</p><p class="g3">Think: apps for a grayscale Kindle — and, on the same tree, for a terminal, a watch face, a panel that refreshes one row at a time.</p><pre class="code" tabindex="0" data-n="9"><code>const nok = @import(&quot;nokre&quot;);

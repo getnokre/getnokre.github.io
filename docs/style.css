@@ -91,6 +91,9 @@
   --text-area-rows: 3;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b)));
+  --chrome-reserve: calc(
+    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
+  );
   --px-small: 12px;
   --lh-small: 16px;
   --px-body: 16px;
@@ -361,30 +364,10 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   background: var(--paper);
 }
 
-/* The bottom reserve is the library's, and it is `trailingSpace`
-   plus `navBarHeight` to the pixel: nothing may *rest* behind the
-   destinations, so a fully scrolled page still leaves the content
-   gap above the bar, the bar's own top pad, its slot, and the clear
-   space below it. The OS band is inside `--bar-bottom`, exactly as
-   `navBarBottomPad` puts it there. */
-.nokre.has-chrome {
-  padding-bottom: calc(
-    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
-  );
-}
-/* …and a bar standing *above* the page in flow reserves nothing at
-   the bottom: it took its space where it stands. `has-chrome` is
-   one class over three layers (`hasBottomChrome`), so the test is
-   which of them is on the page — a notice banner and the bare
-   notices indicator are bottom-anchored at every width and keep the
-   reserve, and neither is ever on the page beside the nav (`chrome`
-   emits the banner *instead of* it). `writeDerived` gives the band
-   its reserve back at the width the bar is in the band.
-
-   `:root` because the two mounts are siblings at best and the sheet
-   does not know what a driver wrapped them in: the nav is somewhere
-   in the page, and the page is what every document has. */
-:root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
+/* The bottom reserve is not here. It was, in longhand, with a
+   second copy inside the band's own block — so `writeReserve`
+   writes all four of its rules together, at the end of this
+   file. */
 
 /* A flex item will not shrink below its own min-content unless it
    is told it may, and a code block's min-content is its longest
@@ -1641,14 +1624,14 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 /* Print. Nothing `position: fixed` belongs on paper — it lands on
    the first sheet over the content and on no other sheet at all —
    so the nav goes, and the reserve the screen kept for it goes with
-   it or every printout ends in an inch of nothing. The skip link
-   goes because there is no keyboard on paper. The modal layers are
-   deliberately left: a sheet that is open is content the reader is
-   looking at, and a printout that dropped it would be printing a
-   screen nobody is on. */
+   it or every printout ends in an inch of nothing (the reserve's own
+   print rules are in `writeDerived` with the rest of the group). The
+   skip link goes because there is no keyboard on paper. The modal
+   layers are deliberately left: a sheet that is open is content the
+   reader is looking at, and a printout that dropped it would be
+   printing a screen nobody is on. */
 @media print {
   .nav, .skip { display: none; }
-  .nokre.has-chrome { padding-bottom: var(--pad); }
 }
 
 .stack { --pad: 0px; --gap: 8px; }
@@ -1761,16 +1744,6 @@ input.check::after { content: "\e06c"; }
     outline-offset: calc(-1 * var(--focus));
     border-color: transparent;
   }
-  /* A screen whose bar is in the band owes it the clear space
-     again: `trailingSpace` plus `navBarHeight` to the pixel, so
-     nothing may *rest* behind the destinations. The OS band is
-     inside `--bar-bottom`, exactly as `navBarBottomPad` puts it
-     there. */
-  :root:has(.nav) .nokre.has-chrome {
-    padding-bottom: calc(
-      var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
-    );
-  }
   /* The section list is the tile group's card, not the modal
      pane's surface: it floats clear of every edge, so all four
      corners are its own and all four are drawn. It is sized to
@@ -1810,6 +1783,24 @@ input.check::after { content: "\e06c"; }
 .nokre > .icon-button.back:has(+ :is(h4, .s-h4)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h4, .s-h4)) { top: calc(var(--page-pad) + -9px); }
 .nokre > .icon-button.back:has(+ :is(h5, p, .s-body)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h5, p, .s-body)) { top: calc(var(--page-pad) + -11px); }
 .nokre > .icon-button.back:has(+ :is(h6, .s-small)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h6, .s-small)) { top: calc(var(--page-pad) + -14px); }
+
+/* The clear space bottom chrome owes the page, at the four widths it is asked. */
+:root body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+:root body.has-seam:has(.nokre.has-chrome) { padding-bottom: var(--chrome-reserve); }
+:root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
+:root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
+
+@media (max-width: 560px) {
+  :root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+  :root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: var(--chrome-reserve); }
+}
+
+@media print {
+  :root body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
+  :root:has(.nav) body:not(.has-seam) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav) body.has-seam:has(.nokre.has-chrome) { padding-bottom: 0; }
+}
 
 /* ---- the page ---------------------------------------------------- */
 
@@ -1884,9 +1875,17 @@ footer {
 }
 footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
-@media (max-width: 560px) {
-  footer { padding-bottom: calc(var(--nav-content-gap) + var(--nav-slot) + var(--nav-bar-pad-b) + var(--page-pad)); }
-}
+/* No bottom reserve here, and the absence is the library's answer
+   rather than an omission. This footer stands below the mount the
+   app is in and outside it, so at the widths the roster is a fixed
+   band it owed that band a clearance — and the rule that paid it
+   read three of nokre's `:root` properties and its breakpoint back
+   out, which is a copy of the edition's arithmetic and drifts the
+   first time a metric moves. The edition is told what stands here
+   instead — `body_end` is non-empty, so `<body>` carries `has-seam`
+   — and lands the clear space on the document, under the last thing
+   in it (`../nokre/docs/static-sites.md`, "A footer in the seam is
+   the last thing in the document"). */
 
 /* The only links on this site that leave it. nokre navigates its own
    screens and nothing else, so it has no element for one and no mark
@@ -1904,10 +1903,10 @@ a.link[href^="https://"]::after {
 /* The skip link and the fixed chrome are nokre's in print as well
    as on screen — the anchor comes out of `dom.document` and the
    sheet parks it, hides it on paper and drops the bottom reserve
-   with the nav it was reserved for. What is left here is the two
-   document rules that were never the library's: this site's
-   reading column, and its own footer's reserve. */
+   with the nav it was reserved for, on the document as on the
+   screen. What is left here is the one document rule that was never
+   the library's: this site's reading column, which is a window's
+   measure and not a page box's. */
 @media print {
   main.page { max-width: none; }
-  footer { padding-bottom: var(--page-pad); }
 }

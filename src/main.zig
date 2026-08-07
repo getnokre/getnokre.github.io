@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 47;
+const nokre_revision = 48;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -729,9 +729,12 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
         // nokre reads off the tree whether a page *needs* a runtime and
         // refuses one that needs one and has no boot (`dom.needsRuntime`,
         // `error.PageNeedsBoot`). It is a floor, though, not a ceiling: a
-        // page may carry a boot for a need no tree can show. Most pages
-        // here are below that floor — prose and links publish whole — and
-        // they carry one anyway, for two needs the tree cannot state.
+        // page may carry a boot for a need no tree can show. Nearly every
+        // page here is below that floor — prose and links publish whole,
+        // and a tile is a link wherever it carries a route rather than a
+        // press (`Element.needsRuntime`), which is what every tile on
+        // this site carries — and they carry a boot anyway, for two needs
+        // the tree cannot state.
         //
         // The nav's shape is the first. The file was measured against
         // 1280 pixels and the reader's window is whatever it is; above
@@ -939,33 +942,6 @@ const external_mark_css = std.fmt.comptimePrint(
     \\
 , .{@intFromEnum(nok.element.IconName.arrow_up_right)});
 
-/// The footer's clear space under the bar, at the widths there is a bar
-/// to clear. Split out of `shell_css` because the breakpoint is derived
-/// rather than typed, the way the mark's codepoint above is.
-///
-/// nokre reserves that space on the mount its app is in (`has-chrome`),
-/// and this site's footer stands below that mount and outside it — so
-/// the last block on the page owes the fixed band the same clearance,
-/// or its last line reads through the destinations. The calc is the
-/// edition's own, spelled the way its sheet spells it.
-///
-/// Only where the roster is a band. Where it is a header it stands in
-/// flow at the top and has taken its space there, and the same reserve
-/// at the bottom would be a nav's height of nothing under the last line
-/// of every page.
-///
-/// The width is `metrics.sheet_max_w`, read off the library rather than
-/// re-typed. It is the one the edition's sheet turns the two shapes on,
-/// and a second 560 here would be two numbers that have to agree with
-/// nothing anywhere saying so.
-const footer_reserve_css = std.fmt.comptimePrint(
-    \\
-    \\@media (max-width: {d}px) {{
-    \\  footer {{ padding-bottom: calc(var(--nav-content-gap) + var(--nav-slot) + var(--nav-bar-pad-b) + var(--page-pad)); }}
-    \\}}
-    \\
-, .{nok.layout.metrics.sheet_max_w});
-
 /// The one sheet this site serves: the edition's, then the shell's own
 /// document rules. One home, because the check below and the generator
 /// must be asking about the same bytes.
@@ -1070,7 +1046,17 @@ const shell_css =
     \\}
     \\footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
     \\
-++ footer_reserve_css ++
+    \\/* No bottom reserve here, and the absence is the library's answer
+    \\   rather than an omission. This footer stands below the mount the
+    \\   app is in and outside it, so at the widths the roster is a fixed
+    \\   band it owed that band a clearance — and the rule that paid it
+    \\   read three of nokre's `:root` properties and its breakpoint back
+    \\   out, which is a copy of the edition's arithmetic and drifts the
+    \\   first time a metric moves. The edition is told what stands here
+    \\   instead — `body_end` is non-empty, so `<body>` carries `has-seam`
+    \\   — and lands the clear space on the document, under the last thing
+    \\   in it (`../nokre/docs/static-sites.md`, "A footer in the seam is
+    \\   the last thing in the document"). */
     \\
     \\/* The only links on this site that leave it. nokre navigates its own
     \\   screens and nothing else, so it has no element for one and no mark
@@ -1082,12 +1068,12 @@ const shell_css =
     \\/* The skip link and the fixed chrome are nokre's in print as well
     \\   as on screen — the anchor comes out of `dom.document` and the
     \\   sheet parks it, hides it on paper and drops the bottom reserve
-    \\   with the nav it was reserved for. What is left here is the two
-    \\   document rules that were never the library's: this site's
-    \\   reading column, and its own footer's reserve. */
+    \\   with the nav it was reserved for, on the document as on the
+    \\   screen. What is left here is the one document rule that was never
+    \\   the library's: this site's reading column, which is a window's
+    \\   measure and not a page box's. */
     \\@media print {
     \\  main.page { max-width: none; }
-    \\  footer { padding-bottom: var(--page-pad); }
     \\}
     \\
 ;
@@ -1203,10 +1189,13 @@ test "every custom property the shell spends is one the document root carries" {
     }
     try std.testing.expectEqual(@as(usize, 0), unresolvable.len);
     // …and the scan found something to check, so a rename in nokre that
-    // emptied the sheet could not pass this by saying nothing.
+    // emptied the sheet could not pass this by saying nothing. A floor
+    // and not a count: it came down when the footer stopped reserving
+    // its own space out of the band's metrics, and a bound that has to
+    // be retuned every time a rule moves is a bound nobody trusts.
     const used = try css_check.varsUsed(gpa, shell_css);
     defer gpa.free(used);
-    try std.testing.expect(used.len > 10);
+    try std.testing.expect(used.len > 5);
 }
 
 test {
