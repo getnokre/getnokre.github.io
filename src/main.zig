@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 51;
+const nokre_revision = 52;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -935,95 +935,20 @@ fn checkStylesheet(gpa: std.mem.Allocator, css: []const u8) !void {
 /// bordered it, sized it and re-inked it was a driver styling its own
 /// content because the seam had put that content outside everything
 /// that would otherwise have done it.
+/// What is left of a document rule that was never the library's. The
+/// reading column used to live here, capped by hand on the two boxes
+/// this site mounts into — the only place for it while core had no page
+/// column. Core has one now and the DOM sheet states it on the root and
+/// on the header's row, so both mounts take it without being told, and
+/// this file stops being one of the three copies that had drifted apart.
 const shell_css =
     \\
-    \\/* ---- the page ---------------------------------------------------- */
-    \\
-    \\/* This site's reading column, and its own number — not `--pane`.
-    \\   That variable is `metrics.sheet_max_w`, which the library spends
-    \\   on the surfaces that hold prose *inside* an app: a sheet, the
-    \\   notices pane, a select's picker. Borrowing it for the document
-    \\   made the page look like it was obeying a library rule it was in
-    \\   fact only agreeing with, and retuning it here would have moved
-    \\   every one of those panes and the geometry core derives from them.
-    \\
-    \\   560 is the phone's answer and the right one there. A desktop
-    \\   window reading 560px of a 1400px display looks like a phone
-    \\   emulator, so the column steps up once — 760px, still inside the
-    \\   65–75 character band prose wants, which is the whole argument for
-    \\   capping it at all. One step and no more: the next one buys line
-    \\   length nobody asked for. */
-    \\:root { --page-col: 560px; }
-    \\@media (min-width: 900px) { :root { --page-col: 760px; } }
     \\/* The driver's own guard: the edition clips its screen, and this
     \\   keeps the document around it from growing either — a page that
     \\   scrolls sideways leaves every fixed layer covering the wrong
     \\   part of it. */
     \\html { background: var(--paper); overflow-x: clip; }
-    \\/* The cap is on the element the screen is *in*, because that is the
-    \\   width the live driver reports to core as the viewport — a column
-    \\   the page kept to itself would be one core never heard of, and
-    \\   every measured decision (where prose wraps, whether the roster
-    \\   fits, whether a track may bleed) would be answered against a
-    \\   width nobody is looking at. So the step at 900px is not a page
-    \\   style: it is core being handed a wider viewport and answering
-    \\   those questions again against it. */
-    \\/* The chrome mount is in the column for the same reason, and that
-    \\   half is the driver's to say: nokre stands the roster on the
-    \\   page's own 16px margin *inside whatever box the driver mounted
-    \\   the chrome into*, and this site mounted the chrome and the screen
-    \\   into two boxes. A library that guessed at the second one's width
-    \\   would be styling a box it has never heard of, `chrome` being a
-    \\   name invented here (`../nokre/docs/static-sites.md`, "What is
-    \\   still the driver's is the column"). Uncapped, the header's first
-    \\   word takes its 16px off the *window's* edge while the `h1` it is
-    \\   written above takes its own off a centred column — the
-    \\   misalignment `--page-col` exists to prevent, reaching the one
-    \\   element it had never been applied to.
-    \\
-    \\   It costs the band nothing at a phone's width: there the nav is a
-    \\   fixed layer, laid out against the viewport rather than against
-    \\   this box, and nothing else is ever mounted here. */
-    \\/* `--page-pad` and not `--pad`: the short name is the root stack's
-    \\   own field, published on `.nokre` and nowhere above it. The skip
-    \\   link is a body child rather than a stack, so every `var(--pad)`
-    \\   it was written with resolved to nothing — and a custom property
-    \\   that resolves to nothing takes its whole declaration with it.
-    \\
-    \\   The footer used to be the other body child, and the other half of
-    \\   that bug: it ran unpadded and uncapped across the window for as
-    \\   long as nobody looked. It is not a body child any more and needs
-    \\   nothing here. A footer is content, so it is a stack of links and a
-    \\   sentence inside the screen (`content.footer`) — inside this
-    \\   column, inside `.nokre` where `--pad` is declared, and inside the
-    \\   padding that clears the fixed band, which is the one arithmetic
-    \\   this sheet had been copying out of nokre's `:root` to pay for
-    \\   itself (`../nokre/docs/static-sites.md`, "A seam is for what does
-    \\   not render"). */
-    \\#chrome, main.page {
-    \\  max-width: calc(var(--page-col) + 2 * var(--page-pad));
-    \\  margin-inline: auto;
-    \\}
-    \\
-    \\/* The only links on this site that leave it. nokre navigates its own
-    \\   screens and nothing else, so it has no element for one and no mark
-    \\   for one either; a page that cites a source file has to say where
-    \\   it is sending you. The glyph is Lucide's arrow-up-right out of the
-    \\   same icon face, and it is decorative — the words are the link. */
-++ external_mark_css ++
-    \\
-    \\/* The skip link and the fixed chrome are nokre's in print as well
-    \\   as on screen — the anchor comes out of `dom.document` and the
-    \\   sheet parks it, hides it on paper and drops the bottom reserve
-    \\   with the nav it was reserved for, on the document as on the
-    \\   screen. What is left here is the one document rule that was never
-    \\   the library's: this site's reading column, which is a window's
-    \\   measure and not a page box's. */
-    \\@media print {
-    \\  main.page { max-width: none; }
-    \\}
-    \\
-;
+++ external_mark_css;
 
 // ------------------------------------------------------------- extras
 
