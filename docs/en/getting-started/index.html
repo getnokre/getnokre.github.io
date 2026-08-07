@@ -1055,17 +1055,7 @@ zig build                       # artifact + generated zig-out/pkg/ manifests
 zig build -Dweb                 # the servable site → zig-out/web/
 zig build serve -Dweb           # the same site at http://localhost:8000
 zig build -Dtarget=aarch64-linux-android  # SDK-free compile check</code></pre></div><div class="stack hands-back"><hr><p>MIT licensed. Documentation rendered from the repository at <a class="link" href="https://github.com/getnokre/nokre/tree/main/docs" target="_blank" rel="noopener noreferrer" data-n="302" data-s="1">docs/</a>.</p><a class="link block" href="https://github.com/getnokre/nokre" target="_blank" rel="noopener noreferrer" data-n="303">Source on GitHub</a><a class="link block" href="/en/colophon/" data-n="304">How this site is built</a></div></main>
-<script type="module">
-import { mount } from "/live.js";
-mount({
-  wasm: "/app.wasm",
-  into: document.getElementById("chrome"),
-  content: document.getElementById("content"),
-  addressing: "documents",
-  route: "getting-started",
-  locale: "en",
-  seed: "/md/getting-started.md",
-});
-</script>
+<script type="application/json" data-nokre="boot">{"wasm":"/app.wasm","into":"chrome","content":"content","addressing":"documents","route":"getting-started","locale":"en","seed":"/md/getting-started.md"}</script>
+<script type="module" src="/live-boot.js"></script>
 </body>
 </html>

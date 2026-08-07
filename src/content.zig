@@ -872,7 +872,7 @@ fn colophon(app: *App) !void {
         .{ "JavaScript", "nokre's own live driver and nothing else. No framework, no dependency, no analytics, no cookies." },
         .{ "Before it runs", "The whole page. Content, links, chrome — the script changes what is measured, not what is there." },
         .{ "With it off", "The same page, wrapped for a 1280-pixel window." },
-        .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the live driver, the services module it imports, the service worker it registers, one wasm module, and — on a documentation page — its Markdown." },
+        .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the boot module the page names, the live driver that module imports, the services module the driver imports, the service worker it registers, one wasm module, and — on a documentation page — its Markdown." },
         .{ "Trackers, cookies, consent", "None, so no banner asking about any." },
         .{ "Appearance", "Follows the system, both ramps generated." },
         .{ "Print", "Chrome drops out; the content is the page." },

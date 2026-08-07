@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 52;
+const nokre_revision = 53;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -115,10 +115,13 @@ const viewport: nok.Size = .{ .w = 1280, .h = 1024 };
 /// The live driver's browser half, published beside the pages
 /// (`docs/internals/dom-edition.md`). The set *and its bytes* are
 /// nokre's own statement of it, not a re-typed list and not a path into
-/// a checkout: this site once re-typed two of the four and shipped a
-/// service-worker registration that 404ed on every page load — the set
-/// is the library's contract, so it comes from the library, and so do
-/// the files.
+/// a checkout: this site once re-typed two of the four it then had and
+/// shipped a service-worker registration that 404ed on every page load
+/// — the set is the library's contract, so it comes from the library,
+/// and so do the files. "It then had" is the point. The set has grown
+/// since, and this loop published the new members without a line
+/// changing here: what a page and a stub now load instead of carrying
+/// inline are two more files in it (`../nokre/docs/static-sites.md`).
 const driver_sources = dom.driver_sources;
 
 const font_files = [_][]const u8{

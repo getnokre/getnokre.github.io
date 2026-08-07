@@ -181,17 +181,7 @@ pub fn save(self: *State) void { ... }</code></pre><p>The payload-carrying actio
 fn onRows(self: *Screen, result: Port.RowsResult) void { ... }</code></pre><p><code>CallbackT</code> is duck-typed at comptime: a struct with <code>ctx: ?*anyopaque</code> and a <code>call</code> that is a (possibly optional) pointer to a function taking <code>?*anyopaque</code> first. Everything past the context is forwarded by position and by value — whatever it is, however many — and the return value comes back the same way, so a callback that answers a <code>bool</code> or a struct binds like one that answers nothing. Fields beside the pair keep their declared defaults; a pair with a field that has none is not a pair, and says so.</p><p>The point is what <code>CallbackT</code> may be. <strong>A callback type does not have to come from nokre</strong>: a domain package that models its ports as <code>{ ctx, call }</code> pairs stays framework-free, and the app — which does import nokre — binds handlers into them. That asymmetry is why this is a free function over a type rather than a method on one.</p><p>A handler whose signature does not fit fails <em>at the bind</em>, with the signature it should have had and the one it has:</p><pre class="code" tabindex="0" data-n="382"><code>bind.zig: bindAs: this handler does not fit `Port.RowsCallback.call`.
   expected: fn (*app.Screen, port.RowsResult) void
   found:    fn (*app.Screen, u32) void</code></pre><p>What <code>bindAs</code> is not is a way to reach a callback field riding on a larger struct — an http <code>Request</code> carrying a URL and a tag, a <code>SheetBuilder</code> carrying its tag and its <code>on_dismiss</code>. Binding fills a whole value; a struct with more in it is built by the code that has the rest, which for a sheet is <code>App.openSheetAs</code> (it has the tag).</p><h3 id="proposing-an-element">Proposing an element</h3><p>The set is closed, but not frozen: a new element is argued in on semantics — one sentence stating what it <em>means</em>, or it doesn&#39;t go in — and lands via the maintainer checklist in <a class="link" href="/en/internals.contributing/" data-n="385" data-s="3">internals/contributing.md</a>.</p></div><div class="stack hands-back"><hr><p>MIT licensed. Documentation rendered from the repository at <a class="link" href="https://github.com/getnokre/nokre/tree/main/docs" target="_blank" rel="noopener noreferrer" data-n="388" data-s="1">docs/</a>.</p><a class="link block" href="https://github.com/getnokre/nokre" target="_blank" rel="noopener noreferrer" data-n="389">Source on GitHub</a><a class="link block" href="/en/colophon/" data-n="390">How this site is built</a></div></main>
-<script type="module">
-import { mount } from "/live.js";
-mount({
-  wasm: "/app.wasm",
-  into: document.getElementById("chrome"),
-  content: document.getElementById("content"),
-  addressing: "documents",
-  route: "elements",
-  locale: "en",
-  seed: "/md/elements.md",
-});
-</script>
+<script type="application/json" data-nokre="boot">{"wasm":"/app.wasm","into":"chrome","content":"content","addressing":"documents","route":"elements","locale":"en","seed":"/md/elements.md"}</script>
+<script type="module" src="/live-boot.js"></script>
 </body>
 </html>

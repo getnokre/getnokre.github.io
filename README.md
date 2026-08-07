@@ -169,12 +169,15 @@ can carry the hash of the commit that contains it.
 
 `docs/` holds the pages, the generated stylesheet, the faces, each
 document's Markdown (`docs/md/` — what a live page seeds itself from),
-and the build outputs of the live half: `app.wasm`, and the four files
-of nokre's driver — `live.js`, `live-worker.js`, `services.js` and
-`sw.js` — written straight out of the library (`dom.driver_sources`).
-The set is the library's statement of itself, never a list here: this
-site once re-typed it, shipped two of the four, and 404ed its
-service-worker registration on every page load. A committed binary,
+and the build outputs of the live half: `app.wasm`, and nokre's driver
+files, written straight out of the library (`dom.driver_sources`).
+*Which* files those are is the library's statement of itself and never a
+list here — `src/render/dom/driver_files.zig` in nokre owns it, and the
+set grows: the day an inline `<script>` stopped being affordable, a
+page's boot and a chooser's script became files of their own
+(`../nokre/docs/static-sites.md`). This site once re-typed the set,
+shipped two of the four it then had, and 404ed its service-worker
+registration on every page load. A committed binary,
 because the published tree *is* the site: there is no build running
 anywhere but here.
 
