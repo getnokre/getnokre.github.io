@@ -426,6 +426,119 @@ is what collapses CLDR's grammar to plain arithmetic). A language not
 in the table errors only when one of its messages actually uses
 `plural`, and the error says where to add the row.
 
+## Drafting a translation
+
+`zig build translate-arb` drafts a locale's catalog from the template
+with an OpenAI-compatible LLM — one key per request, the key's
+`@`-metadata as context, the target's CLDR categories quoted into the
+prompt from the table above:
+
+```
+zig build translate-arb -- --input examples/kitchen_sink/l10n/sink_en.arb --dest fa
+```
+
+**Its output is a draft for a human to read.** A model is
+nondeterministic and this repo is not; the tool's job is to get a
+translator to "review this" sooner, never to commit a catalog nobody
+read. What makes that safe is the last step: before the draft is
+accepted it is compiled against the template by nokre's own validator —
+everything under "What the compiler checks", on the real file. A draft
+that fails is left as `<output>.partial` with the compiler's error
+quoted verbatim, and the run exits non-zero.
+
+Between requests a cheap per-key check earns a retry — a lost
+placeholder, a plural branch the language never selects, a trimmed
+prefix, a `#` that went missing. It is deliberately a subset of the
+validator: being wrong there costs one retry, not a catalog. One thing
+it catches that the compiler cannot is a *dropped* placeholder, which
+compiles and ships (see the note on `{count}` under "What the compiler
+checks" — a translation is only constrained by the placeholders it
+uses).
+
+The draft lands beside the template with the locale suffix swapped —
+`sink_en.arb` drafted to `de` becomes `sink_de.arb` — so it joins the
+catalog set rather than sitting next to it. It does not join the
+*bundle*: that is an explicit `@embedFile` list, not a directory scan,
+so a draft nobody has read yet cannot become a language the app ships.
+Adding it is one line, and key parity then applies to it like any other
+locale.
+
+`--dest` is a locale tag, not a language name — `fa`, `pt_PT`, `fa_IR`
+(`fa-IR` is accepted and written the repo's way). The tag is the
+catalog's identity: it is what `@@locale` states, what selects the
+plural rule and the digit shapes, and what names the output file. A
+name would have to be resolved back to a tag, and that resolution has
+no right answer — "Portuguese" is `pt` or `pt_PT`, two rows of the CLDR
+table that count differently, and choosing one silently yields a
+catalog with the wrong plural forms that compiles. Any tag works, not
+only the ones with an English name on hand; `--src` defaults to the
+template's own `@@locale`.
+
+**`--dir` brings a whole folder level.** Point it at a catalog
+directory and it works out what is missing where, then fills each gap:
+
+```
+$ zig build translate-arb -- --dir examples/kitchen_sink/l10n
+Template: en (3 key(s), from examples/kitchen_sink/l10n/sink_en.arb)
+  de is missing 1
+  fa is missing 2
+  ru is missing 1
+```
+
+Nothing has to declare which catalog is the template — it is the one
+carrying the `@`-metadata, and that is checked against nokre's own rule
+that every key lives in the template first. Every other catalog is
+filled *from the template*, never from a peer: only the template has the
+metadata a prompt needs, and pivoting `ru` → `de` would ask a model to
+collapse one/few/many into one/other on top of translating.
+
+A key that exists outside the template stops the run and is named:
+
+```
+  fa has 'l10nOnlyInPersian'
+error: nokre refuses a key the template lacks ("every key lives in the
+template first"), so a catalog cannot introduce one. Add each to 'en' —
+with its @-metadata — or drop it, then run again.
+```
+
+That is deliberate. Spreading such a key to the other locales would
+spread a build failure, and its `@`-metadata — the placeholder types the
+whole bundle keys off — only ever exists in the template.
+
+**When the template grows a key, `--fill` translates only that key.**
+An existing catalog's lines are kept verbatim — a reviewed line
+re-drafted is a diff someone has to re-read, which is exactly the cost
+worth avoiding — and only the keys it lacks are requested:
+
+```
+$ zig build translate-arb -- --input …/sink_en.arb --dest de --fill
+Filling …/sink_de.arb: 2 of 3 key(s) already translated, 1 to add.
+
+  [3/3] [█████████████░░░░░░░]  66%  done (0.5s)  elapsed 0.5s  ETA 0s
+```
+
+A key the template has since dropped is named and removed, because
+parity is total and carrying it would fail the build. `--fill` and
+`--force` contradict each other and are refused together: one keeps the
+existing translations, the other replaces them.
+
+`LLM_BASE_URL` is the OpenAI SDK's `baseURL` — the `/v1` root, not a
+full path; unset it defaults to OpenAI's own. `LLM_API_KEY` is optional,
+because the local models this was built for take no key. `--resume`
+picks a *crashed* run back up from its `.partial`, and an existing
+output is never overwritten without `--fill` or `--force`.
+
+**Reasoning is switched off by default**, and it is the difference
+between a catalog that drafts in seconds and one that takes minutes. A
+thinking model deliberates for thousands of tokens before emitting the
+same JSON: on one real message, 3,206 completion tokens against 34, and
+a two-key catalog took 71 seconds instead of 1.5. Translating a UI
+string is not what reasoning is for, and the answer is checked twice
+afterwards anyway. The tool asks the server's chat template to skip it
+(`chat_template_kwargs`, llama.cpp's own field — dropped automatically
+if the endpoint rejects it, as OpenAI does). `--think` restores it for a
+catalog whose wording is genuinely hard.
+
 ## The refusals
 
 Same posture as everywhere else in nokre

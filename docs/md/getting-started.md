@@ -1469,6 +1469,68 @@ missing one fails the build rather than silently showing English:
 }
 ```
 
+You do not have to type that second file by hand. Inside the nokre
+checkout, `translate-arb` drafts it from the template with a local or
+hosted LLM — one key per request, the key's `@`-metadata as context, and
+Persian's own CLDR plural categories quoted into the prompt:
+
+```sh
+zig build translate-arb -- --input ~/code/notes/src/l10n/notes_en.arb --dest fa
+```
+
+The step runs from the nokre checkout, so give it an absolute path to
+your project's template (or one relative to that checkout). The draft
+lands beside the template with the locale suffix swapped —
+`notes_en.arb` becomes `notes_fa.arb`, the name the bundle will want —
+and an existing catalog is never overwritten.
+
+Later, when you add a key to the template, `--fill` translates just that
+one into each locale and leaves every reviewed line alone:
+
+```sh
+zig build translate-arb -- --input ~/code/notes/src/l10n/notes_en.arb --dest fa --fill
+```
+
+It does **not** join the bundle on its own. `Bundle` is an explicit list
+of `@embedFile`s, not a directory scan, precisely so an unreviewed draft
+sitting in `src/l10n/` cannot become a language your app ships. Adding
+the locale is one line, and the compiler then demands every key for it:
+
+```zig
+const L = h.l10n.Bundle(&.{
+    @embedFile("l10n/notes_en.arb"), // first source = the template
+    @embedFile("l10n/notes_fa.arb"),
+});
+```
+
+```
+Translating 4 key(s) from English (en) to Persian (fa)...
+
+  [1/4] [░░░░░░░░░░░░░░░░░░░░]   0%  done (0.6s)  elapsed 0.6s  ETA 2s
+  [2/4] [█████░░░░░░░░░░░░░░░]  25%  done (0.5s)  elapsed 1.1s  ETA 2s
+  [3/4] [██████████░░░░░░░░░░]  50%  done (1.1s)  elapsed 2.3s  ETA 1s
+  [4/4] [███████████████░░░░░]  75%  done (0.5s)  elapsed 2.8s  ETA 0s
+
+Checking with nokre's validator... ok
+```
+
+`--dest` is a locale tag, not a language name, because the tag is what
+`@@locale` states and what selects the plural rule — "Portuguese" would
+have to mean `pt` or `pt_PT`, and those count differently. Point
+`LLM_BASE_URL` at an OpenAI-compatible server (the `/v1` root; a local
+llama.cpp or Ollama needs no key).
+
+**Read what it writes.** The output is a draft: a model is
+nondeterministic and this repo is not. What makes it safe to run at all
+is the last line above — before the draft is accepted it is compiled
+against the template by the same validator your build uses, so a catalog
+that would not build never reaches your source tree; it is left as
+`.partial` with the compiler's error quoted. The one corruption that
+check *cannot* see is a translation that drops a placeholder entirely
+(nokre only constrains the placeholders a message uses), which is why
+the tool checks that itself between requests and re-prompts.
+[localization.md](localization.md#drafting-a-translation) has the rest.
+
 Compile them into a bundle in `main.zig`:
 
 ```zig
@@ -2137,6 +2199,7 @@ tools/build-skia-android.sh     # build Skia for Android from source (once; need
 zig build web                   # kitchen sink's site for the browser → zig-out/web/
 zig build serve                 # the same site at http://localhost:8000 (-Dport=…)
 zig build check-targets         # compile-check every platform stub
+zig build translate-arb -- --input <template.arb> --dest fa   # draft a catalog (LLM_BASE_URL)
 ```
 
 Inside your project:
