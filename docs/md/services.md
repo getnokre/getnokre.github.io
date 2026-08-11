@@ -323,6 +323,40 @@ Pointing an Xcode project at the delivered bundle — and assembling the
 macOS `.app` around what `pkg/macos/` carries — is
 [getting-started.md](getting-started.md).
 
+An app whose mark is real art *everywhere* declares that too, as one
+raster master:
+
+```zig
+    .icon_master = b.path("assets/icon-master.png"),   // requires .pkg
+```
+
+Every Android mipmap, every web icon and every `.icns` slot then comes
+out of that one file, area-averaged
+([src/image/resample.zig](../src/image/resample.zig)) to the footprint
+the platform table already gives the derived mark — so the two safe
+zones keep working (62.5% for square icons, 40 of 108 for an Android
+adaptive foreground) and the master never learns either exists. It is
+one file rather than a directory of sizes on purpose: nineteen sizes
+that are nineteen exports are nineteen chances for one of them to be
+last year's mark.
+
+**Square, grayscale, opaque, 8-bit, not interlaced**, and each of those
+is refused by name rather than worked around. The canvas is square, so
+a master that is not would need nokre to invent a crop — pad it
+yourself and the margins stay yours. nokre refuses colour, so a master
+with one pixel whose channels disagree is a coloured icon and is
+rejected as one. iOS launcher icons are opaque, so alpha is rejected
+rather than flattened against a background nokre would have to guess.
+A palette export, a 16-bit export and an Adam7 interlace are the three
+that a permissive reader would decode to *something*, and the
+something would reach a store.
+
+`icon_master` and `apple_icon` are independent and compose: declare
+both and Apple's platforms get the bundle its own tool compiles while
+everything else gets the master. Declare neither and every surface
+keeps the derived mark, which remains the default and the fallback —
+nothing layers one over the other.
+
 The native side answers only the question the build cannot: installer
 provenance (app store / TestFlight / direct / bare `dev` binary; `web`
 on wasm), as one stateless synchronous query. The query is real on
