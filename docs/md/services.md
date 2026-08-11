@@ -324,11 +324,21 @@ macOS `.app` around what `pkg/macos/` carries — is
 [getting-started.md](getting-started.md).
 
 An app whose mark is real art *everywhere* declares that too, as one
-raster master:
+master — SVG or PNG:
 
 ```zig
-    .icon_master = b.path("assets/icon-master.png"),   // requires .pkg
+    .icon_master = b.path("assets/icon-master.svg"),   // requires .pkg
 ```
+
+An SVG is rasterised by nokre and is the better answer: there is one
+file, so no size can be last year's mark. The subset is flat shapes —
+`path` (including arcs), `rect` with `rx`/`ry`, `circle`, `ellipse`,
+`polygon`, `g`, and `transform` — filled in grayscale, with
+`fill-opacity` and `fill-rule`. Strokes, gradients, `<style>`, text,
+images, filters, masks, clip paths and `<use>` are **refused by name**,
+because a rasteriser that quietly skipped one would ship a mark missing
+a piece. Which kind of file it is is sniffed from the bytes, not the
+extension.
 
 Every Android mipmap, every web icon and every `.icns` slot then comes
 out of that one file, area-averaged
@@ -340,16 +350,29 @@ one file rather than a directory of sizes on purpose: nineteen sizes
 that are nineteen exports are nineteen chances for one of them to be
 last year's mark.
 
-**Square, grayscale, opaque, 8-bit, not interlaced**, and each of those
-is refused by name rather than worked around. The canvas is square, so
-a master that is not would need nokre to invent a crop — pad it
-yourself and the margins stay yours. nokre refuses colour, so a master
-with one pixel whose channels disagree is a coloured icon and is
-rejected as one. iOS launcher icons are opaque, so alpha is rejected
-rather than flattened against a background nokre would have to guess.
-A palette export, a 16-bit export and an Adam7 interlace are the three
-that a permissive reader would decode to *something*, and the
-something would reach a store.
+**Square, grayscale and opaque**, whichever kind of file it is, and each
+of those is refused by name rather than worked around. The canvas is
+square, so a master that is not would need nokre to invent a crop — pad
+it yourself and the margins stay yours. nokre refuses colour, so one
+pixel or one fill whose channels disagree is a coloured icon and is
+rejected as one.
+
+**Opaque is the load-bearing one, and it is what keeps the polarity
+yours.** An SVG master paints its own background; a raster one carries
+no alpha. nokre never picks a field, so an ink field with a paper mark
+and a paper field with an ink mark are both simply what was drawn — and
+the field is then read back off the master's own corner for the two
+places that need it as a value rather than a picture: the area of a
+square icon outside the mark's footprint, and the Android adaptive
+icon's background colour resource. Derived rather than declared,
+because an inverted mark on a paper background is a white seam wherever
+an OEM's parallax moves the foreground, and a second declaration is a
+second thing to forget.
+
+A raster master must also be **8-bit and not interlaced**. A palette
+export, a 16-bit export and an Adam7 interlace are the three a
+permissive reader would decode to *something*, and the something would
+reach a store.
 
 `icon_master` and `apple_icon` are independent and compose: declare
 both and Apple's platforms get the bundle its own tool compiles while
