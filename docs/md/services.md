@@ -380,6 +380,93 @@ everything else gets the master. Declare neither and every surface
 keeps the derived mark, which remains the default and the fallback —
 nothing layers one over the other.
 
+### The tab glyph
+
+The web corner also carries `favicon.ico` —
+`nokre.packaging.web_favicon_file`, 16, 32 and 48 in one container
+([src/image/ico.zig](../src/image/ico.zig)) — linked by the generated
+page and reachable as `App.faviconIco(b)` for a generator that writes
+its own output tree. It is written beside `macos/AppIcon.icns` rather
+than out of the icon table for the icns's reason: several sizes, one
+file.
+
+**It is the one derived icon that fills its canvas**, and that is the
+share card's departure for the share card's reason. iOS crops to a
+superellipse and an OEM mask crops an adaptive icon, so a master's own
+margins are how its author controls those — but a browser draws a
+favicon into 16 unmasked pixels, where the 62.5% footprint is a mark
+two pixels thinner than it had to be. So the master is cropped to its
+ink (`Master.inkBounds`, which the card reads too), scaled by its longer
+edge, and centred on the master's own field. The derived mark fills the
+same canvas as its 5×5 grid, whose paper cells are drawn rather than
+margin.
+
+Every entry is a complete PNG, and every field of the directory is read
+back out of that PNG's own header — an ICO whose directory disagrees
+with the image it points at is the defect this format invites, since a
+browser picks by the directory and then decodes the image.
+
+**A favicon that follows the browser's colour scheme is not derived, and
+is refused rather than pending.** That needs an SVG whose fills move
+under `prefers-color-scheme`; the grounds are in
+[static-sites.md](static-sites.md).
+
+## The share card
+
+A web build also emits the picture a link preview shows: the app's mark
+and its name on one 1200×630 field, at `nokre.share_card_file` inside
+`App.web`, and on `App.share_card` for a generator that writes its own
+output tree. That is `Meta.Image.Shape`'s banner size, which is what
+Facebook, LinkedIn and a large-image summary all crop toward.
+
+**There is no flag.** An app that declared `.pkg` gets a card on every
+web build; an app that declared none gets no step, no host tool and no
+Skia. A boolean would be a boolean somebody eventually turns off, and
+then a site ships with no preview for a reason nobody remembers.
+
+**The name is required and the mark is not**, which is the same
+asymmetry the rest of packaging has: every app is called something, and
+not every app has artwork. With a master the two sit as a lockup; with
+none the name is the whole card. Web only — a link preview is a web
+artifact, and the native builds beside it neither need one nor pay for
+one.
+
+What the card takes from the declaration is only those two. Everything
+else is this library's: the field is read off the master's own corner,
+exactly as the Android adaptive background reads it, so an inverted mark
+gives an inverted card and nokre never picks a polarity. The name takes
+whichever pole the field is not. The frame is grayscale because
+[png.zig](../src/image/png.zig) writes `gray8` and there is no other
+kind of byte for it to write.
+
+Two things the composition does that the platform icons deliberately do
+not. It **crops the master to its ink** — the icons keep an author's
+margins because there the mark lands in a safe zone the platform
+specified, while a card has no safe zone, and a master padded to 84% of
+its viewBox would otherwise read as a mark that had drifted left. And it
+**sets the name at the largest size that leaves the margins intact**,
+stepping down a pixel at a time; refusing an ordinary app name would be
+refusing the declaration rather than solving the layout. Past half size
+the refusal stands.
+
+**The tool is a host process, and that is the one place this pipeline
+differs from the icons.** Everything under `icon_master` is decoded
+while the build graph is built — pure Zig, nothing linked. The name is
+set with the same Skia and HarfBuzz the product draws glyphs with, since
+a second text stack for one image is the duplication worth avoiding, so
+the card is built for the host, run, and gone. It reaches no shipped
+artifact: the wasm module beside it still links no Skia, and `deps/skia`
+is needed only by a repository that actually emits a card.
+
+That inherits one boundary, and it is worth stating rather than
+discovering. Glyph rasterization is per-platform
+([internals/pixel-model.md](internals/pixel-model.md) — CoreText here,
+FreeType elsewhere), so two platforms building one card agree on the
+composition and disagree on the bytes. The golden holding this output
+therefore runs on macOS and says so when it fails. A repository that
+commits its built site and promises a byte-identical rebuild should
+weigh that before adopting.
+
 The native side answers only the question the build cannot: installer
 provenance (app store / TestFlight / direct / bare `dev` binary; `web`
 on wasm), as one stateless synchronous query. The query is real on

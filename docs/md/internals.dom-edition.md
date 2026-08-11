@@ -123,7 +123,7 @@ What it writes:
 | `live.js`, `live-boot.js`, `live-worker.js`, `services.js`, `locale-stub.js`, `sw.js` | `src/render/dom`, copied by the build graph; the set is also exported as data for a generator that publishes the driver itself — `dom.driver_files` for the names, `dom.driver_sources` for the names *and* the embedded bytes, so such a generator writes files it never had to locate |
 | `style.css` | *generated*, by running `emit_css.zig` on the host |
 | `fonts/*.ttf` | `src/assets/fonts` |
-| `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png` | the packaging tree's `web/` corner (packaging.zig) |
+| `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png`, `favicon.ico` | the packaging tree's `web/` corner (packaging.zig) |
 | `site.manifest` | *generated*: every row above as data — one path per line, sorted |
 
 Two properties follow, and they are the reason for the shape. Nothing

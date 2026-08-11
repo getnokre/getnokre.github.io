@@ -656,6 +656,48 @@ nothing in it is a thing the library could have styled, cleared,
 audited or resolved, and handing it over as bytes gives up nothing. It
 is a real need with no element behind it and there never will be one.
 
+### The link tag is a seam; the bytes behind it are not
+
+The rule above settles the `<link rel="icon">`, and only the tag. What a
+site *serves* at the other end of that href is an image, and an image
+nokre already draws every other size of — so a hand-maintained
+`favicon.ico` beside a declared `icon_master` was two answers to one
+question, which is the defect the share card had before it was derived.
+
+The ICO half is derived now, all of it: sizes, footprint, polarity and
+the directory that names them ([services.md](services.md), "The tab
+glyph"). A generator takes `App.faviconIco(b)` and links it from its own
+head bytes, which is where a favicon link has always belonged.
+
+**The adaptive SVG half is refused.** A favicon that turns paper on a
+dark tab is an SVG carrying a `<style>` block with a
+`prefers-color-scheme` query, and to emit one from a master nokre has to
+answer two questions the master does not:
+
+- **Does a favicon carry the master's field, or drop it?** A master is
+  opaque by refusal, and that refusal's stated ground is that nokre
+  never picks a field. Emitting a favicon that deletes the author's
+  background is picking one — "none" — for every consumer at once. Both
+  answers ship in the world: a mark on the browser's own chrome, and a
+  tile that reads as an app icon. Neither is derivable from anything
+  declared.
+- **What does a fill drawn *against* that field mean once it is gone?**
+  A master's `fill-opacity` composites onto the field its author drew.
+  Strip the field and the same element composites onto whatever the
+  browser's chrome happens to be, which is a different picture, and one
+  nokre cannot see.
+
+There is a second ground, and it would decide this even if a declared
+parameter answered the first: the artifact is instructions to a browser
+rather than pixels. nokre can hold the ICO to a golden because nokre
+drew it. Nothing nokre can write proves what a browser paints from an
+injected `@media` block — and a favicon that renders as a smudge passes
+every byte check ever written.
+
+So the adaptive SVG stays the consumer's file, hand-authored beside its
+master. That is a real cost and it is named rather than hidden: two
+files carrying one mark, with nothing gating that they agree.
+
 This list said "a CSP" for two revisions and that one was wrong — not
 because a policy renders, but because **where** a byte seam splices is
 the end of the head, and a Content-Security-Policy governs only what
