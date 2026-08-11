@@ -1525,10 +1525,9 @@ nondeterministic and this repo is not. What makes it safe to run at all
 is the last line above — before the draft is accepted it is compiled
 against the template by the same validator your build uses, so a catalog
 that would not build never reaches your source tree; it is left as
-`.partial` with the compiler's error quoted. The one corruption that
-check *cannot* see is a translation that drops a placeholder entirely
-(nokre only constrains the placeholders a message uses), which is why
-the tool checks that itself between requests and re-prompts.
+`.partial` with the compiler's error quoted. A translation that drops a
+placeholder entirely is refused there too, and the tool checks it
+between requests as well so a retry carries the reason.
 [localization.md](localization.md#drafting-a-translation) has the rest.
 
 Compile them into a bundle in `main.zig`:
@@ -2119,7 +2118,9 @@ language nokre's own chrome words are in:
 
 It is a declaration rather than a derivation because the page is written
 by your build, out of the declaration alone, before an app exists to
-ask. And it is the page's only locale attribute: the driver stamps the
+ask — and being stated is why it is checked: a value that is not a
+language tag fails the tree naming itself, since a browser drops a
+malformed `lang` without saying so and an escape cannot catch that. And it is the page's only locale attribute: the driver stamps the
 direction itself at boot, and there is exactly one shell for every
 reader — so if your app is localized, this is one value standing for all
 of them, and the honest choice of which is yours rather than nokre's.

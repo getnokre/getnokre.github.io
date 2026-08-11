@@ -33,7 +33,7 @@ message id), and the calls:
 | `of(app)` | `resolve(app.locale())`, made once, as a **bound view**: `L.of(app).tr(.key)`, and likewise `trAny`/`fmt`/`fmtIn`/`tag`/`dir`/`chrome` with the locale argument gone and the resolved locale readable as `.locale`. A value, not a reference — honest because a build or an action is one moment in one locale. Takes anything that answers `locale()` with a tag (the App, a test harness). |
 | `in(app)` | `of`'s twin for the one call that allocates: the locale **and** the tree the bytes land in, both from the app. `try L.in(app).fmt(.key, args)` is `fmtIn` with nothing re-passed — at a build site the tree is always `&app.tree` (a `Cursor`'s `tree` is that pointer), so naming it beside the app was only a chance to name the wrong one. `fmt` here means the arena; the lifetime is `fmtIn`'s, unchanged. A second binder rather than a wider `of`, because `of` needs only `locale()` and nothing that knows just its locale should lose a call. |
 | `chrome(locale)` | nokre's own words (`App.Chrome`) out of this catalog, via one **reserved key per field** — see [The framework's own words](#the-frameworks-own-words). |
-| `tag(locale)` | The `@@locale` string back — what `App.setLocale` takes, and what storage keeps. |
+| `tag(locale)` | The locale's **BCP 47 tag** — what `App.setLocale` takes, what a `lang` or `hreflang` attribute carries, and what storage keeps. It is the `@@locale` with an underscore read as the subtag separator it stands in for, so a catalog spelled `pt_BR` (Flutter's convention, and this repo ships one) yields `"pt-BR"`. The field name keeps the underscore because a Zig identifier must; the tag does not, and a tag the library published that its own `element.validLangTag` refused was a byte a browser dropped in silence. |
 | `dir(locale)` | The locale's writing direction (`l10n.Direction`), read from its tag at comptime. Feed it to `App.setDirection` to mirror the chrome — see [Right-to-left](#right-to-left). |
 
 There is no allocation anywhere, and no state in the bundle: which
@@ -103,7 +103,10 @@ generator's, past the locale axis, is
 ## The format
 
 An ARB file is a JSON object. `@@locale` is required — nokre embeds
-file contents, so there is no filename to infer from. `@@`-prefixed
+file contents, so there is no filename to infer from. Either separator
+is accepted (`pt-BR`, `pt_BR`); `L.tag` publishes the BCP 47 spelling
+whichever was written, and a tag that is not one at all (`Persian`,
+`tr-`) fails the build where the catalog is read. `@@`-prefixed
 provenance (`@@author`, `@@last_modified`, `@@x-…`) is accepted and
 ignored. Each message may carry `@message` metadata; nokre reads only
 `placeholders`, and only from the template — `description` and
@@ -395,6 +398,25 @@ time, plus several it never checks:
   catalog, not at the call site of some other locale. A placeholder
   used both as a count and as a select value is rejected as
   contradictory.
+- **Placeholder parity, in the direction nothing else can see.** A
+  translation that *drops* a placeholder the template's sentence writes
+  fails too, naming the locale, the message and the name. It is the one
+  corruption with no other symptom: every argument type survives it,
+  every call site goes on compiling, and the value is simply never
+  shown to that language's readers. Two things that look like the same
+  defect are not, and are deliberately allowed — a name written twice
+  interpolates twice, and a translation may put the set in whatever
+  order its grammar wants, because arguments match by field name and
+  position never enters. A name the template declares in `@`-metadata
+  but does not use is how a translation says something the template
+  leaves implicit, so it is not required of anyone.
+- **Bytes, before any of the above.** A catalog decoded with the wrong
+  codec and saved again parses and renders — `Ù…ÛŒâ€ŒØ´ÙˆØ¯` where a
+  word should be. `@embedFile`'s bytes are checked for that first, plus
+  a BOM, invalid UTF-8, U+FFFD and stray control characters, and the
+  mojibake finding names the text the file should have held rather than
+  only the line it is on
+  ([src/l10n/encoding.zig](../src/l10n/encoding.zig)).
 - **Plural completeness, per locale.** Each locale's plural is checked
   against *its own* CLDR integer categories: Russian without `few`
   fails naming a number it would mishandle; English with a `few`
@@ -449,11 +471,10 @@ quoted verbatim, and the run exits non-zero.
 Between requests a cheap per-key check earns a retry — a lost
 placeholder, a plural branch the language never selects, a trimmed
 prefix, a `#` that went missing. It is deliberately a subset of the
-validator: being wrong there costs one retry, not a catalog. One thing
-it catches that the compiler cannot is a *dropped* placeholder, which
-compiles and ships (see the note on `{count}` under "What the compiler
-checks" — a translation is only constrained by the placeholders it
-uses).
+validator: being wrong there costs one retry, not a catalog. A dropped
+placeholder is on both lists — the compiler refuses it now ("What the
+compiler checks") — and it stays here because a retry carrying the
+reason is worth more than a `.partial` the tool cannot explain.
 
 The draft lands beside the template with the locale suffix swapped —
 `sink_en.arb` drafted to `de` becomes `sink_de.arb` — so it joins the
@@ -463,8 +484,9 @@ so a draft nobody has read yet cannot become a language the app ships.
 Adding it is one line, and key parity then applies to it like any other
 locale.
 
-`--dest` is a locale tag, not a language name — `fa`, `pt_PT`, `fa_IR`
-(`fa-IR` is accepted and written the repo's way). The tag is the
+`--dest` is a locale tag, not a language name — `fa`, `pt-PT`, `fa-IR`
+(`pt_PT` is accepted; `@@locale` is written BCP 47's way and the file
+keeps the catalog set's `_` naming). The tag is the
 catalog's identity: it is what `@@locale` states, what selects the
 plural rule and the digit shapes, and what names the output file. A
 name would have to be resolved back to a tag, and that resolution has

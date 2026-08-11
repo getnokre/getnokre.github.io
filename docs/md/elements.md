@@ -380,7 +380,10 @@ holds the value to the tag grammar — two or three ASCII letters, then
 `pt-BR` pass while `Persian`, `pt_BR` and `tr-` are
 `error.InvalidLangTag` — and stops there: it is a grammar, not a
 registry, and the value in honest use is `L.tag(loc)` off your own
-bundle rather than a string you typed
+bundle rather than a string you typed. A catalog spelled `pt_BR` is
+not the exception it looks like: `L.tag` publishes BCP 47 whichever
+separator the `@@locale` used, so the chooser above builds against it
+([localization.md](localization.md))
 ([static-sites.md](static-sites.md), "What the deletion cost"). There is
 no `dir` beside it: a wholly-directional run is what the bidi algorithm
 answers, and a direction that ever has to be written is derived from the
