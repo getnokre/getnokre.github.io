@@ -57,7 +57,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 61;
+const nokre_revision = 62;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -691,10 +691,18 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
         // one `path` behind both, and the 404 page says `null` rather
         // than carrying a URL with a flag beside it.
         //
-        // No `image`. This site has no artwork to preview with — the
-        // favicon is a 32px mark and an SVG, which no card renderer
-        // draws — and an absent image is a real answer here rather than
-        // a gap: it is what makes the card `summary` instead of a
+        // No `image`, and not for want of a renderer: nokre emits a
+        // share card from an app's mark and its name, and every web
+        // build declaring both gets one. This site declares neither,
+        // and cannot. The only image in this repository is the favicon,
+        // which is this generator's own output — drawn from `nok.Gray`
+        // in writeExtras, not authored — so a card here would mean
+        // inventing artwork for nokre, which introduction.md refuses.
+        //
+        // The absence is therefore structural rather than chosen:
+        // nothing to declare, nothing emitted, no Skia in this build.
+        // It is also the right answer on its own terms — an absent
+        // image is what makes the card `summary` instead of a
         // large-image frame with nothing in it.
         .meta = .{
             .origin = origin,
