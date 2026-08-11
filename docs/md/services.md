@@ -374,6 +374,34 @@ export, a 16-bit export and an Adam7 interlace are the three a
 permissive reader would decode to *something*, and the something would
 reach a store.
 
+An app whose mark is a shape rather than a picture declares the other
+form — the same square, grayscale master, carrying transparency instead
+of a field:
+
+```zig
+    .icon_silhouette = b.path("assets/mark.svg"),   // requires .pkg; exactly one of the two
+```
+
+**The form is the parameter, and the field is nokre's answer.** What is
+drawn is the mark; every output composites nokre's paper (`0xFF`)
+behind it at decode, so every emitter above is the same emitter over
+the same flattened plane — area averaging is linear, and flattening
+before the resample is the composite after it. No field byte is
+declarable: a byte would be identity through a side door, and it would
+answer one appearance of a two-appearance artifact
+([static-sites.md](static-sites.md)). One output keeps the transparency
+itself: the Android adaptive foreground is transparent where nothing
+was drawn — that format's own contract — over the paper background
+resource; and an SVG silhouette also yields the adaptive tab glyph
+below. The refusals are symmetric and each names the other form: a
+silhouette that paints every pixel is refused as the opaque master it
+is, an opaque master that leaves a pixel unpainted is refused with the
+silhouette named as the honest declaration, and declaring both is
+refused as two answers to one question. An SVG silhouette is one
+shade — the adaptive favicon flips one fill, and a two-tone mark cannot
+ride that: flatten it, or declare a PNG silhouette, which states up
+front that it carries no adaptive favicon.
+
 `icon_master` and `apple_icon` are independent and compose: declare
 both and Apple's platforms get the bundle its own tool compiles while
 everything else gets the master. Declare neither and every surface
@@ -382,13 +410,13 @@ nothing layers one over the other.
 
 ### The tab glyph
 
-The web corner also carries `favicon.ico` —
-`nokre.packaging.web_favicon_file`, 16, 32 and 48 in one container
-([src/image/ico.zig](../src/image/ico.zig)) — linked by the generated
-page and reachable as `App.faviconIco(b)` for a generator that writes
-its own output tree. It is written beside `macos/AppIcon.icns` rather
-than out of the icon table for the icns's reason: several sizes, one
-file.
+The web corner also carries `favicon.ico` — the name `web_favicon_file`
+states beside the emitters (src/packaging/packaging.zig), 16, 32 and 48
+in one container ([src/image/ico.zig](../src/image/ico.zig)) — linked
+by the generated page and reachable as `App.faviconIco(b)` for a
+generator that writes its own output tree. It is written beside
+`macos/AppIcon.icns` rather than out of the icon table for the icns's
+reason: several sizes, one file.
 
 **It is the one derived icon that fills its canvas**, and that is the
 share card's departure for the share card's reason. iOS crops to a
@@ -406,10 +434,17 @@ back out of that PNG's own header — an ICO whose directory disagrees
 with the image it points at is the defect this format invites, since a
 browser picks by the directory and then decodes the image.
 
-**A favicon that follows the browser's colour scheme is not derived, and
-is refused rather than pending.** That needs an SVG whose fills move
-under `prefers-color-scheme`; the grounds are in
-[static-sites.md](static-sites.md).
+**A favicon that follows the browser's colour scheme rides the
+silhouette form.** An SVG silhouette's own bytes are re-emitted as
+`web/favicon.svg` with one `<style>` block appended before its closing
+tag: the drawn shade as the fill, and its inversion under
+`prefers-color-scheme: dark`. nokre re-emits, never redraws — the file
+is the author's, plus the flip. It sits beside the `.ico` in the tree
+and on `App.favicon_svg`, and the generated page deliberately does not
+link it: a generator links it from its own head seam. From an opaque
+master it stays refused — deleting a drawn field is picking "none" —
+as from a raster or multi-tone silhouette; the grounds, and what was
+revised to admit this much, are in [static-sites.md](static-sites.md).
 
 ## The share card
 

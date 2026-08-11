@@ -669,34 +669,56 @@ the directory that names them ([services.md](services.md), "The tab
 glyph"). A generator takes `App.faviconIco(b)` and links it from its own
 head bytes, which is where a favicon link has always belonged.
 
-**The adaptive SVG half is refused.** A favicon that turns paper on a
-dark tab is an SVG carrying a `<style>` block with a
-`prefers-color-scheme` query, and to emit one from a master nokre has to
-answer two questions the master does not:
+**The adaptive SVG half is derived now, and the refusal it replaced is
+revised rather than erased.** A favicon that turns paper on a dark tab
+is an SVG carrying a `<style>` block under a `prefers-color-scheme`
+query, and the recorded grounds for refusing to emit one were two.
 
-- **Does a favicon carry the master's field, or drop it?** A master is
-  opaque by refusal, and that refusal's stated ground is that nokre
-  never picks a field. Emitting a favicon that deletes the author's
-  background is picking one — "none" — for every consumer at once. Both
-  answers ship in the world: a mark on the browser's own chrome, and a
-  tile that reads as an app icon. Neither is derivable from anything
-  declared.
-- **What does a fill drawn *against* that field mean once it is gone?**
-  A master's `fill-opacity` composites onto the field its author drew.
-  Strip the field and the same element composites onto whatever the
-  browser's chrome happens to be, which is a different picture, and one
-  nokre cannot see.
+The first was real and stands answered. To emit one from an *opaque*
+master, nokre had to answer a question the master does not: does the
+favicon carry the drawn field, or drop it? Both answers ship in the
+world, neither is derivable from anything declared, and deleting an
+author's field is picking one — "none" — for every consumer at once.
+The silhouette form (`icon_silhouette`, [services.md](services.md))
+answers by declaration: a silhouette carries no field at all, so there
+is nothing to drop and nothing to guess. A parameter is not a hole —
+stating the form states the field, which is nokre's paper in both
+appearances, with no consumer byte anywhere. A declarable field byte
+was considered and refused: it would be identity through a side door,
+and it would answer one appearance of an artifact that has two.
 
-There is a second ground, and it would decide this even if a declared
-parameter answered the first: the artifact is instructions to a browser
-rather than pixels. nokre can hold the ICO to a golden because nokre
-drew it. Nothing nokre can write proves what a browser paints from an
-injected `@media` block — and a favicon that renders as a smudge passes
-every byte check ever written.
+The second ground — the artifact is instructions to a browser rather
+than pixels, and nothing nokre writes proves what a browser paints from
+an injected `@media` block — was inconsistent as applied. The
+stylesheet writer ships the entire dark ramp under
+`@media (prefers-color-scheme: dark)` byte-tested only
+(`render/dom/stylesheet.zig`'s `write`), and two theme-color metas ride
+the same query (`render/dom/document.zig`, `packaging.zig`'s
+`webIndexHtml`). The rule was never "no instruction nokre cannot
+paint-test"; it was the one the whole tree runs on — **no instruction
+that is a second statement of a fact**. A fill flip derived from the
+silhouette's own source and its inversion is one statement, stated
+once. What the derived file is follows: the author's bytes with the
+flip appended — nokre re-emits, never redraws.
 
-So the adaptive SVG stays the consumer's file, hand-authored beside its
-master. That is a real cost and it is named rather than hidden: two
-files carrying one mark, with nothing gating that they agree.
+Still refused, by name:
+
+- an adaptive favicon from an **opaque master** — deleting a drawn
+  field is picking "none";
+- from a **raster silhouette** — there is no vector to re-emit, and the
+  declaration's PNG-ness is visible where its tone count is not;
+- from a **multi-tone silhouette** — one CSS rule flattens it, and the
+  refusal names the escape: flatten the mark to one shade, or declare
+  the PNG silhouette that states up front it carries no adaptive
+  favicon;
+- link-tag emission from `dom.document` — the tag half of this section
+  stands: a generator links `App.favicon_svg` from its own head bytes,
+  where a favicon link has always belonged.
+
+There is no golden, no decode and no size assertion on the derived
+favicon.svg. The emitter-shape test holds the splice and the two
+fills; the operator decided on 2026-08-11 that the file itself — the
+author's bytes plus that block — earns no baseline.
 
 This list said "a CSP" for two revisions and that one was wrong — not
 because a policy renders, but because **where** a byte seam splices is
