@@ -661,13 +661,14 @@ is a real need with no element behind it and there never will be one.
 The rule above settles the `<link rel="icon">`, and only the tag. What a
 site *serves* at the other end of that href is an image, and an image
 nokre already draws every other size of — so a hand-maintained
-`favicon.ico` beside a declared `icon_master` was two answers to one
-question, which is the defect the share card had before it was derived.
+`favicon.ico` beside a discovered `icon-master.svg` was two answers to
+one question, which is the defect the share card had before it was derived.
 
 The ICO half is derived now, all of it: sizes, footprint, polarity and
 the directory that names them ([services.md](services.md), "The tab
-glyph"). A generator takes `App.faviconIco(b)` and links it from its own
-head bytes, which is where a favicon link has always belonged.
+glyph"). A generator takes the file out of the `webAssets` module and
+places it from its own head seam, which is where a favicon link has
+always belonged.
 
 **The adaptive SVG half is derived now, and the refusal it replaced is
 revised rather than erased.** A favicon that turns paper on a dark tab
@@ -679,9 +680,9 @@ master, nokre had to answer a question the master does not: does the
 favicon carry the drawn field, or drop it? Both answers ship in the
 world, neither is derivable from anything declared, and deleting an
 author's field is picking one — "none" — for every consumer at once.
-The silhouette form (`icon_silhouette`, [services.md](services.md))
-answers by declaration: a silhouette carries no field at all, so there
-is nothing to drop and nothing to guess. A parameter is not a hole —
+The silhouette form (`icon-silhouette.svg`, [services.md](services.md))
+answers by its name: a silhouette carries no field at all, so there
+is nothing to drop and nothing to guess. A named form is not a hole —
 stating the form states the field, which is nokre's paper in both
 appearances, with no consumer byte anywhere. A declarable field byte
 was considered and refused: it would be identity through a side door,
@@ -711,9 +712,27 @@ Still refused, by name:
   refusal names the escape: flatten the mark to one shade, or declare
   the PNG silhouette that states up front it carries no adaptive
   favicon;
-- link-tag emission from `dom.document` — the tag half of this section
-  stands: a generator links `App.favicon_svg` from its own head bytes,
-  where a favicon link has always belonged.
+- link-tag emission from `dom.document` — **revised in scope, not in
+  placement.** Placement is still the generator's seam and
+  `dom.document` still writes no icon link. What falls is the consumer
+  *authoring the tag bytes*: the `.ico` line carried a hand-copied
+  `sizes` attribute — the ranking lore, restated by every adopter, one
+  drift per site — and "no second statement of a fact" applies to it
+  exactly as it applied to the reading column. `packaging.headIconLinks`
+  now hands the block over whole, conditionality resolved, and the seam
+  receives bytes it no longer has to compose.
+
+The derived-set module (`nokre.webAssets`, [services.md](services.md))
+replaces the per-file ceremony that used to sit here — one LazyPath per
+artifact and a hand-authored link block per consumer. Two boundaries it
+does not move. The `og:` set of a *generated page* remains `Meta`'s:
+the page knows its own path, its own description and its own image, and
+a shell-derived block pasted into a document would be a second writer
+of facts `Meta` already owns and checks. And the head block the module
+does hand over is icons-only for the same second-writer argument read
+the other way — icon links are the one head content that is a fact of
+the *tree* (which files exist, at which names) rather than of any page,
+so the tree's owner is the one writer that cannot disagree with it.
 
 There is no golden, no decode and no size assertion on the derived
 favicon.svg. The emitter-shape test holds the splice and the two

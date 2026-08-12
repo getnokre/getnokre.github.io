@@ -323,12 +323,43 @@ Pointing an Xcode project at the delivered bundle — and assembling the
 macOS `.app` around what `pkg/macos/` carries — is
 [getting-started.md](getting-started.md).
 
-An app whose mark is real art *everywhere* declares that too, as one
-master — SVG or PNG:
+An app whose mark is real art *everywhere* states that too — not as an
+option, but as a file where the build looks for one. That is the next
+section.
 
-```zig
-    .icon_master = b.path("assets/icon-master.svg"),   // requires .pkg
-```
+### The mark is discovered, not declared
+
+Discovery answers to exactly four names, probed in the **consuming
+package's own `assets/`**:
+
+| File | What it states |
+| --- | --- |
+| `assets/icon-master.svg` or `.png` | an opaque master — the mark *and its field*, both the author's |
+| `assets/icon-silhouette.svg` or `.png` | a silhouette — the mark alone, composited onto nokre's paper |
+
+No file there, or no `assets/` at all, is the ordinary case and means
+the id-derived mark. The probe runs only for an app that declared
+`.pkg`, and its ground is package-local: the package is the one that
+owns `root_source_file`, so a repository of several apps gives each its
+own `assets/` and each its own mark — one mark per package, keyed to
+nothing global. A generated root names no package directory, so it gets
+no probe and keeps the derived mark. The decision itself is pure and
+unit-tested (`packaging.discovery`); build.zig only reads the directory.
+
+The operator accepted the convention over a declared option on
+2026-08-12, on that package-local ground — the mark is the package's
+own fact, so it lives in the package's own tree — and with its one
+sharp consequence recorded: **a typo'd filename that discovery ignored
+would not be a build error any more, it would be an app silently
+wearing the identicon.** Under the deleted options a wrong path failed
+the build; a wrong name in a probed directory fails nothing by itself.
+That is why the probe refuses near-misses rather than skipping them:
+any regular file in `assets/` matching `icon-*.svg` or `icon-*.png`
+case-folded that is not one of the four names fails the tree, naming
+the stray and the four. Both forms at once are refused as two answers
+to what the field is; one form in both formats as two files for one
+mark; an unreadable `assets/` as itself. Every refusal rides the tree's
+step — the invalid-declaration rule, unchanged.
 
 An SVG is rasterised by nokre and is the better answer: there is one
 file, so no size can be last year's mark. The subset is flat shapes —
@@ -374,15 +405,11 @@ export, a 16-bit export and an Adam7 interlace are the three a
 permissive reader would decode to *something*, and the something would
 reach a store.
 
-An app whose mark is a shape rather than a picture declares the other
-form — the same square, grayscale master, carrying transparency instead
-of a field:
+An app whose mark is a shape rather than a picture names the other
+form — `assets/icon-silhouette.svg` (or `.png`): the same square,
+grayscale master, carrying transparency instead of a field.
 
-```zig
-    .icon_silhouette = b.path("assets/mark.svg"),   // requires .pkg; exactly one of the two
-```
-
-**The form is the parameter, and the field is nokre's answer.** What is
+**The form rides the filename, and the field is nokre's answer.** What is
 drawn is the mark; every output composites nokre's paper (`0xFF`)
 behind it at decode, so every emitter above is the same emitter over
 the same flattened plane — area averaging is linear, and flattening
@@ -393,28 +420,28 @@ answer one appearance of a two-appearance artifact
 itself: the Android adaptive foreground is transparent where nothing
 was drawn — that format's own contract — over the paper background
 resource; and an SVG silhouette also yields the adaptive tab glyph
-below. The refusals are symmetric and each names the other form: a
+below. The refusals are symmetric and each names the other filename: a
 silhouette that paints every pixel is refused as the opaque master it
-is, an opaque master that leaves a pixel unpainted is refused with the
-silhouette named as the honest declaration, and declaring both is
+is, an opaque master that leaves a pixel unpainted is refused with
+icon-silhouette named as the honest form, and holding both is
 refused as two answers to one question. An SVG silhouette is one
 shade — the adaptive favicon flips one fill, and a two-tone mark cannot
-ride that: flatten it, or declare a PNG silhouette, which states up
+ride that: flatten it, or name it icon-silhouette.png, which states up
 front that it carries no adaptive favicon.
 
-`icon_master` and `apple_icon` are independent and compose: declare
-both and Apple's platforms get the bundle its own tool compiles while
-everything else gets the master. Declare neither and every surface
-keeps the derived mark, which remains the default and the fallback —
-nothing layers one over the other.
+The discovered mark and `apple_icon` are independent and compose: with
+both, Apple's platforms get the bundle its own tool compiles while
+everything else gets the master. With neither, every surface keeps the
+derived mark, which remains the default and the fallback — nothing
+layers one over the other.
 
 ### The tab glyph
 
 The web corner also carries `favicon.ico` — the name `web_favicon_file`
 states beside the emitters (src/packaging/packaging.zig), 16, 32 and 48
 in one container ([src/image/ico.zig](../src/image/ico.zig)) — linked
-by the generated page and reachable as `App.faviconIco(b)` for a
-generator that writes its own output tree. It is written beside
+by the generated page and carried in the `webAssets` module for a
+generator that writes its own output tree (below). It is written beside
 `macos/AppIcon.icns` rather than out of the icon table for the icns's
 reason: several sizes, one file.
 
@@ -439,9 +466,10 @@ silhouette form.** An SVG silhouette's own bytes are re-emitted as
 `web/favicon.svg` with one `<style>` block appended before its closing
 tag: the drawn shade as the fill, and its inversion under
 `prefers-color-scheme: dark`. nokre re-emits, never redraws — the file
-is the author's, plus the flip. It sits beside the `.ico` in the tree
-and on `App.favicon_svg`, and the generated page deliberately does not
-link it: a generator links it from its own head seam. From an opaque
+is the author's, plus the flip. It sits beside the `.ico` in the tree,
+linked by the shell page and carried in the `webAssets` module; a
+generated page's own link to it comes with `head_icon_links`, from the
+generator's head seam. From an opaque
 master it stays refused — deleting a drawn field is picking "none" —
 as from a raster or multi-tone silhouette; the grounds, and what was
 revised to admit this much, are in [static-sites.md](static-sites.md).
@@ -450,21 +478,25 @@ revised to admit this much, are in [static-sites.md](static-sites.md).
 
 A web build also emits the picture a link preview shows: the app's mark
 and its name on one 1200×630 field, at `nokre.share_card_file` inside
-`App.web`, and on `App.share_card` for a generator that writes its own
-output tree. That is `Meta.Image.Shape`'s banner size, which is what
-Facebook, LinkedIn and a large-image summary all crop toward.
+`App.web`, and in the `webAssets` module for a generator that writes
+its own output tree. That is `Meta.Image.Shape`'s banner size, which is
+what Facebook, LinkedIn and a large-image summary all crop toward.
 
-**There is no flag.** An app that declared `.pkg` gets a card on every
-web build; an app that declared none gets no step, no host tool and no
-Skia. A boolean would be a boolean somebody eventually turns off, and
-then a site ships with no preview for a reason nobody remembers.
+**There is no flag, and there is no web app without a card.** Identity
+is required for a web target: a wasm build whose `addApp` call declares
+no `.pkg` fails on the artifact itself — the refusal reaches a consumer
+that reads only `getEmittedBin()`, which the site-side failure never
+did — so every web app carries `share-card.png` by construction. A
+boolean would be a boolean somebody eventually turns off, and then a
+site ships with no preview for a reason nobody remembers; an optional
+identity was that boolean wearing a different name.
 
 **The name is required and the mark is not**, which is the same
 asymmetry the rest of packaging has: every app is called something, and
 not every app has artwork. With a master the two sit as a lockup; with
 none the name is the whole card. Web only — a link preview is a web
 artifact, and the native builds beside it neither need one nor pay for
-one.
+one (their `pkg` stays optional).
 
 What the card takes from the declaration is only those two. Everything
 else is this library's: the field is read off the master's own corner,
@@ -485,7 +517,8 @@ refusing the declaration rather than solving the layout. Past half size
 the refusal stands.
 
 **The tool is a host process, and that is the one place this pipeline
-differs from the icons.** Everything under `icon_master` is decoded
+differs from the icons.** Everything under the discovered master is
+decoded
 while the build graph is built — pure Zig, nothing linked. The name is
 set with the same Skia and HarfBuzz the product draws glyphs with, since
 a second text stack for one image is the duplication worth avoiding, so
@@ -556,6 +589,70 @@ const nokre = b.dependency("nokre", .{
 Then `nokre.services.package_info.get()` anywhere. With `pkg_id`
 unset the service is unlinked and that call is a comptime error naming
 the fix.
+
+## The head is the declaration's
+
+The shell page's head states identity as well as mechanics, all of it
+out of the declaration (`packaging.webIndexHtml`). The intake is two
+fields beside `web_lang`: **`web_origin`** — scheme and host, no
+trailing slash — and **`web_description`**, one sentence. The origin
+faces `packaging.checkOrigin` at the tree, before a byte is written
+from it; the rules are `dom`'s `alternates.checkOrigin` rules,
+restated because packaging imports nothing that reaches the library,
+and a test holds the two implementations equal.
+
+What is written: `og:type website` and `og:title` — the declared name —
+unconditionally, because every app is a website called something. A
+description adds `<meta name="description">` and `og:description`. An
+origin gates the half that needs an address: the canonical and `og:url`
+written from one string so they cannot disagree (dom.Meta's rule), the
+`og:image` at `{origin}/share-card.png` with the card's own frame as
+`og:image:width`/`height`, the declared name as `og:image:alt`, and
+`twitter:card summary_large_image`. Unset, nothing is guessed — no
+absolute URL appears anywhere on the page.
+
+Two tags are deliberately absent, on grounds `dom` recorded: no
+`og:site_name`, because the shell's title *is* the app's name and the
+tag would state one string twice (`dom.Meta.site_name` exists for a
+page named beside its site); and no `og:locale`, because Open Graph's
+locale is `language_TERRITORY` and the declared tag need not carry a
+territory — picking one invents a fact about the reader (document.zig's
+`metaTags` states the refusal).
+
+The `.ico` link's `sizes` attribute is `packaging.favicon_sizes_attr`,
+rendered once from `icon.favicon_sizes` — the sizes-ranking lore stated
+once, and spent by every writer of the link: the shell page and
+`headIconLinks` compose from the same line constants, so the attribute
+cannot disagree with the container it ranks. The theme-color pair is a
+packaging constant pair held equal to `Gray.paper`'s two bytes by test.
+
+## The derived set is one module
+
+A generator that writes its own output tree used to collect the pieces
+one by one — a share-card LazyPath here, a favicon LazyPath there, the
+icon link bytes authored by hand. That per-file ceremony is retired:
+`nokre.webAssets(app, b)` hands back one module —
+
+```zig
+pub const Asset = struct { name: []const u8, bytes: []const u8 };
+pub const all: [n]Asset;              // favicon.ico, favicon.svg (iff adaptive),
+                                      // icon-192.png, icon-512.png, share-card.png
+pub const head_icon_links: []const u8; // the icon block for the head seam,
+                                       // conditionality already resolved
+pub const share_card_path;             // "/share-card.png"
+pub const share_card_width;            // the card's frame, for og:image:width
+pub const share_card_height;
+```
+
+Every asset is read out of the assembled site (`App.web`), so what a
+generator writes into its own tree is byte-identical to what the site
+serves. Whether the set carries `favicon.svg` — and whether
+`head_icon_links` links it — is resolved when the module is generated,
+from the same fact the tree returned, so a consumer never states the
+conditionality themselves. `manifest.webmanifest` is deliberately not
+in the set: a generated page links no manifest
+([static-sites.md](static-sites.md)), and handing the file over would
+be handing over a link nothing should write.
 
 ### worker: compute off the UI thread
 

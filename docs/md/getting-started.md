@@ -1918,8 +1918,13 @@ Packaging is already done: `zig build` writes `zig-out/pkg/` — an iOS
 res tree, a macOS `Info.plist` with the mark as `AppIcon.icns`, a web
 page with manifest and icons — all generated from Part
 1's declaration, never hand-written, never committed. The icon is a
-deterministic grayscale mark computed from your app id — unless you have
-real art for Apple's platforms, which is one more line in the same
+deterministic grayscale mark computed from your app id — unless you put
+your mark at `assets/icon-master.svg` (or `icon-silhouette.svg`; PNG
+works for either), in which case every launcher, web and `.icns` size
+derives from that one file: the mark is discovered by name in your own
+package, never declared as an option
+([services.md](services.md), "The mark is discovered, not declared").
+Real art for Apple's platforms is one more line in the same
 declaration:
 
 ```zig
@@ -2007,8 +2012,12 @@ Android Studio and Run, or `./gradlew installDebug` headlessly.
 
 **Web.** The lightest of the six. There is no native link to arrange, no
 archive to hand on, and no SDK — and nothing to author either: `addApp`
-sees a wasm target and hands back the app *and the site around it*. Add
-a flag to `build.zig`:
+sees a wasm target and hands back the app *and the site around it*. One
+requirement the native targets do not have: a web app must declare
+`.pkg` — its page, manifest, icons and the share card a link preview
+shows are all outputs of the declaration, and a wasm build without one
+fails saying so ([services.md](services.md), "The share card"). Add a
+flag to `build.zig`:
 
 ```zig
     const web = b.option(bool, "web", "Build for the browser") orelse false;
@@ -2107,10 +2116,16 @@ covers every response rather than one document. One thing not to add:
 `require-trusted-types-for 'script'` breaks the live driver, which
 patches each frame in by parsing markup off-document.
 
-**The one other thing on the page that is yours is its language.** The
-shell page has no prose in it — a title and an empty mount point — but
-its root element still has to claim a tag, and the default is the
-language nokre's own chrome words are in:
+**Three other things on the page are yours: its language, its address
+and its sentence.** `web_origin` (scheme and host, no trailing slash)
+is where the site is published — declared, the page carries its
+canonical, `og:url` and the `og:image` a link preview fetches; unset,
+no absolute URL is guessed. `web_description` is the one sentence the
+description tags carry. Both are [services.md](services.md)'s ("The
+head is the declaration's"). The language: the shell page has no prose
+in it — a title and an empty mount point — but its root element still
+has to claim a tag, and the default is the language nokre's own chrome
+words are in:
 
 ```zig
         .web_lang = "fa",
