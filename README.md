@@ -183,8 +183,22 @@ anywhere but here.
 
 `git diff --stat docs` before committing is the review: the generator is
 deterministic, so the only lines that move are the ones something
-actually changed. Rebuild after a change here **or** in nokre — the
-documentation pages are rendered from that repository at build time, so
-a docs change there is only on the site once someone rebuilds.
+actually changed. One file is excepted, since 2026-08-12: nokre's card
+mandate put `share-card.png` in the tree, and its text is set by the
+host's own text stack — nokre's card golden is asserted on macOS only —
+so a rebuild on another platform moves that file's bytes without
+meaning anything changed. Every other file keeps the promise whole.
+Rebuild after a change here **or** in nokre — the documentation pages
+are rendered from that repository at build time, so a docs change there
+is only on the site once someone rebuilds.
+
+The mark is declared, not invented, and that stance survives the card:
+`assets/icon-silhouette.svg` is the same mark this site had always
+drawn as its favicon, made declared identity on 2026-08-12 — the
+geometry unchanged, the strokes redrawn as filled paths in one shade,
+because nokre's silhouette decoder takes nothing else. Everything
+image-shaped in `docs/` — `favicon.ico`, `favicon.svg`, the touch
+icons, the share card — derives from that one file and the `.pkg`
+declaration; no artwork is authored for nokre here.
 
 MIT licensed, like nokre.

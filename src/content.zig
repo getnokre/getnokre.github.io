@@ -751,8 +751,11 @@ fn colophon(app: *App) !void {
         "output is committed, so the bytes a reader is served are the bytes " ++
         "somebody reviewed in a diff — which is the same argument nokre " ++
         "makes for golden screenshots, one layer out. Two runs over " ++
-        "unchanged sources produce identical files, so a diff that is empty " ++
-        "means nothing changed rather than nothing was checked.");
+        "unchanged sources produce identical files — every file but one, " ++
+        "since 2026-08-12: the share card a link preview shows is set in " ++
+        "the host's own text stack, so share-card.png reproduces per " ++
+        "platform rather than per source. An empty diff still means " ++
+        "nothing changed rather than nothing was checked.");
 
     // The stamp below is what lets that argument be checked rather than
     // taken on faith: build.zig asks each checkout for `rev-parse

@@ -27,8 +27,10 @@ pub fn build(b: *std.Build) void {
     // this *is* the whole build system — there is no CI to ask instead.
     // The stamp makes the output depend on checkout state, and that is
     // the point: it is provenance. It does not cost determinism — a
-    // rebuild on the same two clean commits is byte-identical, so
-    // `git diff --stat docs` keeps meaning what the README says.
+    // rebuild on the same two clean commits is byte-identical but for
+    // share-card.png, whose text the host's own stack renders (README,
+    // "Publishing") — so `git diff --stat docs` keeps meaning what the
+    // README says.
     const nokre_git = gitState(b, repo);
     const site_git = gitState(b, ".");
 
@@ -86,6 +88,10 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/web.zig"),
         .target = nokre_build.webTarget(b),
         .optimize = optimize, // addApp forces ReleaseSmall for wasm
+        // A web app carries identity: page, manifest, icons and the
+        // share card are outputs of this declaration. The mark itself is
+        // discovered, not declared — assets/icon-silhouette.svg.
+        .pkg = .{ .name = "nokre", .id = "io.github.getnokre", .version = "0.1.0", .build = 1 },
     });
     // The same options module the generator reads: the live half builds
     // the same colophon, provenance sentence included, so it needs the
@@ -93,6 +99,11 @@ pub fn build(b: *std.Build) void {
     // pair honest — the screen the browser rebuilds says what the file
     // said — at the same cost: none, on the same two clean commits.
     live.module.addImport("site_options", options.createModule());
+    // The derived identity set — favicon.ico, the adaptive favicon.svg,
+    // the touch icons, share-card.png — as bytes the generator writes
+    // into its own tree, read out of the assembled site so the two
+    // trees cannot disagree.
+    mod.addImport("web_assets", nokre_build.webAssets(live, b));
     const publish = b.addUpdateSourceFiles();
     publish.addCopyFileToSource(live.artifact.getEmittedBin(), b.pathJoin(&.{ out, "app.wasm" }));
 

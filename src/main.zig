@@ -27,6 +27,7 @@
 const std = @import("std");
 const nok = @import("nokre");
 const opts = @import("site_options");
+const web_assets = @import("web_assets");
 
 const content = @import("content.zig");
 const icons = @import("icons.zig");
@@ -57,7 +58,7 @@ comptime {
 // whole dependency, so nokre's hand-bumped `revision` is the only pin a build
 // can check. The colophon's git stamp is provenance — which commit was read —
 // not a pin; this is the pin. A moved checkout fails here naming both numbers.
-const nokre_revision = 64;
+const nokre_revision = 65;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -690,20 +691,6 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
         // cannot come apart: `og:url` is the canonical because there is
         // one `path` behind both, and the 404 page says `null` rather
         // than carrying a URL with a flag beside it.
-        //
-        // No `image`, and not for want of a renderer: nokre emits a
-        // share card from an app's mark and its name, and every web
-        // build declaring both gets one. This site declares neither,
-        // and cannot. The only image in this repository is the favicon,
-        // which is this generator's own output — drawn from `nok.Gray`
-        // in writeExtras, not authored — so a card here would mean
-        // inventing artwork for nokre, which introduction.md refuses.
-        //
-        // The absence is therefore structural rather than chosen:
-        // nothing to declare, nothing emitted, no Skia in this build.
-        // It is also the right answer on its own terms — an absent
-        // image is what makes the card `summary` instead of a
-        // large-image frame with nothing in it.
         .meta = .{
             .origin = origin,
             // The 404 body is served at whatever URL missed, never at
@@ -724,6 +711,17 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
             // the `<title>`'s " — nokre" suffix there would be the site
             // named twice.
             .title = if (home) "nokre" else L.trAny(loc, p.title),
+            // The card a link preview fetches: nokre's own derivation
+            // from the declared mark and the app's name, not artwork
+            // authored here. Path and frame are the module's constants,
+            // so the tag and the file cannot come apart. Empty alt on
+            // purpose — the picture is the mark and the name, nothing a
+            // reader is not already told.
+            .image = .{
+                .path = web_assets.share_card_path,
+                .shape = .banner,
+                .size = .{ .w = web_assets.share_card_width, .h = web_assets.share_card_height },
+            },
         },
         .head = head.items,
         // The mount points are this site's own names, which is why they
@@ -792,8 +790,11 @@ fn writeDocument(em: *dom.Emitter, loc: L.Locale, i: usize, alts: []const dom.Al
 }
 
 /// The head seam: what is left of this site's own head once nokre
-/// writes the parts that have invariants — where it published its
-/// favicon and its faces, and nothing else.
+/// writes the parts that have invariants — the icon block, received
+/// whole from the library (conditionality and the `.ico` sizes
+/// attribute already resolved), and where this site published its
+/// faces. Placement stays this seam's; the bytes stopped being its to
+/// compose (`../nokre/docs/static-sites.md`).
 ///
 /// It used to carry the canonical and the Open Graph block too. Those
 /// moved to `dom.Meta` (`writeDocument` above), which is not this site
@@ -813,8 +814,8 @@ fn writeHead(em: *dom.Emitter, out: *std.ArrayList(u8)) !void {
     var h = em.fragment(out);
     defer h.deinit();
 
+    try h.raw(web_assets.head_icon_links);
     try h.raw(
-        \\<link rel="icon" href="/favicon.svg" type="image/svg+xml">
         \\<link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
         \\
     );
@@ -1034,34 +1035,18 @@ fn writeExtras(
         .data = "User-agent: *\nAllow: /\nSitemap: " ++ origin ++ "/sitemap.xml\n",
     });
 
-    // A mark made of what the library draws: a box, and lines of text
-    // inside it. Both ramps, because a favicon follows the appearance
-    // like everything else.
-    const Gray = nok.Gray;
-    const favicon = try std.fmt.allocPrint(gpa,
-        \\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-        \\<style>
-        \\  .edge {{ fill: none; stroke: #{x:0>2}{x:0>2}{x:0>2}; stroke-width: 2 }}
-        \\  .rule {{ stroke: #{x:0>2}{x:0>2}{x:0>2}; stroke-width: 2 }}
-        \\  @media (prefers-color-scheme: dark) {{
-        \\    .edge {{ stroke: #{x:0>2}{x:0>2}{x:0>2} }}
-        \\    .rule {{ stroke: #{x:0>2}{x:0>2}{x:0>2} }}
-        \\  }}
-        \\</style>
-        \\<rect class="edge" x="3" y="3" width="26" height="26" rx="8"/>
-        \\<path class="rule" d="M9 12h14M9 17h14M9 22h8"/>
-        \\</svg>
-        \\
-    , .{
-        Gray.ink.byte(.light), Gray.ink.byte(.light), Gray.ink.byte(.light),
-        Gray.mid.byte(.light), Gray.mid.byte(.light), Gray.mid.byte(.light),
-        Gray.ink.byte(.dark),  Gray.ink.byte(.dark),  Gray.ink.byte(.dark),
-        Gray.mid.byte(.dark),  Gray.mid.byte(.dark),  Gray.mid.byte(.dark),
-    });
-    try cwd.writeFile(io, .{
-        .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "favicon.svg" }),
-        .data = favicon,
-    });
+    // The derived identity set — favicon.ico, the adaptive favicon.svg,
+    // the touch icons, share-card.png — nokre's bytes, every one
+    // derived from assets/icon-silhouette.svg and the declaration. The
+    // mark used to be drawn right here from `nok.Gray`; it is declared
+    // identity now, same geometry flattened to one shade, because the
+    // silhouette decoder takes fills in a single tone and nothing else.
+    for (web_assets.all) |a| {
+        try cwd.writeFile(io, .{
+            .sub_path = try std.fs.path.join(gpa, &.{ out_dir, a.name }),
+            .data = a.bytes,
+        });
+    }
 
     // GitHub Pages would otherwise try to run the output through Jekyll.
     try cwd.writeFile(io, .{
