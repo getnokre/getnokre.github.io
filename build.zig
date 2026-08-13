@@ -89,9 +89,10 @@ pub fn build(b: *std.Build) void {
         .target = nokre_build.webTarget(b),
         .optimize = optimize, // addApp forces ReleaseSmall for wasm
         // A web app carries identity: page, manifest, icons and the
-        // share card are outputs of this declaration. The mark itself is
-        // discovered, not declared — assets/icon-silhouette.svg.
+        // share card are outputs of this declaration, and so is the mark
+        // the set derives from.
         .pkg = .{ .name = "nokre", .id = "io.github.getnokre", .version = "0.1.0", .build = 1 },
+        .mark = .{ .silhouette = b.path("assets/mark.svg") },
     });
     // The same options module the generator reads: the live half builds
     // the same colophon, provenance sentence included, so it needs the

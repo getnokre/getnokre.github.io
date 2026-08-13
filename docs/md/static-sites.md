@@ -661,7 +661,7 @@ is a real need with no element behind it and there never will be one.
 The rule above settles the `<link rel="icon">`, and only the tag. What a
 site *serves* at the other end of that href is an image, and an image
 nokre already draws every other size of — so a hand-maintained
-`favicon.ico` beside a discovered `icon-master.svg` was two answers to
+`favicon.ico` beside a declared mark was two answers to
 one question, which is the defect the share card had before it was derived.
 
 The ICO half is derived now, all of it: sizes, footprint, polarity and
@@ -680,9 +680,9 @@ master, nokre had to answer a question the master does not: does the
 favicon carry the drawn field, or drop it? Both answers ship in the
 world, neither is derivable from anything declared, and deleting an
 author's field is picking one — "none" — for every consumer at once.
-The silhouette form (`icon-silhouette.svg`, [services.md](services.md))
-answers by its name: a silhouette carries no field at all, so there
-is nothing to drop and nothing to guess. A named form is not a hole —
+The silhouette form (`.{ .silhouette = … }`, [services.md](services.md))
+answers by its tag: a silhouette carries no field at all, so there
+is nothing to drop and nothing to guess. A stated form is not a hole —
 stating the form states the field, which is nokre's paper in both
 appearances, with no consumer byte anywhere. A declarable field byte
 was considered and refused: it would be identity through a side door,

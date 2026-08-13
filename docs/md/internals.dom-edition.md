@@ -1443,9 +1443,15 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   `kAntiAlias` with `setSubpixel(false)` and a browser on macOS
   defaults to a stem one weight heavier; `text-decoration-skip-ink:
   none`, because a rule the reference draws is unbroken; no
-  letter-spacing and no `overflow-wrap: break-word`, because `wrap`
-  measures with the face's own advances and lets an unbreakable word
-  run on. Ligatures are left **on**, which is the match: the shim
+  letter-spacing, because `wrap` measures with the face's own advances
+  and nothing else; and `overflow-wrap: break-word`, because `wrap`
+  breaks an over-long word at the edge too. That one used to say
+  `normal` on the same grounds — it was matching the reference, and the
+  reference was drawing the word past its column. Two editions agreeing
+  is worth nothing on its own; they have to agree on the right answer.
+  `break-word` rather than `anywhere`, so min-content is untouched and
+  only a word that fits nowhere is broken. Ligatures are left **on**,
+  which is the match: the shim
   calls `hb_shape` with no feature list, and HarfBuzz's defaults are
   the browser's defaults.
 

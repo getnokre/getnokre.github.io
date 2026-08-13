@@ -493,11 +493,14 @@ h6 { font-size: var(--px-small); line-height: var(--lh-small); }
    and it collapsed the single space that gives a swatch its height
    until thirteen shades came out as circles. */
 p, h1, h2, h3, h4, h5, h6 { white-space: pre-wrap; }
-/* And a word too long for the column overflows rather than
-   breaking: `wrap` splits at spaces and lets an unbreakable run
-   run on, which is what keeps a URL one selectable token. The page
-   clips it at the screen edge, exactly as the reference does. */
-p { overflow-wrap: normal; }
+/* And a word too long for the column breaks at the edge rather
+   than running past it, which is what `wrap` does too: a German
+   compound in a phone-width title was drawn off the frame and cut
+   mid-word, and no rule here could have been right while the
+   reference was wrong. `break-word` and not `anywhere`, so only a
+   word that fits nowhere breaks, min-content is unaffected, and a
+   broken URL is still one selectable token. */
+p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 strong { font-weight: 700; }
 em { font-style: italic; }
 /* No bundled family ships a struck variant and synthesizing one

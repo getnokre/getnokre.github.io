@@ -213,8 +213,18 @@ Fixed, from [src/core/text.zig](../../src/core/text.zig):
 | `h2` | 24 | 32 |
 | `h1` | 32 | 40 |
 
-Word wrap is greedy at spaces, honors `\n`, never hyphenates; over-long
-words overflow their box rather than break (deterministic and obvious).
+Word wrap is greedy at spaces, honors `\n`, and never hyphenates. A word
+with no break opportunity in it that is still wider than the line breaks
+at the box edge and continues on the next — CSS `overflow-wrap:
+break-word`, which is what the DOM edition asks the browser for so the
+two editions answer this the same way. It used to overflow instead, and
+the box it overflowed was the screen: a German compound in a 360pt title
+was painted past the frame and cut mid-word, losing the end of the word
+outright. Breaking rather than eliding, because those glyphs are
+content; `copyable` is the one element that elides, and it drops the
+*middle* of a verbatim value whose two ends are what a reader checks it
+by. The break lands between grapheme clusters, so a combining mark never
+opens a line with nothing to sit on.
 
 ## Where the guarantee stops, and why there
 

@@ -1918,12 +1918,16 @@ Packaging is already done: `zig build` writes `zig-out/pkg/` — an iOS
 res tree, a macOS `Info.plist` with the mark as `AppIcon.icns`, a web
 page with manifest and icons — all generated from Part
 1's declaration, never hand-written, never committed. The icon is a
-deterministic grayscale mark computed from your app id — unless you put
-your mark at `assets/icon-master.svg` (or `icon-silhouette.svg`; PNG
-works for either), in which case every launcher, web and `.icns` size
-derives from that one file: the mark is discovered by name in your own
-package, never declared as an option
-([services.md](services.md), "The mark is discovered, not declared").
+deterministic grayscale mark computed from your app id — unless you
+declare your own, in which case every launcher, web and `.icns` size
+derives from that one file:
+
+```zig
+        .mark = .{ .master = b.path("assets/mark.svg") },
+```
+
+`.silhouette` is the other form and PNG works for either
+([services.md](services.md), "The mark is declared").
 Real art for Apple's platforms is one more line in the same
 declaration:
 

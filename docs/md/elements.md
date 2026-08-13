@@ -629,7 +629,10 @@ One that does not — a chip whose label alone exceeds the span — gets a
 line to itself and overflows it. Nothing ahead of it pushes it further
 out and nothing behind it is dragged along, but nokre does not shrink it,
 elide it or refuse it: an oversized chip is over-long *words*, and the
-words are the whole element ([badge](#badge)).
+words are the whole element ([badge](#badge)). Prose does not behave
+this way — a word too wide for its column breaks at the edge — and the
+difference is the chip's single line, which has no next line to break
+onto.
 
 Wrapping changes where marks land and nothing else. No node is added,
 removed or hidden, the focus order is document order either way, and the
@@ -1186,7 +1189,8 @@ key a multi-line editor cannot give up. Submission belongs to an
 explicit `button` next to it.
 
 The value wraps exactly like prose (greedy, word-boundary, hard `\n`
-breaks) and the field grows with its content, never below three rows —
+breaks, and a word wider than the line broken at the edge rather than
+drawn past it) and the field grows with its content, never below three rows —
 there is no inner scrollbar to fight the page's own scrolling. ↑/↓ move
 the caret between visual lines preserving its horizontal position;
 Home/End go to the bounds of the caret's line (the whole value is a ↑/↓

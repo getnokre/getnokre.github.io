@@ -323,43 +323,50 @@ Pointing an Xcode project at the delivered bundle — and assembling the
 macOS `.app` around what `pkg/macos/` carries — is
 [getting-started.md](getting-started.md).
 
-An app whose mark is real art *everywhere* states that too — not as an
-option, but as a file where the build looks for one. That is the next
-section.
+An app whose mark is real art *everywhere* states that too, in the
+option beside it. That is the next section.
 
-### The mark is discovered, not declared
+### The mark is declared
 
-Discovery answers to exactly four names, probed in the **consuming
-package's own `assets/`**:
+One option, and the tag says which form the author drew:
 
-| File | What it states |
+```zig
+    .mark = .{ .master = b.path("../../assets/mark.svg") },      // or
+    .mark = .{ .silhouette = b.path("../../assets/mark.svg") },
+```
+
+| Tag | What it states |
 | --- | --- |
-| `assets/icon-master.svg` or `.png` | an opaque master — the mark *and its field*, both the author's |
-| `assets/icon-silhouette.svg` or `.png` | a silhouette — the mark alone, composited onto nokre's paper |
+| `.master` | an opaque master — the mark *and its field*, both the author's |
+| `.silhouette` | a silhouette — the mark alone, composited onto nokre's paper |
 
-No file there, or no `assets/` at all, is the ordinary case and means
-the id-derived mark. The probe runs only for an app that declared
-`.pkg`, and its ground is package-local: the package is the one that
-owns `root_source_file`, so a repository of several apps gives each its
-own `assets/` and each its own mark — one mark per package, keyed to
-nothing global. A generated root names no package directory, so it gets
-no probe and keeps the derived mark. The decision itself is pure and
-unit-tested (`packaging.discovery`); build.zig only reads the directory.
+Omitting it is the ordinary case and means the id-derived mark. The
+option is read only for an app that declared `.pkg`. The format is the
+extension's — a fact about the file rather than a convention to
+remember. A generated path is refused rather than skipped: a mark is
+read while the graph is assembled, so bytes that do not exist yet
+cannot be one, and treating that as "no mark" would ship the identicon
+in silence.
 
-The operator accepted the convention over a declared option on
-2026-08-12, on that package-local ground — the mark is the package's
-own fact, so it lives in the package's own tree — and with its one
-sharp consequence recorded: **a typo'd filename that discovery ignored
-would not be a build error any more, it would be an app silently
-wearing the identicon.** Under the deleted options a wrong path failed
-the build; a wrong name in a probed directory fails nothing by itself.
-That is why the probe refuses near-misses rather than skipping them:
-any regular file in `assets/` matching `icon-*.svg` or `icon-*.png`
-case-folded that is not one of the four names fails the tree, naming
-the stray and the four. Both forms at once are refused as two answers
-to what the field is; one form in both formats as two files for one
-mark; an unreadable `assets/` as itself. Every refusal rides the tree's
-step — the invalid-declaration rule, unchanged.
+This reverses a convention that shipped on 2026-08-12, where the mark
+was probed by four reserved filenames in the consuming package's own
+`assets/`. The ground given then was that the mark is the package's own
+fact; the counterexample was already in the first consumer's tree, and
+was found on 2026-08-13. Two apps there share one brand, and a
+package-local location can only be satisfied by a copy — two
+byte-identical `icon-master.svg` files, with nothing holding them in
+step, so redrawing the mark and updating one ships the other's old art
+in silence. `apple_icon` had never had that problem: it was always a
+stated path, and its one bundle is shared from the repository root by
+the packages that name it. The mark is now its shape one file over.
+
+Declaring also deleted a failure class rather than moving it. Discovery
+needed three refusals — a near-missed filename, both forms at once, one
+form in both formats — and every one existed to disambiguate a *guess*
+about which file in a directory was the mark. A stated path has nothing
+to disambiguate: a wrong path fails at the step that reads it, and the
+form is a tag the compiler checks. What is left rides the tree's step —
+the invalid-declaration rule, unchanged.
 
 An SVG is rasterised by nokre and is the better answer: there is one
 file, so no size can be last year's mark. The subset is flat shapes —
@@ -406,10 +413,10 @@ permissive reader would decode to *something*, and the something would
 reach a store.
 
 An app whose mark is a shape rather than a picture names the other
-form — `assets/icon-silhouette.svg` (or `.png`): the same square,
-grayscale master, carrying transparency instead of a field.
+form — `.{ .silhouette = … }`: the same square, grayscale master,
+carrying transparency instead of a field.
 
-**The form rides the filename, and the field is nokre's answer.** What is
+**The form rides the tag, and the field is nokre's answer.** What is
 drawn is the mark; every output composites nokre's paper (`0xFF`)
 behind it at decode, so every emitter above is the same emitter over
 the same flattened plane — area averaging is linear, and flattening
@@ -420,16 +427,15 @@ answer one appearance of a two-appearance artifact
 itself: the Android adaptive foreground is transparent where nothing
 was drawn — that format's own contract — over the paper background
 resource; and an SVG silhouette also yields the adaptive tab glyph
-below. The refusals are symmetric and each names the other filename: a
-silhouette that paints every pixel is refused as the opaque master it
-is, an opaque master that leaves a pixel unpainted is refused with
-icon-silhouette named as the honest form, and holding both is
-refused as two answers to one question. An SVG silhouette is one
+below. The refusals are symmetric and each names the other tag: a silhouette
+that paints every pixel is refused as the opaque master it is, and an
+opaque master that leaves a pixel unpainted is refused with
+`.silhouette` named as the honest form. An SVG silhouette is one
 shade — the adaptive favicon flips one fill, and a two-tone mark cannot
-ride that: flatten it, or name it icon-silhouette.png, which states up
+ride that: flatten it, or declare a `.png` silhouette, which states up
 front that it carries no adaptive favicon.
 
-The discovered mark and `apple_icon` are independent and compose: with
+The declared mark and `apple_icon` are independent and compose: with
 both, Apple's platforms get the bundle its own tool compiles while
 everything else gets the master. With neither, every surface keeps the
 derived mark, which remains the default and the fallback — nothing
@@ -517,7 +523,7 @@ refusing the declaration rather than solving the layout. Past half size
 the refusal stands.
 
 **The tool is a host process, and that is the one place this pipeline
-differs from the icons.** Everything under the discovered master is
+differs from the icons.** Everything under the declared master is
 decoded
 while the build graph is built — pure Zig, nothing linked. The name is
 set with the same Skia and HarfBuzz the product draws glyphs with, since
