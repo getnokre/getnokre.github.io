@@ -480,6 +480,142 @@ master it stays refused — deleting a drawn field is picking "none" —
 as from a raster or multi-tone silhouette; the grounds, and what was
 revised to admit this much, are in [static-sites.md](static-sites.md).
 
+## The store, when there is one
+
+An app that ships to Apple or Google needs two things nokre can hold and
+one it cannot: **copy** within the limits each store enforces at upload,
+**screenshots** at the sizes each store accepts, and a walk to the screen
+worth photographing. The first two are here. The third is yours, and the
+line is the one [static-sites.md](static-sites.md) already draws for a
+generator: your driver walks to the screen, and the library keeps what it
+produces from disagreeing with what a store will take.
+
+None of it is forced. `store` defaults to empty, and an app that never
+writes it — a web-only publisher, an internal tool, this repository's own
+examples — is asserted about in no way at all.
+
+```zig
+    .store = &.{ .iphone_6_9, .play_phone },   // requires .pkg
+```
+
+**Naming a device family is what declares its store.** One statement
+rather than a store list and a device list that could disagree.
+
+### The families
+
+A family is a **logical size and an integer scale**, because that is what
+a capture spends: `App.init` takes a viewport in points and
+`skia.capture` takes `Take.scale`. The pixel size a store measures is
+derived from the pair, never tabled beside it — two statements of one
+fact is how `1024×1366 pt` came to sit next to `2064×2752 px` in a
+consumer's own compliance doc, which are different devices.
+
+| Family | Store | Logical | Scale | Upload |
+| --- | --- | --- | ---: | --- |
+| `iphone_6_9` | Apple | 440×956 pt | 3 | 1320×2868 |
+| `iphone_6_5` | Apple | 428×926 pt | 3 | 1284×2778 |
+| `ipad_13` | Apple | 1032×1376 pt | 2 | 2064×2752 |
+| `play_phone` | Google | 360×800 pt | 3 | 1080×2400 |
+
+Only families whose logical size a store **publishes** are here. Apple
+states points for iPhone and iPad and pixels alone for Mac, TV, Vision
+and Watch, so those four are absent rather than inferred: a family
+carrying an arithmetic logical size is one a capture would happily drive
+at a layout no device performs, and a refusal that cannot tell a
+published size from a computed one is not a refusal.
+
+### The listing
+
+`listing/<store>/<locale>.md`, in the package that declares the app. The
+directory carries the store, so nothing inside a document names it — both
+stores in one file would need `apple_`/`google_` prefixes, since the two
+have different fields sharing names under different rules, and a prefix
+is a store named on every line of a file whose path already said it.
+
+Short fields are front-matter lines and prose is a `## ` section, which
+is both a reviewability rule and a grammatical one: the header is
+`front_matter`'s, and it has no block scalar to put four thousand
+characters on.
+
+```markdown
+---
+locale: "en"
+name: "Example"
+subtitle: "What it is, in six words"
+keywords: "a,b,c"
+---
+
+## description
+
+Prose, as long as the store allows.
+```
+
+**The unit is per field, not per table.** Apple counts `keywords` in
+*bytes* and everything else in characters, and the difference is not
+academic: a Persian keyword line of 47 characters is 87 bytes, so a
+scalar count reports the tightest field in a corpus as one of its
+loosest. Where a store's wording is ambiguous the stricter reading wins,
+because the errors are not symmetric — counting tighter costs room in one
+field, counting looser costs a rejected submission.
+
+Refused, each naming its remedy: a field over budget, a field no budget
+covers, a required field nobody wrote, a field in the wrong half of the
+document, a `locale:` line disagreeing with its filename, a field present
+and empty, and a locale one declared store carries that another does not.
+Findings ride the packaging tree's step — the invalid-declaration rule
+used everywhere else here, so a plain `zig build` still runs and
+everything a release is assembled from does not.
+
+### The half a build cannot see
+
+A `Bundle` is comptime over `@embedFile`d sources named in your own code,
+so the build graph does not know your languages exist. It can hold one
+store's directory to another's and no further. The gap that leaves is the
+one worth catching — a locale added to the app, its page never written,
+and a store page answering a Persian reader in English — and both halves
+of the fact are in scope in exactly one place:
+
+```zig
+    comptime { nokre.store.requireListings(Strings); }
+```
+
+One line beside the revision pin it reads like, checked both ways, and a
+no-op for an app that declared no store. It is yours to write because
+nokre never sees your bundle: it is a type your app constructs, and a
+library cannot assert about a value nobody handed it.
+
+### The safe area
+
+Every number the frame check uses is derived rather than typed. Ink is
+any pixel far enough from the frame's own page tone, and that threshold
+is the midpoint between paper and the first tone that is *content* —
+computed per ramp from `color.Gray` and asserted equal across the two,
+since they run 21/43 and 21/44 and the fact that one threshold serves
+both is a coincidence a ramp edit could break. The safe area is
+`tree.root_stack.padding`, the page's own margin, so content laid out
+correctly already keeps it. The exemption is `metrics.scroll_bar` times
+the family's scale — the bar is the one thing a frame draws hard against
+its edge, and it is logical where the buffer is not.
+
+It reads the **pixel buffer**, before encoding. Not an optimization: this
+library's frames are RGB for one sanctioned reason, the Google sign-in
+mark, and its own PNG decoder refuses a non-grayscale image — so a scan
+built on the written file would fail every sign-in screenshot for a
+reason that has nothing to do with margins.
+
+Two things it refuses rather than reports: a frame whose commonest tone
+covers under half of it, which has no page to measure against, and a
+frame that is page tone and nothing else, because an empty capture has
+perfect margins.
+
+**What it cannot do**, stated rather than implied: it counts and it
+measures, and neither is judgement. Nothing here reads whether the copy
+is true, whether it promises a feature that does not ship, or whether a
+screenshot shows the screen its caption claims. And above
+`metrics.page_max_w` the page is a centred column rather than the frame,
+so on a tablet the safe area is the column's — a rule stated against the
+frame edge would measure paper and find nothing.
+
 ## The share card
 
 A web build also emits the picture a link preview shows: the app's mark
