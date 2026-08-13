@@ -1467,7 +1467,21 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   (`layout.qrSide`). Both are written onto the element by the
   serializer; a stylesheet guess would put the words in a different
   column and scale the symbol to a fraction of a module, which is what
-  stops one scanning.
+  stops one scanning. The gutter is measured in the digits that will
+  actually be drawn, which in a Persian page are Persian ones.
+
+- **The browser draws the ordinal, so the numbering system is CSS.**
+  `<li>` derives its own marker and nokre's never reaches the markup,
+  which is why a Persian page cannot be fixed by emitting a shaped
+  digit: the fix is a `list-style-type`. One
+  `ol.list:lang(fa) { list-style-type: persian; }` rule per language
+  that does not number in ASCII, generated in `stylesheet.zig` from the
+  same `lang.digit_langs` the other edition shapes its ordinals from,
+  through a switch with no `else`. A row added to that table is a
+  compile error until the counter style is named — two editions of one
+  document cannot number it differently. `:lang()` and not
+  `[lang|=…]`, because the selector matches an *inherited* language and
+  `<html lang="fa-IR">` is the only place the page says so.
 
 Roles come from `semantics.roleOf`, never a second table. An element
 whose HTML tag already carries the right implicit role gets no ARIA;

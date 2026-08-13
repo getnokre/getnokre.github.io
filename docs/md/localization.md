@@ -187,6 +187,23 @@ NumberFormat does not reach it. Digits only: the minus sign stays ASCII
 `-`, and there are no separators to localize. Plural categories are
 selected on the numeric value, never on the shaped string.
 
+The table is not the catalog's alone. It lives in `core/lang.zig`
+(`digit_langs`, `digitsOfTag`), below `l10n`, because an **ordered
+list's ordinals** are the same question asked by a layer that has no
+catalog: `layout.listMarker` numbers ۱ ۲ ۳ in a Persian app and 1 2 3
+in an English one, from `App.digits` — which is derived from
+`App.setLocale`'s tag and has no setter of its own. Unlike
+`setDirection`, whose mirror is a choice an app may decline, what a "3"
+looks like in a language is the language's; a setter would be a knob
+two apps could disagree on and one an app could forget, which is the
+Latin-digits-in-Persian bug it exists to prevent. The DOM edition
+answers the same table from the other side: the browser draws the
+ordinal there, so the stylesheet carries one `ol.list:lang(…) {
+list-style-type: … }` rule per row, generated from `digit_langs`
+through an exhaustive switch — a language added to the table is a
+compile error until the CSS counter style is named, so the two editions
+of one document cannot number it differently.
+
 ## Right-to-left
 
 There are two questions here, and nokre keeps them separate: which way
@@ -474,7 +491,25 @@ prefix, a `#` that went missing. It is deliberately a subset of the
 validator: being wrong there costs one retry, not a catalog. A dropped
 placeholder is on both lists — the compiler refuses it now ("What the
 compiler checks") — and it stays here because a retry carrying the
-reason is worth more than a `.partial` the tool cannot explain.
+reason is worth more than a `.partial` the tool cannot explain. The
+re-ask happens at answer time and is never blind: the corrective prompt
+quotes the rejected answer and the check's own complaint, and from the
+first rejection onward it also quotes the same key's value from the
+template's other completed catalogues — worked examples, discovered
+beside the template and included only when they pass the same per-key
+check for that key, because an invalid example teaches the mistake.
+The base prompt stays cheap on purpose; examples are paid for only by
+a key that has already got it wrong. What the base prompt does state
+up front is the shape contract — a placeholder keeps exactly the
+source's usage, a plural with no `#` gets none, a date skeleton is
+copied verbatim — because a model's canonical-ICU reflex rewrites
+exactly the shapes an unusual message deliberately uses, identically
+across models, and a complaint after the fact was measured (two
+models, seven attempts) not to talk either of them out of it.
+`--retries` (default 3) is the per-key budget, spent by these
+rejections and by transport failures alike; a key that exhausts it is
+announced on its own line as it fails and again in the end-of-run
+list, and the run exits non-zero.
 
 The draft lands beside the template with the locale suffix swapped —
 `sink_en.arb` drafted to `de` becomes `sink_de.arb` — so it joins the
@@ -561,6 +596,179 @@ afterwards anyway. The tool asks the server's chat template to skip it
 if the endpoint rejects it, as OpenAI does). `--think` restores it for a
 catalog whose wording is genuinely hard.
 
+### The glossary
+
+`--glossary <path>` folds a term list into every prompt, and both
+drafting tools take it. Terminology drift is the one defect no
+structural check can see: a German draft in a consumer repo named one
+monetized unit five different ways across one app — including one word
+that means "acknowledgements", on the purchase screen's own title — and
+every one of those answers had the right placeholders and the right
+shape. A glossary is the only control for it.
+
+The format is two lines' worth of grammar, because the file is written
+and reviewed by whoever owns the product's words:
+
+```
+# a comment
+read credit = Lesekredit
+Rokovski
+feedback.pricing
+```
+
+A line with `=` fixes the destination term for a source term. A line
+without one is a term that is never translated — product names, route
+names, code identifiers. One file per destination locale: a mapping's
+right-hand side is in one language. A malformed line is fatal, never
+skipped; a glossary that quietly ignored half its entries would report
+success having enforced nothing.
+
+## Drafting a document
+
+`zig build translate-md` is the same tool for one Markdown document —
+a documentation page, an article, anything a consumer keeps as
+`.md` with a front-matter block:
+
+```
+zig build translate-md -- --input content/articles/en/why.md --dest de \
+  --front-translate title,summary --front-structural publishedAt,tags \
+  --front-locale-key locale --glossary content/glossary-de.txt \
+  --sibling content/articles/tr/why.md
+```
+
+One file per run, named. Nothing here walks a directory: the consumer
+knows its own content layout and states it, and a tool that guessed
+would encode one repository's tree into a library.
+
+**The validator is nokre's own Markdown parser.** There is no comptime
+probe behind this one, so the comparator *is* the verdict rather than a
+prefilter — which is why it is built the one way that cannot drift from
+what will be rendered. Both documents are parsed by appending a
+`document` element to a `Tree`, exactly as an app would, and what is
+compared is the elements that came out: the heading outline, the block
+sequence and nesting, the list kinds and item counts, the styled runs
+per block, the link destinations byte for byte, the code spans and
+fenced blocks byte for byte. Nothing re-implements the subset and
+nothing reads the source with a regular expression.
+
+Two failures are why it exists.
+
+**A translated destination.** A destination is an address — a route
+name like `feedback.pricing`, or a URL. Translated, it yields a
+document that builds, reads well, and links nowhere.
+
+**Degradation.** The subset is closed and everything outside it comes
+through as its own literal source text ([markdown.md](markdown.md)) —
+exactly right for bytes nobody reviewed, and exactly wrong for a draft,
+because the page then shows the syntax. An image, an HTML tag, a
+footnote, a link whose brackets slipped: none of them fails, all of
+them ship. So marker residue is counted on both sides of the comparison
+and the draft may carry no more of any marker than the source does. The
+source's own count is the allowance, so prose that legitimately
+contains an asterisk is not an alarm.
+
+The quietest one is an unclosed `**`. nokre reads it as an opener and
+leaves the style set to the end of the block: the parse succeeds, every
+word arrives, no marker reaches the rendered text, and the page ships
+with half a paragraph in bold. The per-kind counts do not move —
+`**a** b` and `**a b` each hold one strong run — so what is compared is
+whether the block *ends* inside a style where the source's does not.
+
+That check began as a comparison of each block's **total** run count,
+which included its unstyled runs, and that was wrong in a way worth
+recording: how many unstyled runs a block has is a fact about word
+order. English opens `Open **Connections** and tap …` with a plain word
+and Turkish opens `**Bağlantılar**ı aç ve …` with the styled one, so
+the totals differ (5 and 4) while every marker still closes around the
+same words. Held against the first consumer's shipped content, the
+total-run comparison rejected four of fourteen correct translations,
+and a rejected sibling is silently withheld as a worked example — so
+the rule degraded every future draft of those documents rather than
+failing loudly. **A rule that varies with word order cannot be part of a
+translation comparator.**
+
+**The front-matter schema is a parameter, never a hole.** nokre owns
+the grammar — an opening `---`, one `key: value` per line, a closing
+`---` — and never the schema. Which keys are prose (`--front-translate`),
+which are facts about the entry that every language's file must agree on
+(`--front-structural`), and which one names the locale
+(`--front-locale-key`) are the collection's decisions and arrive on the
+command line. The classification is closed in both directions before a
+token is spent: a source key in neither list stops the run naming it,
+and so does a schema key no document states. That is what keeps a
+`draft: true` from being silently translated into publication.
+
+More rules are about the *file* rather than the document, and every one
+of them came from reading a real draft whose parse was perfect.
+
+- **A trailing newline**, if the source has one.
+- **The wrap**: the longest line may not run half again as wide as the
+  source's longest. Comparative rather than a fixed column — the source
+  states the width it was written at.
+- **Dashes set tight** against the word on one side or both. Comparative
+  too, because the tight form is real typography rather than a mistake:
+  American house style sets an em dash closed, and which dash a language
+  uses and how it spaces it is that language's business. What is not a
+  style choice is that a tight dash is a place the line cannot break, so
+  the paragraph runs past the wrap or sprawls to avoid it.
+- **Trailing whitespace**. Comparative, because inside a fence a
+  trailing space is content and only the document can say whether it has
+  such a fence. Two trailing spaces are read as a hard line break, so
+  past one space this changes what the page shows; at one space it
+  changes nothing and is committed anyway.
+- **A line ending in a hyphen**, anywhere the parser joins the run's
+  lines — a paragraph or a list item, not a fence or a table. This one
+  is absolute rather than comparative, and it can afford to be because
+  compliance is free in every language: the line wraps one word earlier
+  and renders identically.
+
+The dash rule and the wrap rule were one rule for a while, and that is
+the lesson in this group: the width complaint's *advice* told a model to
+space its dashes, and it only ever reached a document that had also
+blown the width budget. A draft that stayed inside budget shipped its
+tight dashes untold, and one did — seven of them. **Advice carried
+inside another rule's complaint is not a rule.** It fires on that rule's
+trigger, not on its own.
+
+**Truncation is its own named failure, never a valid draft.** This is
+the hazard the ARB path does not have: a document cut off mid-body
+still has front matter that parses and a body that is merely short. The
+tool sizes a token budget from the source, sends it, and reads
+`finish_reason` back; `length` widens the budget and re-asks the *base*
+prompt unaltered, because the model did nothing wrong and must not be
+told it did. A budget the operator pinned with `--max-tokens` is not
+widened. An endpoint that reports no reason at all is a blind spot, not
+a pass — the structural comparison catches truncation there, by the
+blocks that never arrived. A draft whose prose is under half the
+source's length is complained about separately, counted in codepoints so
+a script change does not read as a summary.
+
+The retry loop is `translate-arb`'s: the corrective re-ask quotes the
+rejected document and the comparator's own complaint, never a stack of
+prior ones, and `--retries` (default 3) is the budget. Worked examples
+are `--sibling <path>`, repeatable — the same document in the locales
+that already have it, quoted whole on the first rejection only. Each is
+gated through the comparator against this very source, because an
+example that would itself be rejected teaches exactly the mistake, and
+one that does not fit `--example-bytes` is skipped whole rather than
+truncated: a half document is the failure mode being policed.
+
+What the comparator cannot judge, the prompt states: register and tone,
+the glossary's terminology, the hard wrap, and the claim rule —
+translate every claim at exactly the strength the source makes it,
+never strengthen one, never introduce an absolute the source does not
+make. A translation that upgrades a hedge into a guarantee is a legal
+defect, not a stylistic improvement, and nothing structural will ever
+see it.
+
+`--output` is derived when the input path has a directory component
+that *is* the source locale's tag: `…/articles/en/why.md` drafted to
+`de` becomes `…/articles/de/why.md`. A path with no such component, or
+with two, is refused with the operator told to pass `--output` — a
+stated rule with a loud failure, not a guess. An existing output is
+never overwritten without `--force`, and a rejected draft is kept as
+`<output>.partial` so a reviewer reads it beside the complaint.
+
 ## The refusals
 
 Same posture as everywhere else in nokre
@@ -605,6 +813,38 @@ refused loudly, at compile time, with the reason in the error.
   localized under [The chrome nokre writes](#the-chrome-nokre-writes)
   above. A BCP 47 locale tag is itself ASCII, so a per-locale route
   argument is fine; `note~fa` is a reference, `note~یادداشت` is not.
+- **No Persian digits as ordered-list markers in Markdown source.** A
+  Persian author wrote `۱.` to get Persian numerals and got eight
+  run-on paragraphs, because the parser reads ASCII `1.` and nothing
+  else. Widening it was refused: Persian prose is full of Persian
+  digits, so admitting `۱.` as a marker imports the `8. April 2026`
+  hazard — a date opening a line, silently becoming a list — into every
+  Persian paragraph, and the sentence that trips it is ordinary
+  writing rather than a mistake. Source stays ASCII and rendering
+  localises, which is the same split the whole of this section rests
+  on: `1.` in the file, `۱.` on the screen (see the digit shapes
+  above, and [markdown.md](markdown.md)). Consequence, stated: a
+  Persian `.md` reads with Latin ordinals in a plain text editor and
+  renders with Persian ones. That is the price of the parser having one
+  grammar in every language.
+- **No locale→quotation-mark table, and no quote rule in the
+  comparator.** Asked for after a German draft kept ASCII `"` where
+  German typography sets `„…"`. Three grounds, and the first is
+  decisive. **There is no convention here to enforce**: of the first
+  consumer's four content locales, English and Turkish both use ASCII
+  quotes and only Persian localises them (to `«…»`, and it did so
+  without being told). A rule would be nokre imposing one locale's
+  habit on a corpus that does not share it. Second, a table would make
+  nokre assert a typographic convention for every locale it might ever
+  draft — a claim it cannot verify and that has real exceptions, Swiss
+  German setting `«…»` where Germany sets `„…"`. A wrong entry is worse
+  than no entry, and it would be nokre's to be wrong about. Third, the
+  weaker version — hold the draft to the source's *count* of quote
+  pairs, which needs no table — is not shape but punctuation fidelity,
+  and languages legitimately differ about where they quote at all.
+  **This is a parameter, not a hole**: a consumer that wants German
+  quotes states it in its own glossary, which is exactly the seam for a
+  convention nokre does not own.
 
 ## Against gen_l10n
 

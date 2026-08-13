@@ -47,7 +47,7 @@ the moment `append` returns.
 | `` `code` `` | a `code` span |
 | `[label](destination)` | an inline link span — a route, or an external URL on the allowlist (below) |
 | `- ` / `* ` / `+ ` | an unordered `list` |
-| `1. ` / `1) ` | an ordered `list`, starting at the first number |
+| `1. ` / `1) ` | an ordered `list`, starting at the first number — ASCII digits in the source, whatever the language (below) |
 | ` ``` ` / `~~~` fences | `code_block` |
 | `> ` | `blockquote` |
 | GFM tables | `table` / `row` / `cell` |
@@ -135,6 +135,25 @@ not control must never be able to raise:
   table comes through as literal text.
 - **List nesting past three levels.** The fourth level's items join the
   third level's item rather than opening a list `append` would refuse.
+
+## A list's ordinals are rendering, and the source is ASCII
+
+The marker is derived from the list and the item's position — a source
+`1.` is a *statement that this is an ordered list*, not the glyph the
+reader gets. What the reader gets is the app's own language's digits
+(`App.digits`, from `App.setLocale`): a Persian document numbers ۱ ۲ ۳
+and an English one 1 2 3, off the same file
+([localization.md](localization.md)). The DOM edition reaches the same
+answer through `ol.list:lang(fa) { list-style-type: persian; }` in the
+generated sheet, so a page and a screen number a document alike.
+
+The parser reads ASCII markers only, and that is a refusal rather than
+an omission. Persian prose is full of Persian digits; admitting `۱.` as
+a marker would import the `8. April 2026` hazard — a date that opens a
+line, silently becoming a list — into every Persian paragraph, where
+the sentence that trips it is ordinary writing. The cost is stated:
+a Persian `.md` reads with Latin ordinals in a text editor and renders
+with Persian ones.
 
 ## Heading levels are rebased
 

@@ -31,6 +31,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/geometry.zig](../../src/core/geometry.zig) | `Point`, `Size`, `Rect` — integers only |
 | [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted shades |
 | [src/core/text.zig](../../src/core/text.zig) | families, type scale, `Measurer` interface |
+| [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
 | [src/core/bidi_tables.zig](../../src/core/bidi_tables.zig) | its generated UCD bidi-class tables (`tools/gen-bidi-tables.py`) — regenerated, never edited |
 | [src/core/icon_names.zig](../../src/core/icon_names.zig) | the generated icon-name table from lucide-static (`tools/gen-icon-names.py`), regenerated only with the face itself |

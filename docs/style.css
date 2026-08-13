@@ -597,6 +597,8 @@ ul.list, ol.list {
 }
 ul.list { list-style: disc; }
 ol.list { list-style: decimal; }
+ol.list:lang(fa) { list-style-type: persian; }
+ol.list:lang(ar) { list-style-type: arabic-indic; }
 li { display: list-item; }
 li::marker { color: var(--ink); }
 li > ul.list, li > ol.list { margin-top: var(--list-gap); }
