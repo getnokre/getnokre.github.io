@@ -569,12 +569,18 @@ and re-run with `--fill`.
 ## What the build checks
 
 Everything above is reachable from the catalog alone, which is why the
-compiler can hold it. Two rules are not: whether a key anything
-*defines* is a key anything *uses*, and whether a word on screen came
-from the catalog at all. Both need the app's sources, and no `@import`
+compiler can hold it. Three rules are not: whether a key anything
+*defines* is a key anything *uses*, whether a word on screen came from
+the catalog at all, and whether the words are the ones the product
+decided on. The first two need the app's sources, and no `@import`
 reaches those — a check written as a test would have to name every
 source file to read it, and the file it forgot is the one hiding the
-defect.
+defect. The third needs a vocabulary that is shared by more than one
+package and therefore lives above any module root, where `@embedFile`
+does not reach; and it could not move into the compiler even if it did,
+because the same multi-needle scan over a real-scale corpus cost 71.6 s
+and 2.0 GB at comptime against 0.27 s natively — Zig's comptime is a
+tree-walking interpreter, and the search itself is the cost.
 
 So they run beside the compiler, in a host tool the build attaches:
 
@@ -656,6 +662,82 @@ is the edit in front of you belongs on the build that edit runs.
   count. nokre's own documentation site is that app; the key rule keeps
   running there, because a key nothing references is dead copy in any
   number of languages.
+- **The product's fixed words are the words that landed.** A drafted
+  value that ignores one of them is well-formed, plausible and wrong,
+  which is the defect no structural check can see and the reason the
+  vocabularies exist at all ([The glossary](#the-glossary)). What was
+  missing is the other half: nothing compared a *landed* catalog
+  against the list. `.glossary` names the directory those files live
+  in, one `<locale>.txt` per destination language — the same files the
+  drafting tools fold into their prompts, read a second time as a rule:
+
+  ```zig
+  .l10n = .{
+      .template = b.path("src/l10n/app_en.arb"),
+      .src = b.path("src"),
+      .glossary = b.path("../../l10n/glossary"),
+  },
+  ```
+
+  The rule is derived from the mappings already written and adds no
+  vocabulary of its own: **where the English template value uses a
+  source term, that locale's value must use the term's destination.**
+  There is deliberately no forbidden-word list, which would be a second
+  vocabulary to keep in step with the first. Unset checks nothing; a
+  directory that names no vocabulary any catalog can use fails rather
+  than passing quietly.
+
+  The catalogs judged are the template's own siblings — every `.arb` in
+  its directory, the set `translate-arb --dir` levels — and a locale
+  with no file in the vocabulary directory is left alone.
+
+  Matching is by substring, which is what survives the morphology of
+  real destination languages: *halka* is inside *halkanın*, *Guthaben*
+  inside *Guthabenstand*, ارتباط inside ارتباطات. Four things are
+  normalized first, each because one language writes one word two ways
+  — Turkish dotted and dotless i, the Arabic and Persian letter forms
+  of a single letter, Persian harakat (optional orthography), and the
+  zero-width non-joiner and tatweel, which are spacing rather than
+  spelling. Turkish stem-final *k*, *p*, *t* and *ç* voice before a
+  vowel suffix — *anonimlik* becomes *anonimliği* — so a destination
+  ending in one is matched in both forms.
+
+  A term's singular and plural are one **family**, and either
+  destination satisfies either source: Turkish takes no plural after a
+  numeral and Persian's خدمات shares no letters with خدمت. The rule
+  judges which word was chosen, never which inflection.
+
+  Two things scope a match, and neither is an exemption list. **A
+  never-translate term consumes the text it covers**, so the word
+  inside the product's own name is not an occurrence of that word.
+  **The longest entry wins**, and an entry may be a phrase, so a legal
+  document's title written as its own entry takes the word inside it
+  and stops being read as the product's channel of the same name.
+  Matches are word-bounded and no stretch of text is claimed twice.
+
+  What is left over is genuine sense ambiguity — اتصال is right for a
+  connection to a server, while a Connection between two people is
+  ارتباط — and that is declared per key in the template's
+  `@`-metadata, beside `identical` and on the same terms:
+
+  ```json
+  "@splashOfflineMessage": {
+    "sense": {
+      "fa": { "connection": "reaching the server, not a Connection between two people" }
+    }
+  }
+  ```
+
+  A locale maps each source term this message does not use in the
+  product's sense to the reason it does not, **and the grounds are not
+  optional** — only somebody who reads the language knows the word
+  covers two things. The declaration **decays in both directions**,
+  which is what keeps it from becoming an exemption list: one whose
+  template value does not use that term at all is a finding, and so is
+  one whose translation uses the destination anyway, because that
+  declaration describes nothing. Naming a term the locale's vocabulary
+  does not map, or a locale no judged catalog answers to, is a finding
+  too.
 
 ## Drafting a translation
 
@@ -818,6 +900,10 @@ names, code identifiers. One file per destination locale: a mapping's
 right-hand side is in one language. A malformed line is fatal, never
 skipped; a glossary that quietly ignored half its entries would report
 success having enforced nothing.
+
+The same files are a rule once the draft has landed, in the build's own
+check rather than in this tool ([What the build checks](#what-the-build-checks)).
+Folding the list into a prompt asks; reading the catalog back tells.
 
 ## Drafting a document
 
