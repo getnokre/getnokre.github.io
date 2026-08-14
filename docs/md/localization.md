@@ -108,12 +108,15 @@ is accepted (`pt-BR`, `pt_BR`); `L.tag` publishes the BCP 47 spelling
 whichever was written, and a tag that is not one at all (`Persian`,
 `tr-`) fails the build where the catalog is read. `@@`-prefixed
 provenance (`@@author`, `@@last_modified`, `@@x-…`) is accepted and
-ignored. Each message may carry `@message` metadata; nokre reads
-`placeholders` and `identical`
-([Words a language really shares](#words-a-language-really-shares)),
-and only the template may carry any of it at all
-([What the compiler checks](#what-the-compiler-checks)) — `description`
-and `example` are for translators and tooling.
+ignored. Each message may carry `@message` metadata, and only the
+template may carry any of it at all
+([What the compiler checks](#what-the-compiler-checks)). Three fields
+are read: `placeholders`, `identical`
+([Words a language really shares](#words-a-language-really-shares)) and
+`sense` ([What the build checks](#what-the-build-checks)) — that last
+one by the build's own checker rather than by the compiler, which
+ignores it. `description` and `example` are for translators and
+tooling.
 
 ```json
 {
@@ -223,52 +226,12 @@ shaping direction from whether it was Arabic *script*, and Extended
 Arabic-Indic digits are Arabic script and bidi class EN — so `۷۴`
 shaped right-to-left and printed `۴۷`. A Persian balance screen showed
 47 credits to a reader holding 74, beside an ASCII table that was
-correct. The two questions are separated now (which face, which
-direction) and `tests/golden.zig` asserts the order in pixels. There is no `dir` attribute and no per-locale direction
+correct. Face and direction are two questions now, not one, and
+`tests/golden.zig` asserts the order in pixels. There is no `dir`
+attribute and no per-locale direction
 flag in ARB — a Persian string in an English locale and an English
 string in a Persian locale each lay out correctly on their own evidence.
 This never depends on the setting below.
-
-### A value that opens in the other direction
-
-There is one place where the string is not all the evidence there is,
-and it is the catalog: a value sits in a locale whose direction the
-`@@locale` tag already states. A Persian value that opens on a Latin
-token — `FQDN (مثلاً company.com)`, `iOS ۱۶ یا بالاتر`, a cloud vendor's
-name — has `L` as its first strong character, so P2 lays the whole line
-left to right inside a right-aligned page, with the sentence-final full
-stop at the wrong end. Nothing in the bytes looks wrong; the defect
-exists only once the text is laid out.
-
-`Bundle` settles that at comptime, where both facts are in view: a value
-whose locale disagrees with its own first strong character is compiled
-with the matching mark in front of it — U+200F RIGHT-TO-LEFT MARK in an
-RTL locale, U+200E LEFT-TO-RIGHT MARK in an LTR one. The catalog keeps
-the author's bytes; `tr`, `trAny`, `fmt`, `fmtIn` and `chrome` return
-the corrected ones. No consumer call changes, and **user-supplied text
-is untouched, because it never passes through a bundle.**
-
-Three rules bound it, and each is load-bearing:
-
-- **Only a value carrying both directions is corrected.** A value
-  written in one script is that script whatever locale it sits in:
-  `English` in a Persian language picker stays a Latin label, `فارسی`
-  in an English one stays a Persian one. That is a structural
-  distinction rather than an exemption list, and it is what keeps this
-  from overriding the rule above.
-- **A value that already opens with a bidi control is left exactly as
-  written.** The author stated the direction and nokre defers. Both
-  marks are *strong* characters, so without this rule a deliberate LRM
-  at the head of a Persian value would read as a disagreement and take
-  an RLM in front of it — inverting the override it was written to
-  state.
-- **Only the leading position is read.** A mark placed inside a value is
-  the mechanism for mixed content and is never touched.
-
-A value that opens with a **placeholder** is left alone too: its first
-strong character belongs to an argument no catalog can see. That case is
-exactly what deriving direction from the rendered string covers, which
-is why that derivation stays.
 
 **Chrome is decided by you.** Whether the interface mirrors —
 navigation order, field labels, chevrons, toggle knobs, scrollbars,
@@ -303,6 +266,47 @@ and the overlay scrollbar moves to the left. Two things deliberately do
 QR code's modules never mirror — a mirrored symbol does not scan. The
 vertical axis is direction-blind throughout, so `↑`/`↓` in a radio group
 mean the same thing in both, while `←`/`→` swap with the layout.
+
+### A value that opens in the other direction
+
+One place needs both answers at once, and it is the catalog: a value
+sits in a locale whose direction the `@@locale` tag already states, so
+the string is not all the evidence there is. A Persian value that opens
+on a Latin token — `FQDN (مثلاً company.com)`, `iOS ۱۶ یا بالاتر`, a
+cloud vendor's name — has `L` as its first strong character, so P2 lays
+the whole line left to right inside a right-aligned page, with the
+sentence-final full stop at the wrong end. Nothing in the bytes looks
+wrong; the defect exists only once the text is laid out.
+
+`Bundle` settles that at comptime, where both facts are in view: a value
+whose locale disagrees with its own first strong character is compiled
+with the matching mark in front of it — U+200F RIGHT-TO-LEFT MARK in an
+RTL locale, U+200E LEFT-TO-RIGHT MARK in an LTR one. The catalog keeps
+the author's bytes; `tr`, `trAny`, `fmt`, `fmtIn` and `chrome` return
+the corrected ones. No consumer call changes, and **user-supplied text
+is untouched, because it never passes through a bundle.**
+
+Three rules bound it, and each is load-bearing:
+
+- **Only a value carrying both directions is corrected.** A value
+  written in one script is that script whatever locale it sits in:
+  `English` in a Persian language picker stays a Latin label, `فارسی`
+  in an English one stays a Persian one. That is a structural
+  distinction rather than an exemption list, and it is what keeps this
+  from overriding "text is decided by the text".
+- **A value that already opens with a bidi control is left exactly as
+  written.** The author stated the direction and nokre defers. Both
+  marks are *strong* characters, so without this rule a deliberate LRM
+  at the head of a Persian value would read as a disagreement and take
+  an RLM in front of it — inverting the override it was written to
+  state.
+- **Only the leading position is read.** A mark placed inside a value is
+  the mechanism for mixed content and is never touched.
+
+A value that opens with a **placeholder** is left alone too: its first
+strong character belongs to an argument no catalog can see. That case is
+exactly what deriving direction from the rendered string covers, which
+is why that derivation stays.
 
 ## The chrome nokre writes
 
@@ -446,7 +450,15 @@ deeper, rather than clipping the pill that carries it.
 
 Everything below is a build failure with the locale, message, and line
 in the error — the categories Flutter's gen_l10n reports at generation
-time, plus several it never checks:
+time, plus several it never checks.
+
+One precondition governs all of it: **Zig analyses lazily, so a
+`Bundle` nothing reaches is one nokre never checks.** A bundle a screen
+reads from is analysed by that read, and every rule below runs. A bundle
+held for a language nothing publishes yet, or reached only from a branch
+this build did not take, is inert — write `comptime { _ = L; }` beside
+the declaration, and the catalog is checked because it is named rather
+than because some call site happens to mention it.
 
 - **Key parity, both directions.** A locale missing a template key
   fails; a locale carrying a key the template dropped fails too. There
@@ -512,17 +524,15 @@ time, plus several it never checks:
   argument, unknown argument, string where a count belongs, a
   non-civil-date value where a date belongs — each is a compile error
   naming the message and the field.
-- **A translation that is the template's own words.** Key parity proves
-  a message *exists* in every locale; it says nothing about whether
-  anyone wrote it. A value byte-for-byte the template's is either a word
-  the language genuinely shares or a key the drafting pipeline never
-  reached, and the catalog cannot tell them apart on its own — so the
-  first is declared and the second fails
+- **A translation that is the template's own words.** A value
+  byte-for-byte the template's fails unless the language really does
+  say it that way and the template records why — two derived
+  exemptions aside
   ([Words a language really shares](#words-a-language-really-shares)).
 
 The plural rules live in
-[src/l10n/plural_rules.zig](../src/l10n/plural_rules.zig) — some fifty
-languages across nineteen rule families, integer operands only (which
+[src/l10n/plural_rules.zig](../src/l10n/plural_rules.zig) — eighty
+language tags across nineteen rule families, integer operands only (which
 is what collapses CLDR's grammar to plain arithmetic). A language not
 in the table errors only when one of its messages actually uses
 `plural`, and the error says where to add the row.
@@ -599,9 +609,11 @@ are losses rather than simplifications: **the first finding stops the
 build**, so a catalog with nine of these is nine compiles rather than
 one report; and there is **no passing tally**, so a run that exempts
 everything looks the same as a run with nothing to exempt. The trade is
-deliberate — the rule is unconditional, reaches every consumer's build
-with no configuration, and needs no second implementation in whatever
-tool a consumer happens to run.
+deliberate. This rule is unconditional and rides the compile itself, so
+it reaches every build that compiles the bundle; the host checker beside
+it ([What the build checks](#what-the-build-checks)) reports a whole run
+at once and refuses a pass with nothing behind it, and is reached only
+by an app that declared it.
 
 The drafting tool inherits all of it, because its validator is this
 compiler ([Drafting a translation](#drafting-a-translation)): a model
@@ -632,7 +644,9 @@ of and cannot walk a tree to find out what the names are, so a rule
 whose subject is "every document under here" has no comptime form at
 all.
 
-So they run beside the compiler, in a host tool the build attaches:
+So they run beside the compiler, in a host tool the build attaches —
+one declaration, whose optional halves are what turn on the rules that
+need more than a catalog and a source tree:
 
 ```zig
 const app = nokre.addApp(nokre_dep, .{
@@ -640,23 +654,30 @@ const app = nokre.addApp(nokre_dep, .{
     .l10n = .{
         .template = b.path("src/l10n/app_en.arb"),
         .src = b.path("src"),
+        // Rule three: the vocabularies the drafting tools already take.
+        .glossary = b.path("../../l10n/glossary"),
+        // Rules four and five: the Markdown collections this app ships.
+        .documents = &.{ b.path("src/content/articles"), b.path("src/content/docs") },
     },
 });
 ```
 
-Unset is the default and checks nothing — an app with no catalog, or a
-generator whose words live somewhere this rule would not understand,
-says nothing and gets nothing. Set, the findings ride the **app's own
-artifact**, so a plain `zig build` runs them.
+`.l10n` unset is the default and checks nothing — an app with no
+catalog, or a generator whose words live somewhere these rules would not
+understand, says nothing and gets nothing. `.glossary` and `.documents`
+are the same bargain one rule down: unset, that rule checks nothing;
+set, it refuses to report a pass it did not earn. Set, the findings ride
+the **app's own artifact**, so a plain `zig build` runs them.
 
 That is deliberately not where the store listing reports
 ([services.md](services.md)). A listing finding is about copy that
 changes late, long after the code around it settled, and it blocks
 what a release is assembled from rather than the developer's next
-compile. These two are about code being edited now: an orphaned key
-arrives in the same commit that stopped using it, and a hardcoded
-string arrives in the same commit that typed it. A rule whose subject
-is the edit in front of you belongs on the build that edit runs.
+compile. These five are about code being edited now: an orphaned key
+arrives in the same commit that stopped using it, a hardcoded string
+arrives in the same commit that typed it, and a heading a reviewer
+deleted arrives in the commit that deleted it. A rule whose subject is
+the edit in front of you belongs on the build that edit runs.
 
 - **Every key is referenced.** A key in the template that nothing under
   `src` names is reported by name. A key is named by its enum literal
@@ -678,8 +699,8 @@ is the edit in front of you belongs on the build that edit runs.
   not the catalog's (`words_from_catalog`). A string literal reaching
   one of nokre's text-taking element fields — `label`, `title`,
   `content`, `description`, `detail`, `placeholder`, `problem`,
-  `options`, `section`, `name` — is reported with the field and the
-  method that took it. The set is derived from the element structs and
+  `options`, `text`, `section`, `name` — is reported with the field and
+  the method that took it. The set is derived from the element structs and
   its coverage is a comptime check, so an element that grows a field of
   words cannot be missed; so is the arity of every builder the scan
   looks inside, which is what tells `Cursor.text(content)` from a
@@ -687,9 +708,13 @@ is the edit in front of you belongs on the build that edit runs.
 
   This one is a token scan and says so: it reads what is written at the
   call site, not what a type would prove, so it sees a literal and
-  never a variable holding one. A `test` block is skipped — a test
-  builds screens nobody reads — and so is a code block, because code is
-  not translated.
+  never a variable holding one. A type could have carried the rule
+  instead — a wrapper every word passes through — and that is the
+  rejected alternative worth naming: the escapes such a type needs
+  (user data, server payloads, operator scaffolding) are most of the
+  traffic, so the wrapper would be named more often than not and stop
+  being read. A `test` block is skipped — a test builds screens nobody
+  reads — and so is a code block, because code is not translated.
 
   One exemption, and it is declared rather than guessed: `dev_gate`
   names the consumer's own comptime flag — the build option under
@@ -715,27 +740,20 @@ is the edit in front of you belongs on the build that edit runs.
 - **The product's fixed words are the words that landed.** A drafted
   value that ignores one of them is well-formed, plausible and wrong,
   which is the defect no structural check can see and the reason the
-  vocabularies exist at all ([The glossary](#the-glossary)). What was
-  missing is the other half: nothing compared a *landed* catalog
-  against the list. `.glossary` names the directory those files live
-  in, one `<locale>.txt` per destination language — the same files the
-  drafting tools fold into their prompts, read a second time as a rule:
-
-  ```zig
-  .l10n = .{
-      .template = b.path("src/l10n/app_en.arb"),
-      .src = b.path("src"),
-      .glossary = b.path("../../l10n/glossary"),
-  },
-  ```
+  vocabularies exist at all ([The glossary](#the-glossary)). `.glossary`
+  names the directory those same files live in, one `<locale>.txt` per
+  destination language, read a second time here as a rule over what
+  landed.
 
   The rule is derived from the mappings already written and adds no
   vocabulary of its own: **where the English template value uses a
   source term, that locale's value must use the term's destination.**
   There is deliberately no forbidden-word list, which would be a second
-  vocabulary to keep in step with the first. Unset checks nothing; a
+  vocabulary to keep in step with the first. Unset checks nothing. A
   directory that names no vocabulary any catalog can use fails rather
-  than passing quietly.
+  than passing quietly, and so does a run that judged catalogs and found
+  not one of the vocabulary's terms in the template — a pass with
+  nothing behind it reads exactly like a pass.
 
   The catalogs judged are the template's own siblings — every `.arb` in
   its directory, the set `translate-arb --dir` levels — and a locale
@@ -798,21 +816,19 @@ is the edit in front of you belongs on the build that edit runs.
   is put through the same scanner the catalogs go through: a
   byte-order mark, invalid UTF-8, U+FFFD, a control character, and a
   run that is a UTF-8 sequence read back in Latin-1 or Windows-1252 —
-  reported with the text the file should have held.
-
-  ```zig
-  .l10n = .{
-      .template = b.path("src/l10n/app_en.arb"),
-      .src = b.path("src"),
-      .documents = &.{ b.path("src/content/articles"), b.path("src/content/docs") },
-  },
-  ```
+  reported with the text the file should have held. The source language's
+  own documents are scanned with the rest: corruption is a property of a
+  file, not of a translation.
 
   A collection is a directory holding **one subdirectory per locale,
   named by the tag**; which of them is the source is the template's
   `@@locale` and is not declared twice. A declared collection holding
   no `.md` file at all fails rather than passing: a rule that never
-  opened a file reads exactly like a rule that found nothing wrong.
+  opened a file reads exactly like a rule that found nothing wrong. So
+  does one with no directory for the source language, which leaves every
+  other language nothing to be held against — and a `.md` lying directly
+  under the collection, in no locale directory at all, is a finding on
+  its own.
 - **A landed translation is still the shape of its source.**
   `translate-md` refuses a draft whose heading outline, block
   sequence, list kinds, link destinations or code spans differ from the
@@ -831,12 +847,12 @@ is the edit in front of you belongs on the build that edit runs.
   reworded, because the sentence that teaches a model is the sentence
   that teaches a reviewer and a second copy would drift. And the
   front-matter *schema* does not arrive here: nokre owns the grammar
-  and never the schema ([static-sites.md](static-sites.md)), so what
-  this rule holds a block to is what the grammar can see on its own —
-  the same keys, in the same order, each value in the same written
-  form. The one value it reads is the locale: where exactly one of the
-  source's fields carries the source's own tag, that field must carry
-  this document's tag. Byte-equality of a *structural* value is
+  and never the schema ([Drafting a document](#drafting-a-document)),
+  so what this rule holds a block to is what the grammar can see on
+  its own — the same keys, in the same order, each value in the same
+  written form. The one value it reads is the locale: where exactly one
+  of the source's fields carries the source's own tag, that field must
+  carry this document's tag. Byte-equality of a *structural* value is
   `translate-md`'s, at drafting time, where the schema is stated.
 
 ## Drafting a translation

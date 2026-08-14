@@ -87,7 +87,12 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    comptime check there refuses to compile a union member the cursor
    cannot spell. No `...Id` twin: those four exist for the leaves real
    screens patch mid-flight, and a new one earns its twin from a call
-   site, not from symmetry.
+   site, not from symmetry. A text-shaped field is also the l10n
+   check's business: every one is classified as *words* or as *data* in
+   [l10n/check/literals.zig](../../src/l10n/check/literals.zig), and an
+   unclassified one is a compile error there rather than a rule that
+   quietly stops covering an element
+   ([localization.md](../localization.md), "What the build checks").
 2. Layout rules in [layout.zig](../../src/core/layout.zig) — including
    the element's stance on the advised margin (`Ctx.margin`): apply it,
    the default; or, only if the element must reach an edge to work,
@@ -251,6 +256,18 @@ way. The shell's complete job description is in
   number is a line of each. Change either surface and the bump is the
   gate's answer, not yours ([testing.md](../testing.md), "The revision's
   own gate").
+- **The build-time l10n checker's own rules**, in `zig build test`:
+  [src/l10n/check](../../src/l10n/check/check_test.zig) has no step of
+  its own, because the tool is not something anyone runs by hand — it is
+  a host executable that rides the app artifact of every consumer who
+  declares `AppOptions.l10n`, so the only thing to name here is the
+  suite. What it refuses is [localization.md](../localization.md), "What
+  the build checks"; what keeps it from rotting is that it derives its
+  sets from nokre's own declarations instead of listing them — the
+  reserved keys from `App.Chrome` and the month words
+  (`l10n.reserved_keys`), the word-carrying fields from the element
+  structs — so a nokre that grows one is a compile error in the checker
+  rather than a rule that silently stops covering it.
 - Design-system proofs: palette contrast and minimum target size are
   asserted in unit tests — a palette byte or metric that breaks WCAG
   compliance fails the build ([accessibility.md](../accessibility.md)).

@@ -56,6 +56,9 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/markdown.zig](../../src/core/markdown.zig) | the `document` element's parser: the Markdown subset, literal degradation of the rest ([../markdown.md](../markdown.md)) |
 | [src/l10n/l10n.zig](../../src/l10n/l10n.zig) | ARB catalogs compiled at comptime: `Bundle`, cross-locale validation, `tr`/`fmt`/`resolve` ([../localization.md](../localization.md)) |
 | [src/l10n/arb.zig](../../src/l10n/arb.zig) / [plural_rules.zig](../../src/l10n/plural_rules.zig) | comptime ARB + ICU-subset parsing; CLDR integer plural rules |
+| [src/l10n/encoding.zig](../../src/l10n/encoding.zig) | the byte scan every catalog is put through before it is parsed, and every declared document after it — mojibake, BOM, invalid UTF-8, U+FFFD, stray controls |
+| [src/l10n/check/](../../src/l10n/check/main.zig) | the five rules comptime cannot reach, as a host executable built on the host graph and attached to a *consumer's* app artifact, so a plain `zig build` there runs them ([../localization.md](../localization.md), "What the build checks"). It imports nokre rather than re-reading anything: what a key is, which fields carry words, and what a document's shape is each have one implementation |
+| [src/l10n/translate/](../../src/l10n/translate/main.zig) | the two drafting tools (`translate-arb`, `translate-md`) and the readers they share — host-only, opt-in, in no app |
 | [src/workers/workers.zig](../../src/workers/workers.zig) | compute actors: registry, framing, UI-thread delivery ([workers.md](workers.md)) |
 | [src/workers/codec.zig](../../src/workers/codec.zig) | comptime-checked message codec |
 | [src/workers/thread.zig](../../src/workers/thread.zig) / [post.zig](../../src/workers/post.zig) | native / web worker transports |

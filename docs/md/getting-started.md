@@ -1542,6 +1542,28 @@ const L = h.l10n.Bundle(&.{
 });
 ```
 
+Two of the rules that keep a catalog honest are not reachable from
+inside the compiler — a key nothing uses, and a word on screen that
+came from no catalog — because neither is a fact about the catalog
+alone. Those ride a checker the build attaches to your app's own
+artifact, so a plain `zig build` runs them. It is one declaration back
+in `build.zig`:
+
+```zig
+    const app = nokre.addApp(nokre_dep, .{
+        // …
+        .l10n = .{
+            .template = b.path("src/l10n/notes_en.arb"),
+            .src = b.path("src"),
+        },
+    });
+```
+
+Unset checks nothing, which is where Part 1 left it. Three further
+rules turn on with two further paths — the product's own vocabularies,
+and the Markdown collections a content-shipping app publishes — and all
+five are [localization.md](localization.md#what-the-build-checks).
+
 The current language is not a `State` field: the *chosen* locale is the
 App's own state (`App.setLocale`, a BCP 47 tag), so every screen reads
 one live fact and none can be forgotten when it changes. One small
@@ -2220,6 +2242,7 @@ zig build web                   # kitchen sink's site for the browser → zig-ou
 zig build serve                 # the same site at http://localhost:8000 (-Dport=…)
 zig build check-targets         # compile-check every platform stub
 zig build translate-arb -- --input <template.arb> --dest fa   # draft a catalog (LLM_BASE_URL)
+zig build translate-md  -- --input <file.md> --dest fa        # the same for one Markdown document
 ```
 
 Inside your project:

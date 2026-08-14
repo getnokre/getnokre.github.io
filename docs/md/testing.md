@@ -883,7 +883,7 @@ Workflow:
 
 ## The revision's own gate
 
-`nokre.revision` is what four pins in three repositories assert, and it is
+`nokre.revision` is what every consumer's comptime pin asserts, and it is
 hand-bumped. A hand-bumped constant is only as good as the memory behind it:
 revision 53 shipped `dom.Csp`, `dom.CspError`, `Document.csp` and
 `LocaleStub.csp` and left the number at 52. Every gate here passed. It surfaced
