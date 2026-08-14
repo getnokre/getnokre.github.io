@@ -444,7 +444,10 @@ time, plus several it never checks:
   a BOM, invalid UTF-8, U+FFFD and stray control characters, and the
   mojibake finding names the text the file should have held rather than
   only the line it is on
-  ([src/l10n/encoding.zig](../src/l10n/encoding.zig)).
+  ([src/l10n/encoding.zig](../src/l10n/encoding.zig)). The same scanner
+  reaches the documents a build declares rather than embeds
+  ([What the build checks](#what-the-build-checks)) — one set of rules,
+  two ways in.
 - **Plural completeness, per locale.** Each locale's plural is checked
   against *its own* CLDR integer categories: Russian without `few`
   fails naming a number it would mishandle; English with a `few`
@@ -569,10 +572,12 @@ and re-run with `--fill`.
 ## What the build checks
 
 Everything above is reachable from the catalog alone, which is why the
-compiler can hold it. Three rules are not: whether a key anything
+compiler can hold it. Five rules are not: whether a key anything
 *defines* is a key anything *uses*, whether a word on screen came from
-the catalog at all, and whether the words are the ones the product
-decided on. The first two need the app's sources, and no `@import`
+the catalog at all, whether the words are the ones the product decided
+on, whether the bytes of a document outside the catalog set are the
+bytes somebody typed, and whether a translated document still has its
+source's shape. The first two need the app's sources, and no `@import`
 reaches those — a check written as a test would have to name every
 source file to read it, and the file it forgot is the one hiding the
 defect. The third needs a vocabulary that is shared by more than one
@@ -580,7 +585,11 @@ package and therefore lives above any module root, where `@embedFile`
 does not reach; and it could not move into the compiler even if it did,
 because the same multi-needle scan over a real-scale corpus cost 71.6 s
 and 2.0 GB at comptime against 0.27 s natively — Zig's comptime is a
-tree-walking interpreter, and the search itself is the cost.
+tree-walking interpreter, and the search itself is the cost. The last
+two need a *directory*: comptime can embed a file it is given the name
+of and cannot walk a tree to find out what the names are, so a rule
+whose subject is "every document under here" has no comptime form at
+all.
 
 So they run beside the compiler, in a host tool the build attaches:
 
@@ -738,6 +747,56 @@ is the edit in front of you belongs on the build that edit runs.
   declaration describes nothing. Naming a term the locale's vocabulary
   does not map, or a locale no judged catalog answers to, is a finding
   too.
+- **A document's bytes are the bytes somebody typed.** The catalogs get
+  this from the compiler — every `.arb` a `Bundle` embeds is scanned
+  before it is parsed ([What the compiler
+  checks](#what-the-compiler-checks)) — and a repository that also
+  ships Markdown gets nothing, because an
+  article is read at build time from a path rather than embedded by
+  name. `.documents` names the collections, and every `.md` under one
+  is put through the same scanner the catalogs go through: a
+  byte-order mark, invalid UTF-8, U+FFFD, a control character, and a
+  run that is a UTF-8 sequence read back in Latin-1 or Windows-1252 —
+  reported with the text the file should have held.
+
+  ```zig
+  .l10n = .{
+      .template = b.path("src/l10n/app_en.arb"),
+      .src = b.path("src"),
+      .documents = &.{ b.path("src/content/articles"), b.path("src/content/docs") },
+  },
+  ```
+
+  A collection is a directory holding **one subdirectory per locale,
+  named by the tag**; which of them is the source is the template's
+  `@@locale` and is not declared twice. A declared collection holding
+  no `.md` file at all fails rather than passing: a rule that never
+  opened a file reads exactly like a rule that found nothing wrong.
+- **A landed translation is still the shape of its source.**
+  `translate-md` refuses a draft whose heading outline, block
+  sequence, list kinds, link destinations or code spans differ from the
+  source's ([Drafting a document](#drafting-a-document)) — and then
+  nothing ever asks again. A heading deleted in review, a destination
+  translated by hand, a list that lost an item: every one of those
+  passes the consumer's build, renders, and links nowhere. So the same
+  comparator runs over what is committed. `.documents` is the whole
+  declaration: within a collection the pairing is the file's own name
+  under each locale's directory, and a slug one language has and
+  another lacks is a finding by itself.
+
+  Two things are the comparator's and stay the comparator's. The
+  complaints are written *at a drafting model* — "you wrote X where the
+  source has Y" — and they are quoted here verbatim rather than
+  reworded, because the sentence that teaches a model is the sentence
+  that teaches a reviewer and a second copy would drift. And the
+  front-matter *schema* does not arrive here: nokre owns the grammar
+  and never the schema ([static-sites.md](static-sites.md)), so what
+  this rule holds a block to is what the grammar can see on its own —
+  the same keys, in the same order, each value in the same written
+  form. The one value it reads is the locale: where exactly one of the
+  source's fields carries the source's own tag, that field must carry
+  this document's tag. Byte-equality of a *structural* value is
+  `translate-md`'s, at drafting time, where the schema is stated.
 
 ## Drafting a translation
 
@@ -920,7 +979,10 @@ zig build translate-md -- --input content/articles/en/why.md --dest de \
 
 One file per run, named. Nothing here walks a directory: the consumer
 knows its own content layout and states it, and a tool that guessed
-would encode one repository's tree into a library.
+would encode one repository's tree into a library. What *is* pointed at
+a tree is the same comparator, over what is already committed
+([What the build checks](#what-the-build-checks)) — drafting is one
+moment and a document is edited for years.
 
 **The validator is nokre's own Markdown parser.** There is no comptime
 probe behind this one, so the comparator *is* the verdict rather than a
