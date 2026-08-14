@@ -108,8 +108,10 @@ is accepted (`pt-BR`, `pt_BR`); `L.tag` publishes the BCP 47 spelling
 whichever was written, and a tag that is not one at all (`Persian`,
 `tr-`) fails the build where the catalog is read. `@@`-prefixed
 provenance (`@@author`, `@@last_modified`, `@@x-…`) is accepted and
-ignored. Each message may carry `@message` metadata; nokre reads only
-`placeholders`, and only the template may carry any of it at all
+ignored. Each message may carry `@message` metadata; nokre reads
+`placeholders` and `identical`
+([Words a language really shares](#words-a-language-really-shares)),
+and only the template may carry any of it at all
 ([What the compiler checks](#what-the-compiler-checks)) — `description`
 and `example` are for translators and tooling.
 
@@ -466,6 +468,13 @@ time, plus several it never checks:
   argument, unknown argument, string where a count belongs, a
   non-civil-date value where a date belongs — each is a compile error
   naming the message and the field.
+- **A translation that is the template's own words.** Key parity proves
+  a message *exists* in every locale; it says nothing about whether
+  anyone wrote it. A value byte-for-byte the template's is either a word
+  the language genuinely shares or a key the drafting pipeline never
+  reached, and the catalog cannot tell them apart on its own — so the
+  first is declared and the second fails
+  ([Words a language really shares](#words-a-language-really-shares)).
 
 The plural rules live in
 [src/l10n/plural_rules.zig](../src/l10n/plural_rules.zig) — some fifty
@@ -473,6 +482,89 @@ languages across nineteen rule families, integer operands only (which
 is what collapses CLDR's grammar to plain arithmetic). A language not
 in the table errors only when one of its messages actually uses
 `plural`, and the error says where to add the row.
+
+## Words a language really shares
+
+Key parity proves every message *exists* in every locale. It cannot
+prove anyone wrote them: a drafting pipeline fills the keys that are
+*absent*, and a key holding the source language is, to every tool that
+looks, done. That is how forty English values per locale sat in a
+catalog a drafting run reported complete.
+
+So a translated value byte-for-byte the template's fails the build,
+unless one of three things is true. Two are derived, and no one may
+declare them; the third is declared in the template's `@`-metadata, with
+its grounds:
+
+```json
+"monthApr": "Apr",
+"@monthApr": {
+  "identical": { "de": "German writes this month's abbreviation exactly as English does." }
+}
+```
+
+The field maps a locale to the reason that locale writes the message in
+the template's own words. The locale is the other catalog's `@@locale`,
+verbatim — one that names no embedded catalog fails, and so does the
+template naming itself. **The grounds are not optional and may not be
+empty.** A declaration without them is a skip, a list of skips stops
+describing anything, and only somebody who reads the language can supply
+them: no rule derives that German writes *Sport*, *Bonus* and seven of
+the twelve month abbreviations as English does.
+
+Repeating one reason across the keys it covers is the cost, and it is
+smaller than it looks: a shared reason table keyed by an id would save
+*characters*, not entries — there is one entry per key either way — and
+it would buy that with a second thing to read, a second thing to keep in
+step, and two failure modes of its own. The reason stays beside the
+message it is about.
+
+The two derived exemptions:
+
+- **A value with no translatable text.** Strip the placeholders, the
+  counts and the date references, and what is left of `"{label}:
+  {date}"` is punctuation. Nobody translates punctuation, in any
+  language, so nobody has to say so. The literal text inside a plural or
+  select branch is the translator's and is kept — a wholly untranslated
+  plural is not machine punctuation. A codepoint counts as a word unless
+  it is an ASCII non-letter or falls in the punctuation, digit, currency
+  and symbol blocks: an unknown script reads as words on purpose,
+  because treating a word as a mark exempts a real untranslated value in
+  silence, while treating a mark as a word only asks for a declaration
+  somebody can write.
+- **A locale that names the template's own language.** `en_GB` against
+  an `en` template repeats it verbatim in over two hundred of the
+  kitchen sink's messages, and that is what a regional catalog *is*: a
+  handful of overrides, identity everywhere else. Demanding a
+  declaration for each of the rest would turn the channel into the skip
+  list it exists not to be. Identity carries information only across
+  languages, so the rule reads the primary subtag and stands down when
+  it matches.
+
+Both are refused as declarations for the same reason they are exempt:
+declaring one claims credit for what the derivation already covers, and
+the claim would outlive the derivation.
+
+**A declaration that stops describing an identity fails.** Translate the
+message and the declaration for it must go, naming the locale and the
+key. Without that, the channel decays into exactly the skip list its
+grounds are written to prevent.
+
+Two things a host tool could do here, `@compileError` cannot, and they
+are losses rather than simplifications: **the first finding stops the
+build**, so a catalog with nine of these is nine compiles rather than
+one report; and there is **no passing tally**, so a run that exempts
+everything looks the same as a run with nothing to exempt. The trade is
+deliberate — the rule is unconditional, reaches every consumer's build
+with no configuration, and needs no second implementation in whatever
+tool a consumer happens to run.
+
+The drafting tool inherits all of it, because its validator is this
+compiler ([Drafting a translation](#drafting-a-translation)): a model
+that answers with the source verbatim fails the probe and the draft is
+left as `.partial` with this error quoted. If the answer was right —
+the language really does say it that way — declare it in the template
+and re-run with `--fill`.
 
 ## What the build checks
 
