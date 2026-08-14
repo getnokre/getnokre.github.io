@@ -114,7 +114,8 @@ template may carry any of it at all
 are read: `placeholders`, `identical`
 ([Words a language really shares](#words-a-language-really-shares)) and
 `sense` ([What the build checks](#what-the-build-checks)) — that last
-one by the build's own checker rather than by the compiler, which
+one by the build's own checker and by the drafting tool's prompt
+([The glossary](#the-glossary)) rather than by the compiler, which
 ignores it. `description` and `example` are for translators and
 tooling.
 
@@ -652,11 +653,15 @@ at once and refuses a pass with nothing behind it, and is reached only
 by an app that declared it.
 
 The drafting tool inherits all of it, because its validator is this
-compiler ([Drafting a translation](#drafting-a-translation)): a model
-that answers with the source verbatim fails the probe and the draft is
-left as `.partial` with this error quoted. If the answer was right —
-the language really does say it that way — declare it in the template
-and re-run with `--fill`.
+compiler ([Drafting a translation](#drafting-a-translation)). It also
+asks the question a round earlier: an answer byte-for-byte the source's
+is refused at drafting time by the per-key check, with the two
+exemptions above derived there the same way, so a model that echoed the
+English is re-asked instead of costing the whole catalog a `.partial`
+with this compile error in it. What reaches the probe anyway — a value
+the check let through, or a locale it could not re-ask into shape —
+still fails here. If the answer was right, and the language really does
+say it that way, declare it in the template and re-run with `--fill`.
 
 ## What the build checks
 
@@ -913,11 +918,22 @@ quoted verbatim, and the run exits non-zero.
 
 Between requests a cheap per-key check earns a retry — a lost
 placeholder, a plural branch the language never selects, a trimmed
-prefix, a `#` that went missing. It is deliberately a subset of the
-validator: being wrong there costs one retry, not a catalog. A dropped
-placeholder is on both lists — the compiler refuses it now ("What the
-compiler checks") — and it stays here because a retry carrying the
-reason is worth more than a `.partial` the tool cannot explain. The
+prefix, a `#` that went missing, or the English source handed back
+unchanged. It is deliberately a subset of the validator: being wrong
+there costs one retry, not a catalog. Two rules are on both lists for
+the same reason. A dropped placeholder the compiler refuses now ("What
+the compiler checks"), and an answer identical to the source it refuses
+too — the identity rule under
+[Words a language really shares](#words-a-language-really-shares) — and
+both stay here because a retry carrying the reason is worth more than a
+`.partial` the tool cannot explain. The identity rule's **two derived
+exemptions are derived here as well**, off the same two facts: a value
+whose literal text carries no word (an ICU pattern, a lone placeholder)
+is not a translation anybody withheld, and a destination whose primary
+subtag is the template's is a regional catalog, which is identity
+everywhere it does not override. A check that refused either would
+spend a real catalog's whole retry budget on the keys that cannot be
+wrong. The
 re-ask happens at answer time and is never blind: the corrective prompt
 quotes the rejected answer and the check's own complaint, and from the
 first rejection onward it also quotes the same key's value from the
@@ -931,7 +947,10 @@ source's usage, a plural with no `#` gets none, a date skeleton is
 copied verbatim — because a model's canonical-ICU reflex rewrites
 exactly the shapes an unusual message deliberately uses, identically
 across models, and a complaint after the fact was measured (two
-models, seven attempts) not to talk either of them out of it.
+models, seven attempts) not to talk either of them out of it. The
+other thing it states is what the *words* have to be — the terms of the
+product's vocabulary this key's own English uses, and any second sense
+the template declares for them ([The glossary](#the-glossary)).
 `--retries` (default 3) is the per-key budget, spent by these
 rejections and by transport failures alike; a key that exhausts it is
 announced on its own line as it fails and again in the end-of-run
@@ -1028,13 +1047,13 @@ catalog whose wording is genuinely hard.
 
 ### The glossary
 
-`--glossary <path>` folds a term list into every prompt, and both
-drafting tools take it. Terminology drift is the one defect no
-structural check can see: a German draft in a consumer repo named one
-monetized unit five different ways across one app — including one word
-that means "acknowledgements", on the purchase screen's own title — and
-every one of those answers had the right placeholders and the right
-shape. A glossary is the only control for it.
+`--glossary <path>` folds a term list into the prompt, and both drafting
+tools take it. Terminology drift is the one defect no structural check
+can see: a German draft in a consumer repo named one monetized unit five
+different ways across one app — including one word that means
+"acknowledgements", on the purchase screen's own title — and every one
+of those answers had the right placeholders and the right shape. A
+glossary is the only control for it.
 
 The format is two lines' worth of grammar, because the file is written
 and reviewed by whoever owns the product's words:
@@ -1056,6 +1075,46 @@ success having enforced nothing.
 The same files are a rule once the draft has landed, in the build's own
 check rather than in this tool ([What the build checks](#what-the-build-checks)).
 Folding the list into a prompt asks; reading the catalog back tells.
+
+**What a key is told is what that key will be judged on.** A catalog's
+vocabulary runs to dozens of mappings and a UI string uses one of them
+or none, so `translate-arb` names in each request only the terms the
+message's own English actually uses. What decides *actually uses* is not
+a second reading — it is **the build rule's own matcher**, over the same
+template value, with the same folding, the same singular/plural family
+and the same longest-first consumption that lets a name take the word
+inside it. A term the matcher finds is named in the prompt and enforced
+on the catalog; a term it misses is neither named nor enforced. The
+instruction and the rule cannot drift apart, because there is only one
+implementation of the question and only one English for it to read.
+
+Sending all of them was the alternative, and it is what this replaced:
+every request carried the whole vocabulary whether or not a word of it
+appeared in the string, which said nothing about the message and buried
+the two or three lines that did.
+
+The **never-translate terms are not narrowed**, and the asymmetry is
+deliberate rather than an oversight. Nothing judges them — the rule
+derives itself from the mappings alone and never asks whether a name
+survived — so the argument above does not reach them. What does reach
+them is that a name can enter a request through the key's description,
+its example, or whatever a placeholder substitutes at run time, none of
+which a value-scoped matcher reads. They are also few: the first
+consumer's Persian file has three of them against fifty-seven
+mappings.
+
+`sense` reaches the prompt too, and it is the declaration a model most
+needs. A key that declares one is saying *this message does not use that
+word in the product's sense* — اتصال is right for reaching a server and
+wrong for a Connection between two people — so the fixed rendering
+leaves that key's terminology block and the declaration arrives in its
+place, with its **grounds quoted rather than reworded**. The grounds are
+a sentence somebody who reads the language wrote about that key, and a
+paraphrase would be the tool guessing at a distinction it cannot see.
+Only the destination locale's declarations are sent; another locale's
+are not this draft's business. This is the same data the build reads
+([What the build checks](#what-the-build-checks)) — declared once, in
+the template, and now spent twice.
 
 ## Drafting a document
 
