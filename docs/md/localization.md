@@ -229,6 +229,47 @@ flag in ARB — a Persian string in an English locale and an English
 string in a Persian locale each lay out correctly on their own evidence.
 This never depends on the setting below.
 
+### A value that opens in the other direction
+
+There is one place where the string is not all the evidence there is,
+and it is the catalog: a value sits in a locale whose direction the
+`@@locale` tag already states. A Persian value that opens on a Latin
+token — `FQDN (مثلاً company.com)`, `iOS ۱۶ یا بالاتر`, a cloud vendor's
+name — has `L` as its first strong character, so P2 lays the whole line
+left to right inside a right-aligned page, with the sentence-final full
+stop at the wrong end. Nothing in the bytes looks wrong; the defect
+exists only once the text is laid out.
+
+`Bundle` settles that at comptime, where both facts are in view: a value
+whose locale disagrees with its own first strong character is compiled
+with the matching mark in front of it — U+200F RIGHT-TO-LEFT MARK in an
+RTL locale, U+200E LEFT-TO-RIGHT MARK in an LTR one. The catalog keeps
+the author's bytes; `tr`, `trAny`, `fmt`, `fmtIn` and `chrome` return
+the corrected ones. No consumer call changes, and **user-supplied text
+is untouched, because it never passes through a bundle.**
+
+Three rules bound it, and each is load-bearing:
+
+- **Only a value carrying both directions is corrected.** A value
+  written in one script is that script whatever locale it sits in:
+  `English` in a Persian language picker stays a Latin label, `فارسی`
+  in an English one stays a Persian one. That is a structural
+  distinction rather than an exemption list, and it is what keeps this
+  from overriding the rule above.
+- **A value that already opens with a bidi control is left exactly as
+  written.** The author stated the direction and nokre defers. Both
+  marks are *strong* characters, so without this rule a deliberate LRM
+  at the head of a Persian value would read as a disagreement and take
+  an RLM in front of it — inverting the override it was written to
+  state.
+- **Only the leading position is read.** A mark placed inside a value is
+  the mechanism for mixed content and is never touched.
+
+A value that opens with a **placeholder** is left alone too: its first
+strong character belongs to an argument no catalog can see. That case is
+exactly what deriving direction from the rendered string covers, which
+is why that derivation stays.
+
 **Chrome is decided by you.** Whether the interface mirrors —
 navigation order, field labels, chevrons, toggle knobs, scrollbars,
 table columns — is `App.setDirection(dir)`, one call, defaulting to
@@ -1204,6 +1245,7 @@ For a reader arriving from Flutter:
 | Placeholder args | Typed method parameters | Comptime-checked anonymous struct |
 | Number formats | intl NumberFormat | Refused; integers only |
 | Dates | intl DateFormat over a `DateTime` | A caller-supplied civil date, closed skeleton set, month words as reserved catalog keys |
+| A value that opens in the other direction | Renders as it lays out; the mark is the translator's to remember | Compiled with the mark its locale implies ([above](#a-value-that-opens-in-the-other-direction)) |
 | Runtime | Parse + lookup through intl | Straight-line writes into your buffer |
 
 The through-line: Flutter treats the catalog as data checked by a tool
