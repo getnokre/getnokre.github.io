@@ -36,6 +36,11 @@ pub const L = nok.l10n.Bundle(&.{
     @embedFile("l10n/site_en.arb"),
 });
 
+// Zig analyses lazily: an L nothing reaches is an L nokre never checks.
+comptime {
+    _ = L;
+}
+
 /// Every locale this site publishes, in catalog order. The one place
 /// the axis is enumerated; the generator's loop, the alternate sets and
 /// the stubs all spend this and none of them counts it.
