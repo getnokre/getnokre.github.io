@@ -303,10 +303,46 @@ Three rules bound it, and each is load-bearing:
 - **Only the leading position is read.** A mark placed inside a value is
   the mechanism for mixed content and is never touched.
 
-A value that opens with a **placeholder** is left alone too: its first
-strong character belongs to an argument no catalog can see. That case is
-exactly what deriving direction from the rendered string covers, which
-is why that derivation stays.
+A value that opens with a **placeholder** is read too, and what decides
+it is what the argument can substitute. `{alias} از این سازمان حذف
+شود؟` is a Persian sentence whose first strong character belongs to a
+display name the user typed: a Latin alias lays the whole confirmation
+left to right and puts the question mark at the wrong end, and a Persian
+one does not — the same value renders both ways depending on whose name
+is in it. The literals are the evidence the catalog does have, and they
+are Persian, so the value takes its locale's mark like any other. This
+is not the chrome overriding content: `hasStrong` still has to find the
+locale's own direction in the words the translator wrote, and a value
+whose literals carry none — `{name} {version} ({build}) · {installer}`
+— is still left exactly as written.
+
+Which leading placeholders qualify is the whole of it:
+
+- **A leading `plural` or `select`, or a `{when, date, …}`, is not
+  marked, and that is correct rather than a gap.** A plural renders its
+  count first and digits are bidi class `EN`, not strong, so P2 walks
+  past them to the branch's own Persian words and already finds RTL. A
+  select renders a branch the translator wrote. Nothing is wrong to fix,
+  and a mark would only change bytes.
+- **A leading simple placeholder is marked iff it can carry strong
+  text** — declared `String`, or declared nothing at all. An `int`
+  argument is digits by the same reasoning as a plural count.
+  Undeclared counts as possibly-strong on purpose: a needless mark on a
+  value already in its own direction is invisible, while a missing one
+  is the defect this rule exists to catch.
+
+The arms are symmetric, and the left-to-right one is not decoration:
+`{recipient} will receive` is an English line whose first strong
+character is a display name, so a Persian alias turns it right to left
+and moves its punctuation. English values that open on an argument
+therefore render with a leading U+200E — invisible, zero-width, and it
+is why an assertion on such a value's rendered text carries the mark.
+
+What is still left to the rendered string is the other half of a mixed
+value: a **leading literal that carries no strong character of its own**
+— an opening quote or bullet before the argument — still hands the
+decision to whatever the runtime substitutes. Only the first segment is
+read, in both rules.
 
 ## The chrome nokre writes
 
