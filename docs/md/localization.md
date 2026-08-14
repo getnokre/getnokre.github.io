@@ -109,8 +109,9 @@ whichever was written, and a tag that is not one at all (`Persian`,
 `tr-`) fails the build where the catalog is read. `@@`-prefixed
 provenance (`@@author`, `@@last_modified`, `@@x-…`) is accepted and
 ignored. Each message may carry `@message` metadata; nokre reads only
-`placeholders`, and only from the template — `description` and
-`example` are for translators and tooling.
+`placeholders`, and only the template may carry any of it at all
+([What the compiler checks](#what-the-compiler-checks)) — `description`
+and `example` are for translators and tooling.
 
 ```json
 {
@@ -409,6 +410,14 @@ time, plus several it never checks:
   is no `untranslated-messages-file`, because there is no such state:
   an untranslated message cannot build, so template text can never leak
   into another locale's screen.
+- **`@`-metadata in the template alone.** Metadata declares a message's
+  interface, so the catalog carrying it *is* the source; any other
+  catalog carrying a `@key` entry fails the build naming that locale and
+  that key. Two things in nokre answer "which catalog is the template"
+  — `Bundle` positionally, the first embedded source, and the drafting
+  tool by reading a directory for the metadata
+  ([Drafting a translation](#drafting-a-translation)) — and this is what
+  keeps them from naming different files.
 - **Placeholder interface.** The template (its text plus its
   `@`-metadata) defines each message's placeholders. A translation
   using a name outside that set is rejected — the typo is caught in the
@@ -543,8 +552,12 @@ Template: en (3 key(s), from examples/kitchen_sink/l10n/sink_en.arb)
 ```
 
 Nothing has to declare which catalog is the template — it is the one
-carrying the `@`-metadata, and that is checked against nokre's own rule
-that every key lives in the template first. Every other catalog is
+carrying the `@`-metadata, and that agrees with the bundle by
+construction rather than by luck: `Bundle` refuses metadata outside its
+own template ([What the compiler checks](#what-the-compiler-checks)), so
+a directory whose catalogs compile has exactly one carrier. The choice
+is checked against nokre's own rule that every key lives in the template
+first. Every other catalog is
 filled *from the template*, never from a peer: only the template has the
 metadata a prompt needs, and pivoting `ru` → `de` would ask a model to
 collapse one/few/many into one/other on top of translating.
