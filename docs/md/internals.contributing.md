@@ -241,6 +241,16 @@ way. The shell's complete job description is in
 
 - Pure unit tests across core/render/a11y/testing (`zig build test`),
   including construction-time rejection of malformed structure.
+- **The contract, written down and held to `revision`**, in
+  `zig build test`: two records, because the contract has two roots —
+  [src/public_surface.txt](../../src/public_surface.txt) for everything
+  reachable from [src/nokre.zig](../../src/nokre.zig), and
+  [src/build_surface.txt](../../src/build_surface.txt) for what a
+  consumer's build.zig names (`addApp`, `AppOptions` and the rest).
+  Neither can be refreshed while the number stands still, because the
+  number is a line of each. Change either surface and the bump is the
+  gate's answer, not yours ([testing.md](../testing.md), "The revision's
+  own gate").
 - Design-system proofs: palette contrast and minimum target size are
   asserted in unit tests — a palette byte or metric that breaks WCAG
   compliance fails the build ([accessibility.md](../accessibility.md)).

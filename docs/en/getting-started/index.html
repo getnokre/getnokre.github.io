@@ -54,7 +54,7 @@ mkdir -p src</code></pre><p><code>build.zig.zon</code> — on the first <code>zi
         .nokre = .{ .path = &quot;../nokre&quot; },
     },
     .paths = .{ &quot;build.zig&quot;, &quot;build.zig.zon&quot;, &quot;src&quot;, &quot;tests&quot; },
-}</code></pre><p>That path is the whole dependency — a sibling checkout, not a registry fetch — so nothing above records <em>which</em> nokre your app was written against. <code>nokre.revision</code> does: a hand-bumped constant in <code>src/nokre.zig</code>, deliberately not machinery. Assert it once, anywhere your root module reaches:</p><pre class="code" tabindex="0" data-n="4194419" style="--bleed:16px"><code>comptime {
+}</code></pre><p>That path is the whole dependency — a sibling checkout, not a registry fetch — so nothing above records <em>which</em> nokre your app was written against. <code>nokre.revision</code> does: a hand-bumped constant in <code>src/revision.zig</code>, deliberately not machinery. Assert it once, anywhere your root module reaches:</p><pre class="code" tabindex="0" data-n="4194419" style="--bleed:16px"><code>comptime {
     if (nokre.revision != 1) @compileError(
         &quot;written against nokre revision 1 — survey the app against the checkout before bumping this assert&quot;,
     );

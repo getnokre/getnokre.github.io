@@ -890,27 +890,33 @@ revision 53 shipped `dom.Csp`, `dom.CspError`, `Document.csp` and
 a revision later, when a consumer tried to move its own pin and the build told
 it the truth.
 
-So the surface is written down. `src/surface.zig` walks every public
-declaration reachable from the root module — namespaces, types, their fields
-and whether each has a default, enum and error members, function signatures,
-and the values of scalar constants — into one deterministic document, and
-`src/surface_test.zig` holds `src/public_surface.txt` to it on every
+So the surface is written down. `src/surface_walk.zig` renders every public
+declaration reachable from a root — namespaces, types, their fields and whether
+each has a default, enum and error members, function signatures, and the values
+of scalar constants — into one deterministic document, and a gate
+(`src/surface_gate.zig`) holds a committed record to it on every
 `zig build test`.
 
-**The revision is a line inside that document, not a header beside it.** It is
+**The contract has two roots, so there are two records.** `src/surface.zig`
+walks the library from `src/nokre.zig` into `src/public_surface.txt`;
+`src/build_surface.zig` walks the build API from `build.zig` into
+`src/build_surface.txt`. Both carry the same `revision`, and `zig build test`
+runs both gates.
+
+**The revision is a line inside each document, not a header beside it.** It is
 what makes the omission impossible rather than merely visible:
 
 - Surface matches the record: pass.
 - Surface moved and `nokre.revision` did not: **fail, and write nothing**. There
   is no `.actual` to move into place, so the only way forward is to bump the
   constant. This is the case that shipped once.
-- `nokre.revision` moved: the live surface is written to
-  `src/public_surface.txt.actual` and the test fails naming the first line that
-  differs. Review that diff — it *is* the contract change, stated — then
-  `mv` it over the record and commit both.
+- `nokre.revision` moved: the live surface is written to `<record>.actual` and
+  the test fails naming the first line that differs. Review that diff — it *is*
+  the contract change, stated — then `mv` it over the record and commit both.
 
-Every revision bump therefore touches two files, which is the point: the record
-says which revision it is the surface of.
+Every revision bump therefore rewrites both records, which is the point: each
+one says which revision it is the surface of, so a bump made for the library
+half still has to be adopted into the build half and vice versa.
 
 **What counts as the surface is everything a consumer can name.** Zig has no
 `pub(crate)`, so a helper that is `pub` for a sibling module is reachable at
@@ -925,12 +931,41 @@ Enum members are in the record because a `switch` without an `else` is
 exhaustive — adding one member breaks every consumer that switches on that enum,
 which makes `IconName`'s glyph list contract by the same rule as anything else.
 
-Two limits, both stated where the walk is. The document is read under `zig test`
-on the host that runs it, so a decl that forks on `builtin.is_test` or on the OS
-is recorded in that flavour (goldens are host-specific for the same reason). And
-it is the surface's *shape*, never its meaning: a function whose signature stands
-still while its behaviour moves is a contract change no walk can see, and that
-bump is still a judgement.
+**The build half is the half a consumer types first**, and it was unrecorded
+until revision 79. `build.zig` is a second root: a module rooted at
+`src/nokre.zig` cannot import a file above its own directory, so nothing the
+library walk reaches names `addApp` or `AppOptions`. Three public `AppOptions`
+fields shipped through that hole under three separate revisions — `l10n`, then
+`L10n.glossary`, then `L10n.documents` — each bumped because a person
+remembered, which is exactly the judgement the gate exists to replace. It is a
+second record rather than a longer first one because the two roots are two
+module graphs: a single document would have to be produced by a walk that
+re-configures a second copy of the library module, and a second configuration
+that can drift from the one consumers get is the failure this whole mechanism
+exists to prevent.
+
+**What the build record counts: nokre's own declarations, expanded; everything
+else, named.** That surface is written almost entirely in `std.Build` types, and
+their internals move with the toolchain rather than with nokre — expanding
+`Step.Compile` would redraw the document on every compiler upgrade, and a record
+that churns under unrelated edits is one an operator learns to refresh without
+reading. So `Build.LazyPath` appears as `Build.LazyPath` and nothing under it.
+A toolchain that *renames* it still moves a line here, which is correct: that
+rename breaks every consumer's build.zig too. The rule is enforced, not merely
+observed — `surface_walk.Options.owned` names the prefixes nokre's own files
+carry, and a declaration bound to any other aggregate is written as an arrow to
+its name and never descended into, so `pub const Compile = std.Build.Step.Compile;`
+adds one line rather than the 185 that type expands to. What no comptime walk can reach is
+nokre's build *options* (`b.dependency("nokre", .{ .skia = true })`): they are
+created by calls inside `pub fn build`, not declarations, and the record says so
+rather than implying coverage.
+
+Three limits, all stated where the walks are. Each document is read under
+`zig test` on the host that runs it, so a decl that forks on `builtin.is_test`
+or on the OS is recorded in that flavour (goldens are host-specific for the same
+reason). It is the surface's *shape*, never its meaning: a function whose
+signature stands still while its behaviour moves is a contract change no walk
+can see, and that bump is still a judgement. And build options are outside both.
 
 ## Where the harness stops
 

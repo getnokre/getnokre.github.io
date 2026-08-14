@@ -130,7 +130,7 @@ stale `.fingerprint` and prints the value to paste:
 That path is the whole dependency — a sibling checkout, not a registry
 fetch — so nothing above records *which* nokre your app was written
 against. `nokre.revision` does: a hand-bumped constant in
-`src/nokre.zig`, deliberately not machinery. Assert it once, anywhere
+`src/revision.zig`, deliberately not machinery. Assert it once, anywhere
 your root module reaches:
 
 ```zig
