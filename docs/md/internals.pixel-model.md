@@ -190,7 +190,22 @@ the shim ignores anything else by design.
   UAX #9 in full (validated against the UCD's BidiCharacterTest) and
   the renderer hands the shim visual-order pieces. Direction is derived
   from content — first strong character per hard paragraph — and an RTL
-  paragraph right-aligns its lines. Kerning across piece boundaries
+  paragraph right-aligns its lines. Every draw and every measurement
+  **states** its piece's direction; the shim asks the bytes nothing.
+  That parameter is what buys UAX #9's L4, the mirrored glyph: HarfBuzz
+  substitutes a mirrored character's partner in any buffer shaped
+  right-to-left, so `(` prints `)` in a Persian line and `«` prints `»`
+  — nokre carries no mirroring table of its own, and there is one
+  answer rather than a per-run guess that could disagree with the
+  resolved level. It used to guess, from whether the run held an Arabic
+  *letter*, which is not a question about direction at all: a piece of
+  pure punctuation between a Persian word and a Latin one — the ` (` of
+  `FQDN (مثلاً company.com)` — sits at an odd level and holds no
+  letter, so it was shaped left to right, drew an unmirrored bracket
+  and put its space on the wrong side of it. Measurement takes the same
+  parameter as the draw for the same bytes, so a pen advance and the
+  ink it advances past cannot come from different glyphs.
+  Kerning across piece boundaries
   (face changes, digit runs amid RTL) is forfeited exactly as it is
   across span boundaries, which is what keeps every width a sum of
   identically shaped pieces.

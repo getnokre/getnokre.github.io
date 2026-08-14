@@ -228,7 +228,14 @@ Arabic-Indic digits are Arabic script and bidi class EN — so `۷۴`
 shaped right-to-left and printed `۴۷`. A Persian balance screen showed
 47 credits to a reader holding 74, beside an ASCII table that was
 correct. Face and direction are two questions now, not one, and
-`tests/golden.zig` asserts the order in pixels. There is no `dir`
+`tests/golden.zig` asserts the order in pixels. **Brackets and
+quotation marks turn round with the text**: a character Unicode marks
+as mirrored takes its partner's glyph wherever it sits at a
+right-to-left level, so `(` is drawn `)` and `«` is drawn `»` — a
+bracket opens towards the direction the reading continues. The level
+decides, not the screen: the Latin line `Rokovski Feedback 1.0.0 (1)`
+inside a Persian app reads left to right, so its brackets stay as
+written. There is no `dir`
 attribute and no per-locale direction
 flag in ARB — a Persian string in an English locale and an English
 string in a Persian locale each lay out correctly on their own evidence.
