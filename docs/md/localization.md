@@ -474,6 +474,97 @@ is what collapses CLDR's grammar to plain arithmetic). A language not
 in the table errors only when one of its messages actually uses
 `plural`, and the error says where to add the row.
 
+## What the build checks
+
+Everything above is reachable from the catalog alone, which is why the
+compiler can hold it. Two rules are not: whether a key anything
+*defines* is a key anything *uses*, and whether a word on screen came
+from the catalog at all. Both need the app's sources, and no `@import`
+reaches those — a check written as a test would have to name every
+source file to read it, and the file it forgot is the one hiding the
+defect.
+
+So they run beside the compiler, in a host tool the build attaches:
+
+```zig
+const app = nokre.addApp(nokre_dep, .{
+    // …
+    .l10n = .{
+        .template = b.path("src/l10n/app_en.arb"),
+        .src = b.path("src"),
+    },
+});
+```
+
+Unset is the default and checks nothing — an app with no catalog, or a
+generator whose words live somewhere this rule would not understand,
+says nothing and gets nothing. Set, the findings ride the **app's own
+artifact**, so a plain `zig build` runs them.
+
+That is deliberately not where the store listing reports
+([services.md](services.md)). A listing finding is about copy that
+changes late, long after the code around it settled, and it blocks
+what a release is assembled from rather than the developer's next
+compile. These two are about code being edited now: an orphaned key
+arrives in the same commit that stopped using it, and a hardcoded
+string arrives in the same commit that typed it. A rule whose subject
+is the edit in front of you belongs on the build that edit runs.
+
+- **Every key is referenced.** A key in the template that nothing under
+  `src` names is reported by name. A key is named by its enum literal
+  in either spelling — `.someKey`, and `.@"some.key"` where the key is
+  dotted — or *composed*, where a screen driven by data joins a
+  namespace to an id it read (`stringToEnum(Key, prefix ++ id)`); the
+  evidence for that is the namespace written as a literal, and only a
+  whole segment ending in `.` counts, so a short literal cannot exempt
+  keys it merely happens to start.
+
+  The keys nokre reads for itself are never orphans: `Bundle.chrome`
+  derives one `chrome…` key per `App.Chrome` field and a
+  `{…, date, MMM}` reference reads `monthJan`…`monthDec`, and neither
+  has a literal in the consumer's tree to find. That set is derived
+  from the same declarations the compiler derives it from
+  (`l10n.reserved_keys`), never listed — a `Chrome` field nokre grows
+  reserves its key here in the same breath.
+- **No word on screen is a literal**, unless the app says its words are
+  not the catalog's (`words_from_catalog`). A string literal reaching
+  one of nokre's text-taking element fields — `label`, `title`,
+  `content`, `description`, `detail`, `placeholder`, `problem`,
+  `options`, `section`, `name` — is reported with the field and the
+  method that took it. The set is derived from the element structs and
+  its coverage is a comptime check, so an element that grows a field of
+  words cannot be missed; so is the arity of every builder the scan
+  looks inside, which is what tells `Cursor.text(content)` from a
+  consumer's own `text(fmt, args)`.
+
+  This one is a token scan and says so: it reads what is written at the
+  call site, not what a type would prove, so it sees a literal and
+  never a variable holding one. A `test` block is skipped — a test
+  builds screens nobody reads — and so is a code block, because code is
+  not translated.
+
+  One exemption, and it is declared rather than guessed: `dev_gate`
+  names the consumer's own comptime flag — the build option under
+  which operator-only scaffolding is compiled in. A function whose
+  every call site sits under that flag may write English, because
+  nothing without the flag can reach it. A second call site outside the
+  gate ends the exemption, which is the property that makes it worth
+  declaring at all.
+
+  Server-provided strings need no exemption: they are never literals,
+  so they never reach this rule. What a screen owes them is localized
+  framing around the payload, which is a review question and not a
+  scan's.
+
+  The whole rule stands down for an app whose catalog exists to give
+  *nokre's* chrome its words and nothing else — a single-language site
+  whose prose is written where it is read. That is a decision about the
+  product, not about the code, so it is declared
+  (`.words_from_catalog = false`) rather than inferred from a locale
+  count. nokre's own documentation site is that app; the key rule keeps
+  running there, because a key nothing references is dead copy in any
+  number of languages.
+
 ## Drafting a translation
 
 `zig build translate-arb` drafts a locale's catalog from the template

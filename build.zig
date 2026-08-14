@@ -93,6 +93,14 @@ pub fn build(b: *std.Build) void {
         // the set derives from.
         .pkg = .{ .name = "nokre", .id = "io.github.getnokre", .version = "0.1.0", .build = 1 },
         .mark = .{ .silhouette = b.path("assets/mark.svg") },
+        // The key rule only. This site's catalog gives nokre's chrome
+        // its words; its prose is English by decision, written in the
+        // route builders and in docs/ (AppOptions.L10n).
+        .l10n = .{
+            .template = b.path("src/l10n/site_en.arb"),
+            .src = b.path("src"),
+            .words_from_catalog = false,
+        },
     });
     // The same options module the generator reads: the live half builds
     // the same colophon, provenance sentence included, so it needs the
