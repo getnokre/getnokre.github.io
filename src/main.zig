@@ -52,7 +52,7 @@ comptime {
     _ = @import("shell.zig");
 }
 
-const nokre_revision = 82;
+const nokre_revision = 84;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
