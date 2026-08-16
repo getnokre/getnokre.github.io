@@ -1,45 +1,9 @@
-//! The one thing a generated stylesheet cannot say about itself:
-//! whether the names it spends are names anything declares *where the
-//! rule using them applies*.
-//!
-//! CSS custom properties inherit, so `var(--x)` in a rule outside the
-//! subtree that declares `--x` resolves to nothing — and a declaration
-//! whose value resolves to nothing is dropped whole, silently. This
-//! site shipped exactly that: the footer and the skip link were body
-//! children, they were written with `var(--pad)`, and `--pad` is the
-//! root stack's own field, published by nokre on `.nokre` and nowhere
-//! above it. Every `padding` and `max-width` those two rules carried
-//! was thrown away, so the footer ran unpadded across the whole window
-//! for as long as nobody looked (main.zig's own comment at the rule
-//! that replaced them).
-//!
-//! The footer is not a body child any more — it is content, so it is a
-//! stack in the screen (content.zig's `footer`) — and the skip link is,
-//! which changes nothing here. One rule outside `.nokre` is as able to
-//! spend a name nothing declares as two were, and the day this site
-//! writes its second is the day it would otherwise have to remember
-//! this on its own.
-//!
-//! Nothing catches that: it is valid CSS, the generator's output is
-//! byte-identical run to run, and the pages pass every audit — the
-//! tree does not know the document around it exists. So the check is
-//! this: the shell's own rules apply to the *document*, which is
-//! outside `.nokre`, so every property they spend must be declared at
-//! `:root`. Names published deeper are exactly the ones the shell must
-//! not reach for.
-
 const std = @import("std");
 
-/// A comment-aware cursor over a stylesheet. Comments matter here
-/// twice over: this file's own guard is *explained* in a CSS comment
-/// that names the property it was written to catch, so a scanner
-/// reading comments would report the sheet's own documentation as a
-/// defect. CSS comments do not nest.
 const Scan = struct {
     css: []const u8,
     i: usize = 0,
 
-    /// Advances past whitespace and comments; answers false at the end.
     fn skipTrivia(self: *Scan) bool {
         while (self.i < self.css.len) {
             if (std.ascii.isWhitespace(self.css[self.i])) {
@@ -55,7 +19,6 @@ const Scan = struct {
         return std.mem.startsWith(u8, self.css[self.i..], needle);
     }
 
-    /// `--name` at the cursor, cursor left after it.
     fn takeName(self: *Scan) []const u8 {
         const start = self.i;
         self.i += 2; // "--"
@@ -64,16 +27,12 @@ const Scan = struct {
     }
 };
 
-/// The custom properties declared inside a `:root` block — any of them,
-/// including the appearance-scoped `:root[data-appearance="dark"]` and
-/// the ones nested in a media query, since all of them land on the
-/// document root and inherit to everything.
 pub fn rootDeclared(gpa: std.mem.Allocator, css: []const u8) ![]const []const u8 {
     var out: std.ArrayList([]const u8) = .empty;
     errdefer out.deinit(gpa);
     var s: Scan = .{ .css = css };
     var depth: usize = 0;
-    var root_at: ?usize = null; // the depth a :root block opened at
+    var root_at: ?usize = null;
     while (s.skipTrivia()) {
         if (s.starts("{")) {
             depth += 1;
@@ -85,15 +44,10 @@ pub fn rootDeclared(gpa: std.mem.Allocator, css: []const u8) ![]const []const u8
             depth -|= 1;
             s.i += 1;
         } else if (root_at == null and s.starts(":root")) {
-            // The selector runs to its block; what is between is
-            // `:not(...)`, an attribute test or a comma, none of which
-            // opens one.
             s.i += ":root".len;
             root_at = depth + 1;
         } else if (root_at != null and depth == root_at.? and s.starts("--")) {
             const name = s.takeName();
-            // A declaration, not a `var()` use: only the former is
-            // followed by a colon.
             var probe = s;
             if (probe.skipTrivia() and probe.starts(":")) try appendUnique(gpa, &out, name);
         } else {
@@ -103,8 +57,6 @@ pub fn rootDeclared(gpa: std.mem.Allocator, css: []const u8) ![]const []const u8
     return out.toOwnedSlice(gpa);
 }
 
-/// Every `var(--name)` the text spends, deduplicated. Comments are not
-/// text.
 pub fn varsUsed(gpa: std.mem.Allocator, css: []const u8) ![]const []const u8 {
     var out: std.ArrayList([]const u8) = .empty;
     errdefer out.deinit(gpa);
@@ -118,10 +70,6 @@ pub fn varsUsed(gpa: std.mem.Allocator, css: []const u8) ![]const []const u8 {
     return out.toOwnedSlice(gpa);
 }
 
-/// The names `shell` spends that `sheet` does not publish at `:root` —
-/// empty when the shell is sound. `sheet` is the whole composed
-/// stylesheet, shell included, because the shell declares a few of its
-/// own at `:root` too.
 pub fn unresolvable(gpa: std.mem.Allocator, sheet: []const u8, shell: []const u8) ![]const []const u8 {
     const declared = try rootDeclared(gpa, sheet);
     defer gpa.free(declared);
@@ -150,8 +98,6 @@ fn appendUnique(gpa: std.mem.Allocator, out: *std.ArrayList([]const u8), name: [
 
 const testing = std.testing;
 
-/// `expectEqualSlices` over slices-of-slices compares pointers, not
-/// words.
 fn expectNames(want: []const []const u8, got: []const []const u8) !void {
     try testing.expectEqual(want.len, got.len);
     for (want, got) |w, g| try testing.expectEqualStrings(w, g);
@@ -159,8 +105,6 @@ fn expectNames(want: []const []const u8, got: []const []const u8) !void {
 
 test "a property published deeper than the document root is unresolvable above it" {
     const gpa = testing.allocator;
-    // The shape of the bug, minimized: `--pad` exists, but on `.nokre`,
-    // and the footer is not inside one.
     const sheet =
         \\:root { --page-pad: 16px; --mid: #666; }
         \\.nokre { --pad: var(--page-pad); padding: var(--pad); }
