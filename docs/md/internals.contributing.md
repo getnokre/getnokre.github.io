@@ -1,9 +1,10 @@
 # Contributing
 
-The consumer docs ([introduction](../introduction.md) onward) state what
-nokre promises; this directory is how the promises are kept. Start with
-[architecture.md](architecture.md) for the layer rules — they are enforced
-in review, not aspirational.
+Core values are in [../../CLAUDE.md](../../CLAUDE.md), "Values" — read
+those first. The consumer docs ([introduction](../introduction.md) onward)
+state what nokre promises; this directory is how the promises are kept.
+Start with [architecture.md](architecture.md) for the layer rules — they
+are enforced in review, not aspirational.
 
 ## Conventions
 
@@ -61,10 +62,6 @@ Delete on sight: dead plan labels from a finished round ("Part E", "B3"),
 tombstones for symbols that no longer exist, and a section heading with no
 section under it. A `// ---- label ----` divider over a real API surface in a
 long module is not ceremony — keep it, and keep any docs anchor it carries.
-
-Comment count is not a metric in either direction. Do not thin rationale to
-make a file look lean, and do not add a line that the names and types already
-say.
 
 ## Adding an element
 
@@ -244,138 +241,48 @@ way. The shell's complete job description is in
 
 ## What nokre tests for itself
 
-- Pure unit tests across core/render/a11y/testing (`zig build test`),
-  including construction-time rejection of malformed structure.
-- **The contract, written down and held to `revision`**, in
-  `zig build test`: two records, because the contract has two roots —
-  [src/public_surface.txt](../../src/public_surface.txt) for everything
-  reachable from [src/nokre.zig](../../src/nokre.zig), and
-  [src/build_surface.txt](../../src/build_surface.txt) for what a
-  consumer's build.zig names (`addApp`, `AppOptions` and the rest).
-  Neither can be refreshed while the number stands still, because the
-  number is a line of each. Change either surface and the bump is the
-  gate's answer, not yours ([testing.md](../testing.md), "The revision's
-  own gate").
-- **The build-time l10n checker's own rules**, in `zig build test`:
-  [src/l10n/check](../../src/l10n/check/check_test.zig) has no step of
-  its own, because the tool is not something anyone runs by hand — it is
-  a host executable that rides the app artifact of every consumer who
-  declares `AppOptions.l10n`, so the only thing to name here is the
-  suite. What it refuses is [localization.md](../localization.md), "What
-  the build checks"; what keeps it from rotting is that it derives its
-  sets from nokre's own declarations instead of listing them — the
-  reserved keys from `App.Chrome` and the month words
-  (`l10n.reserved_keys`), the word-carrying fields from the element
-  structs — so a nokre that grows one is a compile error in the checker
-  rather than a rule that silently stops covering it.
-- Design-system proofs: palette contrast and minimum target size are
-  asserted in unit tests — a palette byte or metric that breaks WCAG
-  compliance fails the build ([accessibility.md](../accessibility.md)).
-- Harness self-tests: keyboard-only form fill, IME composition, tap
-  actionability failures, query diagnostics, inline tree snapshots — the
-  framework is exercised as a consumer would use it.
-- Golden coverage of every element, focus/caret rendering, scroll offset,
-  and 2× integer scaling. nokre's own goldens live in
-  [tests/goldens](../../tests/goldens) and run with
-  `zig build test -Dskia -Dgolden`.
-- `zig build check-targets` compile-checks six targets: macOS, iOS,
-  Windows, Linux, Android (`aarch64-linux-android`), and
-  `wasm32-freestanding` — and *links* the last of them. Compiling is not
-  linking: an object never resolves a symbol, so a declaration with no
-  definition passes this step silently, which is how an Apple shell
-  naming a symbol only the notification service defines reached a
-  consumer's build. The web is the one target a link can be attempted on
-  from any host (no Skia, no AccessKit, no SDK, no C shell), so it is
-  linked here with every service it has a leg for. The other five are
-  covered by the desktop link below.
-- **A real parse of the shipped JavaScript**, in `zig build test`. Four
-  files in [src/render/dom](../../src/render/dom) ride into every
-  consumer's site verbatim and a fifth (`boot.js`) is emitted by
-  [packaging.zig](../../src/packaging/packaging.zig); Zig only copies
-  them, so the first thing that reads them is a browser, and a browser
-  answers a syntax error by refusing to boot the app at all. Each is
-  parsed by node in the goal it is loaded with — module for the three
-  the driver imports, classic script for `sw.js`. Two notes, both
-  load-bearing: `node --check` on a bare `.js` exits *zero* on a file
-  that parses as neither CommonJS nor ESM, so the check copies each file
-  under `.mjs`/`.cjs` first; and node missing from PATH **fails** the
-  build rather than skipping, because a gate that stands aside quietly
-  reports a green nobody can interpret. `-Djs-parse=false` is the way to
-  decline it out loud.
-- **One transport on a real socket**, in `zig build test`:
+All gates run through `zig build test` — see [testing.md](../testing.md)
+for the full list. The ones that don't have a `docs/testing.md` page:
+
+- **The contract** — two records held to `revision`:
+  [src/public_surface.txt](../../src/public_surface.txt) (library) and
+  [src/build_surface.txt](../../src/build_surface.txt) (build API).
+  Neither refreshes while the number stands still.
+- **The l10n checker's own rules** — [src/l10n/check](../../src/l10n/check/check_test.zig)
+  derives its sets from nokre's declarations (not a hand-written list),
+  so a nokre that grows one is a compile error in the checker.
+- **Shipped JavaScript** — four files from
+  [src/render/dom](../../src/render/dom) ride into every consumer's site
+  verbatim; Zig only copies them. Each is parsed by node with a goal
+  (`node --check` on a bare `.js` passes neither-CJS-nor-ESM files,
+  so the check copies under `.mjs`/`.cjs` first). node missing from
+  PATH **fails** the build. `-Djs-parse=false` declines it out loud.
+- **One transport on a real socket** —
   [native_test.zig](../../src/services/http/native_test.zig) binds a
-  loopback origin in the test process and puts all six verbs through
-  the native http transport, asserting the bytes that go out. Every
-  other service is proven against its mock, and a mock answers whatever
-  it is asked — which is how a send path that `std.http.Client` asserts
-  on shipped choosing itself by the body's length, panicking every
-  bodiless POST. Where a service's real leg is pure Zig over a socket,
-  a fake is not enough; the threads around it are the next tier's, not
-  this one's, because a gate cannot wait out a 30-second watchdog.
-- **The desktop link**, in `zig build test -Dskia`: the examples are
-  built, not just installed. hello links the services that need an
-  identity and the kitchen sink links none at all — the shape every app
-  starts in, and the shape an undefined symbol in an always-linked shell
-  breaks first.
-- **One service's verbs outside `zig test`**, in `zig build test` on a
-  macOS or desktop-Linux host:
-  [tests/dev_store.zig](../../tests/dev_store.zig) is built as an
-  *executable* and run. Under `zig test` a service *is* its mock, so no
-  unit test anywhere reaches secure_store's release dispatch, its
-  `CountCache`, or a store the OS answers — the boundary
-  [testing.md](../testing.md) names. This program constructs a real
-  `App`, drives its screens through `testing.driver`, and puts all four
-  verbs through the dev file store (`.secure_store_dev`,
-  [secure_store.md](secure_store.md)), asserting a boot read, a write
-  that outlives the app that made it, and a delete. It does not make
-  macos.m or windows.c any more executed than they were; it makes the
-  Zig above them so, which was previously proven by nothing.
+  loopback origin, puts all six verbs through the native http transport.
+  Every other service is proven against its mock (a mock answers
+  whatever it is asked).
+- **The desktop link** — `zig build test -Dskia`: examples are built,
+  not just installed. Kitchen sink links zero services; hello links
+  only those that need identity.
+- **secure_store outside `zig test`** —
+  [tests/dev_store.zig](../../tests/dev_store.zig): a real `App`
+  driving four verbs through the dev file store on a macOS or Linux host.
+- **The transport's threads** —
+  [tests/http_stress.zig](../../tests/http_stress.zig): two `App`s in
+  one process, 1920 requests at a loopback origin. Restoring the async
+  pool it refuses ([http.md](http.md#no-pool-under-the-native-transport))
+  crashes the process on every run.
+- **Windowless artifacts** —
+  [tests/capture.zig](../../tests/capture.zig): a `Device`-driven app
+  writing a step trace and a real RGB PNG; the PNG read back by
+  `std.compress.flate` rather than by the encoder that wrote it.
+- **The three web-only service legs, executed** —
+  [tests/web_services.zig](../../tests/web_services.zig): a real wasm
+  app built into a site and booted by node against
+  [tests/web_browser.mjs](../../tests/web_browser.mjs). Every assertion
+  reads back what the wasm app recorded through probe exports.
+- **A real parse of the shipped JavaScript** — same gate as above.
 
-- **That transport's threads**, in `zig build test` on a native desktop
-  host: [tests/http_stress.zig](../../tests/http_stress.zig) is built as
-  an *executable* and run. Two `App`s in one process put 1920 requests
-  through the real transport at a loopback origin listening on both
-  families, so nokre's delivery pump, its detached transfer and watchdog
-  threads, and std's connect machinery run together — the one
-  arrangement in which the transport's concurrency is the subject rather
-  than the setting. It is sized by measurement, not by taste, because
-  what it holds off is a race: restore the async pool it refuses
-  ([http.md](http.md#no-pool-under-the-native-transport)) and this load
-  crashes the process on 20 runs out of 20. Failures the *machine*
-  produces — no thread to spawn, no ephemeral port left — are counted
-  and reported, never failed on; a resource limit is not a defect.
-- **A driven app's artifacts, out of a windowless process**, in
-  `zig build test -Dskia` on a native desktop host:
-  [tests/capture.zig](../../tests/capture.zig) is built as an
-  *executable* and run. It drives a live `App` through `testing.Device`,
-  attaches `trace.TreeSink` and `render.skia.PixelSink` through one
-  `trace.Tee`, and then reads its own output back: the tree naming the
-  element the press produced, and the PNG walked chunk by chunk with
-  every CRC re-derived and its IDAT inflated by `std.compress.flate` —
-  a decoder this repository did not write. "The encoder returned without
-  error" is not the claim; "a reader opens this file" is. It is
-  Skia-gated because the raster half needs the prebuilt on the binary,
-  which is the same link a consumer's e2e executable must add
-  ([testing.md](../testing.md#seeing-a-screen-nobody-watched)).
-- **The three web-only service legs, executed**, in `zig build test`:
-  [tests/web_services.zig](../../tests/web_services.zig) is an ordinary
-  nokre app with deep_link, oauth and secure_store linked, built into a
-  site by the same `addApp` path a consumer takes, and booted by node
-  against [tests/web_browser.mjs](../../tests/web_browser.mjs). What
-  the stub carries, what the site's own modules prove, and what the
-  gate still does not cover is [testing.md](../testing.md)'s "The web's
-  own gate". The design rule is that every assertion reads back what
-  the wasm app recorded through probe exports: a harness that restated
-  a line of the driver would prove that line twice and the real one
-  never. Those three legs exist on no other platform, so `zig test`
-  reaches none of them and `check-targets` compiles them into objects
-  it never runs — the fragment that arrives, the popup that reports to
-  its opener, and the seed that beats the first `build` were, until
-  this gate, asserted by nothing. It rides `-Djs-parse`, because that
-  is one question asked once — node, and the shipped JavaScript really
-  read.
-
-Goldens are byte-exact and must stay byte-identical unless a change is
-intentionally visual — then regenerate, eyeball the image, and commit it
-with the change ([testing.md](../testing.md) has the workflow; CI never
-creates goldens).
+Goldens are byte-exact. CI never creates goldens ([testing.md](../testing.md)
+has the workflow).

@@ -278,7 +278,7 @@ sent is what a test does immediately before answering it, and taking
 the request out of the queue would leave the app waiting on a result
 that can never arrive.
 
-For flows with many requests, `onHttp(ctx, handler)` installs a fake
+For flows with many requests, `onHttp(handler)` installs a fake
 server: a function from a parked request to a canned response, a
 failure name, or null — leave it parked. `settleHttp()` runs it over
 this app's pending requests to quiescence, each answer landing before
@@ -297,7 +297,7 @@ fn serve(_: ?*anyopaque, req: nok.services.http.PendingRequest) ?nok.testing.Htt
 test "sync round-trip" {
     var t = try nok.testing.Harness.init(gpa, .{ .w = 480, .h = 640 }, .{ .ctx = &state, .build = nok.Routes(State).builder(buildNotes) });
     defer t.deinit();
-    t.onHttp(null, serve);
+    t.onHttp(.{ .call = serve });
 
     try t.tapLabel("Sync");   // however many requests the flow issues,
     try t.settleHttp();       // chained follow-ups included, serve answers now

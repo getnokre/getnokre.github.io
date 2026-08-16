@@ -908,16 +908,9 @@ for `Meta` — a half-written file is worse than none.
 
 **`lastmod` and `changefreq` are refused, and not for symmetry.** The
 argument is in [sitemap.zig](../../src/render/dom/sitemap.zig)'s module
-comment, written down so it does not have to be had again: `changefreq`
-is publishing policy Google has said for years it does not use, and a
-generator stamping `weekly` on everything is stating a schedule nobody
-keeps. `lastmod` is a filesystem or VCS fact this library cannot know
-and — alone among the destinations `Meta` carries — cannot check either,
-so what a generator actually ships is the build's own clock on every
-URL, telling a crawler the whole site changed on every deploy. That is
-worse than absent. A consumer holding real per-page timestamps is a
-receipt this library has not been handed, not an omission waiting to be
-filled in.
+comment, written down so it does not have to be had again — and left
+there rather than restated here, which is the rule this page is holding
+itself to.
 
 ### Services are not the edition's business
 

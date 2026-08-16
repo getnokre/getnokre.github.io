@@ -160,12 +160,11 @@ state.search.retire();</code></pre><p><code>spawn</code> returns a generation-ch
 
 // Each ask carries its own callback; the message is serialized inside
 // the call, exactly like `send`.
-try state.solver.ask(.{ .solve = spec }, state, onSolved);
+try state.solver.ask(.{ .solve = spec }, .bind(onSolved, state));
 
 // Exactly one answer per accepted ask: the worker&#39;s one reply, or the
 // fault that took its place.
-fn onSolved(ctx: ?*anyopaque, answer: h.workers.Answer(Pow)) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onSolved(state: *State, answer: h.workers.Answer(Pow)) void {
     switch (answer) {
         .reply =&gt; |r| acceptProof(state, r),
         .fault =&gt; |f| failPending(state, f),
@@ -200,10 +199,9 @@ fn onNotes(ctx: ?*anyopaque, tag: u64, result: nokre.services.http.Result) void 
         .failure =&gt; |f| showOffline(state, f.name),
     }
 }</code></pre><p><code>request</code> copies everything at the call and returns a generation-checked handle; <code>handle.cancel()</code> guarantees the callback never runs (the wire transfer may still finish where the platform cannot abort it — its delivery is dropped). <code>max_body</code> (default 16 MiB) caps what a rogue server can push into the app&#39;s memory. Every request carries one fixed transport deadline: 30 seconds after <code>request</code>, an unfinished request fails like any other transport failure — <code>&quot;TimedOut&quot;</code> natively, the web&#39;s one name <code>&quot;FetchFailed&quot;</code>. The deadline is a contract constant, not a knob, for the reason <code>max_body</code> is a cap: it is transport policy, not an app decision — and it is what guarantees the failure path eventually runs, so recovery (clearing an <code>in_progress</code> button, showing offline) belongs to the app&#39;s failure handling, which now always gets its turn. Under <code>zig test</code> the mock ignores it: parked requests stay parked until the test answers, so the network stays a test input. The verb set is closed — GET, HEAD, POST, PUT, PATCH, DELETE — and the verb, not the bytes, decides whether a request carries a body: POST, PUT and PATCH always do, empty or not (<code>content-length: 0</code> is a body a server can read as one), and passing <code>body</code> on any other verb is a programmer error nokre asserts on rather than a request one platform would send and the other would refuse. <code>request</code> itself refuses with <code>http.RequestError</code> — <code>OutOfMemory</code> or <code>Unavailable</code>, and nothing else. It is a <em>named</em> set for the reason every other service&#39;s is, plus one this verb has to itself: it is the same set on all three transports, where the inferred one was not (only the native leg spawns threads, so only the native leg could hand back <code>std.Thread.SpawnError</code>). A refusal here means no callback will run; everything that goes wrong afterwards arrives at <code>on_result</code> as <code>Result.failure</code>, because by then one is owed.</p><p>There is no streaming, no timeout knob, and no per-request configuration surface. Like <code>worker</code> — and unlike <code>package_info</code> — nothing links: the service is always available, and an app that never calls it pays nothing.</p><h4 id="deep_link-the-url-comes-in-routing-stays-yours">deep_link: the URL comes in, routing stays yours</h4><p>A link into the app — <code>https://notes.example.com/n/42</code> tapped in Mail, a custom-scheme re-open, a <code>#/n/42</code> fragment on the web — arrives as one thing: the URL. nokre hands it over and stops. Where that URL goes is the router&#39;s job, which the app already owns; deep_link owns only <em>that a URL came in</em>. That line is the whole design: no route table baked into the service, no URL scheme convention imposed, no matching rules to configure. The app reads the URL and decides.</p><p>Not to be confused with the current route, which the web shell mirrors into the address bar without any service at all (<a class="link" href="/en/routing/" data-n="4194519" data-s="1">routing.md</a>). That one is a reference nokre fully owns — a screen name plus identifier arguments, <code>#note~42</code> — and can therefore both write and honor; this one is a URL nokre deliberately does not interpret. Reach for deep_link when the link carries what a reference cannot: free text, a query, a path, or a claimed domain.</p><p>One handler, one lane. The launch URL — present because the app was opened by a link — is the first callback after boot; every runtime link is a callback after that, each on the UI thread, interleaved with input like a worker reply. Register once, inside <code>build</code>:</p><pre class="code" tabindex="0" data-n="4194521"><code>// Inside build (or the route builder): wire the handler once.
-nokre.services.deep_link.setHandler(app, state, onLink);
+nokre.services.deep_link.setHandler(app, .bind(onLink, state));
 
-fn onLink(ctx: ?*anyopaque, url: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onLink(state: *State, url: []const u8) void {
     // The web deep link is the fragment; native links carry a path.
     // Route on whichever the app speaks — this is the app&#39;s job.
     const target = nokre.services.deep_link.fragment(url) orelse url;
@@ -223,10 +221,9 @@ app.setDirection(L.dir(loc));                 // mirror the chrome to it
 // Optional, and also inside build: the user switching languages
 // mid-session. Registering again replaces, so a rebuild that
 // re-registers the same handler is a no-op.
-nokre.services.locale.setHandler(app, state, onLocale);
+nokre.services.locale.setHandler(app, .bind(onLocale, state));
 
-fn onLocale(ctx: ?*anyopaque, tag: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onLocale(state: *State, tag: []const u8) void {
     const loc = L.resolve(tag);
     state.app.setLocale(L.tag(loc)) catch {};
     state.app.setDirection(L.dir(loc));
@@ -266,7 +263,7 @@ if (!nokre.services.iap.available(app)) return; // draw no paywall
 
 // Register once, inside build. The stream is the *only* place a
 // purchase arrives, including ones this launch never asked for.
-nokre.services.iap.setHandler(app, state, onPurchase);
+nokre.services.iap.setHandler(app, .bind(onPurchase, state));
 
 // The catalog. Request/response, http&#39;s shape.
 _ = try nokre.services.iap.products(.{
@@ -288,12 +285,12 @@ fn onProducts(ctx: ?*anyopaque, catalog: nokre.services.iap.Catalog) void {
 // From a tap. The outcome arrives on the stream, not here.
 try nokre.services.iap.purchase(.{ .app = app, .product = &quot;coins.100&quot; });
 
-fn onPurchase(ctx: ?*anyopaque, update: nokre.services.iap.Update) void {
+fn onPurchase(state: *State, update: nokre.services.iap.Update) void {
     switch (update) {
         .purchase =&gt; |p| switch (p.state) {
             // Send p.token to your backend; when it has written the
             // entitlement, and not one line before, finish.
-            .purchased, .restored =&gt; deliver(ctx, p),
+            .purchased, .restored =&gt; deliver(state, p),
             // Committed, unpaid: Play&#39;s cash flow, Apple&#39;s Ask to Buy.
             // The real purchase arrives later — maybe days later, in
             // another launch.
@@ -329,15 +326,14 @@ const N = nokre.services.notification;
 if (!N.available(app)) return;
 
 // One handler, registered once inside build — the whole inbound lane.
-N.setHandler(app, state, onNotification);
+N.setHandler(app, .bind(onNotification, state));
 
 // From a control the user pressed, never at boot: the prompt has one
 // answer per install, and an app that asks before it has shown why gets
 // the reflexive no that cannot be taken back.
 try N.authorize(app);
 
-fn onNotification(ctx: ?*anyopaque, event: N.Event) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onNotification(state: *State, event: N.Event) void {
     switch (event) {
         // The prompt was answered — or the user changed their mind in
         // Settings while the app ran. `status` is already updated.

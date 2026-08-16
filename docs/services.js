@@ -350,6 +350,20 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics }) 
   const ruler = document.createElement("canvas").getContext("2d");
   const widths = new Map();
 
+  // A ceiling, because `loadingdone` is the only other thing that clears
+  // this and a session may never see one. Every distinct string measured
+  // is an entry — a text field measures a new one on every keystroke — so
+  // an afternoon of editing grows the map without bound, for answers that
+  // will never be asked for again.
+  //
+  // Dropped whole rather than evicted one at a time: an LRU wants a second
+  // structure and a write on every *hit* to maintain it, which is real work
+  // on a path layout calls thousands of times a frame, to save re-measuring
+  // strings that are still on screen and that the very next pass re-caches.
+  // The cheap thing is right here because a miss costs one `measureText`,
+  // never a wrong answer.
+  const max_widths = 4096;
+
   document.fonts?.addEventListener("loadingdone", () => {
     widths.clear();
     onMetrics?.();
@@ -363,6 +377,7 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics }) 
     if (w === undefined) {
       ruler.font = font;
       w = Math.ceil(ruler.measureText(text).width);
+      if (widths.size >= max_widths) widths.clear();
       widths.set(key, w);
     }
     return w;

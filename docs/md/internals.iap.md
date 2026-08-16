@@ -34,7 +34,7 @@ screen an app already knows how to build.
 
 ```zig
 if (!nokre.services.iap.available(app)) return;      // the boot query
-nokre.services.iap.setHandler(app, state, onPurchase); // the stream
+nokre.services.iap.setHandler(app, .bind(onPurchase, state)); // the stream
 _ = try nokre.services.iap.products(.{ … });         // verb: catalog
 try nokre.services.iap.purchase(.{ … });             // verb: sheet up
 nokre.services.iap.finish(app, txn_id, .consumed);   // verb: delivered

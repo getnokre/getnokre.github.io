@@ -939,12 +939,11 @@ state.solver = try h.workers.spawnAsker(Pow, app);
 
 // Each ask carries its own callback; the message is serialized inside
 // the call, exactly like `send`.
-try state.solver.ask(.{ .solve = spec }, state, onSolved);
+try state.solver.ask(.{ .solve = spec }, .bind(onSolved, state));
 
 // Exactly one answer per accepted ask: the worker's one reply, or the
 // fault that took its place.
-fn onSolved(ctx: ?*anyopaque, answer: h.workers.Answer(Pow)) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onSolved(state: *State, answer: h.workers.Answer(Pow)) void {
     switch (answer) {
         .reply => |r| acceptProof(state, r),
         .fault => |f| failPending(state, f),
@@ -1131,10 +1130,9 @@ like a worker reply. Register once, inside `build`:
 
 ```zig
 // Inside build (or the route builder): wire the handler once.
-nokre.services.deep_link.setHandler(app, state, onLink);
+nokre.services.deep_link.setHandler(app, .bind(onLink, state));
 
-fn onLink(ctx: ?*anyopaque, url: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onLink(state: *State, url: []const u8) void {
     // The web deep link is the fragment; native links carry a path.
     // Route on whichever the app speaks — this is the app's job.
     const target = nokre.services.deep_link.fragment(url) orelse url;
@@ -1243,10 +1241,9 @@ app.setDirection(L.dir(loc));                 // mirror the chrome to it
 // Optional, and also inside build: the user switching languages
 // mid-session. Registering again replaces, so a rebuild that
 // re-registers the same handler is a no-op.
-nokre.services.locale.setHandler(app, state, onLocale);
+nokre.services.locale.setHandler(app, .bind(onLocale, state));
 
-fn onLocale(ctx: ?*anyopaque, tag: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onLocale(state: *State, tag: []const u8) void {
     const loc = L.resolve(tag);
     state.app.setLocale(L.tag(loc)) catch {};
     state.app.setDirection(L.dir(loc));
@@ -1482,7 +1479,7 @@ if (!nokre.services.iap.available(app)) return; // draw no paywall
 
 // Register once, inside build. The stream is the *only* place a
 // purchase arrives, including ones this launch never asked for.
-nokre.services.iap.setHandler(app, state, onPurchase);
+nokre.services.iap.setHandler(app, .bind(onPurchase, state));
 
 // The catalog. Request/response, http's shape.
 _ = try nokre.services.iap.products(.{
@@ -1504,12 +1501,12 @@ fn onProducts(ctx: ?*anyopaque, catalog: nokre.services.iap.Catalog) void {
 // From a tap. The outcome arrives on the stream, not here.
 try nokre.services.iap.purchase(.{ .app = app, .product = "coins.100" });
 
-fn onPurchase(ctx: ?*anyopaque, update: nokre.services.iap.Update) void {
+fn onPurchase(state: *State, update: nokre.services.iap.Update) void {
     switch (update) {
         .purchase => |p| switch (p.state) {
             // Send p.token to your backend; when it has written the
             // entitlement, and not one line before, finish.
-            .purchased, .restored => deliver(ctx, p),
+            .purchased, .restored => deliver(state, p),
             // Committed, unpaid: Play's cash flow, Apple's Ask to Buy.
             // The real purchase arrives later — maybe days later, in
             // another launch.
@@ -1900,15 +1897,14 @@ const N = nokre.services.notification;
 if (!N.available(app)) return;
 
 // One handler, registered once inside build — the whole inbound lane.
-N.setHandler(app, state, onNotification);
+N.setHandler(app, .bind(onNotification, state));
 
 // From a control the user pressed, never at boot: the prompt has one
 // answer per install, and an app that asks before it has shown why gets
 // the reflexive no that cannot be taken back.
 try N.authorize(app);
 
-fn onNotification(ctx: ?*anyopaque, event: N.Event) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
+fn onNotification(state: *State, event: N.Event) void {
     switch (event) {
         // The prompt was answered — or the user changed their mind in
         // Settings while the app ran. `status` is already updated.

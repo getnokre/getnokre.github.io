@@ -52,6 +52,7 @@ state.button_id = try b.buttonId(.{ .label = tr(.exportKeys), .on_press = … })
 // in the callback, with the user mid-form:
 app.patchText(state.status_id, state.statusCopy());
 app.patchProgress(state.button_id, percent);
+app.patchBusy(state.button_id, false); // …and when the work ends
 ```
 
 `textId`, `styledId`, `buttonId` and `meterId` are the four leaves that
@@ -60,10 +61,17 @@ element. `patchText` replaces a text-bearing node's content;
 `patchProgress` takes 0–100 and moves either a `button`'s
 `progress_percent` (setting `in_progress` with it, since that pair is
 one state) or a `meter`'s `value` as that fraction of its own `max`.
-Both mark the frame, so the `invalidate()` that used to follow every
-one of these is gone.
+`patchBusy` is the verb for work that cannot say how far along it is:
+a percentage has no way to spell *not running*, because 0 is where the
+work starts rather than where it is absent. It answers on the three
+elements that carry `in_progress` — `button`, `toggle`, `checkbox` —
+and turning it off takes any `progress_percent` with it, since that
+pair is one state. It refuses no button form: a percentage is refused
+on the 24px glyph and the vendor sign-in pill because neither has room
+for a track, and the `…` needs none. All three mark the frame, so the
+`invalidate()` that used to follow every one of these is gone.
 
-**Both decline on a stale id, silently.** A recorded id outlives its
+**All three decline on a stale id, silently.** A recorded id outlives its
 node by construction — every rebuild frees the tree it named — so a
 reply arriving one frame late is the ordinary case, not a programmer
 error, and the state it wanted on screen is already there: the rebuild

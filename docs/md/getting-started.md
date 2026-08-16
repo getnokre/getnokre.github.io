@@ -456,7 +456,7 @@ One handler, wired in `main` once the app exists:
 
 ```zig
     state.app = &app;
-    h.services.deep_link.setHandler(&app, &state, onDeepLink);
+    h.services.deep_link.setHandler(&app, .bind(onDeepLink, &state));
     try app.setNav(&nav_items);
     try app.navigate("notes");
 ```
@@ -484,7 +484,7 @@ test "a link routes the app to a section" {
     var t = try nok.testing.Harness.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
-    nok.services.deep_link.setHandler(&t.app, &state, app.onDeepLink);
+    nok.services.deep_link.setHandler(&t.app, .bind(app.onDeepLink, &state));
 
     try t.deliverDeepLink("https://notes.example.com/#settings");
     try t.expectRoute("settings");
@@ -1082,7 +1082,7 @@ test "a fake server serves the whole flow" {
     var t = try signedIn(&state);
     defer t.deinit();
     state.app = &t.app;
-    t.onHttp(null, serve);
+    t.onHttp(.{ .call = serve });
 
     try t.tapLabel("Sync");
     try t.settleHttp(); // however many requests the flow issues

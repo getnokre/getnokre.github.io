@@ -70,10 +70,12 @@ default; `ABIS="arm64-v8a x86_64"` for Intel-host emulators). Android
 fonts the device ships — so the build keeps the memory-only manager
 (the shim selects it under `__ANDROID__`) and the same three pinned
 externals. Two Android-only wrinkles, explained in the script: the
-non-wasm FreeType config enables PNG color glyphs, so
-`skia_use_system_libpng=false` must fold libpng (and with it the
-bundled zlib) into the archive — official builds otherwise assume a
-system libpng that Android lacks. The example's CMake
+FreeType config Skia hands this target defines
+`FT_CONFIG_OPTION_USE_PNG` (color bitmap glyphs), so libpng has to
+really be in the archive — and `skia_use_system_libpng` defaults *on*
+in an official build, which assumes a system libpng Android does not
+ship, so it is set false and folds the bundled libpng and its zlib in.
+The example's CMake
 ([examples/kitchen_sink/android](../../examples/kitchen_sink/android))
 compiles the shim with the same NDK and links everything, reusing the
 nocodec stub.
