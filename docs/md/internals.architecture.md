@@ -1,0 +1,169 @@
+# Architecture
+
+nokre is a strict layer cake. Each layer knows only the layer below it.
+
+```
+┌────────────────────────────────────────────────────────┐
+│ your app: route builders + actions                     │
+├────────────────────────────────────────────────────────┤
+│ core (pure Zig, zero dependencies)                     │
+│   tree · element · layout · event · focus · router     │
+│   app — the one object shells and tests both drive     │
+│   (behavior: input · editing · overlays · notices)     │
+├──────────────────────────┬─────────────────────────────┤
+│ render                   │ a11y                        │
+│   Canvas vtable          │   semantics snapshot        │
+│   renderer (tree→canvas) │   accesskit adapter         │
+├──────────────────────────┴─────────────────────────────┤
+│ render/skia — Zig bindings over shim/nokre_skia.cpp   │
+│   (only linked with -Dskia)                            │
+│ render/dom  — the same walk, as markup (links nothing) │
+├────────────────────────────────────────────────────────┤
+│ platform shells — one per OS, deliberately dumb        │
+│   surface + input events + blit; nothing else          │
+└────────────────────────────────────────────────────────┘
+```
+
+## Module map
+
+| Path | Responsibility |
+| --- | --- |
+| [src/core/geometry.zig](../../src/core/geometry.zig) | `Point`, `Size`, `Rect` — integers only |
+| [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted shades |
+| [src/core/text.zig](../../src/core/text.zig) | families, type scale, `Measurer` interface |
+| [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
+| [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
+| [src/core/bidi_tables.zig](../../src/core/bidi_tables.zig) | its generated UCD bidi-class tables (`tools/gen-bidi-tables.py`) — regenerated, never edited |
+| [src/core/icon_names.zig](../../src/core/icon_names.zig) | the generated icon-name table from lucide-static (`tools/gen-icon-names.py`), regenerated only with the face itself |
+| [src/core/element.zig](../../src/core/element.zig) | the closed element set (`Element` union) |
+| [src/core/bind.zig](../../src/core/bind.zig) | the one trampoline generator: `bindAs` fills any `{ ctx, call }` pair from a typed handler, and the four action `bind` methods are its callers |
+| [src/core/tree.zig](../../src/core/tree.zig) | retained tree, generational `NodeId`s |
+| [src/core/cursor.zig](../../src/core/cursor.zig) | the builder cursor — one method per element over `Tree.append`, closed with the set |
+| [src/core/layout.zig](../../src/core/layout.zig) | block-flow layout, row wrap (`rowOverflow`), metrics |
+| [src/core/wrap.zig](../../src/core/wrap.zig) | word wrap, span segmentation, bidi line pieces, middle elision |
+| [src/core/event.zig](../../src/core/event.zig) | pointer (press/release) / key / text / IME / scroll — no hover |
+| [src/core/focus.zig](../../src/core/focus.zig) | document-order focus traversal |
+| [src/core/router.zig](../../src/core/router.zig) | named-screen stack with per-entry arguments, instant rebuilds, the current-route observer |
+| [src/core/app.zig](../../src/core/app.zig) | the App struct: state, lifecycle, dispatch |
+| [src/core/input.zig](../../src/core/input.zig) | press/release, key handling, hit testing |
+| [src/core/scrolling.zig](../../src/core/scrolling.zig) | the scroll chain: regions, horizontal tracks, the gesture lock |
+| [src/core/editing.zig](../../src/core/editing.zig) | text-field editing, IME protocol |
+| [src/core/overlays.zig](../../src/core/overlays.zig) | modal sheet + select and section pickers |
+| [src/core/nav.zig](../../src/core/nav.zig) | the nav roster (plus the current screen when it is off it) and its two shapes: row of items → collapsed chip |
+| [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
+| [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control and its sheet |
+| [src/core/qr.zig](../../src/core/qr.zig) | QR encoding over vendored qrcodegen |
+| [src/core/markdown.zig](../../src/core/markdown.zig) | the `document` element's parser: the Markdown subset, literal degradation of the rest ([../markdown.md](../markdown.md)) |
+| [src/l10n/l10n.zig](../../src/l10n/l10n.zig) | ARB catalogs compiled at comptime: `Bundle`, cross-locale validation, `tr`/`fmt`/`resolve` ([../localization.md](../localization.md)) |
+| [src/l10n/arb.zig](../../src/l10n/arb.zig) / [plural_rules.zig](../../src/l10n/plural_rules.zig) | comptime ARB + ICU-subset parsing; CLDR integer plural rules |
+| [src/l10n/arb_fields.zig](../../src/l10n/arb_fields.zig) | what a catalog may carry at each of its three levels, plus the did-you-mean a refusal ends with — one home, because the comptime compiler and the host readers both enforce it ([../localization.md](../localization.md), "The format") |
+| [src/l10n/readers.zig](../../src/l10n/readers.zig) | the named module every host tool reads a catalog, a directory of them, a vocabulary and an ICU message with, and writes a catalog back with. It sits above `translate/` because a module's relative imports may not leave its root's directory and the encode lives under `fmt/` |
+| [src/l10n/translate/catalog_dir.zig](../../src/l10n/translate/catalog_dir.zig) | a directory of catalogs resolved once — enumerate, group by stem, read, identify each set's template. Four tools ask, and a copy of the loop per tool is a copy of the answer to "which catalog is the template" |
+| [src/l10n/fmt/](../../src/l10n/fmt/fmt.zig) | the one catalog layout: `fmt.zig` is the whole encode, pure bytes in and bytes out, and `main.zig` is `l10n-fmt` around it ([../localization.md](../localization.md), "Formatting a catalog") |
+| [src/l10n/purge/](../../src/l10n/purge/main.zig) | `l10n-purge`: the orphan set the check already computes, turned into one reviewable edit — a report by default, `--write` behind it, and what it cut emitted as a catalog set to move into another app ([../localization.md](../localization.md), "Purging unused keys"). It imports the check's own rule rather than a second scan, so it is never more aggressive than the build |
+| [src/l10n/encoding.zig](../../src/l10n/encoding.zig) | the byte scan every catalog is put through before it is parsed, and every declared document after it — mojibake, BOM, invalid UTF-8, U+FFFD, stray controls |
+| [src/l10n/check/](../../src/l10n/check/main.zig) | the six rules comptime cannot reach, as a host executable built on the host graph and attached to a *consumer's* app artifact, so a plain `zig build` there runs them ([../localization.md](../localization.md), "What the build checks"). It imports nokre rather than re-reading anything: what a key is, which fields carry words, and what a document's shape is each have one implementation |
+| [src/l10n/check/layout.zig](../../src/l10n/check/layout.zig) | the sixth of those rules, and the one that restates nothing: it runs the same encode `l10n-fmt` does, in memory, and compares bytes — so the gate and the formatter cannot disagree about what formatted means |
+| [src/l10n/translate/](../../src/l10n/translate/main.zig) | the two drafting tools (`translate-arb`, `translate-md`) and the readers they share — host-only, opt-in, in no app |
+| [src/workers/workers.zig](../../src/workers/workers.zig) | compute actors: registry, framing, UI-thread delivery ([workers.md](workers.md)) |
+| [src/workers/codec.zig](../../src/workers/codec.zig) | comptime-checked message codec |
+| [src/workers/thread.zig](../../src/workers/thread.zig) / [post.zig](../../src/workers/post.zig) | native / web worker transports |
+| [src/render/canvas.zig](../../src/render/canvas.zig) | `Canvas` vtable + `Recording` canvas |
+| [src/render/renderer.zig](../../src/render/renderer.zig) | tree → canvas draw calls |
+| [src/render/skia/canvas_skia.zig](../../src/render/skia/canvas_skia.zig) | Skia-backed `Canvas` + `Measurer` |
+| [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-edition.md](dom-edition.md)) |
+| [src/render/dom/stylesheet.zig](../../src/render/dom/stylesheet.zig) | that edition's stylesheet, generated from color/text/layout |
+| [src/render/dom/live.zig](../../src/render/dom/live.zig) / [live.js](../../src/render/dom/live.js) | that edition's live driver: the app in a browser, wasm32-freestanding, no Skia |
+| [src/render/dom/emit_css.zig](../../src/render/dom/emit_css.zig) / [serve.zig](../../src/render/dom/serve.zig) | its two host tools, build-time only and in no app: the stylesheet writer, and the server a site is looked at over ([dom-edition.md](dom-edition.md)) |
+| [shim/freestanding](../../shim/freestanding/README.md) | the three headers vendored qrcodegen wants where there is no libc |
+| [src/a11y/semantics.zig](../../src/a11y/semantics.zig) | tree → flat accessibility snapshot |
+| [src/a11y/accesskit.zig](../../src/a11y/accesskit.zig) | adapter over the AccessKit C bindings — VoiceOver, UIA, and AT-SPI are live; iOS (`UIAccessibilityElement`s) and Android (`AccessibilityNodeProvider`) consume the same `flatten` output without AccessKit, and the web needs no bridge at all |
+| [src/testing/testing.zig](../../src/testing/testing.zig) / [harness.zig](../../src/testing/harness.zig) | the tier's namespace root, and `HarnessApp` — the headless e2e fixture — in its own file |
+| [src/testing/queries.zig](../../src/testing/queries.zig) / [driver.zig](../../src/testing/driver.zig) | semantic queries — find by what users perceive, never by index — and the synthetic input driver, both through `App.dispatchInput` |
+| [src/testing/wait.zig](../../src/testing/wait.zig) / [driver_app.zig](../../src/testing/driver_app.zig) | the driver tier: deadline-bounded waits against a caller-injected clock, and `DriverApp` — the harness's verb names over a live `App`, no mock in reach ([testing.md](../testing.md#driving-an-app-outside-zig-test)) |
+| [src/testing/audit.zig](../../src/testing/audit.zig) | the accessibility audit: the whole-tree content rules construction-time validation cannot cover |
+| [src/testing/trace.zig](../../src/testing/trace.zig) / [golden.zig](../../src/testing/golden.zig) / [diag.zig](../../src/testing/diag.zig) | per-step tracing (`TreeSink`, and `Tee` for fanning one step at both instruments), byte-exact PPM goldens, and the harness's one stderr gate |
+| [src/testing/shell.zig](../../src/testing/shell.zig) | the headless shell a driver binary names instead of hand-exporting the C hooks a shell owes ([internals/platform-shells.md](platform-shells.md)) |
+| [src/core/test_app.zig](../../src/core/test_app.zig) | the mocked App nokre's *own* unit tests build on — internal, not the consumer fixture above |
+| [src/platform/platform.zig](../../src/platform/platform.zig) | comptime backend selection |
+| [src/platform/c_shell.zig](../../src/platform/c_shell.zig) | shared Zig side of the C shell contract ([shell.h](../../src/platform/shell.h)); names no rendering backend |
+| [src/platform/skia_frame.zig](../../src/platform/skia_frame.zig) | the Skia frame source the shells install: surface lifecycle and the render call ([renderer-editions.md](renderer-editions.md)) |
+| [src/services/services.zig](../../src/services/services.zig) | the `Services` struct: per-app service injection at `App.init` ([../services.md](../services.md)) |
+| [src/services/package_info/package_info.zig](../../src/services/package_info/package_info.zig) | app identity, declared once in build.zig ([services.md](../services.md)) |
+| [src/services/http/http.zig](../../src/services/http/http.zig) | request/response client, one API per platform ([http.md](http.md)) |
+| [src/services/secure_store/secure_store.zig](../../src/services/secure_store/secure_store.zig) | encrypted key/value for small secrets, sync, namespaced by `pkg_id` ([secure_store.md](secure_store.md)) |
+| [src/packaging/packaging.zig](../../src/packaging/packaging.zig) | platform manifests and the derived app icon ([icon.zig](../../src/packaging/icon.zig)) generated from the build declaration — build-time only, never compiled into apps ([../services.md](../services.md)) |
+| [src/packaging/apple_icon.zig](../../src/packaging/apple_icon.zig) | the declared Icon Composer bundle: checked where declared, delivered whole, never generated ([../services.md](../services.md)) |
+| [src/services/clipboard/clipboard.zig](../../src/services/clipboard/clipboard.zig) | one verb: copy text out, via the shell's C hook ([services.md](../services.md)) |
+| [src/services/deep_link/deep_link.zig](../../src/services/deep_link/deep_link.zig) | inbound URLs at launch and while running, delivered on the UI thread; routing stays the app's ([services.md](../services.md)) |
+| [src/services/locale/locale.zig](../../src/services/locale/locale.zig) | the device's BCP 47 tag, cached at boot and re-reported on change; feeds `l10n.Bundle.resolve` ([services.md](../services.md)) |
+| [src/services/oauth/oauth.zig](../../src/services/oauth/oauth.zig) | the sign-in browser session: one authorize URL out, one callback URL back, plus PKCE ([oauth.md](oauth.md)) |
+| [src/services/haptic/haptic.zig](../../src/services/haptic/haptic.zig) | the back gesture's threshold knock — injected like every service, callable by no app ([haptics.md](haptics.md)) |
+| [src/services/iap/iap.zig](../../src/services/iap/iap.zig) | the platform stores: catalog, payment sheet, purchase stream, finish, restore — and `available` where there is no store ([iap.md](iap.md)) |
+| [src/services/open_url/open_url.zig](../../src/services/open_url/open_url.zig) | one verb: hand a URL to the system browser, behind a closed scheme allowlist; external link activation lands here ([services.md](../services.md)) |
+| [src/services/share/share.zig](../../src/services/share/share.zig) | one verb: put the OS share sheet up with UTF-8 text on it — and `available` where there is no sheet ([services.md](../services.md)) |
+| [src/services/notification/notification.zig](../../src/services/notification/notification.zig) | the OS's notification surface: ask, post, schedule, cancel, and one lane back for taps, arrivals and push tokens ([notifications.md](notifications.md)) |
+| [src/services/clock/clock.zig](../../src/services/clock/clock.zig) | one verb: the wall clock in milliseconds since the Unix epoch, UTC — the OS call direct, no shell hook; core and the renderers never call it ([services.md](../services.md)) |
+| [src/image/png.zig](../../src/image/png.zig) | the one PNG encoder, `std` and nothing else — below every layer, so the derived app icon and the testing tier's captures share it without either reaching across the cake ([contributing.md](contributing.md)) |
+| [shim/nokre_skia.cpp](../../shim/nokre_skia.cpp) | the entire C surface over Skia |
+
+## Data flow
+
+One loop, everywhere:
+
+1. A shell (or the test driver) delivers an `Event` to `App.dispatchInput`.
+2. Dispatch mutates semantic state: focus, toggle on, input value,
+   scroll offset — or invokes an app `Action`, which edits the tree and
+   calls `app.invalidate()`.
+3. When `app.needs_frame` is set, the shell asks its installed frame source
+   for one: `performLayout` (dirty-flagged) then `renderer.render(app,
+   canvas)`. The shell reconciles the viewport and safe area the OS
+   reported and blits the buffer it gets back; what is *in* the buffer is
+   the source's business, never the shell's.
+4. The shell blits the RGBX buffer. That's the entire frame story — there
+   is no ticker; a nokre app at rest costs zero CPU.
+
+The testing harness drives step 1 and reads state after step 2, and can run
+step 3 against either the `Recording` canvas (pure) or a Skia surface
+(golden tests). Because it is the same `App`, e2e tests are faithful by
+construction.
+
+## Design rules
+
+- **Core stays pure.** `src/core` and `src/testing` import nothing outside
+  the repo; the one extern surface is vendored qrcodegen, isolated in
+  [core/qr.zig](../../src/core/qr.zig). `zig build test` runs on any machine
+  with only a Zig toolchain.
+- **Shells stay dumb.** A platform shell may not measure text, walk the
+  tree, or interpret input beyond keycode mapping. If a shell needs
+  intelligence, the design is wrong.
+- **The element set is closed.** New capability means a new semantic
+  element with layout, rendering, a11y, and audit rules — not a styling
+  hook. The checklist is in [contributing.md](contributing.md); the
+  argument for closure is in [introduction.md](../introduction.md).
+- **Tree strings are arena'd; the router rebuild is the reclaim point.**
+  Every string handed to the tree is copied into a tree-owned arena
+  (validated on the way in — [tree.zig](../../src/core/tree.zig)'s
+  module doc), and nothing is freed on node removal. Each navigation's
+  rebuild (`Tree.reclaim`) re-copies the surviving chrome's strings
+  into a fresh arena — node identity untouched, so focus and the picker
+  hold — and frees the old one, taking the removed screen's strings and
+  every editing splice and IME copy since the last rebuild with it.
+  Typing accumulates memory only until the next rebuild.
+- **Service state lives on the App.** Every App is constructed with its
+  services (`Options.services`; mocks in test builds, enforced at
+  compile time) and owns their state — the workers `Runtime`, each
+  mock's heap half. A module-global `var` in `src/services` or
+  `src/workers` is a bug: two apps in one process must be disjoint by
+  construction, not by the test runner's serialization. The documented
+  exemptions — wasm shell singletons (the instance *is* one app) and
+  the refcounted native Io backends — each carry a guard and a comment.
+  The http transport's backend carries one more: it is created with no
+  async pool, which is a correctness requirement rather than a tuning
+  choice ([http.md](http.md#no-pool-under-the-native-transport)).
+
+Code conventions (test layout, formatting, comment voice) are in
+[contributing.md](contributing.md). Why the render seam is shaped to
+permit non-Skia renderer editions is
+[renderer-editions.md](renderer-editions.md); the one that exists is
+[dom-edition.md](dom-edition.md).

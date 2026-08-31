@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-direction="ltr" data-nokre="document">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'wasm-unsafe-eval';
+  worker-src 'self';
+  style-src 'self' 'unsafe-inline';
+  style-src-elem 'self';
+  img-src 'self';
+  font-src 'self';
+  connect-src 'self';
+  base-uri 'none';
+  form-action 'none'
+">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started — nokre</title>
+<meta name="description" content="The course: build one app that uses everything, test it as you go, ship it to six platforms.">
+<link rel="stylesheet" href="/style.css">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<link rel="canonical" href="https://getnokre.github.io/en/getting-started/">
+<link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/getting-started/">
+<link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/getting-started/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="nokre">
+<meta property="og:title" content="Getting started">
+<meta property="og:description" content="The course: build one app that uses everything, test it as you go, ship it to six platforms.">
+<meta property="og:url" content="https://getnokre.github.io/en/getting-started/">
+<meta property="og:image" content="https://getnokre.github.io/share-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preload" href="/assets/fonts/prose.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div id="chrome"><nav class="nav" aria-label="Sections"><div class="nav-row"><a class="chip" href="/en/" data-n="2097201"><span class="icon g3" aria-hidden="true">&#xE0F5;</span>Home</a><a class="chip" href="/en/docs/" data-n="2097154"><span class="icon g3" aria-hidden="true">&#xE05F;</span>Docs</a><a class="chip" href="/en/internals/" data-n="2097155"><span class="icon g3" aria-hidden="true">&#xE1B1;</span>Internals</a><span class="chip current here"><span class="visually-hidden">Current screen: </span><span class="icon" aria-hidden="true">&#xE0CC;</span>Getting started</span></div></nav></div>
+<main id="content" class="nokre has-chrome page"><div class="document" role="document" aria-label="Getting started"><h2 id="getting-started">Getting started</h2><p>This is a course, not a tour. Over fourteen short parts you build one app — <strong>Notes</strong>: sign-in gated by the secure store, a notes list, a new-note sheet, sync over http, a background worker, settings, a second language — and you test every part as you go, ending with an inline tree snapshot, a step trace, and a byte-exact golden screenshot. The last part builds the same code for macOS, Windows, Linux, iOS, Android, and the web. Finish it and you have used the core of nokre&#39;s consumer surface; each part links the document that owns the full contract, and the last part points at what the course deliberately skipped.</p><p>Read <a class="link" href="/en/introduction/" data-n="2097206" data-s="1">introduction.md</a> first if you haven&#39;t — nokre makes more sense once you know what it refuses to do.</p><p><strong>Prerequisites:</strong> Zig 0.16. A windowed app runs on all five shells today — macOS, Windows, Linux, iOS and Android — and in a browser, which has no shell because it is one. Everything headless in this course — the core model and the whole testing framework — is pure Zig and runs anywhere.</p><p><strong>The course, part by part</strong> — each one adds a feature and its test:</p><ul class="list" style="--list-gutter:17px"><li><p><a class="link" href="#part-0--see-it-run" data-n="2097207" data-s="0">Part 0 — See it run</a></p></li><li><p><a class="link" href="#part-1--a-project-of-your-own" data-n="2097211" data-s="0">Part 1 — A project of your own</a></p></li><li><p><a class="link" href="#part-2--your-first-test" data-n="2097213" data-s="0">Part 2 — Your first test</a></p></li><li><p><a class="link" href="#part-3--screens-and-navigation" data-n="2097215" data-s="0">Part 3 — Screens and navigation</a></p></li><li><p><a class="link" href="#part-4--the-sign-in-screen" data-n="2097217" data-s="0">Part 4 — The sign-in screen</a></p></li><li><p><a class="link" href="#part-5--remembering-the-session-secure_store" data-n="2097209" data-s="0">Part 5 — Remembering the session (secure_store)</a></p></li><li><p><a class="link" href="#part-6--the-list-the-sheet-and-a-status-line" data-n="2097219" data-s="0">Part 6 — The list, the sheet, and a status line</a></p></li><li><p><a class="link" href="#part-7--sync-http" data-n="2097221" data-s="0">Part 7 — Sync (http)</a></p></li><li><p><a class="link" href="#part-8--heavy-work-workers" data-n="2097223" data-s="0">Part 8 — Heavy work (workers)</a></p></li><li><p><a class="link" href="#part-9--the-note-screen-copyable-qr-delete" data-n="2097229" data-s="0">Part 9 — The note screen: copyable, qr, delete</a></p></li><li><p><a class="link" href="#part-10--settings-segmented-radio_group-toggle-package_info" data-n="2097231" data-s="0">Part 10 — Settings: segmented, radio_group, toggle, package_info</a></p></li><li><p><a class="link" href="#part-11--a-second-language-l10n" data-n="2097239" data-s="0">Part 11 — A second language (l10n)</a></p></li><li><p><a class="link" href="#part-12--proof-tree-snapshots-step-traces-goldens" data-n="2097233" data-s="0">Part 12 — Proof: tree snapshots, step traces, goldens</a></p></li><li><p><a class="link" href="#part-13--every-platform" data-n="2097235" data-s="0">Part 13 — Every platform</a></p></li><li><p><a class="link" href="#part-14--where-you-are-now" data-n="2097227" data-s="0">Part 14 — Where you are now</a></p></li><li><p><a class="link" href="#command-reference" data-n="2097237" data-s="0">Command reference</a></p></li></ul><h3 id="part-0--see-it-run">Part 0 — See it run</h3><pre class="code" tabindex="0" data-n="2097241"><code>git clone https://github.com/getnokre/nokre
+cd nokre
+zig build test            # pure unit tests — no dependencies, any machine
+tools/fetch-deps.sh       # fetch prebuilt Skia + AccessKit (once)
+zig build run-hello -Dskia
+zig build run-kitchen-sink -Dskia</code></pre><p><code>hello</code> is the smallest complete app (<a class="link" href="https://github.com/getnokre/nokre/blob/main/examples/hello" target="_blank" rel="noopener noreferrer" data-n="2097244" data-s="2">examples/hello</a>); <code>kitchen-sink</code> shows every element on two screens and is the visual reference this course points at whenever it skips one. Explore with the keyboard first: Tab, arrows, Enter, Esc — everything reachable by pointer is reachable that way too, and with VoiceOver running, everything is announced.</p><p>The same kitchen sink runs in a browser, and that is one command with no toolchain behind it:</p><pre class="code" tabindex="0" data-n="2097236"><code>zig build serve            # -Dport=9000 if 8000 is taken</code></pre><p>Then open &lt;http://localhost:8000&gt;. Serving it is not a nicety: neither a wasm module nor an ES module loads from a <code>file://</code> URL, so the site has to arrive over http — which is why the server is a build step rather than a sentence telling you to go and find one. <code>zig build web</code> writes the same directory to <code>zig-out/web/</code> without serving it, and that directory is the whole site: nothing else has to go beside it, on this machine or on a host.</p><p>What runs there is the <strong>DOM edition</strong>: the same tree, written as markup and drawn by the browser, in one 200 KB wasm module with no Skia in it (<a class="link" href="/en/internals.dom-edition/" data-n="2097246" data-s="3">internals/dom-edition.md</a>). It is the one platform whose pixels are not nokre&#39;s, and the one whose accessibility tree <em>is</em> the page rather than a copy of it. Part 13 does this for your own app.</p><p>Three platform notes before your own project starts:</p><ul class="list" style="--list-gutter:17px"><li><p><strong>macOS:</strong> a bare <code>zig build run-…</code> binary is ad-hoc-signed, so an app using the <code>secure_store</code> service may see a keychain authorization prompt after a rebuild — dev-only posture, not contract; the why and the ways out are in <a class="link" href="/en/services/" data-n="4194412" data-s="6">services.md</a>.</p></li><li><p><strong>Windows:</strong> the same commands work from Git Bash (for the shell scripts) or any shell. <code>-Dskia</code> builds need Visual Studio&#39;s C++ Build Tools — the Skia prebuilt is MSVC-ABI, and build.zig targets <code>x86_64-windows-msvc</code> automatically. Text rasterizes through FreeType, so pixels match the Linux and Android builds rather than macOS/iOS (<a class="link" href="/en/internals.skia-build/" data-n="4194410" data-s="6">internals/skia-build.md</a>); the committed golden suite is CoreText&#39;s, so regenerate your own here. Narrator, NVDA, and JAWS are wired via the same AccessKit binding as VoiceOver.</p></li><li><p><strong>Linux:</strong> the shell is Wayland, and the build wants the usual dev packages beside it: <code>wayland-protocols</code> plus the <code>wayland-client</code>, <code>libxkbcommon</code>, <code>dbus-1</code>, and <code>libsecret-1</code> headers. FreeType again, so the Windows golden note applies here too; Orca is wired via AccessKit over AT-SPI.</p></li></ul><h3 id="part-1--a-project-of-your-own">Part 1 — A project of your own</h3><p>Make a sibling directory next to the nokre checkout (the path dependency below assumes <code>../nokre</code>; the prebuilts you fetched live inside that checkout, which is why a side-by-side clone is the easy route):</p><pre class="code" tabindex="0" data-n="4194411"><code>mkdir notes &amp;&amp; cd notes
+mkdir -p src</code></pre><p><code>build.zig.zon</code> — on the first <code>zig build</code>, Zig rejects a missing or stale <code>.fingerprint</code> and prints the value to paste:</p><pre class="code" tabindex="0" data-n="4194413"><code>.{
+    .name = .notes,
+    .version = &quot;0.1.0&quot;,
+    .fingerprint = 0x0, // first `zig build` prints the real value
+    .minimum_zig_version = &quot;0.16.0&quot;,
+    .dependencies = .{
+        .nokre = .{ .path = &quot;../nokre&quot; },
+    },
+    .paths = .{ &quot;build.zig&quot;, &quot;build.zig.zon&quot;, &quot;src&quot;, &quot;tests&quot; },
+}</code></pre><p>That path is the whole dependency — a sibling checkout, not a registry fetch — so nothing above records <em>which</em> nokre your app was written against. <code>nokre.revision</code> does: a hand-bumped constant in <code>src/revision.zig</code>, deliberately not machinery. Assert it once, anywhere your root module reaches:</p><pre class="code" tabindex="0" data-n="4194419" style="--bleed:16px"><code>comptime {
+    if (nokre.revision != 1) @compileError(
+        &quot;written against nokre revision 1 — survey the app against the checkout before bumping this assert&quot;,
+    );
+}</code></pre><p>A checkout that moved under you then fails the build naming the mismatch, instead of failing at whatever call site the contract moved under — or, worse, not failing.</p><p><code>build.zig</code> — nokre&#39;s build.zig is importable by package name, and <code>addApp</code> assembles the right artifact for whatever target you pass: the windowed executable on macOS and Windows, the static libraries an Xcode or Gradle consumes on iOS and Android:</p><pre class="code" tabindex="0" data-n="4194420" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
+const nokre = @import(&quot;nokre&quot;); // the dependency&#39;s build.zig
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    // Named, not inlined: Part 12&#39;s golden tests need the dependency
+    // again to link Skia onto their own binary.
+    const nokre_dep = b.dependency(&quot;nokre&quot;, .{});
+
+    const app = nokre.addApp(nokre_dep, .{
+        .name = &quot;notes&quot;,
+        .root_source_file = b.path(&quot;src/main.zig&quot;),
+        .target = target,
+        .optimize = optimize,
+        // Identity links package_info and makes `app.pkg` exist —
+        // manifests and the app icon are outputs of this declaration
+        // (docs/services.md).
+        .pkg = .{ .name = &quot;Notes&quot;, .id = &quot;com.example.notes&quot;, .version = &quot;0.1.0&quot;, .build = 1 },
+        // The store&#39;s namespace is the id above; Part 5 uses it.
+        .secure_store = true,
+        // The domains the OS should route into the app; the entitlement
+        // and assetlinks are derived from them. Part 3 routes the URL.
+        .deep_link_domains = &amp;.{&quot;notes.example.com&quot;},
+    });
+    b.installArtifact(app.artifact);
+    if (app.shim) |shim| b.installArtifact(shim); // iOS: Xcode links both
+    if (app.pkg) |pkg| b.installDirectory(.{ .source_dir = pkg, .install_dir = .prefix, .install_subdir = &quot;pkg&quot; });
+
+    const run_step = b.step(&quot;run&quot;, &quot;Run the app&quot;);
+    run_step.dependOn(&amp;b.addRunArtifact(app.artifact).step);
+}</code></pre><p><code>src/main.zig</code> — the smallest complete program, and already the shape every later part grows: state you own, builder functions that project state into the element tree, and actions that change state:</p><pre class="code" tabindex="0" data-n="4194422" style="--bleed:16px"><code>//! The smallest complete nokre app: one screen, one action.
+const std = @import(&quot;std&quot;);
+const h = @import(&quot;nokre&quot;);
+
+pub const State = struct {
+    count: u32 = 0,
+    app: *h.App = undefined,
+    label_id: h.NodeId = .invalid,
+
+    pub fn increment(state: *State) void {
+        state.count += 1;
+        var buf: [32]u8 = undefined;
+        const label = std.fmt.bufPrint(&amp;buf, &quot;Pressed {d} times&quot;, .{state.count}) catch return;
+        state.app.patchText(state.label_id, label);
+    }
+};
+
+pub const routes = h.Routes(State).table(&amp;.{
+    .{ .name = &quot;home&quot;, .title = .{ .fixed = &quot;Notes&quot; }, .build = buildHome },
+    // Every table declares one of these: where a reference that resolves
+    // to nothing lands. `App.init` refuses a table without it, because a
+    // tap on a dead reference doing nothing at all, silently, is not
+    // something an app should be able to ship by omission
+    // ([routing.md](routing.md), &quot;Where an unresolved reference lands&quot;).
+    // The words are yours — nokre routes there and draws none of it.
+    .{ .name = &quot;not_found&quot;, .title = .{ .fixed = &quot;Nothing here&quot; }, .for_unresolved = true, .build = buildNotFound },
+});
+
+pub fn buildHome(state: *State, app: *h.App) !void {
+    const b = app.root();
+    state.label_id = try b.textId(&quot;Pressed 0 times&quot;);
+    try b.button(.{
+        .label = &quot;Increment&quot;,
+        .on_press = .bind(State.increment, state),
+    });
+}
+
+pub fn buildNotFound(_: *State, app: *h.App) !void {
+    const b = app.root();
+    // Null when the reader named this route outright — it is a route
+    // like any other, and reachable by its own name.
+    if (app.router.refused) |r| {
+        try b.text(try app.tree.fmt(&quot;There is no screen called “{s}”.&quot;, .{r.ref()}));
+    } else {
+        try b.text(&quot;There is no screen here.&quot;);
+    }
+    try b.link(.{ .label = &quot;Back to the start&quot;, .route = &quot;home&quot; });
+}
+
+pub fn main() !void {
+    var gpa_state: std.heap.DebugAllocator(.{}) = .init;
+    defer _ = gpa_state.deinit();
+    const gpa = gpa_state.allocator();
+
+    var state = State{};
+    var app = try h.App.init(gpa, .{
+        .viewport = .{ .w = 480, .h = 640 },
+        .routes = &amp;routes,
+        .ctx = &amp;state,
+    });
+    defer app.deinit();
+    state.app = &amp;app;
+    try app.navigate(&quot;home&quot;);
+
+    try h.platform.run(&amp;app, .{ .title = .{ .fixed = &quot;Notes&quot; } });
+}</code></pre><p><strong>Checkpoint:</strong> <code>zig build run</code> opens a window titled Notes, with <strong>Notes</strong> drawn across the top of the screen. Tab reaches the button, Enter presses it, the label counts. (<code>State</code> and <code>buildHome</code> are <code>pub</code> because Part 2&#39;s tests import them.)</p><p>Nothing in <code>buildHome</code> drew that heading. The route already says what this screen is called, so the library draws it as the page&#39;s <code>h1</code> and the builder starts below it — which is why <code>heading</code> takes <code>h2</code> and deeper and refuses level 1. A screen whose title is not the route&#39;s says so with <code>app.setTitle(…)</code>, and <code>app.setTitle(&quot;&quot;)</code> says it draws none (<a class="link" href="/en/routing/" data-n="4194423" data-s="13">routing.md</a>).</p><p>Things worth noticing, because they generalize:</p><ul class="list" style="--list-gutter:17px"><li><p><strong>The cursor is where screens are written; </strong><strong><code>append</code></strong><strong> is where correctness happens.</strong> <code>app.root()</code> hands back a <code>Cursor</code> — one method per element, containers returning the child cursor — and every method <em>is</em> a <code>tree.append</code> call: a button with an empty label, a table row outside a table, text without enough contrast where it sits — all rejected at the call site with a named error. If the tree built, the screen is valid; an automatic audit covers what construction can&#39;t see. The rules are in <a class="link" href="/en/accessibility/" data-n="4194418" data-s="12">accessibility.md</a>. Four leaf methods have an <code>...Id</code> twin handing back the node — <code>textId</code> above, plus <code>styledId</code>, <code>buttonId</code>, <code>meterId</code> — for the one you address again; the raw <code>Tree</code> API stays public as the substrate for anything past those.</p></li><li><p><strong>Actions are typed methods, bound.</strong> <code>.bind(State.increment, state)</code> pairs a method on your state type with the pointer it runs against — nokre never allocates a closure. Every interactive element takes its action the same way (<code>on_press</code>, <code>on_toggle</code>, <code>on_change</code>, <code>on_select</code>; the latter three hand the method their payload), and a list row&#39;s action can carry the row — <code>.bindAt(State.accept, state, i)</code> delivers the position back at press time, <code>.bindKey(State.accept, state, row.id)</code> the identity (<a class="link" href="/en/elements/" data-n="3145828" data-s="16">elements.md</a>, &quot;Actions&quot;).</p></li><li><p><strong>You mutate, then say the frame is stale.</strong> Nothing renders until state changes and you say so; an app at rest costs zero CPU. Patch one node (as here, <code>patchText</code> — content plus <code>invalidate</code>, and a no-op if the node is gone) or rebuild a whole screen — Part 3 adds that second style. <code>app.invalidate()</code> is the bare form underneath both.</p></li><li><p><strong>Focus, keyboard access, and the a11y tree came for free.</strong> None of that was written above, and none of it can be forgotten.</p></li></ul><p>One aside for the other kind of consumer: headless use — the core model and the testing framework, no window — needs none of <code>addApp</code>; nokre is then an ordinary Zig dependency (<code>mod.addImport(&quot;nokre&quot;, b.dependency(&quot;nokre&quot;, .{ .target = target, .optimize = optimize }).module(&quot;nokre&quot;))</code>), and the <code>pkg_*</code> / <code>secure_store</code> / <code>deep_link</code> build options replace the <code>addApp</code> fields (<a class="link" href="/en/services/" data-n="1048621" data-s="13">services.md</a>). Everything in this course except <code>zig build run</code> and Part 13 works identically there.</p><h3 id="part-2--your-first-test">Part 2 — Your first test</h3><p>The harness drives the same <code>App</code> your <code>main</code> does — headless, no Skia, no window. The framework is asymmetric on purpose: interactions go through the <em>user&#39;s</em> pipeline (real hit-testing, real dispatch), and assertions read the <em>screen reader&#39;s</em> snapshot — so a test can only pass if an assistive-tech user could do the same thing. The a11y audit runs at init and again after every action.</p><p>Add the test wiring to <code>build.zig</code> — <code>app.nokre</code> is the same configured nokre instance the app links, so tests exercise identical code:</p><pre class="code" tabindex="0" data-n="1048617"><code>    const tests_mod = b.createModule(.{
+        .root_source_file = b.path(&quot;src/main_test.zig&quot;),
+        .target = target,
+        .optimize = optimize,
+        .imports = &amp;.{.{ .name = &quot;nokre&quot;, .module = app.nokre }},
+    });
+    const tests = b.addTest(.{ .root_module = tests_mod });
+    const test_step = b.step(&quot;test&quot;, &quot;Run headless e2e tests&quot;);
+    test_step.dependOn(&amp;b.addRunArtifact(tests).step);</code></pre><p><code>src/main_test.zig</code>:</p><pre class="code" tabindex="0" data-n="1048615" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
+const nok = @import(&quot;nokre&quot;);
+const app = @import(&quot;main.zig&quot;);
+
+test &quot;pressing Increment updates the label&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{
+        .ctx = &amp;state,
+        // The screen is typed against your state, so the fixture lowers
+        // it the same way the route table does.
+        .build = nok.Routes(app.State).builder(app.buildHome),
+    });
+    defer t.deinit();
+    state.app = &amp;t.app;
+    // The a11y audit already ran, and re-runs after every action below.
+
+    try t.tapLabel(&quot;Increment&quot;); // real hit-test, real dispatch
+    _ = try t.getByLabel(&quot;Pressed 1 times&quot;); // asserted via the a11y snapshot
+}</code></pre><p><strong>Checkpoint:</strong> <code>zig build test</code> passes in milliseconds, on any machine, with no native dependencies.</p><p>Two habits to form now. First, <code>state.app = &amp;t.app</code> comes <em>after</em> the harness is in its final variable — actions dereference that pointer, and a harness returned from a helper function has moved. Second, trust the diagnostics: a failed <code>getByLabel</code> prints every labeled node on screen, so a typo diagnoses itself, and <code>tap</code> refuses actions a user couldn&#39;t perform (<code>NotVisible</code>, <code>Obscured</code>, <code>NotInteractive</code>) rather than silently landing elsewhere. The full query and driver surface is <a class="link" href="/en/testing/" data-n="1048613" data-s="15">testing.md</a>.</p><h3 id="part-3--screens-and-navigation">Part 3 — Screens and navigation</h3><p>Notes has two sections and one pushed screen. Screens are named routes, each a builder; navigation is a stack. Replace the single-route setup:</p><pre class="code" tabindex="0" data-n="1048612" style="--bleed:16px"><code>pub const routes = h.Routes(State).table(&amp;.{
+    .{ .name = &quot;notes&quot;, .title = .{ .fixed = &quot;Notes&quot; }, .build = buildNotes },
+    .{ .name = &quot;note&quot;, .title = .{ .fixed = &quot;Note&quot; }, .args = 1, .build = buildNote }, // pushed detail — Part 9
+    .{ .name = &quot;settings&quot;, .title = .{ .fixed = &quot;Settings&quot; }, .build = buildSettings }, // Part 10
+    .{ .name = &quot;not_found&quot;, .title = .{ .fixed = &quot;Nothing here&quot; }, .for_unresolved = true, .build = buildNotFound },
+});
+
+pub const nav_items = [_]h.Destination{
+    .{ .route = &quot;notes&quot;, .icon = .notebook_pen },
+    .{ .route = &quot;settings&quot;, .icon = .settings },
+};</code></pre><p>and in <code>main</code>:</p><pre class="code" tabindex="0" data-n="1048610"><code>    var app = try h.App.init(gpa, .{
+        .viewport = .{ .w = 480, .h = 640 },
+        .routes = &amp;routes,
+        .ctx = &amp;state,
+    });
+    defer app.deinit();
+    state.app = &amp;app;
+    try app.setNav(&amp;nav_items);
+    try app.navigate(&quot;notes&quot;);</code></pre><p>(Rename <code>buildHome</code> to <code>buildNotes</code>, and stub <code>buildNote</code> / <code>buildSettings</code> with empty bodies for now — each route&#39;s title is already the heading its screen shows.) The rules, all framework-enforced:</p><ul class="list" style="--list-gutter:17px"><li><p><code>setNav</code> installs the app-level nav, called once before the first <code>navigate</code>. Activating an item pushes that destination, so Back returns to the section you crossed from (and the one you are already on does nothing). Everything else about the bar — its placement, its shape, why a destination is a route and an <code>icon</code> with no label, why the whole roster wears marks or none of it does, when the row collapses to a chip — is the framework&#39;s contract, not the app&#39;s: <a class="link" href="/en/elements/#navigation-chrome" data-n="1048606" data-s="6">elements.md</a> specifies it once.</p></li><li><p>Every route carries a <code>title</code>, and the field has no default — omitting it will not compile. It is what this screen is called everywhere at once: the nav labels its destinations from it, the marker for an off-roster screen takes it, and the page draws it as its own <code>h1</code>. The title is declared, never derived from content — and the page is drawn <em>from</em> the declaration, which is the opposite arrow. A screen whose reader-facing title is per-reference (<code>note~42</code> is &quot;Note&quot; to the chrome and the note&#39;s own name to the reader) restates that one with <code>app.setTitle(…)</code>.</p></li><li><p><code>app.navigate(&quot;note~42&quot;)</code> pushes a screen, and a pushed screen automatically gets a Back control (accessible name &quot;Back&quot;) — you cannot build a screen with no way back. <code>link</code> elements and route-carrying <code>tile</code>s navigate the same way declaratively.</p></li><li><p>Entering a route runs its builder against a fresh subtree — no diffing, no animation to wait out, which is also why tests never sleep. Besides push/pop there are <code>app.router.replace</code> (a different screen at the same depth), <code>app.router.switchTo</code> (reset the stack to this one screen, with nothing behind it) and <code>app.router.reload</code> (this screen again).</p></li><li><p>The rebuild is from scratch, but the <em>viewport</em> is not: popping back (and reloading) returns a screen to where it was scrolled, so a list you were halfway down comes back halfway down. On iOS a drag in from the leading screen edge goes back too — nothing slides, a haptic knock marks the threshold (<a class="link" href="/en/routing/#the-back-gesture" data-n="1048598" data-s="3">routing.md</a>).</p></li><li><p>A screen that is about <em>something</em> says so in the route: <code>app.navigate(&quot;note~42&quot;)</code>, read back inside the builder as <code>app.routeArg(0)</code>. The argument belongs to the stack entry, so two notes pushed in turn stay two notes when you pop. The route declared <code>.args = 1</code>, so a bare <code>note</code> is refused rather than built blank.</p></li><li><p>On the web the URL fragment is that reference — <code>#notes</code>, <code>#note~42</code> — mirrored both ways with nothing to wire: navigating writes it, and a typed or shared one puts the app there. See <a class="link" href="/en/routing/" data-n="1048591" data-s="5">routing.md</a>.</p></li></ul><p><code>reload</code> is how a whole screen reacts to changed state — but it is the <em>deliberate</em> verb (retry, pull-to-refresh), and it takes an edit in flight with the screen. The rebuilds nobody asked for — a reply landing between events — say <code>app.refresh(.{})</code> instead: the composed polite verb, which re-runs an open sheet&#39;s builder if one owns the screen, declines while the user holds something a rebuild would take, and can be scoped to a screen (<code>.{ .route = &quot;note&quot; }</code>) so a reply that lands after the user walked away leaves the screen it no longer owns alone (<a class="link" href="/en/routing/" data-n="1048593" data-s="8">routing.md</a>). Write the state, call <code>refresh</code>, done — there is no policy left to compose by hand.</p><p><strong>Checkpoint:</strong> <code>zig build run</code> — the nav sits at the bottom, taps and arrow keys switch sections, and the current section reads as a filled chip.</p><h4 id="opening-from-a-link-deep_link">Opening from a link (deep_link)</h4><p>Navigation also arrives from outside: a Universal Link tapped in Mail, an App Link from another app, a <code>#</code> fragment on the web. That is the <code>deep_link</code> service — Part 1&#39;s build.zig claimed the domains, which is what links it. It hands you the inbound URL and stops there, because <em>where</em> the URL goes is the router&#39;s job, which you already own.</p><p>One handler, wired in <code>main</code> once the app exists:</p><pre class="code" tabindex="0" data-n="1048586"><code>    state.app = &amp;app;
+    h.services.deep_link.setHandler(&amp;app, .bind(onDeepLink, &amp;state));
+    try app.setNav(&amp;nav_items);
+    try app.navigate(&quot;notes&quot;);</code></pre><pre class="code" tabindex="0" data-n="1048585"><code>/// The launch URL — if a link opened the app — is the first call, then
+/// every link that arrives while running. Route on it; that is all
+/// deep_link asks. The fragment is the web deep link and a fine
+/// cross-platform key: &quot;https://notes.example.com/#settings&quot; opens
+/// Settings.
+///
+/// The fragment is a stranger&#39;s bytes, so it is vetted at this door
+/// rather than handed to `navigate`: a typo in an address bar is not a
+/// programmer error and must not be recorded as one. An app that would
+/// rather show the reader the not-found screen says so here, by naming
+/// it — the decision belongs where the bytes were judged worth honoring.
+pub fn onDeepLink(ctx: ?*anyopaque, url: []const u8) void {
+    const state: *State = @ptrCast(@alignCast(ctx.?));
+    const target = h.services.deep_link.fragment(url) orelse &quot;notes&quot;;
+    if (state.app.router.vet(target) != null) return;
+    state.app.navigate(target) catch {};
+}</code></pre><p>The test injects a link the way a shell would and asserts through the same a11y snapshot as any tap — <code>deliverDeepLink</code> is the launch URL as the first call, then any runtime link:</p><pre class="code" tabindex="0" data-n="1048583" style="--bleed:16px"><code>test &quot;a link routes the app to a section&quot; {
+    var state = app.State{};
+    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+    nok.services.deep_link.setHandler(&amp;t.app, .bind(app.onDeepLink, &amp;state));
+
+    try t.deliverDeepLink(&quot;https://notes.example.com/#settings&quot;);
+    try t.expectRoute(&quot;settings&quot;);
+}</code></pre><p>Linking the service also grew the packaging tree with what the OS needs to trust the app for those domains: the iOS associated-domains entitlement, the Android App-Links <code>intent-filter</code>, and the two <code>/.well-known/</code> files you host on each domain — all derived from the declaration, the two signing-time values (Apple Team ID, Android cert SHA-256) left as loud <code>REPLACE_…</code> placeholders, never fabricated (<a class="link" href="/en/services/" data-n="1048582" data-s="7">services.md</a>). Part 13 hosts them; routing a link to a specific note, rather than a section, is the same handler once Part 9&#39;s list exists.</p><h3 id="part-4--the-sign-in-screen">Part 4 — The sign-in screen</h3><p>The notes section starts gated. This part is pure element vocabulary — a <code>box</code> to group the form, inline <code>spans</code>, an obscured <code>text_input</code>, a <code>checkbox</code>, a <code>button</code> — every element&#39;s full contract is in <a class="link" href="/en/elements/" data-n="125" data-s="11">elements.md</a>.</p><p>It is also the first place this app has to <em>keep</em> something it was handed. <code>on_change</code> gives the typed value as a borrowed slice, alive for the length of the call and no longer, so the passphrase lands in an <code>h.Str(64)</code> — a fixed-capacity string you own, copied on <code>set</code> (<a class="link" href="/en/elements/#holding-what-a-callback-borrowed" data-n="126" data-s="9">elements.md</a> is the contract, and the reason there is no allocator in sight).</p><pre class="code" tabindex="0" data-n="127" style="--bleed:16px"><code>pub const State = struct {
+    app: *h.App = undefined,
+    signed_in: bool = false,
+    remember: bool = true,
+    passphrase: h.Str(64) = .{},
+    signin_status: []const u8 = &quot;&quot;,
+    // …the earlier fields stay; later parts add more.
+};
+
+fn buildSignIn(state: *State, app: *h.App) !void {
+    const b = app.root();
+    try b.spanned(&amp;.{
+        .{ .text = &quot;Welcome. The passphrase is &quot; },
+        .{ .text = &quot;letmein&quot;, .code = true },
+        .{ .text = &quot; — this is a course app, not a bank.&quot; },
+    });
+    const form = try b.box(.{});
+    try form.textInput(.{
+        .label = &quot;Passphrase&quot;,
+        .obscured = true,
+        .on_change = .bind(editPassphrase, state),
+        .on_submit = .bind(signIn, state),
+    });
+    try form.checkbox(.{
+        .label = &quot;Stay signed in on this device&quot;,
+        .checked = state.remember,
+        .on_toggle = .bind(setRemember, state),
+    });
+    try form.button(.{
+        .label = &quot;Sign in&quot;,
+        .on_press = .bind(signIn, state),
+    });
+    if (state.signin_status.len != 0) {
+        try b.styled(state.signin_status, .{ .scale = .small, .ink = .dark });
+    }
+}
+
+pub fn buildNotes(state: *State, app: *h.App) !void {
+    if (!state.signed_in) return buildSignIn(state, app);
+    // …the signed-in screen, from Part 6 on.
+}
+
+// Typed handlers, bound above — no `?*anyopaque` cast anywhere. A fn
+// nested in State binds the same way (`.bind(State.signIn, state)`).
+pub fn editPassphrase(state: *State, value: []const u8) void {
+    state.passphrase.set(value); // copies; the borrowed slice ends with this call
+}
+
+pub fn setRemember(state: *State, checked: bool) void {
+    state.remember = checked;
+}
+
+pub fn signIn(state: *State) void {
+    if (!state.passphrase.eql(&quot;letmein&quot;)) {
+        state.signin_status = &quot;Wrong passphrase. (Hint: it&#39;s the one on screen.)&quot;;
+        state.app.refresh(.{});
+        return;
+    }
+    state.signed_in = true;
+    state.signin_status = &quot;&quot;;
+    state.passphrase = .{}; // an empty Str is its default; nothing to free
+    state.app.refresh(.{});
+}</code></pre><p>Three element choices carry design weight. <code>obscured</code> makes the input a secure field: bullets on screen, value withheld from assistive tech <em>and from test traces</em>. The <code>checkbox</code> is deliberately not a <code>toggle</code>: checking it commits nothing by itself — the Sign in button gathers it (consent-then-submit); a switch that applies immediately would be a <code>toggle</code>, as Part 10 shows. And spans are Markdown&#39;s inline vocabulary, not styling: assistive tech hears one plain text node.</p><p>The test drives it exactly like a user, keyboard-only:</p><pre class="code" tabindex="0" data-n="130" style="--bleed:16px"><code>test &quot;wrong passphrase stays signed out&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.focusVia(try t.getByLabel(&quot;Passphrase&quot;)); // Tab-cycles like a real user
+    try t.typeText(&quot;password1&quot;);
+    try t.pressKey(.enter, .{});
+
+    _ = try t.getByLabelContaining(&quot;Wrong passphrase&quot;);
+}</code></pre><p><code>focusVia</code> fails with <code>error.NotKeyboardReachable</code> if Tab can&#39;t reach the node — a test that passes only with a mouse is a bug.</p><h3 id="part-5--remembering-the-session-secure_store">Part 5 — Remembering the session (secure_store)</h3><p><code>.secure_store = true</code> in Part 1&#39;s build.zig linked the store, and the declared id is its namespace. It is a pouch, not a database — four synchronous calls (<code>get</code>, <code>set</code>, <code>delete</code>, <code>list</code>), caller buffers, hard caps — and synchronous is the point: the boot read is one call <em>inside build</em>, deciding the first screen with no loading frame. Contract and caps: <a class="link" href="/en/services/" data-n="133" data-s="12">services.md</a>.</p><p>Gate the notes section on the stored token — the top of <code>buildNotes</code> becomes:</p><pre class="code" tabindex="0" data-n="135" style="--bleed:16px"><code>    // The boot read is synchronous — the stored session decides which
+    // screen this is.
+    if (!state.signed_in) {
+        var buf: h.services.secure_store.ValueBuf = undefined;
+        if (h.services.secure_store.get(app, &quot;auth.token&quot;, &amp;buf) catch null) |_| {
+            state.signed_in = true;
+        }
+    }
+    if (!state.signed_in) return buildSignIn(state, app);</code></pre><p>Persist on sign-in (inside <code>signIn</code>, after the passphrase check) — and note the degrade: a locked keychain must not gate the session:</p><pre class="code" tabindex="0" data-n="137"><code>    if (state.remember) {
+        // `status` is the signed-in screen&#39;s status line — Part 6
+        // renders it.
+        h.services.secure_store.set(state.app, &quot;auth.token&quot;, &quot;tk_demo&quot;) catch {
+            state.status = &quot;Signed in — couldn&#39;t save your session.&quot;;
+        };
+    }</code></pre><p>And sign out, wired to a Settings button in Part 10:</p><pre class="code" tabindex="0" data-n="139"><code>pub fn signOut(state: *State) void {
+    // Idempotent: signing out when nothing was stored is still success.
+    h.services.secure_store.delete(state.app, &quot;auth.token&quot;) catch {};
+    state.signed_in = false;
+    state.status = &quot;Ready.&quot;;
+    state.app.router.switchTo(state.app, &quot;notes&quot;) catch {};
+}</code></pre><p>Under <code>zig test</code> the real keychain structurally cannot be reached: every app is constructed with a journaling fake, and the harness seeds it at boot, asserts against it, and injects the one environmental error. These four tests are the store&#39;s whole story:</p><pre class="code" tabindex="0" data-n="141" style="--bleed:16px"><code>const gpa = std.testing.allocator;
+const viewport: nok.Size = .{ .w = 480, .h = 640 };
+
+/// Most tests want a returning user: seed the token the keychain would
+/// hold. (Callers set `state.app = &amp;t.app` once the harness has landed
+/// in its final variable.)
+fn signedIn(state: *app.State) !nok.testing.HarnessApp {
+    return nok.testing.HarnessApp.init(gpa, viewport, .{
+        .routes = &amp;app.routes,
+        .nav = &amp;app.nav_items,
+        .ctx = state,
+        .initial_route = &quot;notes&quot;,
+        .store = .{ .seeds = &amp;.{.{ .key = &quot;auth.token&quot;, .value = &quot;tk_demo&quot; }} },
+    });
+}
+
+test &quot;a fresh install boots to sign-in; the stored token skips it&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+    _ = try t.getByLabel(&quot;Passphrase&quot;);
+    try t.expectAbsent(&quot;New note&quot;);
+
+    var returning: app.State = .{};
+    var t2 = try signedIn(&amp;returning);
+    defer t2.deinit();
+    returning.app = &amp;t2.app;
+    _ = try t2.getByLabel(&quot;New note&quot;); // boot read is sync: no loading frame
+    try t2.expectAbsent(&quot;Passphrase&quot;);
+}
+
+test &quot;signing in stores the session; signing out deletes it and nothing else&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.focusVia(try t.getByLabel(&quot;Passphrase&quot;));
+    try t.typeText(&quot;letmein&quot;);
+    try t.pressKey(.enter, .{});
+    try t.expectStored(&quot;auth.token&quot;, &quot;tk_demo&quot;);
+
+    try t.tapLabel(&quot;Settings&quot;); // the nav is real chrome — tap it
+    try t.tapLabel(&quot;Sign out&quot;);
+    try t.expectRoute(&quot;notes&quot;);
+    try t.expectStoredAbsent(&quot;auth.token&quot;);
+    // Boot get, sign-in set, sign-out delete, and the signed-out
+    // screen&#39;s fresh boot get — the app never rewrote the secret.
+    try std.testing.expectEqual(@as(usize, 4), t.store.journal().len);
+}
+
+test &quot;unchecking &#39;stay signed in&#39; keeps the keychain empty&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;Stay signed in on this device&quot;); // uncheck: consent withdrawn
+    try t.expectChecked(&quot;Stay signed in on this device&quot;, false);
+    try t.focusVia(try t.getByLabel(&quot;Passphrase&quot;));
+    try t.typeText(&quot;letmein&quot;);
+    try t.pressKey(.enter, .{});
+
+    _ = try t.getByLabel(&quot;New note&quot;); // signed in for this run…
+    try t.expectStoredAbsent(&quot;auth.token&quot;); // …but nothing persisted
+}
+
+test &quot;a locked keychain degrades to signed-in-for-now&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.lockStore(); // only Unavailable is injectable —
+    try t.focusVia(try t.getByLabel(&quot;Passphrase&quot;)); // the other errors
+    try t.typeText(&quot;letmein&quot;); // occur organically, by argument
+    try t.pressKey(.enter, .{});
+
+    _ = try t.getByLabelContaining(&quot;couldn&#39;t save your session&quot;);
+    _ = try t.getByLabel(&quot;New note&quot;); // the session still works
+    try t.expectStoredAbsent(&quot;auth.token&quot;);
+}</code></pre><p>That last test is table stakes, not an edge case: a locked keychain, an absent Secret Service session on Linux, or a Keystore fault on Android all surface as <code>Unavailable</code>, so an app that degrades gracefully is ready everywhere. The journal assertion is the habit to keep — it proves <em>behavior</em> (&quot;never rewrote the secret&quot;), not just final state. The full store-testing surface: <a class="link" href="/en/testing/" data-n="142" data-s="5">testing.md</a>.</p><h3 id="part-6--the-list-the-sheet-and-a-status-line">Part 6 — The list, the sheet, and a status line</h3><p>The signed-in screen: a <code>badge</code> when offline (Part 7 sets it), a status line, the list as a <code>tile_group</code>, a capacity <code>meter</code>, and a &quot;New note&quot; button that opens the one modal surface. New declarations:</p><pre class="code" tabindex="0" data-n="145"><code>const max_notes = 16;
+const max_note_len = 120;
+
+/// A note is its text, and a note list is a bounded list of them. Both
+/// ceilings are the app&#39;s — nokre allocates nothing on your behalf.
+pub const Note = h.Str(max_note_len);
+
+/// False when the list is full. `push` hands back an empty slot to
+/// write into, or `null` at the ceiling — and the list also *remembers*
+/// that it refused, which is the form Part 7 needs.
+fn addNote(state: *State, text: []const u8) bool {
+    const note = state.notes.push() orelse return false;
+    note.set(text);
+    return true;
+}</code></pre><p>and the new <code>State</code> fields:</p><pre class="code" tabindex="0" data-n="147"><code>    notes: h.Rows(Note, max_notes) = .{},
+    newest_first: bool = true,
+    status: []const u8 = &quot;Ready.&quot;,
+    offline: bool = false,
+    draft: Note = .{},</code></pre><p>The signed-in half of <code>buildNotes</code>:</p><pre class="code" tabindex="0" data-n="149" style="--bleed:16px"><code>    const b = app.root();
+    // The &quot;Notes&quot; heading is the route&#39;s title, already drawn. A badge
+    // cannot ride its line — the top of the page is the library&#39;s — so
+    // the status stands on a row of its own beneath it.
+    if (state.offline) {
+        const status_row = try b.stack(.{ .axis = .horizontal });
+        try status_row.badge(.{ .label = &quot;Offline&quot; });
+    }
+
+    const actions = try b.stack(.{ .axis = .horizontal });
+    try actions.button(.{
+        .label = &quot;New note&quot;,
+        .on_press = .bind(openNewNote, state),
+    });
+    try actions.button(.{
+        .label = &quot;Sync&quot;, // Part 7
+        .form = .{ .secondary = null },
+        .on_press = .bind(sync, state),
+    });
+    try b.styled(state.status, .{ .scale = .small, .ink = .dark });
+
+    if (state.notes.len == 0) {
+        try b.text(&quot;Nothing here yet. Press “New note” to write the first one.&quot;);
+    } else {
+        const group = try b.tileGroup(.{
+            .description = &quot;Tap a note to read, share, or delete it.&quot;,
+        });
+        // `items()` is the reading form — the rows actually there, and
+        // never the empty tail of the array behind them.
+        for (0..state.notes.len) |i| {
+            const index = if (state.newest_first) state.notes.len - 1 - i else i;
+            // A per-row action carries its row as data on the element —
+            // `bindAt` sets it at append, the method receives it at press.
+            try group.tile(.{
+                .label = state.notes.items()[index].get(),
+                .on_press = .bindAt(openNote, state, index),
+            });
+        }
+    }
+
+    try b.divider();
+    const cap = try app.tree.fmt(&quot;{d} of {d} notes&quot;, .{ state.notes.len, max_notes });
+    try b.meter(.{ .label = cap, .value = @intCast(state.notes.len), .max = max_notes });</code></pre><p>Notice the meter label was formatted with <code>tree.fmt</code> — straight into the tree&#39;s own arena, so there is no buffer to size and no way to truncate; the slice stays valid for the tree&#39;s lifetime like every other stored string. And notice what&#39;s absent: the screen may outgrow the viewport, and nothing wraps it — content taller than the window scrolls implicitly, and Tab always scrolls the focused element into view. Reach for an explicit <code>scroll_region</code> only to pin a viewport <em>within</em> a screen (<a class="link" href="/en/elements/" data-n="150" data-s="7">elements.md</a>, which also covers <code>select</code>, <code>table</code>, and the rest this app doesn&#39;t need).</p><p>The sheet is <em>declared</em> to the app, never appended by a screen builder: <code>openSheetAs</code> takes a name and a builder fn, runs it now, and keeps it — so the framework can build the sheet again whenever it must (a <code>reload</code> under an open sheet, for one). Everything else about its lifecycle is framework-owned too — close control pinned, focus moved in, everything behind inert, Esc/scrim dismissal, focus returned:</p><pre class="code" tabindex="0" data-n="152"><code>/// This app&#39;s sheets, named. One member and it still earns the enum:
+/// the name is what lets `app.sheetTagAs(Sheet, state)` say an open
+/// sheet is *this* state&#39;s, and 0 is reserved for a sheet with no name.
+const Sheet = enum(u32) { new_note = 1 };
+
+pub fn openNewNote(state: *State) void {
+    state.draft = .{};
+    state.app.openSheetAs(Sheet.new_note, buildNewNote, state) catch return;
+}
+
+// A sheet builder is written like a screen builder — the state typed,
+// the name only where there are several sheets to tell apart.
+fn buildNewNote(state: *State, app: *nokre.App) !void {
+    // `presentSheet` hands back the sheet&#39;s node; `app.at` is the
+    // cursor standing on it.
+    const sheet = app.at(try app.presentSheet(&quot;New note&quot;));
+    try sheet.textArea(.{
+        .label = &quot;Note&quot;,
+        .placeholder = &quot;Write it down…&quot;,
+        .on_change = .bind(editDraft, state),
+    });
+    try sheet.button(.{
+        .label = &quot;Add&quot;,
+        .on_press = .bind(commitDraft, state),
+    });
+}
+
+pub fn commitDraft(state: *State) void {
+    // `blank` is empty-or-whitespace: a draft of nothing but spaces is
+    // nothing, and a form asking that question is why the verb exists.
+    if (!state.draft.blank()) {
+        // A ceiling reached is something the user is told. Saying
+        // &quot;Note added.&quot; over a note that did not fit is the bug the
+        // bounded containers exist to make impossible to write by
+        // accident.
+        state.status = if (addNote(state, state.draft.get()))
+            &quot;Note added.&quot;
+        else
+            &quot;No room — this app holds 16 notes.&quot;;
+    }
+    // Write the state, then close: `closeSheet` takes the sheet down
+    // and rebuilds the screen behind it from what you just wrote.
+    state.app.closeSheet();
+}</code></pre><p>(This app has no closure work to do, so it declares no <code>on_dismiss</code>: whether its sheet is up is already the framework&#39;s answer — <code>app.sheetTagAs(Sheet, state)</code> — and <code>on_dismiss</code> exists for the work a closure owes, not for recording it. A controller with several sheets lists them all in that one enum and its builder takes the name as a third parameter — <a class="link" href="/en/elements/" data-n="153" data-s="7">elements.md</a>, &quot;sheet&quot;, has the full contract.)</p><p>(<code>editDraft</code> is one <code>state.draft.set(value)</code>, like <code>editPassphrase</code>. A <code>text_area</code> because Enter must insert a newline; submission belongs to the explicit button beside it.)</p><p>The tests assert the choreography the framework guarantees — and drive an IME through the same pipeline a platform shell would:</p><pre class="code" tabindex="0" data-n="156"><code>test &quot;the new-note sheet: focus moves in, Esc backs out, Add commits&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.expectFocused(&quot;Close&quot;); // the framework pinned it and moved focus
+
+    try t.pressKey(.escape, .{});
+    try t.expectAbsent(&quot;Add&quot;); // the sheet is gone…
+    try t.expectFocused(&quot;New note&quot;); // …and focus returned to the opener
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Note&quot;));
+    try t.typeText(&quot;Buy oat milk&quot;);
+    try t.expectValue(&quot;Note&quot;, &quot;Buy oat milk&quot;);
+    try t.tapLabel(&quot;Add&quot;);
+
+    try t.expectAbsent(&quot;Add&quot;);
+    _ = try t.getByLabel(&quot;Buy oat milk&quot;); // the tile is on screen
+    _ = try t.getByLabel(&quot;1 of 16 notes&quot;); // and the meter counted it
+}
+
+test &quot;IME composition lands in the draft like typed text&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Note&quot;));
+    try t.composeText(&quot;nihongo&quot;, &quot;日本語&quot;); // start → update → commit
+    try t.expectValue(&quot;Note&quot;, &quot;日本語&quot;);
+}</code></pre><h3 id="part-7--sync-http">Part 7 — Sync (http)</h3><p>Your sync server doesn&#39;t exist. Build the client anyway: under the harness a request parks instead of touching any socket, and the test supplies the response — the canned answer <em>is</em> the network. One API on every platform, no futures, no locks, exactly one typed <code>Result</code> back on the UI thread (<a class="link" href="/en/services/" data-n="158" data-s="5">services.md</a>):</p><pre class="code" tabindex="0" data-n="159" style="--bleed:16px"><code>pub fn sync(state: *State) void {
+    _ = h.services.http.request(.{
+        .app = state.app,
+        .url = &quot;https://api.example.com/notes&quot;,
+        .ctx = state,
+        .on_result = onSyncResult,
+    }) catch return;
+    state.status = &quot;Syncing…&quot;;
+    state.app.refresh(.{});
+}
+
+fn onSyncResult(ctx: ?*anyopaque, _: u64, result: h.services.http.Result) void {
+    const state: *State = @ptrCast(@alignCast(ctx.?));
+    switch (result) {
+        .response =&gt; |r| {
+            if (r.status != 200) {
+                state.status = &quot;The server had a problem — showing local notes.&quot;;
+                state.app.refresh(.{ .route = &quot;notes&quot; });
+                return;
+            }
+            // The body is the notes, one per line. Status codes are
+            // data; slices are valid only for this call, so copy.
+            state.notes.clear();
+            var lines = std.mem.splitScalar(u8, r.body.view(), &#39;\n&#39;);
+            while (lines.next()) |line| {
+                if (line.len != 0) _ = addNote(state, line);
+            }
+            state.offline = false;
+            // Here the per-note answer is the wrong grain — the loop
+            // wants one verdict over the whole reply. `truncated` is
+            // the list&#39;s own: raised by every push it had to refuse,
+            // cleared by the `clear` above. Nothing re-derives it from
+            // the line count, and nothing is dropped in silence.
+            state.status = if (state.notes.truncated)
+                &quot;Synced — showing the first 16.&quot;
+            else
+                &quot;Synced.&quot;;
+            state.app.refresh(.{ .route = &quot;notes&quot; });
+        },
+        .failure =&gt; |f| {
+            // Transport failure is a value with a stable name
+            // (&quot;ConnectionRefused&quot;, &quot;FetchFailed&quot;), never an exception.
+            _ = f;
+            state.offline = true;
+            state.status = &quot;Offline — showing local notes.&quot;;
+            state.app.notify(.{
+                .title = &quot;Sync failed&quot;,
+                .description = &quot;Your notes are unchanged on this device.&quot;,
+                .route = &quot;notes&quot;,
+                .important = true,
+            });
+            state.app.refresh(.{ .route = &quot;notes&quot; });
+        },
+    }
+}
+</code></pre><p>Two things here outlive this app. <code>app.refresh(.{ .route = &quot;notes&quot; })</code> is the shape every asynchronous reply takes: results arrive on the UI thread between events, but the user may have navigated, opened a sheet, or started typing since the request left — state is updated unconditionally, the <em>rebuild</em> is polite, and the <code>route</code> scopes it to the screen the reply is owed to (<a class="link" href="/en/routing/" data-n="160" data-s="7">routing.md</a>). And the failure leg raises a <strong>notice</strong> — <code>app.notify(.{ ... })</code> — nokre&#39;s persistent, never-timing-out surface that survives navigation and deep-links back. It is <code>important</code> because a failed sync is worth interrupting for; a quiet notice (the default) would wait behind the indicator instead. The three states (banner, pane, minimized) are specified in <a class="link" href="/en/elements/" data-n="160" data-s="15">elements.md</a>.</p><p>The tests own time. Park, inspect, answer — or refuse:</p><pre class="code" tabindex="0" data-n="162" style="--bleed:16px"><code>test &quot;sync: the request parks, the canned response is the network&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;Sync&quot;);
+    _ = try t.getByLabel(&quot;Syncing…&quot;); // the in-flight state is real UI
+
+    const req = t.app.services.http.pendingAt(0);
+    try std.testing.expectEqual(nok.services.http.Method.GET, req.method);
+    try std.testing.expectEqualStrings(&quot;https://api.example.com/notes&quot;, req.url);
+
+    try t.fulfillHttp(.{ .status = 200, .body = &quot;Buy oat milk\nCall the plumber&quot; });
+    _ = try t.getByLabel(&quot;Synced.&quot;);
+    _ = try t.getByLabel(&quot;Call the plumber&quot;); // newest first
+    _ = try t.getByLabel(&quot;2 of 16 notes&quot;);
+}
+
+test &quot;sync failure: offline badge, a notice, and local notes untouched&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Note&quot;));
+    try t.typeText(&quot;Water the plants&quot;);
+    try t.tapLabel(&quot;Add&quot;);
+
+    try t.tapLabel(&quot;Sync&quot;);
+    try t.failHttp(&quot;FetchFailed&quot;); // the offline case, one line
+
+    _ = try t.getByLabel(&quot;Offline&quot;); // the badge
+    _ = try t.getByLabelContaining(&quot;Sync failed&quot;); // the notice banner
+    _ = try t.getByLabel(&quot;Water the plants&quot;); // the local note survived
+}
+
+test &quot;a fake server serves the whole flow&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+    t.onHttp(.{ .call = serve });
+
+    try t.tapLabel(&quot;Sync&quot;);
+    try t.settleHttp(); // however many requests the flow issues
+    _ = try t.getByLabel(&quot;milk&quot;);
+    _ = try t.getByLabel(&quot;bread&quot;);
+}
+
+fn serve(_: ?*anyopaque, req: nok.services.http.PendingRequest) ?nok.testing.HttpOutcome {
+    if (std.mem.endsWith(u8, req.url, &quot;/notes&quot;))
+        return .{ .respond = .{ .status = 200, .body = &quot;milk\nbread&quot; } };
+    return .{ .fail = &quot;FetchFailed&quot; }; // everything unrouted: offline
+}</code></pre><p>When a flow issues <em>competing</em> requests — search-as-you-type, say — <code>fulfillHttpAt(i, …)</code> answers by index instead of oldest-first, so the stale-response race is a test you write once and reproduce every run (<a class="link" href="/en/testing/" data-n="163" data-s="5">testing.md</a> has the worked example). Run the app with <code>zig build run</code> too: <code>api.example.com</code> refuses real connections, so you watch the failure path live — badge, notice, and all — exactly the path the tests proved.</p><h3 id="part-8--heavy-work-workers">Part 8 — Heavy work (workers)</h3><p>Actions run on the UI thread: one that takes 200 ms freezes taps, keys, and paint for 200 ms. Heavy synchronous compute goes on a <strong>worker</strong>: a struct with typed messages in and typed replies out, on its own thread natively and a Web Worker on the web, never touching your <code>App</code>. Notes counts words — contrived at sixteen notes, but the shape is the lesson:</p><pre class="code" tabindex="0" data-n="166" style="--bleed:16px"><code>pub const Stats = struct {
+    /// Messages are values: this fixed buffer is copied at `send`. For
+    /// payloads worth moving instead of copying, see h.workers.Bytes
+    /// (docs/internals/workers.md).
+    pub const Corpus = struct { text: [max_notes * (max_note_len + 1)]u8, len: u32 };
+    pub const Msg = union(enum) { analyze: Corpus };
+    pub const Reply = union(enum) { analyzed: struct { words: u64, longest: u64 } };
+
+    pub fn init(_: std.mem.Allocator) !Stats {
+        return .{};
+    }
+    pub fn deinit(_: *Stats) void {}
+
+    pub fn handle(_: *Stats, msg: Msg, out: *h.workers.Outbox(Reply)) !void {
+        switch (msg) {
+            .analyze =&gt; |corpus| {
+                var words: u64 = 0;
+                var longest: u64 = 0;
+                var word_len: u64 = 0;
+                for (corpus.text[0..corpus.len]) |byte| {
+                    if (byte == &#39; &#39; or byte == &#39;\n&#39;) {
+                        if (word_len &gt; 0) words += 1;
+                        longest = @max(longest, word_len);
+                        word_len = 0;
+                    } else word_len += 1;
+                }
+                if (word_len &gt; 0) words += 1;
+                longest = @max(longest, word_len);
+                try out.send(.{ .analyzed = .{ .words = words, .longest = longest } });
+            },
+        }
+    }
+};
+
+/// The closed set of workers this app can spawn — the role routes play
+/// for screens. Root-level, so the web can boot the same artifact in
+/// another thread and find the code; test roots re-export it.
+pub const nokreWorkers = .{Stats};</code></pre><p>Spawn lazily, send from an action, and let the reply land in state:</p><pre class="code" tabindex="0" data-n="168" style="--bleed:16px"><code>pub fn countWords(state: *State) void {
+    const worker = ensureStats(state) orelse return;
+    var corpus: Stats.Corpus = .{ .text = undefined, .len = 0 };
+    for (state.notes.items()) |*note| {
+        const text = note.get();
+        @memcpy(corpus.text[corpus.len..][0..text.len], text);
+        corpus.len += @intCast(text.len);
+        corpus.text[corpus.len] = &#39;\n&#39;;
+        corpus.len += 1;
+    }
+    worker.send(.{ .analyze = corpus }) catch return;
+    setStatsLine(state, &quot;Counting…&quot;, .{});
+    state.app.refresh(.{ .route = &quot;notes&quot; });
+}
+
+fn onStatsReply(ctx: ?*anyopaque, reply: Stats.Reply) void {
+    const state: *State = @ptrCast(@alignCast(ctx.?));
+    switch (reply) {
+        .analyzed =&gt; |a| setStatsLine(state, &quot;{d} words across {d} notes; the longest word runs {d} letters.&quot;, .{ a.words, state.notes.len, a.longest }),
+    }
+    state.app.refresh(.{ .route = &quot;notes&quot; });
+}
+
+fn ensureStats(state: *State) ?h.workers.Handle(Stats) {
+    if (state.stats) |w| return w;
+    const w = h.workers.spawn(Stats, .{
+        .app = state.app,
+        .ctx = state,
+        .on_reply = onStatsReply,
+    }) catch return null;
+    state.stats = w;
+    return w;
+}</code></pre><p>(State grows <code>stats: ?h.workers.Handle(Stats) = null</code> plus a line buffer <code>setStatsLine</code> formats into; <code>buildNotes</code> renders the line and a &quot;Word count&quot; button behind a <code>show_stats</code> flag Part 10 toggles.) The contract that generalizes: messages are values — no pointers cross, ever; a field that can&#39;t travel is a compile error naming it. Replies are delivered between input events on the UI thread, so there is no data race you can write, and <code>handle</code> may send as often as it likes — a reply is a stream, so progress is just more replies. Cancellation, retirement, zero-copy <code>Bytes</code> handoff, and fault handling: <a class="link" href="/en/internals.workers/" data-n="169" data-s="13">internals/workers.md</a>; the kitchen sink&#39;s Workers section streams progress from a prime counter, live.</p><p>Under the harness workers run inline, and nothing arrives until the test says so — send-then-settle <em>is</em> the race, reproduced identically every run:</p><pre class="code" tabindex="0" data-n="171"><code>test &quot;the word-count worker replies when the test says so&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Note&quot;));
+    try t.typeText(&quot;tea with honey&quot;);
+    try t.tapLabel(&quot;Add&quot;);
+
+    try t.tapLabel(&quot;Word count&quot;);
+    _ = try t.getByLabel(&quot;Counting…&quot;); // sent, not yet landed
+    try t.settleWorkers(); // every queued message runs, every reply lands
+    _ = try t.getByLabelContaining(&quot;3 words across 1 notes&quot;);
+}</code></pre><p>One wiring rule: workers resolve their wire ids through the <em>root module</em>, so <code>main_test.zig</code> re-exports the registry — <code>pub const nokreWorkers = app.nokreWorkers;</code> — and so does any other test root you add.</p><h3 id="part-9--the-note-screen-copyable-qr-delete">Part 9 — The note screen: copyable, qr, delete</h3><p>The pushed detail screen pairs the clipboard path with the camera path — same value, two ways out — and closes the loop on deletion. Which note it shows rides in the reference — <code>note~2</code>, formatted where the tile is wired and read back with <code>routeArg</code> — never in a <code>selected</code> field on state, which would remember the depth and forget which note it was (<a class="link" href="/en/routing/#references" data-n="174" data-s="7">routing.md</a> is the argument):</p><pre class="code" tabindex="0" data-n="175" style="--bleed:16px"><code>pub fn buildNote(state: *State, app: *h.App) !void {
+    const arg = app.routeArg(0) orelse return; // arity is declared, so it is there
+    const index = std.fmt.parseInt(usize, arg, 10) catch return;
+    // `at` is bounds-checked: a reference can outlive the note it names
+    // (a sync that returned fewer), and this screen simply has nothing
+    // to draw then.
+    const note = state.notes.at(index) orelse return;
+    const b = app.root();
+    // The route&#39;s title is drawn above everything here, and the
+    // framework&#39;s Back control shares its line — a pushed screen
+    // without a way back cannot exist.
+    try b.text(note.get());
+    try b.divider();
+    try b.copyable(.{ .label = &quot;Copy this note&quot;, .value = note.get() });
+    try b.qr(.{ .label = &quot;Scan to take it with you&quot;, .value = note.get() });
+    try b.button(.{
+        .label = &quot;Delete&quot;,
+        .form = .{ .secondary = null },
+        .on_press = .bind(deleteNote, state),
+    });
+}
+
+pub fn openNote(state: *State, index: usize) void {
+    // A stack buffer is enough: the entry copies the reference.
+    var buf: [32]u8 = undefined;
+    const dest = std.fmt.bufPrint(&amp;buf, &quot;note~{d}&quot;, .{index}) catch return;
+    state.app.navigate(dest) catch {};
+}
+
+pub fn deleteNote(state: *State) void {
+    // The action runs on the note screen, so the entry&#39;s argument is
+    // still the one to read.
+    const arg = state.app.routeArg(0) orelse return;
+    const index = std.fmt.parseInt(usize, arg, 10) catch return;
+    // Closes the gap and keeps order; an index that is already gone is
+    // a no-op, not a panic.
+    state.notes.removeAt(index);
+    state.status = &quot;Note deleted.&quot;;
+    // Popping rebuilds the notes screen from the changed state.
+    state.app.navigateBack() catch {};
+}</code></pre><p><code>copyable</code>&#39;s behavior is intrinsic — activation writes the whole value to the platform clipboard through the shell, and turns the copy glyph into a check until the next input. There is no action to wire and no confirmation to build, and in tests the app&#39;s journaling clipboard mock makes the write first-class:</p><pre class="code" tabindex="0" data-n="177"><code>test &quot;opening a note: detail, copy, delete&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;New note&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Note&quot;));
+    try t.typeText(&quot;The wifi password is hunter2&quot;);
+    try t.tapLabel(&quot;Add&quot;);
+
+    try t.tapLabel(&quot;The wifi password is hunter2&quot;);
+    try t.expectRoute(&quot;note&quot;);
+    try t.tapLabel(&quot;Copy this note&quot;); // activation copies the whole value
+    try t.expectCopied(&quot;The wifi password is hunter2&quot;);
+
+    try t.tapLabel(&quot;Back&quot;); // the framework&#39;s control, by its accessible name
+    try t.expectRoute(&quot;notes&quot;);
+    try t.tapLabel(&quot;The wifi password is hunter2&quot;);
+    try t.tapLabel(&quot;Delete&quot;);
+    try t.expectRoute(&quot;notes&quot;);
+    try t.expectAbsent(&quot;The wifi password is hunter2&quot;);
+    _ = try t.getByLabel(&quot;0 of 16 notes&quot;);
+}</code></pre><h3 id="part-10--settings-segmented-radio_group-toggle-package_info">Part 10 — Settings: segmented, radio_group, toggle, package_info</h3><p>Settings is where the three commit contracts sit side by side: a <code>segmented</code> control the user switches repeatedly (appearance), a <code>radio_group</code> for a choice made in place (sort order) — both commit on arrow keys, immediately — and a <code>toggle</code>, the switch that applies now (contrast with Part 4&#39;s checkbox, which waited for Sign in):</p><pre class="code" tabindex="0" data-n="180"><code>pub fn buildSettings(state: *State, app: *h.App) !void {
+    const b = app.root();
+
+    try b.segmented(.{
+        .label = &quot;Appearance&quot;,
+        .options = &amp;.{ &quot;Light&quot;, &quot;Dark&quot;, &quot;Automatic&quot; },
+        .selected = switch (app.scheme) {
+            .light =&gt; 0,
+            .dark =&gt; 1,
+            .auto =&gt; 2,
+        },
+        .on_select = .bind(selectScheme, state),
+    });
+    try b.radioGroup(.{
+        .label = &quot;Order&quot;,
+        .options = &amp;.{ &quot;Newest first&quot;, &quot;Oldest first&quot; },
+        .selected = if (state.newest_first) 0 else 1,
+        .on_select = .bind(selectOrder, state),
+    });
+    try b.toggle(.{
+        .label = &quot;Show word-count stats&quot;,
+        .on = state.show_stats,
+        .on_toggle = .bind(setShowStats, state),
+    });
+
+    try b.divider();
+    if (state.signed_in) {
+        try b.button(.{
+            .label = &quot;Sign out&quot;,
+            .form = .{ .secondary = null },
+            .on_press = .bind(signOut, state),
+        });
+    } else {
+        try b.text(&quot;Not signed in.&quot;);
+    }
+
+    // Identity is declared once in build.zig and baked in everywhere;
+    // only the installer field is asked of the OS.
+    const pkg = h.services.package_info.get();
+    try b.divider();
+    try b.styled(try app.tree.fmt(&quot;{s} {s} ({d}) — {s}&quot;, .{
+        pkg.id, pkg.version, pkg.build, @tagName(pkg.installer),
+    }), .{ .family = .mono, .scale = .small, .ink = .dark });
+}</code></pre><p>The handlers are one-liners typed on <code>*State</code>: <code>selectScheme(state, selected)</code> maps the index to <code>state.app.setScheme(…)</code> (dark mode is a scheme, not a style — the palette flips, contrast guarantees hold); <code>selectOrder</code> sets <code>state.newest_first</code>; <code>setShowStats(state, on)</code> sets <code>state.show_stats</code>. No <code>refresh</code> needed — the controls carry their own selected state, and the notes screen reads the flags at its next build. The <code>package_info</code> line at the bottom is the declaration from Part 1&#39;s build.zig read back — run the app and it says <code>com.example.notes 0.1.0 (1) — dev</code>.</p><p>Two assertions worth stealing. <code>expectValue</code> reads a segmented control&#39;s selected option straight from the a11y snapshot, and the raw snapshot answers questions the named queries don&#39;t — like <em>document order</em>, the order a screen reader walks:</p><pre class="code" tabindex="0" data-n="183"><code>test &quot;appearance is a segmented control the keyboard drives&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;Settings&quot;);
+    try t.expectValue(&quot;Appearance&quot;, &quot;Automatic&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Appearance&quot;));
+    try t.pressKey(.left, .{}); // each step commits — radiogroup semantics
+    try t.expectValue(&quot;Appearance&quot;, &quot;Dark&quot;);
+}
+
+test &quot;settings commit immediately: order flips the list&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    // Add &quot;first&quot;, then &quot;second&quot;, via the sheet as in Part 6…
+    try t.tapLabel(&quot;Settings&quot;);
+    try t.focusVia(try t.getByLabel(&quot;Order&quot;));
+    try t.pressKey(.down, .{}); // radio groups commit on arrow, no submit
+    try t.tapLabel(&quot;Notes&quot;);
+
+    // Oldest first now: &quot;first&quot; precedes &quot;second&quot; in document order.
+    var snap = try t.a11ySnapshot(gpa);
+    defer snap.deinit();
+    var first_at: ?usize = null;
+    var second_at: ?usize = null;
+    for (snap.nodes.items, 0..) |node, i| {
+        if (std.mem.eql(u8, node.label, &quot;first&quot;)) first_at = i;
+        if (std.mem.eql(u8, node.label, &quot;second&quot;)) second_at = i;
+    }
+    try std.testing.expect(first_at.? &lt; second_at.?);
+}</code></pre><h3 id="part-11--a-second-language-l10n">Part 11 — A second language (l10n)</h3><p>Notes speaks English out of string literals. This part moves the notes screen&#39;s fixed text into ARB catalogs — the same file format Flutter&#39;s gen_l10n reads — and lets Settings switch the language live. nokre compiles the catalogs at comptime: no codegen step, no runtime parsing, and a catalog mistake is a build error naming the locale, message, and line. <a class="link" href="/en/localization/" data-n="185" data-s="1">localization.md</a> owns the full contract.</p><p>Two files under <code>src/l10n/</code>. The first is the template: it defines the key set and each message&#39;s placeholders.</p><p><code>src/l10n/notes_en.arb</code>:</p><pre class="code" tabindex="0" data-n="188" style="--bleed:16px"><code>{
+  &quot;@@locale&quot;: &quot;en&quot;,
+  &quot;notesTitle&quot;: &quot;Notes&quot;,
+  &quot;emptyState&quot;: &quot;Nothing here yet. Press “New note” to write the first one.&quot;,
+  &quot;noteCount&quot;: &quot;{count, plural, one{One note. Tap it to read, share, or delete it.} other{# notes. Tap one to read, share, or delete it.}}&quot;,
+  &quot;@noteCount&quot;: { &quot;placeholders&quot;: { &quot;count&quot;: { &quot;type&quot;: &quot;num&quot; } } },
+  &quot;noteCapacity&quot;: &quot;{count} of {max} notes&quot;,
+  &quot;@noteCapacity&quot;: {
+    &quot;description&quot;: &quot;The capacity meter&#39;s label&quot;,
+    &quot;placeholders&quot;: { &quot;count&quot;: { &quot;type&quot;: &quot;int&quot; }, &quot;max&quot;: { &quot;type&quot;: &quot;int&quot; } }
+  }
+}</code></pre><p><code>src/l10n/notes_fa.arb</code> — Persian. Every template key must be here; a missing one fails the build rather than silently showing English:</p><pre class="code" tabindex="0" data-n="190" style="--bleed:16px"><code>{
+  &quot;@@locale&quot;: &quot;fa&quot;,
+  &quot;notesTitle&quot;: &quot;یادداشت‌ها&quot;,
+  &quot;emptyState&quot;: &quot;هنوز چیزی اینجا نیست. برای نوشتن اولین یادداشت، «یادداشت نو» را بزنید.&quot;,
+  &quot;noteCount&quot;: &quot;{count, plural, one{یک یادداشت. برای خواندن، هم‌رسانی یا حذف، آن را بزنید.} other{# یادداشت. برای خواندن، هم‌رسانی یا حذف، یکی را بزنید.}}&quot;,
+  &quot;noteCapacity&quot;: &quot;{count} از {max} یادداشت&quot;
+}</code></pre><p>You do not have to type that second file by hand. Inside the nokre checkout, <code>translate-arb</code> drafts it from the template with a local or hosted LLM — one key per request, the key&#39;s <code>@</code>-metadata as context, and Persian&#39;s own CLDR plural categories quoted into the prompt:</p><pre class="code" tabindex="0" data-n="192"><code>zig build translate-arb -- --input ~/code/notes/src/l10n/notes_en.arb --dest fa</code></pre><p>The step runs from the nokre checkout, so give it an absolute path to your project&#39;s template (or one relative to that checkout). The draft lands beside the template with the locale suffix swapped — <code>notes_en.arb</code> becomes <code>notes_fa.arb</code>, the name the bundle will want — and an existing catalog is never overwritten.</p><p>Later, when you add a key to the template, <code>--fill</code> translates just that one into each locale and leaves every reviewed line alone:</p><pre class="code" tabindex="0" data-n="195" style="--bleed:16px"><code>zig build translate-arb -- --input ~/code/notes/src/l10n/notes_en.arb --dest fa --fill</code></pre><p>It does <strong>not</strong> join the bundle on its own. <code>Bundle</code> is an explicit list of <code>@embedFile</code>s, not a directory scan, precisely so an unreviewed draft sitting in <code>src/l10n/</code> cannot become a language your app ships. Adding the locale is one line, and the compiler then demands every key for it:</p><pre class="code" tabindex="0" data-n="197"><code>const L = h.l10n.Bundle(&amp;.{
+    @embedFile(&quot;l10n/notes_en.arb&quot;), // first source = the template
+    @embedFile(&quot;l10n/notes_fa.arb&quot;),
+});</code></pre><pre class="code" tabindex="0" data-n="198"><code>Translating 4 key(s) from English (en) to Persian (fa)...
+
+  [1/4] [░░░░░░░░░░░░░░░░░░░░]   0%  done (0.6s)  elapsed 0.6s  ETA 2s
+  [2/4] [█████░░░░░░░░░░░░░░░]  25%  done (0.5s)  elapsed 1.1s  ETA 2s
+  [3/4] [██████████░░░░░░░░░░]  50%  done (1.1s)  elapsed 2.3s  ETA 1s
+  [4/4] [███████████████░░░░░]  75%  done (0.5s)  elapsed 2.8s  ETA 0s
+
+Checking with nokre&#39;s validator... ok</code></pre><p><code>--dest</code> is a locale tag, not a language name, because the tag is what <code>@@locale</code> states and what selects the plural rule — &quot;Portuguese&quot; would have to mean <code>pt</code> or <code>pt_PT</code>, and those count differently. Point <code>LLM_BASE_URL</code> at an OpenAI-compatible server (the <code>/v1</code> root; a local llama.cpp or Ollama needs no key).</p><p><strong>Read what it writes.</strong> The output is a draft: a model is nondeterministic and this repo is not. What makes it safe to run at all is the last line above — before the draft is accepted it is compiled against the template by the same validator your build uses, so a catalog that would not build never reaches your source tree; it is left as <code>.partial</code> with the compiler&#39;s error quoted. A translation that drops a placeholder entirely is refused there too, and the tool checks it between requests as well so a retry carries the reason. <a class="link" href="/en/localization/#drafting-a-translation" data-n="200" data-s="4">localization.md</a> has the rest.</p><p>Compile them into a bundle in <code>main.zig</code>:</p><pre class="code" tabindex="0" data-n="202"><code>/// The catalogs, compiled: L.Locale is {en, fa}, L.Key is the template&#39;s
+/// key set, and every message was validated against its own locale&#39;s
+/// grammar before this comment finished compiling.
+const L = h.l10n.Bundle(&amp;.{
+    @embedFile(&quot;l10n/notes_en.arb&quot;), // first source = the template
+    @embedFile(&quot;l10n/notes_fa.arb&quot;),
+});</code></pre><p>Two of the rules that keep a catalog honest are not reachable from inside the compiler — a key nothing uses, and a word on screen that came from no catalog — because neither is a fact about the catalog alone. Those ride a checker the build attaches to your app&#39;s own artifact, so a plain <code>zig build</code> runs them. It is one declaration back in <code>build.zig</code>:</p><pre class="code" tabindex="0" data-n="204"><code>    const app = nokre.addApp(nokre_dep, .{
+        // …
+        .l10n = .{
+            .template = b.path(&quot;src/l10n/notes_en.arb&quot;),
+            .sources = nokre.pathList(b, &amp;.{b.path(&quot;src&quot;)}),
+        },
+    });</code></pre><p>Unset checks nothing, which is where Part 1 left it. Three further rules turn on with two further paths — the product&#39;s own vocabularies, and the Markdown collections a content-shipping app publishes. A sixth needs no path at all: the catalogs beside the template are held to one layout, and the template&#39;s own directory is where they are. All six are <a class="link" href="/en/localization/#what-the-build-checks" data-n="205" data-s="1">localization.md</a>.</p><p>The current language is not a <code>State</code> field: the <em>chosen</em> locale is the App&#39;s own state (<code>App.setLocale</code>, a BCP 47 tag), so every screen reads one live fact and none can be forgotten when it changes. One small bridge turns it back into the bundle&#39;s enum wherever a catalog call needs one:</p><pre class="code" tabindex="0" data-n="207"><code>fn loc(a: *const h.App) L.Locale {
+    return L.resolve(a.locale()); // &quot;&quot; (never chosen) → the template
+}</code></pre><p>In <code>buildNotes</code>&#39; signed-in half, the literals become lookups. The screen&#39;s heading needs no line at all — the route&#39;s title is <code>.{ .of_locale = … }</code>, so the <code>h1</code> the library draws follows the locale with it. The empty state is <code>tr</code> — a message with no placeholders, returned as a constant slice, no buffer:</p><pre class="code" tabindex="0" data-n="209" style="--bleed:16px"><code>    if (state.notes.len == 0) {
+        try b.text(L.tr(loc(app), .emptyState));
+    } else {
+        const desc = try L.fmtIn(&amp;app.tree, loc(app), .noteCount, .{ .count = state.notes.len });
+        const group = try b.tileGroup(.{ .description = desc });
+        // …the tiles loop, unchanged.
+    }</code></pre><p>and the meter label&#39;s <code>tree.fmt</code> from Part 6 becomes <code>fmtIn</code> — the same format-into-the-arena contract, catalog-message-shaped: no buffer to size, and the placeholder set is still checked at compile time:</p><pre class="code" tabindex="0" data-n="211" style="--bleed:16px"><code>    const cap = try L.fmtIn(&amp;app.tree, loc(app), .noteCapacity, .{ .count = state.notes.len, .max = max_notes });
+    try b.meter(.{ .label = cap, .value = @intCast(state.notes.len), .max = max_notes });</code></pre><p>Settings grows the picker — options are native language names, so a reader lost in the wrong locale can find their own; it commits on arrow keys like the rest of Part 10:</p><pre class="code" tabindex="0" data-n="213"><code>    try b.segmented(.{
+        .label = &quot;Language&quot;,
+        .options = &amp;.{ &quot;English&quot;, &quot;فارسی&quot; },
+        .selected = if (loc(app) == .en) 0 else 1,
+        .on_select = .bind(selectLanguage, state),
+    });</code></pre><pre class="code" tabindex="0" data-n="214"><code>pub fn selectLanguage(state: *State, selected: usize) void {
+    const chosen: L.Locale = if (selected == 0) .en else .fa;
+    // The three surfaces the app does not write inline: the names of
+    // the screens, nokre&#39;s own chrome, and which way the chrome runs.
+    state.app.setLocale(L.tag(chosen)) catch {};
+    state.app.setChrome(.{ .back = L.tr(chosen, .back) });
+    state.app.setDirection(L.dir(chosen));
+}</code></pre><p>And Part 3&#39;s table grows title <em>functions</em> — one table, every language, nothing to re-hand on a change. A <code>.fixed</code> title says one language forever; <code>.of_locale</code> is read wherever the title is shown, in whatever locale is chosen by then:</p><pre class="code" tabindex="0" data-n="216" style="--bleed:16px"><code>const routes = h.Routes(State).table(&amp;.{
+    .{ .name = &quot;notes&quot;, .title = .{ .of_locale = notesTitle }, .build = buildNotes },
+    .{ .name = &quot;note&quot;, .title = .{ .of_locale = noteTitle }, .args = 1, .build = buildNote },
+    .{ .name = &quot;settings&quot;, .title = .{ .of_locale = settingsTitle }, .build = buildSettings },
+    .{ .name = &quot;not_found&quot;, .title = .{ .of_locale = notFoundTitle }, .for_unresolved = true, .build = buildNotFound },
+});
+
+fn notesTitle(tag: []const u8) []const u8 {
+    return L.tr(L.resolve(tag), .notesTitle);
+}
+fn noteTitle(tag: []const u8) []const u8 {
+    return L.tr(L.resolve(tag), .noteTitle);
+}
+fn notFoundTitle(tag: []const u8) []const u8 {
+    return L.tr(L.resolve(tag), .notFoundTitle);
+}
+fn settingsTitle(tag: []const u8) []const u8 {
+    return L.tr(L.resolve(tag), .settingsTitle);
+}</code></pre><p><strong>Checkpoint:</strong> <code>zig build run</code>, sign in, Settings → فارسی → Notes: the heading, empty state, and meter read in Persian. Then break it on purpose: delete <code>&quot;noteCapacity&quot;</code> from <code>notes_fa.arb</code> and rebuild — the error names the locale and the missing key. That refusal is the design: nokre has no fallback between locales, because fallback is what silent untranslated text is made of.</p><p>Things worth noticing, because they generalize:</p><ul class="list" style="--list-gutter:17px"><li><p><strong>The English bytes barely changed.</strong> The heading, empty state, and capacity label are byte-identical to Part 6&#39;s literals, so the tests that read them still pass; only <code>noteCount</code> changed behavior, because going plural-aware was the point of moving it. A pure refactor would have changed nothing — that is what makes localization safe to do late.</p></li><li><p><strong>The checks run before the app does.</strong> Key parity in both directions, placeholder names and types at every <code>fmt</code> call site, and plural forms against each locale&#39;s own CLDR categories — Persian&#39;s <code>one</code> covers 0 <em>and</em> 1, which the catalog above just handled without either of us thinking about it; a Russian catalog would be forced to carry its <code>few</code> and <code>many</code>. The full list of guarantees and refusals (no dates, no floats, no runtime loading): <a class="link" href="/en/localization/" data-n="223" data-s="12">localization.md</a>.</p></li><li><p><strong>The nav bar and the back control travel too.</strong> A destination&#39;s words are its route&#39;s <code>title</code>, so <code>setLocale</code> re-says the row, the collapsed chip, and the marker for a screen that is no destination — all from one place, in every language. nokre&#39;s own words (Back, Close, the notices chrome) are <code>setChrome</code>&#39;s, one struct and one call. Neither is a label on a <code>Destination</code>: that would be a second home for a fact the route table already holds. <a class="link" href="/en/localization/#the-chrome-nokre-writes" data-n="225" data-s="10">localization.md</a> has the whole table.</p></li><li><p><strong>What&#39;s still English is a choice you can see.</strong> The sign-in screen, statuses, button labels — the same pattern extends to each; the course stops at one screen because the lesson doesn&#39;t repeat. Booting in the device&#39;s language is the <code>locale</code> service (<a class="link" href="/en/services/" data-n="227" data-s="4">services.md</a>) and the same three calls, starting from <code>app.setLocale(L.tag(L.resolve(h.services.locale.tag(app))))</code> — <a class="link" href="/en/localization/" data-n="227" data-s="8">localization.md</a> walks the wiring.</p></li></ul><p>The test drives the switch like a user and asserts the translated screen through the same a11y snapshot as always:</p><pre class="code" tabindex="0" data-n="229" style="--bleed:16px"><code>test &quot;switching the language localizes the notes screen&quot; {
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.tapLabel(&quot;Settings&quot;);
+    try t.selectOption(&quot;Language&quot;, &quot;فارسی&quot;); // names both ends, no arrow counting
+    try t.tapLabel(&quot;یادداشت‌ها&quot;);             // the destination, already renamed
+
+    _ = try t.getByLabel(&quot;یادداشت‌ها&quot;); // the heading, translated
+    _ = try t.getByLabel(&quot;0 از 16 یادداشت&quot;); // fmt: two placeholders
+    _ = try t.getByLabelContaining(&quot;هنوز چیزی اینجا نیست&quot;); // the empty state
+}</code></pre><h3 id="part-12--proof-tree-snapshots-step-traces-goldens">Part 12 — Proof: tree snapshots, step traces, goldens</h3><p>Three instruments turn &quot;it works&quot; into evidence. First, <code>expectTree</code> pins the whole laid-out screen — role, rect, label, state per node — as an inline snapshot. Write a placeholder, run once, review the printed actual, paste it in:</p><pre class="code" tabindex="0" data-n="232" style="--bleed:16px"><code>test &quot;the sign-in screen&#39;s whole laid-out tree, inline&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    // On mismatch both trees print: review the actual, paste it here.
+    try t.expectTree(
+        \\viewport 480x640 light
+        \\stack [0,0,480,640]
+        \\  nav [0,592,480,48]
+        \\    nav_item [16,596,224,40] &quot;Notes&quot; route= &quot;notes&quot; current
+        \\    nav_item [240,596,224,40] &quot;Settings&quot; route= &quot;settings&quot;
+        \\  heading [16,16,448,40] &quot;Notes&quot; level=1
+        \\  text [16,64,448,48] &quot;Welcome. The passphrase is letmein — this is a course app, not a bank.&quot;
+        \\  box [16,120,448,160]
+        \\    text_input [29,133,422,58] &quot;Passphrase&quot; obscured codepoints=0 cursor=0
+        \\    checkbox [29,199,289,24] &quot;Stay signed in on this device&quot; checked
+        \\    button [29,231,97,36] &quot;Sign in&quot;
+    );
+}</code></pre><p>Second, <strong>step traces</strong> replace what headful debugging or screen recording would give: every driver action writes a numbered, action-named snapshot of that same format, diffable with plain <code>diff</code> — and because tests are deterministic, re-running a failing test with tracing on gives the identical run:</p><pre class="code" tabindex="0" data-n="234" style="--bleed:16px"><code>test &quot;a step trace replays the run, one snapshot per action&quot; {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    var state: app.State = .{};
+    var t = try signedIn(&amp;state);
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    var sink = try nok.testing.trace.TreeSink.init(std.testing.io, tmp.dir, gpa, &quot;trace&quot;);
+    try t.startTrace(sink.observer()); // writes 0000-init.txt
+
+    try t.tapLabel(&quot;New note&quot;); // writes 0001-tap-New-note.txt
+
+    const snap = try tmp.dir.readFileAlloc(std.testing.io, &quot;trace/0001-tap-New-note.txt&quot;, gpa, .limited(1 &lt;&lt; 20));
+    defer gpa.free(snap);
+    try std.testing.expect(std.mem.indexOf(u8, snap, &quot;sheet&quot;) != null);
+}</code></pre><p>(<code>nok.render.skia.PixelSink</code> is the pixel twin — one frame per step through the production renderer, PNG by default and numbering matched file-for-file; <code>trace.Tee</code> is how both sinks ride one run. The same seam exists on <code>testing.DriverApp</code>, which is where it earns its keep: <a class="link" href="/en/testing/#seeing-a-screen-nobody-watched" data-n="235" data-s="7">testing.md</a>.)</p><p>Third, <strong>golden screenshot tests</strong>: byte-exact frames, no tolerance, no perceptual diffing — the pixel model makes exactness cheap, so any variance is a bug by definition.</p><p>Goldens render through the production renderer, which needs the Skia prebuilt — and that is a <strong>link</strong> a test binary does not inherit from the app&#39;s. Without it <code>nok.render.skia.Surface</code> comes back as <code>undefined symbol: _hsk_text_width</code>. <code>nokre.addGoldenTests</code> is the whole wiring: the module, the Skia link on the <em>test</em> artifact, and the run, built the same way nokre builds its own, so the two cannot drift. There is nothing to enable on the dependency — <code>.skia = true</code> in <code>b.dependency</code> configures nokre&#39;s <em>own</em> steps and has never meant anything to yours.</p><p>Two pieces of it are a contract rather than a convenience, which is why they are not left to you to retype: the options module must be imported under the name <strong><code>build_options</code></strong> (that is what the test root reads <code>update_goldens</code> from), and the run&#39;s cwd must be the package root (or every golden path resolves into the build cache and a &quot;missing&quot; baseline is minted somewhere nobody looks). Both fail far from the mistake.</p><p><code>-Dgolden</code> stays yours, because it is your test suite: it decides whether the goldens join the <code>test</code> step at all — they need the prebuilt fetched, so they are opt-in. <code>-Dupdate-goldens</code> is yours to declare and nokre&#39;s to route: it reaches the assertion as its <code>.update</code> argument through that options module, the only road it has, which is what keeps CI from minting baselines. In <code>build.zig</code>, beside the <code>addApp</code> call from Part 1:</p><pre class="code" tabindex="0" data-n="240" style="--bleed:16px"><code>    const golden = b.option(bool, &quot;golden&quot;, &quot;Run golden screenshot tests (needs the Skia prebuilt)&quot;) orelse false;
+    const update_goldens = b.option(bool, &quot;update-goldens&quot;, &quot;Create missing goldens and rewrite mismatched ones (requires -Dgolden)&quot;) orelse false;
+    const goldens = nokre.addGoldenTests(nokre_dep, .{
+        .root_source_file = b.path(&quot;src/golden_test.zig&quot;),
+        .target = target,
+        .optimize = optimize,
+        .nokre = app.nokre, // the configured instance the app links
+        .imports = &amp;.{.{ .name = &quot;app&quot;, .module = app.module }},
+        .update_goldens = update_goldens,
+        .cwd = b.path(&quot;.&quot;), // goldens resolve against the project root
+    });
+    b.step(&quot;golden&quot;, &quot;Run the golden screenshot tests&quot;).dependOn(&amp;goldens.run.step);
+    if (golden) test_step.dependOn(&amp;goldens.run.step);</code></pre><p>Run <code>tools/fetch-deps.sh</code> once inside the dependency before the first golden. Without it the build step fails naming that command, rather than failing at link time with a list of missing symbols.</p><p><code>src/golden_test.zig</code>:</p><pre class="code" tabindex="0" data-n="243" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
+const build_options = @import(&quot;build_options&quot;);
+const nok = @import(&quot;nokre&quot;);
+const app = @import(&quot;app&quot;);
+
+pub const nokreWorkers = app.nokreWorkers;
+
+const gpa = std.testing.allocator;
+
+test &quot;golden: the sign-in screen&quot; {
+    var state: app.State = .{};
+    var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{ .routes = &amp;app.routes, .nav = &amp;app.nav_items, .ctx = &amp;state, .initial_route = &quot;notes&quot; });
+    defer t.deinit();
+    state.app = &amp;t.app;
+
+    try t.expectGolden(&quot;tests/goldens/signin.ppm&quot;, .{ .update = build_options.update_goldens });
+}</code></pre><p><code>expectGolden</code> is the whole take: a Skia surface at the viewport, the real Skia measurer swapped in (real text metrics — the fixed measurer&#39;s glyph positions match no device), one render through the production pipeline, the byte-exact comparison. <code>.update</code> is the assertion-side end of the options module above.</p><p><strong>Checkpoint:</strong> <code>zig build test -Dgolden</code> fails, reporting that <code>tests/goldens/signin.ppm</code> is <em>missing</em> — baselines are never created implicitly. Rerun with <code>-Dupdate-goldens</code> to create it, open the PPM (almost any image tool reads P6), review it, commit it; the plain run now passes byte-exact, and every run after that proves the pixels never drifted. On a mismatch the runner writes <code>&lt;name&gt;.actual.ppm</code> next to the golden for eyeball diffing; if the change was intended, rerun with <code>-Dupdate-goldens</code> to rewrite the golden in place and review the diff. A checking run goes without <code>-Dupdate-goldens</code>, so a lost baseline fails instead of silently re-minting — and it has to run on the platform that created the goldens: byte-identity is per-platform by design, so the same suite on another platform fails on purpose (<a class="link" href="/en/internals.pixel-model/" data-n="245" data-s="16">internals/pixel-model.md</a>).</p><h4 id="the-fourth-artifact-a-driver">The fourth artifact: a driver</h4><p>Everything above runs inside <code>zig test</code>, and that is a boundary rather than a preference: under <code>zig test</code> a service <em>is</em> its mock, so no test binary of yours reaches a socket, a keychain, or your backend. The program that does is a <strong>driver</strong> — an ordinary headless executable that links the library, carries nokre&#39;s own headless shell, and drives a real <code>App</code> through its screens. <a class="link" href="/en/testing/#driving-an-app-outside-zig-test" data-n="247" data-s="11">testing.md</a> is that whole tier: the waits, the <code>DriverApp</code> verb set, and the process shape <code>testing.entry</code> supplies. Its two build entry points belong here, beside <code>addApp</code> and <code>addGoldenTests</code>. You call one or the other per driver — nokre&#39;s own tree has both, three drivers between them:</p><pre class="code" tabindex="0" data-n="248"><code>    // Handed the app&#39;s own module, so the driver drives the library
+    // instance the app links.
+    const runner = nokre.addDriver(nokre_dep, .{
+        .name = &quot;system_test&quot;,
+        .root_source_file = b.path(&quot;src/system_test.zig&quot;),
+        .target = target,
+        .optimize = optimize,
+        .nokre = app.nokre,
+        .imports = &amp;.{.{ .name = &quot;app&quot;, .module = app.module }},
+    });
+    b.step(&quot;system-test-build&quot;, &quot;Build the headless system-test runner&quot;)
+        .dependOn(&amp;b.addInstallArtifact(runner.artifact, .{}).step);
+
+    // Creates its own, because a module holding the dev file store is
+    // what no App can hand over.
+    if (nokre.addDevStoreDriver(nokre_dep, .{
+        .name = &quot;e2e&quot;,
+        .root_source_file = b.path(&quot;src/e2e.zig&quot;),
+        .target = target,
+        .pkg = app_pkg, // the same declaration addApp took
+        .deep_link_domains = &amp;.{&quot;notes.example.com&quot;},
+        .skia = true, // this one writes frames
+    })) |e2e| {
+        b.step(&quot;e2e-build&quot;, &quot;Build the screen-driving E2E runner&quot;)
+            .dependOn(&amp;b.addInstallArtifact(e2e.artifact, .{}).step);
+    }</code></pre><p>Both are <code>addExecutable</code> and never <code>addTest</code>, which is the fact worth a call rather than a paragraph: a driver built as a test binary reaches no socket at all, and a scenario against a real backend then fails a long way from the mistake.</p><p>They are two calls rather than one with a mode, because what separates them is not a value a field could carry. <code>addDriver</code> is <em>handed</em> a nokre module, and it wants <code>app.nokre</code> — <code>nokre_dep.module(&quot;nokre&quot;)</code> is the unconfigured instance and would link a different set of services. <code>addDevStoreDriver</code> <strong>creates</strong> one, because a module configured for the dev file store is exactly what no existing <code>App</code> can hand over: the OS store is not a driver&#39;s to use (macOS refuses the data-protection keychain to an unentitled process, and a headless Linux machine runs no keyring daemon), so <code>secure_store</code> is swapped for a plaintext file the driver owns (<a class="link" href="/en/services/" data-n="250" data-s="17">services.md</a> has the gates that keep that out of a shipping build). Hoist the <code>.pkg</code> declaration into a const and pass the same one to both: the store&#39;s namespace is the id, so a driver declaring a second identity would read an empty store. It answers <code>?Driver</code> rather than <code>Driver</code> because off a host where that store cannot exist the honest answer is no step at all — an optional the plain case would otherwise unwrap for nothing — and it takes no <code>optimize</code>, because Debug is one of the dev store&#39;s own gates.</p><p>Neither creates an install step, and not out of taste: a step created on nokre&#39;s builder would install into nokre&#39;s prefix rather than yours. You get the driver&#39;s root module, its artifact and its <code>nokre</code> — and name the step. That third field is <code>App.nokre</code>&#39;s counterpart and earns its place the same way: a <strong>sibling</strong> module the driver imports, a shared library carrying your scenario vocabulary, binds its own <code>&quot;nokre&quot;</code> to that one, or the binary holds two configured copies of the framework and two unrelated <code>App</code> types. It is also the only handle on the module <code>addDevStoreDriver</code> mints. <code>.skia = true</code> is the Skia link on the driver&#39;s <strong>own</strong> artifact — the same link <code>addGoldenTests</code> makes for a test binary, and for the same reason — so a driver that never takes a frame is not made to carry the archive. <code>nokre.linkSkia(nokre_dep, exe)</code> is that link on its own, for a binary neither call builds.</p><h3 id="part-13--every-platform">Part 13 — Every platform</h3><p>The Zig you wrote is finished — what remains is entry points and native packaging. Desktop and iOS run <code>main</code>; on the web and Android the platform owns the event loop and boots through exported builders. Append to <code>main.zig</code> (and note <code>main</code>&#39;s changed signature):</p><pre class="code" tabindex="0" data-n="254"><code>const builtin = @import(&quot;builtin&quot;);
+
+const is_wasm = builtin.cpu.arch == .wasm32;
+const is_android = builtin.abi.isAndroid();
+
+// Nothing else pulls the platform into the build on these two, because
+// main never runs there. Android names its shell; the web has none —
+// build.zig routes every wasm32 target to the DOM edition, and nokre
+// emits its exports. All an app owes there is the reference itself.
+comptime {
+    if (is_android) _ = h.platform.backend;
+    if (is_wasm) _ = h;
+}
+
+pub fn main() if (is_wasm) void else anyerror!void {
+    if (comptime is_wasm) {
+        // The browser boots via nokreWebBuild; zig&#39;s start code still
+        // wraps main on wasm, so keep it void and empty.
+        return;
+    } else {
+        if (builtin.os.tag == .ios) return run(std.heap.c_allocator);
+        var gpa_state: std.heap.DebugAllocator(.{}) = .init;
+        defer _ = gpa_state.deinit();
+        return run(gpa_state.allocator());
+    }
+}
+
+fn run(gpa: std.mem.Allocator) !void {
+    // …the body Part 3 wrote, unchanged.
+}
+
+/// Android entry: the Activity boots the app through the JNI shell.
+pub fn nokreAndroidBuild(gpa: std.mem.Allocator) !*h.App {
+    return nokreWebBuild(gpa);
+}
+
+/// Web entry: the browser owns the event loop; everything lives on the
+/// heap because no enclosing stack frame outlives this call.
+pub fn nokreWebBuild(gpa: std.mem.Allocator) !*h.App {
+    const state = try gpa.create(State);
+    errdefer gpa.destroy(state);
+    state.* = .{};
+    const app = try gpa.create(h.App);
+    errdefer gpa.destroy(app);
+    app.* = try h.App.init(gpa, .{
+        .viewport = .{ .w = 480, .h = 640 },
+        .routes = &amp;routes,
+        .ctx = state,
+    });
+    state.app = app;
+    try app.setNav(&amp;nav_items);
+    try app.navigate(&quot;notes&quot;);
+    return app;
+}
+
+// Panic symbolication can&#39;t link on iOS, and wasm has no stderr to
+// lock — the same postures nokre&#39;s examples take.
+pub const panic = if (is_wasm)
+    std.debug.no_panic
+else if (builtin.os.tag == .ios)
+    std.debug.simple_panic
+else
+    std.debug.FullPanic(std.debug.defaultPanic);</code></pre><p>Packaging is already done: <code>zig build</code> writes <code>zig-out/pkg/</code> — an iOS <code>Info.plist</code> and asset catalog, an <code>AndroidManifest.xml</code> with the icon res tree, a macOS <code>Info.plist</code> with the mark as <code>AppIcon.icns</code>, a web page with manifest and icons — all generated from Part 1&#39;s declaration, never hand-written, never committed. The icon is a deterministic grayscale mark computed from your app id — unless you declare your own, in which case every launcher, web and <code>.icns</code> size derives from that one file:</p><pre class="code" tabindex="0" data-n="256"><code>        .mark = .{ .master = b.path(&quot;assets/mark.svg&quot;) },</code></pre><p><code>.silhouette</code> is the other form and PNG works for either (<a class="link" href="/en/services/" data-n="257" data-s="2">services.md</a>, &quot;The mark is declared&quot;). Real art for Apple&#39;s platforms is one more line in the same declaration:</p><pre class="code" tabindex="0" data-n="258"><code>        .apple_icon = b.path(&quot;assets/AppIcon.icon&quot;),</code></pre><p>pointing at the <code>.icon</code> bundle Icon Composer exports. nokre checks it and delivers it whole to <code>pkg/ios/AppIcon.icon</code> and <code>pkg/macos/AppIcon.icon</code>; Xcode compiles it, and the contract — including the Xcode 26 floor — is <a class="link" href="/en/services/" data-n="259" data-s="7">services.md</a>. Part 3&#39;s <code>.deep_link</code> added to that tree: <code>ios/App.entitlements</code> (point Xcode&#39;s <code>CODE_SIGN_ENTITLEMENTS</code> at it), the App-Links <code>intent-filter</code> inside the manifest, and a <code>.well-known/</code> directory with <code>assetlinks.json</code> and <code>apple-app-site-association</code> — copy that directory to each claimed domain&#39;s web root and replace the two <code>REPLACE_…</code> placeholders (your Apple Team ID, your Android signing cert&#39;s SHA-256) so the OS verifies the link.</p><p><strong>macOS, Windows, and Linux</strong> you have been shipping since Part 1: <code>zig build</code> produces the windowed executable, and Linux runs the same <code>zig build run-*</code> path as the other two (the platform notes from Part 0 apply). A cheap habit for the rest: the Android cross-compile check — <code>zig build -Dtarget=aarch64-linux-android</code> compiles the full app in seconds, no SDK required, so platform breakage surfaces at your desk and not in a Gradle log. iOS is not that cheap a check: its build wants a macOS host, <code>deps/skia</code>, and <code>xcrun</code>, so it is verified through the Xcode project below.</p><p>An executable is what Windows and Linux get. On macOS the bundle&#39;s contents are generated too: <code>pkg/macos/</code> always carries an <code>Info.plist</code> and the derived mark as <code>AppIcon.icns</code>, so a <code>.app</code> is three copies — plist and <code>.icns</code> into <code>Contents/</code>, your executable into <code>Contents/MacOS/</code> under the name the plist declares (<code>nokre_app</code>) — made by your own script or Xcode target; signing and notarizing stay yours. Assemble it before you rely on notifications: on macOS the service posts only from inside a bundle (<a class="link" href="/en/internals.notifications/" data-n="261" data-s="17">internals/notifications.md</a>). If you declared an <code>.apple_icon</code>, <code>pkg/macos/AppIcon.icon</code> is the same bundle iOS gets, delivered where a macOS project can reach it: a wrapper target adds it to its Resources and sets <code>ASSETCATALOG_COMPILER_APPICON_NAME</code> to <code>AppIcon</code>, exactly as on iOS below, and a hand-rolled <code>.app</code> has one directory to hand to <code>actool</code>.</p><p><strong>iOS.</strong> Build Skia for iOS once, then let Xcode own packaging and signing, with a build phase calling <code>zig build</code> for the Zig side — the kitchen sink&#39;s project is the template to copy:</p><pre class="code" tabindex="0" data-n="263"><code>(cd ../nokre &amp;&amp; tools/build-skia-ios.sh)     # once
+cp -R ../nokre/examples/kitchen_sink/ios ios</code></pre><p>Then repoint the copy at your app: the build phase&#39;s <code>zig build</code> runs in <em>your</em> project directory; the link step consumes your <code>libnotes.a</code> and the shim (<code>app.artifact</code> and <code>app.shim</code> — Part 1&#39;s build.zig installs both); <code>INFOPLIST_FILE</code> and the asset catalog read from the <code>pkg/ios</code> tree your install step fills; and <code>PRODUCT_BUNDLE_IDENTIFIER</code> must equal the declared id — that one duplication belongs to Apple&#39;s signing machinery, and Xcode fails the build if it disagrees, so drift is loud. If you declared an <code>.apple_icon</code>, one addition: drag <code>ios/build/pkg/AppIcon.icon</code> into the project so it joins the target&#39;s Resources phase. The copied build phase already mirrors it there on every build (the template&#39;s script does this whether or not an icon is declared), and <code>ASSETCATALOG_COMPILER_APPICON_NAME</code> already says <code>AppIcon</code>, which is the name nokre normalizes the bundle to — so that one drag is the whole wiring, and the icon still has exactly one source. It wants Xcode 26; an older <code>actool</code> does not know the format. The per-target split of who compiles what is <a class="link" href="/en/internals.platform-shells/" data-n="264" data-s="27">internals/platform-shells.md</a>. The Simulator needs no signing setup; for your own iPhone, a free Apple ID&#39;s personal team is enough.</p><p><strong>Android.</strong> The same split with Gradle in Xcode&#39;s chair: a Gradle task calls <code>zig build</code>, and the NDK&#39;s CMake compiles the shell and links Skia:</p><pre class="code" tabindex="0" data-n="266"><code>(cd ../nokre &amp;&amp; tools/build-skia-android.sh) # once; needs an NDK
+cp -R ../nokre/examples/kitchen_sink/android android</code></pre><p>Repoint the copy the same way — the Zig invocation, the consumed static library, and the applicationId, which Gradle reads from the generated identity properties so it tracks your declaration. Open the project in Android Studio and Run, or <code>./gradlew installDebug</code> headlessly.</p><p><strong>Web.</strong> The lightest of the six. There is no native link to arrange, no archive to hand on, and no SDK — and nothing to author either: <code>addApp</code> sees a wasm target and hands back the app <em>and the site around it</em>. One requirement the native targets do not have: a web app must declare <code>.pkg</code> — its page, manifest, icons and the share card a link preview shows are all outputs of the declaration, and a wasm build without one fails saying so (<a class="link" href="/en/services/" data-n="268" data-s="8">services.md</a>, &quot;The share card&quot;). Add a flag to <code>build.zig</code>:</p><pre class="code" tabindex="0" data-n="269"><code>    const web = b.option(bool, &quot;web&quot;, &quot;Build for the browser&quot;) orelse false;</code></pre><p>pass <code>.target = if (web) nokre.webTarget(b) else target</code> to <code>addApp</code>, and install what comes back beside the packaging tree:</p><pre class="code" tabindex="0" data-n="271" style="--bleed:16px"><code>    if (app.web) |site| b.installDirectory(.{
+        .source_dir = site,
+        .install_dir = .prefix,
+        .install_subdir = &quot;web&quot;,
+    });
+
+    const serve = nokre.addWebServe(nokre_dep, app, .{}); // .port = 8000
+    b.step(&quot;serve&quot;, &quot;Serve the web build at http://localhost:8000&quot;).dependOn(&amp;serve.step);</code></pre><p>Two commands from here:</p><pre class="code" tabindex="0" data-n="273"><code>zig build -Dweb          # zig-out/web/ — the whole site
+zig build serve -Dweb    # the same site, served at http://localhost:8000</code></pre><p><code>app.web</code> is a directory, not a file, and that is the point: the wasm module under the name the page loads, the live driver&#39;s modules (<a class="link" href="https://github.com/getnokre/nokre/blob/main/src/render/dom/live.js" target="_blank" rel="noopener noreferrer" data-n="274" data-s="2">live.js</a>, <a class="link" href="https://github.com/getnokre/nokre/blob/main/src/render/dom/live-worker.js" target="_blank" rel="noopener noreferrer" data-n="274" data-s="4">live-worker.js</a>, <a class="link" href="https://github.com/getnokre/nokre/blob/main/src/render/dom/services.js" target="_blank" rel="noopener noreferrer" data-n="274" data-s="6">services.js</a>) plus the service worker (<a class="link" href="https://github.com/getnokre/nokre/blob/main/src/render/dom/sw.js" target="_blank" rel="noopener noreferrer" data-n="274" data-s="8">sw.js</a>), the stylesheet the library generates out of its own palette and metrics, the bundled faces, and the page, manifest and icons your Part 1 declaration produces. Half a site is not a smaller site — a missing <code>services.js</code> is a blank page in a browser rather than an error in a build — so there is nothing here to copy by hand and nothing that can fall behind the nokre you built against. Upload the directory to any static host and you have shipped; there is no server-side anything.</p><p>The directory also carries its own file list as data: <code>site.manifest</code>, one relative path per line, sorted. If tooling of yours copies the site toward a host and wants to verify the copy landed whole, check the files the manifest names instead of keeping a list of your own — the list is nokre&#39;s contract, this file is where nokre publishes it, and a re-typed copy is a list that drifts.</p><p>Name the <code>serve</code> step whether or not the flag is set. Built for a native target, <code>app.web</code> is null and the step you get says so when it runs, which beats <code>zig build serve</code> answering &quot;no step named &#39;serve&#39;&quot;.</p><p><strong>The page ships a Content-Security-Policy</strong>, derived from what the site actually contains: its own module and scripts, its own two stylesheets, its own faces and icons, <code>&#39;wasm-unsafe-eval&#39;</code> for the module a browser has to compile, and nothing else — <code>default-src &#39;none&#39;</code> is the floor, so anything nobody named is refused. You author no HTML, so you do not author this either; it is regenerated with the page on every build, which is exactly why hand-editing the generated <code>index.html</code> would be the wrong place to keep one.</p><p>One directive is yours, because it is the only one an app can outgrow: the hosts it fetches. Declare them where you declared everything else.</p><pre class="code" tabindex="0" data-n="279" style="--bleed:16px"><code>        .web_connect_src = &amp;.{ &quot;https://api.example.com&quot;, &quot;wss://live.example.com&quot; },</code></pre><p>Those join <code>connect-src</code> and nothing else — an added host grants exactly one power and leaves the rest of the policy where it was — and the default is empty, which still reaches the origin the app was served from. Every host the app talks to needs a line here, including the ones it reaches through a service: <code>http.request</code>&#39;s URLs, and your OAuth provider&#39;s <em>token</em> endpoint (the sign-in window itself is a navigation, which no directive governs). A missing one arrives as the http service&#39;s ordinary <code>&quot;FetchFailed&quot;</code>, with the browser&#39;s refusal in the console beside it. Entries are CSP sources — <code>https://api.example.com</code>, <code>*.example.com</code> — and a bare <code>*</code>, or anything carrying a space, a quote or a semicolon, fails the build rather than reaching a page.</p><p><strong>Three directives are your edge&#39;s, not the page&#39;s</strong>, and nothing the page says can change it: <code>frame-ancestors</code>, <code>report-uri</code>/<code>report-to</code> and <code>sandbox</code> are ignored inside a <code>&lt;meta&gt;</code> by specification. So set them wherever the site is served from:</p><ul class="list" style="--list-gutter:17px"><li><p><code>Content-Security-Policy: frame-ancestors &#39;none&#39;</code> — who may frame the app, which is the clickjacking answer a page cannot give about itself. nokre&#39;s own <code>serve</code> step sends exactly that header, so it is the shape you have been developing against all along.</p></li><li><p>a reporting endpoint, if you want violations from the field.</p></li><li><p>the transport headers a static host owns either way: <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options: nosniff</code>.</p></li></ul><p>Sending the page&#39;s own policy as a header as well is worth it where your edge makes it easy: it is a constant apart from your hosts, and a header covers every response rather than one document. One thing not to add: <code>require-trusted-types-for &#39;script&#39;</code> breaks the live driver, which patches each frame in by parsing markup off-document.</p><p><strong>Three other things on the page are yours: its language, its address and its sentence.</strong> <code>web_origin</code> (scheme and host, no trailing slash) is where the site is published — declared, the page carries its canonical, <code>og:url</code> and the <code>og:image</code> a link preview fetches; unset, no absolute URL is guessed. <code>web_description</code> is the one sentence the description tags carry. Both are <a class="link" href="/en/services/" data-n="290" data-s="10">services.md</a>&#39;s (&quot;The head is the declaration&#39;s&quot;). The language: the shell page has no prose in it — a title and an empty mount point — but its root element still has to claim a tag, and the default is the language nokre&#39;s own chrome words are in:</p><pre class="code" tabindex="0" data-n="291"><code>        .web_lang = &quot;fa&quot;,</code></pre><p>It is a declaration rather than a derivation because the page is written by your build, out of the declaration alone, before an app exists to ask — and being stated is why it is checked: a value that is not a language tag fails the tree naming itself, since a browser drops a malformed <code>lang</code> without saying so and an escape cannot catch that. And it is the page&#39;s only locale attribute: the driver stamps the direction itself at boot, and there is exactly one shell for every reader — so if your app is localized, this is one value standing for all of them, and the honest choice of which is yours rather than nokre&#39;s. (Every <em>generated</em> page — the static route pages a site emits — takes its <code>lang</code> from the app that rendered it and needs no option: <a class="link" href="/en/localization/" data-n="292" data-s="7">localization.md</a>.)</p><p>Everything carries over: keyboard, scrolling, the software keyboard, dark mode from the OS, and an accessibility tree that is not mirrored anywhere, because it is the page. Three things do not, and they are the web&#39;s price rather than a gap to be closed (<a class="link" href="/en/internals.dom-edition/" data-n="293" data-s="1">internals/dom-edition.md</a> argues each):</p><ul class="list" style="--list-gutter:17px"><li><p><strong>No pixel goldens.</strong> Part 12&#39;s screenshot tests cover the five native shells and stop at the browser, because the browser owns text metrics: it measures the runs, so it decides where your prose wraps and whether a row of actions folds its tail. Your web build&#39;s frames are not its macOS sibling&#39;s, and the assertions that do hold there are the semantic ones — the tree, the roles, the labels — which is what the harness checks anyway.</p></li><li><p><strong>No fractional-scaling refusal.</strong> A browser will hand out a 1.1 device pixel ratio and no edition can decline it on your behalf.</p></li><li><p><strong>System fonts show through.</strong> The bundled faces are still the only ones nokre asks for, but a codepoint outside them falls back to whatever the reader has.</p></li></ul><p>Text on Windows and Android rasterizes through FreeType rather than CoreText, and byte-identity is per-platform rather than across them by design — your goldens reflect the platform that created them (<a class="link" href="/en/internals.pixel-model/" data-n="301" data-s="1">internals/pixel-model.md</a>). The <code>worker</code> and <code>http</code> services need no porting anywhere: the same app code runs on a <code>std.Thread</code> or a Web Worker, <code>std.http.Client</code> or <code>fetch</code>.</p><h3 id="part-14--where-you-are-now">Part 14 — Where you are now</h3><p>You have used the core consumer surface: the element vocabulary and its commit contracts, the tree&#39;s append-time correctness, <code>Str</code> and <code>Rows</code> holding what each callback only lent you, routes and the framework&#39;s navigation chrome, the sheet and notices, six of the services (<code>secure_store</code>, <code>package_info</code>, <code>clipboard</code> through <code>copyable</code>, <code>deep_link</code>, <code>http</code>, <code>worker</code>), ARB catalogs compiled and validated at comptime, and a testing story that pinned behavior, persistence, races, pixels, and the accessibility tree — the audit having re-run after every action you dispatched. What you did <em>not</em> write is the point: no focus management, no back buttons, no ARIA, no styling, no sleep() in any test.</p><p>Where each thread continues:</p><ul class="list" style="--list-gutter:17px"><li><p><a class="link" href="/en/elements/" data-n="307" data-s="0">elements.md</a> — the elements this app skipped (<code>select</code> and its picker, <code>table</code>, <code>scroll_region</code>, icons, <code>link</code>, segmented overflow) and the full semantics of the ones it used.</p></li><li><p><a class="link" href="/en/testing/" data-n="309" data-s="0">testing.md</a> — the complete harness surface, including the stale-response race and bare non-harness apps (two apps, two disjoint fakes, one test).</p></li><li><p><a class="link" href="/en/services/" data-n="311" data-s="0">services.md</a> — the full roster and each service&#39;s contract; <a class="link" href="/en/accessibility/" data-n="311" data-s="2">accessibility.md</a> — every rule <code>append</code> and the audit enforce.</p></li><li><p><a class="link" href="/en/localization/" data-n="313" data-s="0">localization.md</a> — the full ARB subset, every compile-time guarantee, the plural-rule coverage, and the refusals Part 11 only gestured at.</p></li><li><p><a class="link" href="/en/internals.architecture/" data-n="315" data-s="0">internals/</a> — how it works inside, when you&#39;re ready to contribute; new elements are argued in on semantics.</p></li></ul><h3 id="command-reference">Command reference</h3><p>Inside the nokre checkout:</p><pre class="code" tabindex="0" data-n="318" style="--bleed:16px"><code>zig build test                  # nokre&#39;s own unit tests, no dependencies
+tools/fetch-deps.sh             # fetch prebuilt Skia + AccessKit (once)
+zig build test -Dskia -Dgolden  # + golden screenshot tests, byte-exact
+zig build run-hello -Dskia      # examples (macOS / Windows / Linux)
+zig build run-kitchen-sink -Dskia
+tools/build-skia-ios.sh         # build Skia for iOS from source (once)
+tools/build-skia-android.sh     # build Skia for Android from source (once; needs an NDK)
+zig build web                   # kitchen sink&#39;s site for the browser → zig-out/web/
+zig build serve                 # the same site at http://localhost:8000 (-Dport=…)
+zig build check-targets         # compile-check every platform stub
+zig build translate-arb -- --input &lt;template.arb&gt; --dest fa   # draft a catalog (LLM_BASE_URL)
+zig build translate-md  -- --input &lt;file.md&gt; --dest fa        # the same for one Markdown document
+zig build l10n-fmt      -- --dir &lt;l10n dir&gt;                   # format a catalog set (--check to verify)
+zig build l10n-purge    -- --template &lt;t.arb&gt; --src &lt;dir&gt;     # report the keys nothing names (--write to cut)</code></pre><p>Inside your project:</p><pre class="code" tabindex="0" data-n="320"><code>zig build run                   # the windowed app (macOS / Windows / Linux)
+zig build test                  # headless e2e tests, no dependencies
+zig build test -Dgolden         # + byte-exact golden screenshots
+zig build                       # artifact + generated zig-out/pkg/ manifests
+zig build -Dweb                 # the servable site → zig-out/web/
+zig build serve -Dweb           # the same site at http://localhost:8000
+zig build -Dtarget=aarch64-linux-android  # SDK-free compile check</code></pre></div><div class="stack hands-back"><hr><p>MIT licensed. Documentation rendered from the repository at <a class="link" href="https://github.com/getnokre/nokre/tree/main/docs" target="_blank" rel="noopener noreferrer" data-n="323" data-s="1">docs/</a>.</p><a class="link block" href="https://github.com/getnokre/nokre" target="_blank" rel="noopener noreferrer" data-n="324">Source on GitHub</a><a class="link block" href="/en/colophon/" data-n="325">How this site is built</a></div></main>
+<script type="application/json" data-nokre="boot">{"wasm":"/app.wasm","into":"chrome","content":"content","addressing":"documents","route":"getting-started","locale":"en","seed":"/md/getting-started.md"}</script>
+<script type="module" src="/live-boot.js"></script>
+</body>
+</html>

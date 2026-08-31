@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<path fill="#2b2b2b" fill-rule="evenodd" d="M11 2h10a9 9 0 0 1 9 9v10a9 9 0 0 1 -9 9H11a9 9 0 0 1 -9 -9V11a9 9 0 0 1 9 -9Zm0 2a7 7 0 0 0 -7 7v10a7 7 0 0 0 7 7h10a7 7 0 0 0 7 -7V11a7 7 0 0 0 -7 -7H11Z"/>
+<rect fill="#2b2b2b" x="9" y="11" width="14" height="2"/>
+<rect fill="#2b2b2b" x="9" y="16" width="14" height="2"/>
+<rect fill="#2b2b2b" x="9" y="21" width="8" height="2"/>
+<style>path,rect,circle,ellipse,polygon{fill:#2B2B2B}@media (prefers-color-scheme: dark){path,rect,circle,ellipse,polygon{fill:#D4D4D4}}</style></svg>

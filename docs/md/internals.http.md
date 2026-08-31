@@ -1,0 +1,238 @@
+# The http service
+
+How the one-API-everywhere contract in [../services.md](../services.md)
+is wired. The consumer surface is
+[src/services/http/http.zig](../../src/services/http/http.zig); the
+native transport is [native.zig](../../src/services/http/native.zig),
+the web transport [web.zig](../../src/services/http/web.zig) plus the
+fetch glue in [services.js](../../src/render/dom/services.js), and the
+contract tests are
+[http_test.zig](../../src/services/http/http_test.zig).
+
+## One delivery lane, not two
+
+A response must cross from wherever the transport runs to the UI
+thread, in order, exactly once — which is the problem the workers
+service already solved. So http does not build a second cross-thread
+structure: a request opens a **one-shot delivery slot** in the workers
+module (`openOneShot` in
+[workers.zig](../../src/workers/workers.zig)) — the same slot table,
+generation checks, lock-free queue, platform wake, pump, and shutdown,
+with two twists:
+
+- **Exactly one delivery.** The encoded `Result` frame is chased by a
+  retired frame, so the slot frees itself right behind its one
+  callback. Push order is FIFO order per producer, by the queue's
+  contract, so the retire can never overtake the reply.
+- **Cancellation is a generation bump.** `handle.cancel()` finalizes
+  the slot immediately; anything still in flight fails the generation
+  check at the pump and is dropped, frame and body freed. The callback
+  provably cannot run again — there is no window where a late response
+  sneaks through, because attribution is checked on the UI thread at
+  delivery, not at send.
+
+The wire type is the public `Result` itself — status, headers, body —
+encoded with the worker codec; the body rides as a `Bytes` attachment,
+so on native it moves whole from the request thread to the handler
+with zero copies.
+
+The request's correlation `tag` is deliberately *not* on that wire.
+`request` parks it in the delivery slot (`openOneShotTagged`), on the
+UI thread, before any transport sees the request; the pump reads it
+back out of the slot when it runs `on_result`. So the echo is
+structural, not per-leg plumbing: a canned answer, a native transfer,
+the watchdog's `"TimedOut"`, the web's `"FetchFailed"` — every
+delivery against the ticket carries the tag untouched, because no
+transport ever held it to begin with. The mock additionally records
+the tag on the parked request and in the journal, where it is data for
+the test's assertions, not the echo path.
+
+## The transports
+
+| Transport | Where | Request | Response |
+| --- | --- | --- | --- |
+| mock | tests | parks in the app's mock, copies owned | the test's canned answer, delivered on the explicit pump |
+| thread | native | one detached `std.Thread` per request, blocking on `std.http.Client` | `deliverOneShot` → queue → wake → pump |
+| fetch | web | `nokre_http_js_send` → services.js → fetch on the main thread, beside the wasm instance | scratch → copy → `nokre_http_deliver` → queue → inline pump |
+
+- **Native.** A thread you can see, like a worker — but one-shot and
+  *detached*: a socket mid-read cannot be interrupted (the
+  no-forced-kill rule), so joining would let a hung server hang
+  shutdown. Cancellation and shutdown drop the delivery instead, and
+  the thread ends on its own clock. Consequences wired on purpose: the
+  `std.Io.Threaded` backend is refcounted (each request thread holds a
+  reference until it exits, so the backend always outlives the
+  detached threads that use it, and the last release tears it down —
+  the exemption architecture.md grants it), each request runs its own
+  `std.http.Client` with `keep_alive = false` (nothing pools across a
+  detached thread's lifetime), and the response head is copied before
+  the body reader invalidates it. The send path is the *method's* —
+  `std.http.Method.requestHasBody()` — never the body's length:
+  `std.http.Client` asserts at each path that the method agrees with
+  the one taken, so a POST with no fields is still a body request
+  (`content-length: 0`) and a GET is never one. Measuring the body
+  instead panicked every bodiless mutation an app has, which is why
+  `request` now refuses a body on a verb that carries none and why
+  [native_test.zig](../../src/services/http/native_test.zig) puts every
+  verb on a real socket. Bodies decompress
+  (gzip/deflate/zstd) before delivery — the browser decompresses too,
+  one outcome. The transport deadline is a second thread you can see:
+  a per-request watchdog sleeps out `deadline_seconds`, then claims
+  the one delivery if the transfer has not (an atomic claim on the
+  shared job — the one-shot slot alone cannot arbitrate two racing
+  producers) and delivers `"TimedOut"`. No socket is touched; a
+  transfer that finishes late loses the claim exactly the way a
+  cancelled one loses the generation check. One consequence of detaching
+  reaches all the way out to a consumer's own program: at exit, threads
+  that have not ended yet are still holding their buffers, so **a driver
+  must not run on a leak-checking allocator** — every one of those
+  buffers is reported, and a passing run ends buried under stack traces
+  from a transport behaving exactly as designed. `testing.entry` settles
+  it with a process arena
+  ([../testing.md](../testing.md#the-process-a-driver-is)); a driver
+  that builds its own process shape answers it for itself.
+- **Web.** fetch runs in services.js on the main thread, right beside
+  the wasm instance the app boots on — there is no thread to cross at
+  all. The
+  landing is the worker-reply three beats: ask wasm for a scratch
+  buffer (`nokre_http_scratch`), copy `[headers block][body]` in, call
+  `nokre_http_deliver` with the split point — then the shared queue and
+  an inline pump, exactly `deliverFromPost`'s shape. Request slices
+  are decoded/copied *inside* the `nokre_http_js_send` call (services.js
+  slices, never views), because fetch is async and the wasm-side
+  borrows end on return. The body is read incrementally off the
+  response's reader with `max_body` enforced per chunk — an
+  overflowing (or never-ending) body aborts the fetch itself, so a
+  rogue server cannot balloon the worker's JS heap while waiting for a
+  whole body that never comes; native's `allocRemaining` limit is the
+  same line drawn the same way. Cancel aborts the browser-side fetch
+  as a courtesy to the network; correctness never depends on it — the
+  rejection lands after the generation already bumped. The transport
+  deadline rides the same abort: a `setTimeout` (30 s, mirroring
+  `deadline_seconds` by hand across the language gap) fires
+  `ctrl.abort()`, the fetch rejects, and the one `"FetchFailed"`
+  lands — a timeout is a failure reason, and the browser hides those;
+  the timer is cleared on every completion path.
+- **Mock.** Under `zig test` the transport is the app's mock
+  (`app.services.http`, constructed with the app): `request` parks
+  owned copies of everything the app sent in *that app's* pending
+  list; the test inspects and answers them — oldest-first
+  (`fulfill`/`fail`) or by index (`fulfillAt`/`failAt`), which is what
+  makes guarantee 2 concrete: the delivery interleaving under test
+  control includes the reordering, so the stale-response race is two
+  lines. Two apps are two disjoint networks by construction — no
+  app-stamping, no filtering; the `onHttp`/`settleHttp` fake server
+  ([../testing.md](../testing.md)) is the mock's own handler, so it
+  cannot answer anyone else's traffic. `fulfill` honors `max_body`
+  the way the real transports do, so the cap is testable. Every ask
+  also lands in the mock's journal (method + url + tag, request order,
+  surviving fulfill/fail/cancel — `journal()`/`clearJournal()`, the
+  harness's `httpJournal()`), the register every journaling mock
+  keeps: "these requests, in this order" outlives the answers. The
+  parked state dies with the app at `deinit`.
+
+## No pool under the native transport
+
+The native transport's `std.Io.Threaded` is created with
+`async_limit = .nothing`, so it dispatches nothing to a pool: every
+`Io.async` std makes under `std.http.Client` runs on the caller, which
+is the request's own detached thread. That is what makes "one thread
+per request" literally true rather than approximately true, and it is
+load-bearing, not tidiness.
+
+With a pool, the transport dies. `std.Io.Threaded` cancels a blocked
+syscall by sending `SIGIO` to the pool thread sitting in it, and
+`std.http.Client` reaches `HostName.connect`, whose happy-eyeballs race
+cancels the losing attempt on *every host that resolves to more than one
+address* — which is every dual-stack host, including `localhost`. A
+signal aimed at one attempt can arrive after that thread has moved on to
+another request's `connect`. std then retries the interrupted call,
+which POSIX does not permit: after `EINTR` the connection completes
+asynchronously, so the retry answers `EISCONN`, and std treats that
+errno as a programmer bug and panics — `panic: programmer bug caused
+syscall error: ISCONN`, on a thread with nothing of the app on its
+stack. The odds scale with how many requests are connecting at once, so
+it reads as a rare crash in a small app and a frequent one in anything
+that fans out. In a release build the same errno becomes
+`error.Unexpected` and the request merely fails, which is worse in the
+way silence usually is. With no pool, no thread is ever a
+`pthread_kill` target and the whole class is gone.
+
+The cost, stated rather than implied: one host's addresses are tried in
+**sequence**, not in parallel. A refused address — the common shape of
+broken IPv6 — still answers at once, so the usual fallback is unchanged;
+a silently black-holed address ahead of a good one delays the request
+instead of losing a race to it, and guarantee 7 is what bounds that: the
+app sees `"TimedOut"`, never a hang. The other edge is std's own queues,
+32 entries each — a host resolving to more than 32 addresses would fill
+one with no consumer running, and that request reaches the app as the
+same `"TimedOut"`. Both are a slow request; the pool's price was a dead
+process.
+
+This is a property of the transport, not of the app: nothing a consumer
+does can restore the pool, and **two `App`s in one process are safe** —
+that shape (a driver holding two devices) is what made the crash easy to
+see, but one `App` fanning out requests reaches it too. The gate is
+[tests/http_stress.zig](../../tests/http_stress.zig): two apps, eight
+requests in flight each, 1920 requests at a loopback origin listening on
+both families. With the pool restored it crashed on 20 runs out of 20;
+without it, 0 in 100.
+
+The other two refcounted `std.Io.Threaded` backends in the tree —
+[workers/thread.zig](../../src/workers/thread.zig) and
+[oauth/loopback.zig](../../src/services/oauth/loopback.zig) — keep the
+default, and correctly: neither ever calls `Io.async`, so neither has a
+pool to be signalled through. Only the http transport hands its `Io` to
+code that does.
+
+## Guarantees
+
+1. Exactly one `Result` per request, on the UI thread, between events.
+2. Completion order across requests, not request order — two requests
+   race like they do in production, and only the delivery interleaving
+   is under test control.
+3. Values, not references: everything is copied at `request`; response
+   slices are valid only for the callback; the body is a `Bytes` —
+   `take()` moves it out whole.
+4. After `cancel`, the callback never runs. Ever.
+5. Failure is a value with a stable name. Status codes are data.
+6. An app that issues no requests costs nothing: no thread, no Io
+   backend, no JS state — the first request pays the setup.
+7. A request ends. At most `deadline_seconds` (30) after `request`,
+   its `Result` is on its way — `"TimedOut"` natively, the web's
+   `"FetchFailed"` — unless the app cancelled first. The mock is the
+   deliberate exception: parked requests stay parked, so time never
+   becomes a hidden test input ([../services.md](../services.md) for
+   the consumer contract).
+8. The `tag` comes back untouched, on every `Result` — response,
+   transport failure, timeout — because it never left: it is parked in
+   the delivery slot at `request` and read back at the pump, on no
+   transport's wire (the section above).
+
+## Refusals
+
+- **No streaming, no progress.** A response is delivered whole or not
+  at all. Streaming reintroduces per-chunk callbacks, backpressure
+  knobs, and partial-state UI — and the browser and native stacks
+  disagree enough that "equal outcome" would quietly die. `max_body`
+  is the memory guarantee that makes whole-delivery safe.
+- **No timeout knob.** The deadline exists (guarantee 7) but is not
+  configurable: it is transport policy, one number for every request,
+  not a per-request surface — and a knob would put a timer's worth of
+  nondeterminism in the app's hands, where nokre keeps none. Sooner
+  than 30 seconds is what `cancel` is for (a tap is an event; wire it).
+- **No futures, no await** — the same disease workers refuse to treat
+  with blocking.
+- **No request priorities, no connection pooling contract.** The
+  browser pools as it pleases; native deliberately doesn't. Pooling
+  parity would be a promise the web cannot keep.
+- **No cookies/auth magic.** Headers in, headers out; the browser adds
+  what it adds (a stated posture difference, not a bug to fix).
+
+## Deferred, not refused
+
+Each returns only with its own argument: proxy support on native
+(`std.http.Client` has it; nothing wires environment proxies yet),
+upload/download progress (would ride the same lane as more one-shot
+frames — but see the streaming refusal), and a shared native
+connection pool behind a lock the app never sees.
