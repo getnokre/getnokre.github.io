@@ -848,7 +848,10 @@ a.link.block {
   text-decoration: none;
 }
 .tiles > *:first-child, .tiles > *:first-child .tile { border-top: 0; }
-.tile-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+/* `overflow-wrap` because the raster edition's `wrap.breakWord`
+   splits an over-long word at the column edge: without it the two
+   editions break the same row differently. */
+.tile-text { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow-wrap: break-word; }
 /* Body prose in ink, in the regular face: the row is a
    destination, not a heading. */
 .tile-label { font-weight: 400; }

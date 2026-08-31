@@ -241,6 +241,22 @@ content; `copyable` is the one element that elides, and it drops the
 by. The break lands between grapheme clusters, so a combining mark never
 opens a line with nothing to sit on.
 
+**Marking that break with a hyphen was asked for and refused**, on three
+grounds and not on taste. No CSS produces it, so the DOM edition could
+not follow: `overflow-wrap: break-word` never inserts one, and
+`hyphens: auto` is a different mechanism — dictionary soft-break points,
+per-language, per-browser — that does not reach an emergency break. A
+raster-only hyphen is therefore permanent edition divergence, which is
+the defect this rule exists to close, not a nicety on top of it. It also
+cannot be a line: `WrapIterator` yields slices of `content` precisely so
+callers can recover byte offsets from the pointers, and bidi paragraphs,
+span segmentation, link geometry and the text-area caret all do. And in
+Arabic script it is wrong on its own terms — the break inside
+«الکترومغناطیسی» leaves a final and an initial form, and a hyphen between
+them cuts the join (`tests/goldens/long-word-title-rtl.ppm`, and the
+mirrored tile beside it). A per-script hyphen would buy German a mark the
+web edition still could not draw.
+
 ## Where the guarantee stops, and why there
 
 Text glyph rasterization is determined by the font binary **and the Skia

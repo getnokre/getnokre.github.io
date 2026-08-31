@@ -1292,7 +1292,7 @@ wrapped at the group width: the group-level counterpart of a tile's
 one of them. Assistive tech hears it as the group's value.
 
 Each `tile` is its own tab stop carrying `label`, an optional dimmed
-`detail` line beneath it (the row grows by one small line to fit), and
+`detail` line beneath it, and
 either a `route` or an `on_press`: a `route` tile renders a trailing
 chevron and navigates like a `link`; an `on_press` tile acts like a
 `button`. Its accessible role follows the same split. Exactly one of
@@ -1301,6 +1301,16 @@ both, or neither, is rejected — with both the route wins and the press
 is never called, and with neither the row is a tab stop that answers
 nothing. Focus is the picker's pattern — a heavier stroke hugging the
 row — because an outset ring would collide with the separators.
+
+**Both runs wrap, and the row grows to hold them.** The column is the
+row less its padding and its mark's band (`layout.tileTextWidth`), and
+layout measures the row against the same wrap the renderer draws, so a
+tile is as tall as its words and its words never reach its border. No
+caller states a width or a line count: a `detail` that fits in English
+and runs long in German is the ordinary case, and a row that could be
+overrun would put that measurement in every call site. Until revision 95
+the row was one line of each scale whatever it was handed, and the
+overflow was painted past the group border and cut by the frame edge.
 
 Because exactly one of the two is set, the split is total, and it
 reaches further than the chevron: **a routed tile is answered by the
