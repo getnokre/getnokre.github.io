@@ -241,6 +241,18 @@ content; `copyable` is the one element that elides, and it drops the
 by. The break lands between grapheme clusters, so a combining mark never
 opens a line with nothing to sit on.
 
+Which CSS value asks for it depends on what sizes the box, and the two
+answers are not interchangeable. A box whose width is already forced —
+`.tile-text`, at `flex: 1; min-width: 0` — takes `break-word`, which
+breaks the word without touching min-content. A box sized by its own
+content takes `anywhere`, the only value that reaches min-content: the
+pill is the case, and under `break-word` a compound wider than the
+column kept the button 301 wide against a 288 column at 320 and stepped
+outside the page, one line tall. The raster edition has no such split —
+`wrap.breakWord` breaks against the column it is handed either way — so
+picking `break-word` for a content-sized box is exactly how the two
+editions come apart.
+
 **Marking that break with a hyphen was asked for and refused**, on three
 grounds and not on taste. No CSS produces it, so the DOM edition could
 not follow: `overflow-wrap: break-word` never inserts one, and

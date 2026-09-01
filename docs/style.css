@@ -746,6 +746,14 @@ a.link.block {
   border-radius: var(--radius);
   background: var(--ink);
   color: var(--paper);
+  /* `anywhere` and not the tile's `break-word`, because the pill is
+     sized by its own content: `break-word` leaves min-content at
+     the longest word, so a compound wider than the column keeps the
+     box wide and steps outside the page (measured: 301 against 288
+     at 320). `anywhere` is the value that reaches min-content, and
+     it is what makes the box narrow to the column the raster
+     edition's `wrap.breakWord` already breaks against. */
+  overflow-wrap: anywhere;
 }
 /* An outline is the boundary a state carrier draws, so it is `.g6`,
    the same tone every compact control's edge takes. */

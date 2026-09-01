@@ -720,6 +720,20 @@ contrast gate as `text` — a secondary button on a dark box fill is
 rejected at `append`. There is no tertiary and no danger variant: one
 filled, one outlined, and the words carry the rest.
 
+**The label wraps inside the pill, and the pill grows to hold it.** A
+button asks for the width its words want and takes what it is offered;
+when that is less, the column it wraps to is the box less its border,
+its padding and its lead mark (`layout.buttonTextWidth`), and layout
+measures the box against the same wrap the renderer draws. No caller
+states a width or a line count, so no form of the pill can be handed a
+label it will not contain — a price that fits in English and runs long
+in German is the ordinary case, and a pill that could be overrun would
+put that measurement in every call site. Until revision 96 the box was
+one line whatever it was handed while its width was capped at what it
+was offered, and the rest of the label was painted past the pill: on an
+outlined one that reached a store screenshot with the price cut off, and
+on a filled one it is paper on paper and the words simply disappear.
+
 `in_progress` says the button has been pressed and the work it started
 is still running — not "loading", because nothing is being loaded, and
 not a spinner, because a spinner is animation this frame model does not
