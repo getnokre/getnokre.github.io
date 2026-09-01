@@ -1317,14 +1317,20 @@ nothing. Focus is the picker's pattern — a heavier stroke hugging the
 row — because an outset ring would collide with the separators.
 
 **Both runs wrap, and the row grows to hold them.** The column is the
-row less its padding and its mark's band (`layout.tileTextWidth`), and
-layout measures the row against the same wrap the renderer draws, so a
-tile is as tall as its words and its words never reach its border. No
+row less its padding, its mark's band and its chevron's
+(`layout.tileTextWidth`), and layout measures the row against the same
+wrap the renderer draws, so a tile is as tall as its words and its words
+reach neither its border nor the glyph that says where it goes. No
 caller states a width or a line count: a `detail` that fits in English
 and runs long in German is the ordinary case, and a row that could be
 overrun would put that measurement in every call site. Until revision 95
 the row was one line of each scale whatever it was handed, and the
-overflow was painted past the group border and cut by the frame edge.
+overflow was painted past the group border and cut by the frame edge;
+until 97 the column ran on past the chevron, so a routed row's last
+stretch of words was the glyph's. The DOM edition never had that
+second one — there the chevron is a `flex: none` sibling with the row's
+gap in front of it — which is why the two editions had to be measured
+against each other rather than argued about.
 
 Because exactly one of the two is set, the split is total, and it
 reaches further than the chevron: **a routed tile is answered by the
