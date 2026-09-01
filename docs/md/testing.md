@@ -87,7 +87,7 @@ have already told you so.
 sequence), `selectOption(group_label, option)`, `scroll(id, delta)`,
 `focusVia(id)`, `back()`, `edgePanBack()`.
 
-Four verbs sit above those primitives, because every consumer ends up
+Five verbs sit above those primitives, because every consumer ends up
 wanting exactly them — both shipped apps wrote the same ones, with
 the same fallbacks, before they moved here. Each names its control by
 **role plus accessible name**: a bare label stops being an identity
@@ -95,20 +95,46 @@ the moment the chosen locale can change under it.
 
 They live one layer below the harness, in `testing.driver`, as free
 functions over `*App` that name no mock — because a *driver* against a
-real server needs the same four and can never hold a `HarnessApp`
+real server needs the same five and can never hold a `HarnessApp`
 ([below](#driving-an-app-outside-zig-test)). The harness adds a trace
 step and a re-audit around each; a driver adds a wait in front. The
 ladder itself is written once.
 
 - `press(role, label)` presses a control the way a user would: a tap
-  where it is on screen, Tab-and-Enter where a long screen has pushed
-  it past the fold (stepping is what scrolls it into view), and
+  where a finger could land on it, Tab-and-Enter where a long screen
+  has pushed it past the fold (stepping is what scrolls it into view),
+  and
   More-then-the-action where a narrow row folded it away
   ([elements.md](elements.md#the-folded-tail-more)). Not for text
   fields — the keyboard fallback's Enter in a field it just focused is
   a submit, not a focus; that is `typeInto`'s job. `tap`'s other
   refusals stand: an obscured, disabled, or busy control is still a
   loud failure, because no fallback reaches one of those.
+
+  **Where the tap lands.** The middle first, and almost always. When
+  something is drawn over the middle the tap moves to the nearest
+  place a finger fits — a lattice out from the centre at the pitch of
+  WCAG 2.5.8's minimum target size, because a strip of a control
+  narrower than that is not a way to reach it. Pinned chrome is what
+  puts something there: the collapsed nav chip floats over the middle
+  of the page, and on a 360pt phone a two-line button passing under it
+  has its centre covered while both its ends are free — which is where
+  a person taps. A control with *no* free patch is still the loud
+  `Obscured` refusal; the lattice looks for a way in, it does not
+  invent one.
+- `reveal(role, label)` scrolls a named element into view, the way a
+  thumb does — the app's own reveal, the one the keyboard already
+  takes when Tab lands below the fold, so there is one answer to where
+  a screen scrolls to show something. It is the verb the driver's
+  refusals have always named ("scroll it into view first, like a user
+  would"). Explicit rather than folded into the verbs that need it: a
+  scroll is something the person did and the frame after one is a
+  different picture — and an assertion cannot do it at all, since
+  `expectInFrame` asks what the frame about to be taken shows and a
+  check that scrolled first would move the screen it was asked about.
+  It refuses a name nothing carries, and refuses a *folded* control
+  loudly, because no amount of scrolling brings one back — that one is
+  `press`'s business.
 - `typeInto(label, text)` puts the caret in the named field and types,
   appending like typing does. The label is looked up among the two
   text-entry roles only (`text_input`, `text_area`), so the words can
@@ -1460,7 +1486,7 @@ screen it could not land on.
 `HarnessApp`: a `*App`, a `Pacer`, and **the harness's own verb names
 running the harness's own ladders**, each with a wait in front. It is
 not a copy of the harness and not a parallel vocabulary — `press`,
-`back`, `typeInto`, `clearField`, `selectOption`, `goTab`,
+`reveal`, `back`, `typeInto`, `clearField`, `selectOption`, `goTab`,
 `expectPresent`, `expectAbsent`, `expectDestination`, `expectRoute`,
 `expectValue`, `expectProblem`, `expectDisabled`, `expectEnabled`,
 `expectNotified` mean here exactly what they mean in a unit test,
@@ -1523,7 +1549,11 @@ Six rules the set follows, each of them a decision:
   — a frame that might arrive later is not the one being taken — and it
   asks after the same layout the frame comes off, so nothing can move in
   behind it. It has no harness twin and wants none: under the mocks a
-  tree and the frame taken off it cannot disagree.
+  tree and the frame taken off it cannot disagree. **It does not
+  scroll, and must not**: a check that moved the screen to make its own
+  answer true would be asserting about a frame nobody is taking. A walk
+  that means to photograph something below the fold calls `reveal` one
+  step before it.
 - **`expectDestination(title)` asks the nav, not a role.** It is the
   waiting half of `goTab` on its own, for a scenario that wants to know
   a destination is *reachable* without going there. It is not
