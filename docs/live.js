@@ -679,8 +679,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // no coordinate on it (`input.activate`) — the shells that have one
     // place it themselves. Here the browser has already placed it, on
     // the mousedown that started this, so what it placed is stated
-    // rather than recomputed: a click mid-value keeps its caret, and a
-    // drag that ended in this click keeps the range it drew.
+    // rather than recomputed: a click mid-value keeps its caret, a drag
+    // that ended in this click keeps the range it drew, and a repeated
+    // click keeps the larger unit the engine took — which is why this
+    // substrate counts no clicks of its own (live.zig's `selectRange`).
     const field = editableOf(stop);
     if (field) sendSelection(field);
     frame();

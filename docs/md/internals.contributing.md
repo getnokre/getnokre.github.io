@@ -206,11 +206,15 @@ The authoring rules that keep the shell/service split honest:
   invented one (share's honest answer is `available` false, because a
   missing share sheet is a fact the app draws around, not an empty
   value it can render). Either way core and the shells never depend on a
-  service, and the kitchen-sink example runs with zero services linked
-  and must keep running that way. (One scoped exception: its *web*
-  build declares `.pkg`, because a web app without identity no longer
-  builds — the card mandate, [services.md](../services.md) — and that
-  links package_info alone; the native kitchen sink stays at zero.)
+  service, and the kitchen-sink and support-console examples run with
+  zero services linked and must keep running that way. (One scoped
+  exception: their *web* builds declare `.pkg`, because a web app
+  without identity no longer builds — the card mandate,
+  [services.md](../services.md) — and that links package_info alone.
+  The native builds stay at zero on every platform, iOS and Android
+  included: those two need the identity for a plist and a manifest, and
+  packaging takes it from the declaration beside the app rather than
+  from a linked service.)
 - **A permission a user answers is never derived silently.** Every
   permission nokre derived before `notification` was normal and
   install-time — invisible at runtime, so the emitter could add it

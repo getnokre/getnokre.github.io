@@ -2196,9 +2196,10 @@ depends on it. The split is Xcode's doing — it reads
 signs, so a generated entitlements file has to come from a target the
 app depends on, or the first build fails on a file nothing has written
 yet. Then repoint the copy at your app: `ZigLibraries`' `zig build` runs
-in *your* project directory and drops `-Dskia` — that is nokre's own
-build option, for its own examples; `addApp` links Skia into every app
-it builds; the link step consumes your `libnotes.a` and the shim
+in *your* project directory and drops `-Dskia` and `-Dexample` — those
+are nokre's own build options, for its own examples: `addApp` links Skia
+into every app it builds, and your build.zig has the one app this
+project is for, where nokre's has several to choose between; the link step consumes your `libnotes.a` and the shim
 (`app.artifact` and `app.shim` — Part 1's build.zig installs both);
 `INFOPLIST_FILE`, `CODE_SIGN_ENTITLEMENTS` and the asset catalog read
 from the `pkg/ios` tree that target fills, and need no edit — the app
@@ -2480,10 +2481,13 @@ tools/fetch-deps.sh             # fetch prebuilt Skia + AccessKit (once)
 zig build test -Dskia -Dgolden  # + golden screenshot tests, byte-exact
 zig build run-hello -Dskia      # examples (macOS / Windows / Linux)
 zig build run-kitchen-sink -Dskia
+zig build run-support-console -Dskia
 tools/build-skia-ios.sh         # build Skia for iOS from source (once)
 tools/build-skia-android.sh     # build Skia for Android from source (once; needs an NDK)
 zig build web                   # kitchen sink's site for the browser → zig-out/web/
 zig build serve                 # the same site at http://localhost:8000 (-Dport=…)
+zig build web-support-console   # the console's site → zig-out/web-support-console/
+zig build serve-support-console # the same site at http://localhost:8000 (-Dport=…)
 zig build check-targets         # compile-check every platform stub
 zig build translate-arb -- --input <template.arb> --dest fa   # draft a catalog (LLM_BASE_URL)
 zig build translate-md  -- --input <file.md> --dest fa        # the same for one Markdown document

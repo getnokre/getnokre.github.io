@@ -160,6 +160,18 @@ framework cannot express them.
   finger scrolls, a temple swipe on AR glasses reaches what Back
   reaches, a chord presses a button that exists. A device may change how
   a control is reached; it may not change whether one is there.
+
+  There is exactly one place nokre reads what is pressing, and it is on
+  the reachability side of that line: a caret placed by a **finger**
+  grows a teardrop to drag it by, and a caret placed by a mouse does not
+  — a mouse already puts the caret wherever it can see. The handle is a
+  grab target, not a control. The caret it moves is reached by a tap, by
+  the arrow keys and by a screen reader's own text navigation on every
+  device, and the long-press edit row has had the same shape since it
+  shipped. Anything that fails the question above — a state only a
+  pointer can discover, a verb only one device can reach — is hover
+  again, whichever piece of hardware it asks about
+  ([elements.md](elements.md#editing-and-what-a-selection-is-here)).
 - **No transitions or animation.** State changes are instant. Motion is a
   vestibular hazard (WCAG 2.3.3), an untestable intermediate state, and a
   tax on determinism; nokre has none to configure or to disable. A

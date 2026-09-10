@@ -1834,9 +1834,59 @@ On touch, a **long press** inside the field selects the word under it,
 raises two grab handles under the ends of the range, and opens an edit
 row — Cut, Copy, Paste, Select all, framework chrome in the app's
 language, with Cut and Copy simply absent while nothing is selected. A
-secondary click on a desktop opens the same row. Dragging a handle
-moves that end; dragging from a press inside the field selects from
-where it landed.
+secondary click on a desktop opens the same row. **A long press that
+lands on a selection already standing takes nothing**: the range keeps
+its ends and only the row opens, because the row is what the reader
+reached for and a range wider than a word cannot be remade by holding.
+Landing elsewhere in the field is the word under the finger as ever.
+Dragging a handle moves that end; dragging from a press inside the
+field selects from where it landed.
+
+**A double click takes the word and a triple click the paragraph** — the
+whole value in a single-line field, whatever newlines a paste left in
+it. A drag from either goes on taking whole units: word by word after a
+double click, paragraph by paragraph after a triple, which is what makes
+the second click faster than a careful drag. The anchor is the *whole*
+unit the press took, so dragging back past its start keeps that unit
+selected and grows the range the other way from its far edge. The shell
+counts the clicks — each platform owns its own double-click speed and
+the accessibility settings that go with it — and nokre decides what a
+count selects
+([internals/platform-shells.md](internals/platform-shells.md)). Outside
+a field a repeated click is an ordinary press.
+
+**A caret placed by a finger wears a grab handle**: one teardrop hanging
+off its foot, dragged to move the caret. A caret placed by a mouse does
+not, because a mouse already puts the caret anywhere it can see. This is
+the one thing nokre draws from what is pressing, and it is a grab
+*target* rather than a control — the caret it moves is reached by a tap,
+by ←/→ and Home/End, and by a screen reader's own text navigation on
+every device
+([introduction.md](introduction.md#what-nokre-refuses-to-do)).
+
+**A range a finger made wears the two selection handles instead** — the
+same pair a long press raises, whether the finger took a word with a
+second tap, a paragraph with a third, or dragged one out of an ordinary
+press. A selection made by a finger is adjustable by that finger; one
+made with a mouse wears no handles, for the reason a mouse's caret wears
+no teardrop. The teardrop and the pair never stand together.
+
+**A repeated click outranks a grab.** A handle sits on the very text it
+marks, and its reach is a finger's rather than a dot's, so the second
+tap of a double tap lands inside one by construction — the teardrop
+rises under the finger that placed the caret. The count wins: a press
+that is the second or third of a run selects a word or a paragraph, and
+only a press that *starts* a run can pick a handle up. A drag from a
+handle is still a grab, because a drag starts with such a press; what a
+reader cannot do is grab a handle with a press landing on the previous
+one's own pixels inside the double-click interval, which is the one
+press with nothing in it to tell the two apart. A grab already under way
+is never taken over by a later press.
+
+**Where the platform draws its own text handles, nokre draws none** —
+iOS, whose text interaction owns the handles, the loupe and the
+press-and-hold that raises them. The reader gets the system's, not a
+second set on top of them, and every verb is unchanged.
 
 **Paste is the platform's verb, never a read.** The row's Paste asks
 the shell to paste; the shell reads its own clipboard on that action

@@ -58,7 +58,9 @@ extends bottom-pane fills through it),
 `on_pointer` (a press, its motion, and its release, with a
 `NOKRE_POINTER_*` phase — core activates on the release so a press that
 leaves before letting go aborts, WCAG 2.5.2, and reports motion only
-between the two), `on_key` (portable keycode enum + modifier bits), `on_text`
+between the two — plus two facts about the press itself: how many clicks
+deep it is and a `NOKRE_POINTER_SOURCE_*` for what is making it),
+`on_key` (portable keycode enum + modifier bits), `on_text`
 (committed UTF-8), `on_ime_update/commit/cancel`, `on_scroll` (deltas
 plus a `NOKRE_SCROLL_*` phase: wheel shells send free events routed at
 the pointer; touch shells bracket a drag begin/move/end so core locks
@@ -119,6 +121,46 @@ or not — decides in `WM_KEYDOWN` and latches the echo off. Core is the
 backstop, never the decision: a Space key inside a field is inert and
 text with nothing editable focused is dropped
 ([editing.zig](../../src/core/editing.zig)).
+
+**The shell counts clicks; core decides what a count selects.** Every
+platform already holds the interval, tied to that reader's own
+double-click speed and their accessibility settings —
+`NSEvent.clickCount`, Win32's `WM_LBUTTONDBLCLK` and
+`GetDoubleClickTime`, and elsewhere the timer the shell already runs for
+key repeat — and core has no clock to keep a sixth answer in. What a
+count *means* is core's, the same split the key chords run on:
+[../elements.md](../elements.md#text_input) has the meanings. `source`
+is read for one thing only — a caret pressed by a finger grows a grab
+handle to drag it by — and the argument for why a grab target may be
+device-shaped when a control may not is beside the declaration, in
+[event.zig](../../src/core/event.zig)'s `Pointer.Source`. A shell that
+sends `NOKRE_POINTER_SOURCE_MOUSE` and 1 for every press behaves exactly
+as every shell did before the two arguments existed.
+
+Two things about those arguments are easy to get wrong and are stated in
+the header beside them. The source is **latched at the press**, because
+the phases that end one are not all input messages a shell can ask the
+device about — `WM_CAPTURECHANGED` is not a message about a device at
+all — so a shell that re-reads it per phase reports one press as two
+kinds. And a press claimed by `wants_pointer_stream` **still carries its
+count**: what claims the stream over a field is a grab target, a grab
+target sits on the text it marks, and so the second tap of a double tap
+into a field arrives on the claimed path and nowhere else — a shell that
+bypasses its own tap recognizer there and sends a bare 1 leaves
+double-tap-to-select unreachable exactly where a reader taps twice.
+
+**A platform that draws its own text grab targets says so**, through
+`nokre_core_declare_platform_grab_targets` — the one symbol in shell.h
+the Zig side exports and a shell calls, since every field of
+`nokre_shell_config` travels the other way and reaches the shell
+`const`. iOS is the caller: a `UITextInteraction` owns the handles, the
+loupe and the press-and-hold over the focused field, so nokre's own
+teardrop would be a second affordance drawn on top of the system's and
+one the reader mostly could not drag. Core then raises neither handle
+flag, nothing claims the pointer stream over a field, and no press is a
+grab. It is declared rather than inferred from "this shell sends no
+`on_long_press`", which is true of iOS and would be silently wrong for
+the first shell that simply has not sent one yet.
 
 ### The honest document
 
@@ -294,7 +336,15 @@ declines:
   visual keys, and this is the one shell that resolves them against the
   snapshot's `rtl`. `rightMouseDown:` is `on_long_press`, and
   `nokre_shell_request_paste` is where the menu's `paste:` and a binding
-  naming it both land — one read.
+  naming it both land — one read. `NSEvent.clickCount` travels as the
+  click count unaltered: it is already that reader's double-click speed
+  from System Settings and whatever their accessibility configuration
+  does to it, and AppKit is also what resets it, so this is the one
+  shell keeping no run of its own. A tablet stylus reports `PEN`, off
+  the mouse event's own tablet subtype; a trackpad is a `MOUSE` here and
+  cannot be anything else, because its click is an indistinguishable
+  mouse event and it drives a cursor — and no Mac has a touchscreen, so
+  `TOUCH` never leaves this shell.
 - **iOS** — the whole `UITextInput` document from the snapshot, every
   dispatch bracketed by the `inputDelegate`'s will/did change pairs (the
   held-Backspace fix), a `UITextInteraction` attached while
@@ -662,6 +712,30 @@ of the same contract — plain C, message loop, no framework. Its twists:
   `WM_RBUTTONDOWN` is `on_long_press` — a touch press-and-hold arrives
   that way too, so the left press it began is cancelled first, as the
   contract requires.
+- **Clicks.** Win32 delivers a double click as DOWN, UP, **DBLCLK**, UP.
+  The second press *replaces* its `WM_LBUTTONDOWN` rather than arriving
+  beside it, so `WM_LBUTTONDBLCLK` is a press on the same path: it sends
+  a DOWN phase of its own — without it core would get a release it never
+  armed — and it advances the count by exactly one. Treating it as a
+  press on top of the one it replaced is how a double click becomes
+  three. The third click comes back as a plain `WM_LBUTTONDOWN`, since
+  Windows counts no further, and the shell counts it against
+  `GetDoubleClickTime` and half of `SM_CXDOUBLECLK`/`SM_CYDOUBLECLK`
+  (the metrics are the rectangle's full width and height, read through
+  `GetSystemMetricsForDpi` at the window's own DPI) — the same numbers
+  the system applied to the second click, so the run is one rule. The
+  count needs `CS_DBLCLKS` on the window class to arrive at all, which
+  also turns the second of two secondary clicks into
+  `WM_RBUTTONDBLCLK`: that message is `on_long_press` too, or a fast
+  double right-click would lose its edit row. A secondary click, a lost
+  capture, or the window losing focus ends the run — the last because
+  the click that went to another window is one this shell never saw,
+  and Windows' own detection is per-window too.
+  `GetCurrentInputMessageSource` names the
+  device — touch and pen ride the same promoted mouse messages that make
+  a press-and-hold a `WM_RBUTTONDOWN` — and `IMDT_TOUCHPAD` is a
+  `MOUSE`, because a touchpad drives a cursor and the grab handle exists
+  for a finger that has none.
 - **Chords.** Ctrl+A/C/X/Z (Ctrl+Y and Ctrl+Shift+Z for redo),
   Ctrl+←/→, and Ctrl+Backspace/Delete become the semantic editing keys,
   Shift riding along as the selection bit. A chord is Ctrl *alone*:
@@ -760,11 +834,11 @@ shell.m. Its twists:
 - **Touch.** A `GestureDetector` tap sends `on_pointer` DOWN then UP at
   the recognized point. `onTouchEvent` asks `wants_pointer_stream` on
   `ACTION_DOWN` first: a claimed gesture is forwarded raw for its whole
-  life and never reaches the detector, so tap detection, scrolling and
-  flings are untouched for everything else. A running fling is halted in
-  that branch, since the detector's `onDown` never runs for it — but
-  unlike `onDown` the press is not also swallowed, the iOS exemption by
-  the same reasoning. Unclaimed drags bracket
+  life, and every callback the detector would make for it is refused, so
+  tap detection, scrolling and flings are untouched for everything else.
+  A running fling is halted in that branch *before* the detector sees
+  the press, so `onDown` finds nothing to stop and does not also swallow
+  it — the iOS exemption by the same reasoning. Unclaimed drags bracket
   `BEGIN`/`MOVE`/`END` with the anchor locking core's routing, and
   flings hand off to `OverScroller` — the platform's own physics, the
   iOS hidden-UIScrollView bargain — stepped inside the paced frame
@@ -776,6 +850,40 @@ shell.m. Its twists:
   the tap: a recognized long press cancels the `onSingleTapUp` that
   would otherwise follow, so a slow press on a button would stop
   activating it.
+- **Clicks.** **The view counts the run, not the `GestureDetector`.**
+  The detector stops at two — after a double tap it arms no further tap
+  message, so a third tap arrives at it as a fresh first press — and
+  taking the count from it cost the third tap twice over: core's
+  paragraph granularity was out of reach by finger, and the 1 landed on
+  the handle the double tap had just raised, where core reads a first
+  press as a grab and drags one end of the selection instead. So
+  `NokreView` counts every press of the run against the reader's own
+  `ViewConfiguration` numbers — `getDoubleTapTimeout()` since the last
+  press let go, `getScaledDoubleTapSlop()` from where it landed, the
+  same tool — and the run ends where the platform ends it: a long
+  press, a second finger, a cancel, or a gesture that crosses
+  `getScaledTouchSlop()` and becomes a drag, a scroll or a fling.
+  Owning the whole run and not resuming after the detector's two is
+  what leaves one counter, with no second state machine to disagree
+  and no 1, 2, 3, 2, 3 ladder. The detector keeps what it alone
+  knows — long press, scroll, fling, and which of the two callbacks a
+  recognized tap arrives on (`onSingleTapUp`, or `onDoubleTapEvent`
+  gated to `ACTION_DOWN`, which is what makes it the tap that just
+  landed rather than `onDoubleTap`'s first one) — and both callbacks
+  now send the view's count. **A claimed gesture carries the same
+  count**: this is the case `on_pointer` names, since what claims the
+  stream over a field is a grab target and so the second tap of a
+  double tap into a field is claimed by construction — the boundary
+  moves *inside* a run, the first tap unclaimed and the second claimed,
+  and one counter across both paths is what keeps the run from
+  restarting there. The detector's own non-public minimum gap between
+  taps has no equivalent here, because it guards a decision this
+  counter does not make: it decides whether a pending tap *delivery* is
+  cancelled, where a bounce costs a whole tap, while here every press
+  is delivered and a spurious one can only raise a count — and only a
+  count of 1 grabs. The tool comes from `MotionEvent.getToolType`, read
+  per event rather than latched, since this is the one platform that
+  answers it per event and has nothing to latch.
 - **Pacing.** One `Choreographer` frame callback draws; input is
   applied to core on arrival and only marks, and the callback is armed
   by a mark, a geometry change or a running fling — never while the app
@@ -965,7 +1073,21 @@ and one backend per platform is the charter. Its twists:
   and one timerfd carries one deadline. Firing it cancels the press
   first, as the contract requires. Touch otherwise *is* the pointer stream, one finger at a time; there
   is no touch scrolling here and so nothing for `wants_pointer_stream`
-  to arbitrate.
+  to arbitrate. A `wl_pointer` press reports `MOUSE` and a `wl_touch`
+  press `TOUCH`, which is what gives a Wayland tablet the caret's grab
+  handle.
+- **Clicks.** No Wayland protocol carries a click count, and none
+  carries the reader's double-click speed either — that setting lives in
+  each desktop's own configuration, which a shell this thin does not
+  parse — so this shell counts, the way it already owns the key repeat
+  the compositor delegates. A press within **400 ms** and within a small
+  slop of the last one, *from the same kind of device*, is the next
+  click of that run; anything else starts a new one, as does a
+  secondary click, the pointer leaving the surface, a cancelled touch,
+  or a long press taking the gesture. 400 ms is GTK's and Qt's shared
+  default, so the number is the one the desktop around this app already
+  uses; the slop is 5 px for a pointer and the long press's wider 10 px
+  for a finger, and both are argued where they are defined.
 - **IME.** `zwp_text_input_v3`: `preedit_string` streams `on_ime_update`
   (the caret is a UTF-8 byte offset by contract, and `cursor_begin`'s
   -1 "hide it" maps to the end), `commit_string` lands

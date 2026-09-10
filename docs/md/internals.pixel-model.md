@@ -209,11 +209,32 @@ the shim ignores anything else by design.
   (face changes, digit runs amid RTL) is forfeited exactly as it is
   across span boundaries, which is what keeps every width a sum of
   identically shaped pieces.
+- **A caret is not a piece boundary, and neither is a selection edge.**
+  An editable field's line is one run whatever the cursor is doing in
+  it — the pre-edit spliced in where the cursor stands
+  ([editing.zig](../../src/core/editing.zig)'s `shownLine`) and the
+  whole thing handed to one draw — and the inks a selection or a
+  pre-edit puts on part of it are painted by drawing that same run
+  again under a clip. It used to be cut at the cursor into a `pre` and
+  a `post`, and both consequences were visible: in Arabic script the
+  letters at the cut lost their joining context and came apart as the
+  caret passed, and the pen for the second half was the sum of two
+  standalone widths rather than the whole string's, so the words slid a
+  pixel or two sideways as the caret moved through them.
 - `SkFont` settings are fixed: grayscale anti-aliasing, hinting off,
   subpixel positioning off. Hinting off is what keeps 2× exactly
   proportional to 1×.
 - Run widths are ceiled to integers (`hsk_text_width`), so layout never
-  underestimates and wrap points are integer-stable.
+  underestimates and wrap points are integer-stable. Where a caret
+  stands *inside* a run is the same shaping asked a second question
+  (`hsk_text_caret_x`, reached through `text.Measurer`'s `caretRunX`):
+  the run is shaped whole and its glyph clusters walked to the offset,
+  summing the advances of the glyphs left of the caret — the earlier
+  ones in a left-to-right run, the later ones in a right-to-left one.
+  Under the same ceiling, so the caret at a run's end is the run's
+  width; and an offset inside a cluster lands on that cluster's edge,
+  because a caret between a ligature's two letters is a caret nothing
+  can draw.
 - A surface rasterises in horizontal bands, in parallel, and the bytes
   are the single surface's ([nokre_skia.cpp](../../shim/nokre_skia.cpp),
   the bands section): draw calls are recorded and replayed when the
