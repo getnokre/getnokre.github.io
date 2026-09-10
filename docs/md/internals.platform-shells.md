@@ -10,18 +10,24 @@ contract a shell implements.
 A shell's complete job description:
 
 1. Create a window/surface and report its logical size and integer scale.
-2. Deliver input: tap, key, text, IME, scroll.
+2. Deliver input: tap, key, text, IME, scroll, a stated selection, an
+   IME's deletion, a long press.
 3. When the app has a dirty frame, fetch the rendered RGBX buffer and
    blit it.
 4. Write text to the system clipboard when asked — the one C hook
    behind the clipboard service ([../services.md](../services.md)),
-   which backs the `copyable` element and `App.copyText`. Hand a URL to
+   which backs the `copyable` element and `App.copyText`. Read it back
+   on the platform's own paste verb and deliver the bytes as text.
+   Hand a URL to
    the system browser when asked — open_url's hook, the same shape
    (outbound, nothing links; it answers only "did the handoff start",
    and only oauth's loopback leg reads even that).
 5. Report the device locale at install and on every change — the one C
    hook behind the locale service, which is what a localized app
    resolves its strings against.
+6. Give the platform's text system an honest document: ask core what the
+   focused field holds and where its characters are drawn, instead of
+   telling the OS the field is empty.
 
 Anything smarter than that belongs above the platform line and is rejected
 in review. This is what keeps six platforms maintainable by very few
@@ -64,18 +70,29 @@ the one platform that leaves the screen edge to the app),
 `on_back` (the platform's *decided* back command, returning whether
 nokre consumed it — Android's leg, where gesture navigation owns both
 edges and there is no drag to report),
+`on_select` (the focused field's selection as the platform's own text
+system moved it), `on_delete_range` (an IME deleting around the caret),
+and `on_long_press` (a recognized long press *or* a
+secondary click — one callback, because they are one meaning),
 `wants_frame`, `wants_text_input` (drives the software keyboard on
 shells that own one), `wants_submit_action` (whether the focused field
 would act on Enter — asked beside `wants_text_input` by the two shells
 with a software keyboard, and unused by the other three, which have no
-IME action to set), `on_appearance` (OS light/dark), `on_ready`
+IME action to set), the five questions about the focused field the next
+section describes (`editable_snapshot`, `field_rect`, `caret_rect`,
+`offset_at`, `selection_rects`), `on_appearance` (OS light/dark), `on_ready`
 (native view handle, for attaching the a11y adapter), and
 `on_window_focus`. `nokre_shell_request_frame` lets the Zig side mark the
 view dirty from outside the input stream — assistive-tech actions need
 it. `nokre_shell_write_clipboard` replaces the system clipboard with UTF-8
 text (NSPasteboard on macOS, UIPasteboard on iOS, the Win32 clipboard
 as CF_UNICODETEXT on Windows); the clipboard service calls it
-directly — no install step. `nokre_shell_haptic` fires the back gesture's
+directly — no install step. `nokre_shell_request_paste` is its
+counterpart and the only *inbound* half of that service: the shell reads
+its own clipboard on an explicit user action and delivers the bytes back
+through `on_text`, which is why nothing is returned and there is no call
+that answers what the clipboard holds ([../services.md](../services.md)
+owns the posture). `nokre_shell_haptic` fires the back gesture's
 threshold knock and exists on iOS alone, since no other shell runs a
 threshold of nokre's own ([haptics.md](haptics.md)). `nokre_shell_post_main` runs a
 callback on the UI thread from any thread — the worker service's
@@ -102,6 +119,232 @@ or not — decides in `WM_KEYDOWN` and latches the echo off. Core is the
 backstop, never the decision: a Space key inside a field is inert and
 text with nothing editable focused is dropped
 ([editing.zig](../../src/core/editing.zig)).
+
+### The honest document
+
+Every platform text system is written against a document it can *read*.
+A shell can answer "the in-progress composition, and nothing else" and
+ordinary typing still works, which is why most of these shells did. What
+does not work is everything the keyboard infers from the document, and
+the defect that settled it is **a held Backspace on iOS**: the key
+repeats against the document, so a shell whose document is empty between
+compositions has nothing to delete on the second repeat and the key dies
+after one character. The loupe, the drag handles, "select all", a11y
+reading the field aloud and an IME replacing a range are all the same
+shape — five workarounds, or one honest answer.
+
+So core answers five questions about the focused field, and the shell's
+document becomes the field. The declarations and the reasoning behind
+each are [shell.h](../../src/platform/shell.h)'s; what a shell writer
+needs to know before calling them is here.
+
+- `editable_snapshot(out)` reads the field out whole — its value, the
+  selection's two ends, any open pre-edit and the IME's caret in it, the
+  direction the caret's line runs, and whether the field is obscured or
+  multiline — or answers 0 with nothing focused. **The document a text
+  system must be shown is not `value`**: an open pre-edit is carried
+  beside it, and the shell splices it in at the cursor by the formula
+  the header states. Every shell that builds a document does that splice
+  and none keeps a pre-edit of its own, because a second copy is a
+  second answer to what the IME has in flight.
+- `field_rect(out)` is the field's own bordered box — not the words
+  inside it and not the label or problem words around it. It exists for
+  a platform whose text interaction claims every touch in the view until
+  it is told where the text is; iOS's `UITextInteraction` is that
+  platform and the only caller there is.
+- `caret_rect(offset, out)` is where that offset's caret is drawn. The
+  IME candidate window, iOS's loupe and `firstRectForCharacterRange:`
+  all position from this one answer, so a caret is never in two places.
+  While a pre-edit is open the snapshot's `cursor` answers *inside* it,
+  at the caret the IME reported — a candidate list docked at the splice
+  point instead stood a word away.
+- `offset_at(x, y)` is the inverse, about the *focused* field, `-1` when
+  none is focused. It is deliberately not a hit test: a shell asking "is
+  there a field under this finger" is asking core to leak what is on
+  screen, and the answer it wants is to send the event and let core
+  decide.
+- `selection_rects(out, max)` gives one rect per wrapped line and per
+  bidi piece, returning how many it wrote — never how many it needed, so
+  a shell picks its own cap and a long selection draws short. The
+  renderer's highlight and the a11y layer read the same core answer, so
+  the platform's idea of the selection cannot disagree with the painted
+  one.
+
+**The snapshot is borrowed, and a geometry call ends the borrow.**
+`value` and `composition` point into the tree, and any call back into
+core may rebuild them — a key, a text insertion, a frame, and equally
+`field_rect`, `caret_rect`, `offset_at` and `selection_rects`. A shell
+that wants the text *and* a rect copies the value before it asks for the
+rect. Two shells write the ordering down where they depend on it, which
+is how obvious it is not: macOS reads the document only *after*
+`characterIndexForPoint:` has answered, and the Windows candidate placer
+takes `cursor` out of the snapshot and nothing else, so no borrowed byte
+outlives the `caret_rect` call.
+
+**Offsets are UTF-8 byte offsets into the value** — every offset in this
+contract: `cursor` and `anchor`, `caret_rect`'s argument, `offset_at`'s
+answer, and the two ends of `on_select` and `on_delete_range`. Core
+indexes bytes everywhere, so a UTF-16 index means nothing below the
+platform line, and **each shell whose text system counts UTF-16 owns its
+own conversion**: macOS and iOS (`NSRange`/`UITextPosition`), Windows
+(IMM32 and the wide clipboard), Android (Java's `char`). The whole value
+crosses so that conversion runs against the same bytes core is holding
+rather than a copy the shell took earlier.
+
+**A shell states a selection; core vets it.** `on_select` is how the
+platform's own text system reports that the selection moved — iOS's grab
+handles through `setSelectedTextRange:`, Android's `setSelection`, a
+range macOS asks to replace. **`anchor` is the fixed end and `cursor`
+the live one**: where the caret is, and where a following Shift+motion
+extends from. A platform that knows which handle moved says so with the
+order; one whose range has no direction sends anchor = start, cursor =
+end, which is what both Apple shells do. Both ends are then clamped into
+the value and onto grapheme-cluster boundaries, so a shell that converts
+wrong loses a selection edge and nothing else — the same bargain
+`on_ime_update`'s caret already makes. Windows and Linux never send it:
+neither IMM32 nor text-input-v3 has a verb that moves the selection.
+
+**An IME's deletion is its own verb.** `on_delete_range(start, end)`
+carries Android's `deleteSurroundingText` and text-input-v3's
+`delete_surrounding_text`. Both platforms define that operation as
+deleting around the caret and **excluding** the selection, so the idiom
+it replaces — state the range with `on_select`, then send Backspace —
+deleted exactly the selection it had just overwritten. Two shells were
+spelling it that way; both send the verb now, and a deletion beside a
+selected run leaves that run selected. A platform whose call names two
+runs, one either side of the selection, sends the later one first, so
+the earlier one's offsets are still the offsets it computed.
+
+**A *visual* line key is the snapshot's to resolve.** macOS's ⌘←
+arrives as `moveToLeftEndOfLine:`, and left is the line's logical start
+on an LTR line and its logical **end** on an RTL one — so a shell maps
+such a key onto `NOKRE_KEY_HOME` when the snapshot's `rtl` is 0 and
+`NOKRE_KEY_END` when it is 1, mirrored for the right-end key. Logical
+chords never ask: `moveToBeginningOfLine:`, Ctrl+A, the Home and End
+keys themselves, and both delete-to-line keys below. macOS is the only
+shell with a visual key to map, so it is the only one that reads the
+flag — Android does not even ferry it across JNI.
+
+**Two keys delete to the line's bound.**
+`NOKRE_KEY_DELETE_TO_LINE_START` and `NOKRE_KEY_DELETE_TO_LINE_END` are
+where ⌘⌫ and ⌃K land, and Ctrl+U and Ctrl+K on the Wayland shell —
+readline's pair, which every terminal on that desktop binds. Keys rather
+than a shell spelling them as a shift-select plus Backspace, for
+`on_delete_range`'s reason above: that pair leaves an
+undo entry holding a selection the reader never made. Windows and
+Android map neither — no chord in either platform's own convention names
+the operation, and inventing one is not a shell's job.
+
+**The paste verb is the platform's**, and each shell honors its own
+through `nokre_shell_request_paste` and its own chord table, both
+arriving as `on_text`: Cmd+V and the Edit menu on macOS (`NSPasteboard`),
+the edit menu and hardware Cmd+V on iOS (`UIPasteboard`), Ctrl+V and the
+edit row on Android (`ClipboardManager`), Ctrl+V on Windows
+(`OpenClipboard` + `CF_UNICODETEXT`, converted to UTF-8), Ctrl+V on the
+Wayland shell (the held `wl_data_offer`, `receive`d through a pipe the
+poll loop reads), and the browser's own paste on the web. An empty or
+non-text clipboard delivers nothing at all, not an empty `on_text`.
+
+**Long press and secondary click are one event.** `on_long_press` means
+"act on what is under this point without activating it", and a platform
+reaches it either way — a Windows touch press-and-hold arrives as
+`WM_RBUTTONDOWN`, so a second callback would only make the shell choose
+a name. Inside a field core selects the word, raises the two grab
+handles and opens the edit row (Cut, Copy, Paste, Select all) as
+framework chrome; anywhere else it is ignored, so no shell needs a gate.
+
+**A long press cancels the press it grew out of.** It is a finger that
+is still down and core is still holding that press, so the shell sends
+`NOKRE_POINTER_CANCEL` for it *before* the long-press call — otherwise
+the finger's release activates whatever it was resting on, which is a
+row that navigates away from the selection the press just made. Both
+recognizing shells do it: Windows on the `WM_RBUTTONDOWN` that follows a
+touch hold, Linux when its own 500 ms `timerfd` fires. A secondary click
+has no press in flight and sends the callback alone, which is macOS's
+whole leg; Android has none either, since its tap is a DOWN and an UP
+sent together on the release its detector suppresses. iOS sends the callback
+never: UIKit owns press-and-hold inside a `UITextInteraction`, and a
+second selection gesture over the top of that is two systems fighting
+for one finger. The web sends it never either — the browser's own edit
+menu stands.
+
+What each shell does with the contract, and what it deliberately
+declines:
+
+- **macOS** — a field with focus takes the press through
+  `interpretKeyEvents:`, so the chord table is `doCommandBySelector:`
+  over NSResponder *commands* and not over key codes: the user's own
+  bindings and the Emacs-flavored defaults (Ctrl+A/E to the line ends,
+  Ctrl+B/F by character, Ctrl+D forward-delete) arrive already
+  translated, and the document motions (⌘↑, ⌘↓, the Home and End keys,
+  which AppKit spells as scrolls) collapse onto HOME/END because core
+  has no document key. The Edit menu is not decoration: the standard
+  chords are *menu key equivalents* on this platform, so a Mac app
+  without one cannot paste — and because the menu claims them before any
+  view is offered the press, no command can arrive twice.
+  `NSTextInputClient` is answered from the snapshot, converting to UTF-16
+  as it goes; `firstRectForCharacterRange:` hands core's rect to AppKit's
+  own view → window → screen conversions rather than un-flipping it by
+  hand (the view is flipped, so core's logical pixels *are* its
+  coordinates). `NSEventModifierFlagFunction` is `NOKRE_MOD_FN`, which
+  AppKit also sets for the arrow keys, so that bit alone never
+  discriminates a chord. ⌘⌫ and ⌃K become the two delete-to-line keys,
+  each from both its line and its paragraph selector because AppKit's own
+  bindings name one for ⌘⌫ and the other for ⌃K; ⌘← and ⌘→ are the two
+  visual keys, and this is the one shell that resolves them against the
+  snapshot's `rtl`. `rightMouseDown:` is `on_long_press`, and
+  `nokre_shell_request_paste` is where the menu's `paste:` and a binding
+  naming it both land — one read.
+- **iOS** — the whole `UITextInput` document from the snapshot, every
+  dispatch bracketed by the `inputDelegate`'s will/did change pairs (the
+  held-Backspace fix), a `UITextInteraction` attached while
+  `wants_text_input` and bounded by `field_rect`, `selection_rects`
+  behind the grab handles, `keyCommands` for the hardware chords, the
+  edit menu, and `nokre_shell_request_paste`. It sends `on_long_press`
+  never: UIKit owns that gesture inside the interaction.
+- **Android** — `NokreInputConnection` answered from the snapshot with
+  the composition spliced in, `setSelection` as `on_select`,
+  `deleteSurroundingText` as `on_delete_range`, `updateSelection` after
+  each dispatch, `AccessibilityNodeInfo.setTextSelection`, the Ctrl chord
+  table, a long press inside editables as `on_long_press`, and
+  `nokre_shell_request_paste`. Three parts of the contract are declined
+  and each absence is a decision: `rtl` is not ferried across JNI at all,
+  because this platform's line keys are logical; `field_rect` is not
+  called, because TalkBack reads the a11y snapshot's own rect for every
+  node and a second convention for the focused field alone would move a
+  box under the cursor; and `caret_rect` and `selection_rects` have no
+  caller yet, because an Android IME positions its candidate window from
+  `CursorAnchorInfo`, its own opt-in protocol ("Android specifics" below
+  carries the shapes).
+- **Windows** — the `WM_KEYDOWN` chord table with its `WM_CHAR` echoes
+  swallowed, the IMM candidate window placed from `caret_rect`,
+  `WM_RBUTTONDOWN` as `on_long_press` with the left press it began
+  cancelled first, and `nokre_shell_request_paste`. It builds **no
+  document**, and the absence is a decision: the composition string is
+  IMM32's own, and this shell answers none of the reconversion requests
+  that would ask it for the text around the caret — so the one thing it
+  takes from the snapshot is `cursor`, to dock the candidate list
+  ("Windows specifics" below carries the shapes).
+- **Linux** — the xkb chord table including Ctrl+U and Ctrl+K,
+  text-input-v3's `set_surrounding_text` from the snapshot and
+  `set_cursor_rectangle` from `caret_rect`,
+  `delete_surrounding_text` as `on_delete_range`, `BTN_RIGHT` and a
+  `wl_touch` long press as `on_long_press`, and
+  `nokre_shell_request_paste` over the held data offer. Two decisions
+  read as absences: the surrounding text deliberately **excludes** the
+  open pre-edit — v3 defines it that way, and a shell that spliced would
+  place every deletion an IME asks for wrong by the composition's own
+  length — and `field_rect` goes uncalled, because the request v3
+  actually defines is the bounding box of the *text cursor*.
+
+None of the five questions is optional and none is ever NULL: the Zig
+side fills every entry of `nokre_shell_config`
+([c_shell.zig](../../src/platform/c_shell.zig)), so a shell calls them
+unconditionally, and a shell that asks nothing simply keeps the document
+it had. The *export* is the one that is not optional in the linker's
+sense — every native build names `nokre_shell_request_paste` through the
+clipboard service, so omitting it is an unresolved symbol rather than a
+missing feature, locale's posture.
 
 A few *service* hooks ride the same native files without being part of
 this dumb contract — the shell implements them, but they answer to a
@@ -260,7 +503,7 @@ repaints when true. No ticker, no vsync loop, zero idle CPU.
 ## iOS specifics
 
 [ios/shell.m](../../src/platform/ios/shell.m) is a UIKit port of the
-same contract with four twists:
+same contract with twists of its own:
 
 - **Safe area.** The view respects the safe area's top and sides but
   runs to the physical bottom edge, reporting the home-indicator band's
@@ -273,15 +516,63 @@ same contract with four twists:
   element accepts text — which is what shows and hides the keyboard —
   and the view controller holds it otherwise, forwarding hardware keys
   via `pressesBegan`. The keyboard runs with every "smart" mutation
-  (autocorrect, capitalization, smart quotes) disabled: the shell's
-  UITextInput document is only the IME composition, so the keyboard has
-  no context to be smart with — and nokre would not want it anyway. The
+  (autocorrect, capitalization, smart quotes) disabled, and now on its
+  own terms. The justification used to be that the shell's
+  `UITextInput` document was only the IME composition, so there was no
+  context to be smart with — but that document was the held-Backspace
+  defect ("The honest document" above), never a reason. What stands is
+  that nokre types what the user typed; turning any of them back on is a
+  decision, not a consequence of the fix. The
   return key is `UIReturnKeySearch` exactly while `wants_submit_action`
   says the field would act on one, and `UIReturnKeyDefault` otherwise;
   UIKit reads the trait when it builds the keyboard, so a change while
   one stands takes a `reloadInputViews`. Either key still arrives as
   `insertText:@"\n"`, which is core's Enter — the label changes, the
-  delivery does not.
+  delivery does not. The keyboard **shortens the view** rather than
+  covering it, as the Android shell does through its IME inset: the
+  view controller observes every keyboard frame change and ends the
+  view at a docked keyboard's top edge, reporting `safe_bottom` as 0
+  while one stands, so a bottom sheet lands on the keyboard and core
+  reveals the field being typed into (`App.setViewport`). Only a
+  keyboard docked across the screen's bottom counts — iPad's floating
+  and split keyboards, and the frame a hardware keyboard reports, cover
+  no band to shorten by. The end frame is applied unanimated: the
+  keyboard slides, the layout snaps to where it lands.
+- **Text selection.** The `UITextInput` document is the focused field
+  ("The honest document" above), and positions in it are **UTF-16
+  indices** into the value with any composition spliced in at the caret
+  — core keeps a pre-edit apart from the value, so the splicing, like
+  the UTF-8 ↔ UTF-16 conversion around it, is the shell's. Every
+  dispatch into core is bracketed by the `inputDelegate`'s
+  `textWillChange:`/`textDidChange:` and `selectionWillChange:`/
+  `selectionDidChange:` — **the held-Backspace fix** — and that
+  includes the edits UIKit itself asked for, because core *vets* what
+  it is handed (an offset snaps to a cluster boundary, an obscured
+  field refuses a cut) and the document UIKit must act on is the one
+  core kept. The `hasText` hack that answered `YES` unconditionally
+  against the same defect is gone with its cause. A `UITextInteraction`
+  in `.editable` mode is attached exactly while `wants_text_input`,
+  which is what gives a field nokre draws itself UIKit's grab handles,
+  loupe, double-tap word selection and Cut/Copy/Paste/Select All. It
+  owns only `field_rect`'s box — the field's own bordered box, which is
+  the question that call exists to answer — because an interaction with
+  no box claims every touch in the view it is installed on, and the tap
+  that activates a button would never fire. Outside the box it
+  declines and both of the shell's recognizers run exactly as they do
+  with no field focused; the tap and the press-drag yield to it through
+  `gestureRecognizer:shouldRequireFailureOfGestureRecognizer:` rather
+  than `requireGestureRecognizerToFail:`, which has no inverse and
+  would outlive the field. The feeder's pan is deliberately outside
+  that arbitration: a drag that starts on text still scrolls the page.
+  The edit menu is answered from the snapshot, so no row is offered for
+  something core would ignore, and the hardware chords are
+  `keyCommands` — ⌘A/⌘C/⌘X/⌘V/⌘Z/⇧⌘Z, ⌥←/⌥→/⌥⌫ with the shifted
+  motions that extend instead of collapsing, and ⌘⌫/⌃K for the two
+  delete-to-line keys, which a hardware keyboard is the only way to
+  reach here since no software keyboard offers either — while
+  `pressesBegan:`
+  keeps its narrow job. Paste is one read of `UIPasteboard` behind
+  three verbs: the menu row, ⌘V, and `nokre_shell_request_paste`.
 - **Touch.** A tap gesture sends `on_pointer` DOWN then UP at the
   recognized point. A second recognizer — a long press with no minimum
   duration, which is continuous and so begins immediately — carries the
@@ -333,6 +624,20 @@ same contract with four twists:
   compiles the shell, links Skia ([skia-build.md](skia-build.md)), and
   signs — the same wiring a consumer app would keep next to its own
   code. Run instructions: [getting-started.md](../getting-started.md).
+- **Stack budget.** UIApplicationMain runs on the main thread, and iOS
+  gives it 1 MB where a macOS process — the Simulator included — gets
+  8 MB. An app's `State` therefore lives on the heap on every platform
+  and is never a local of `main` or `run`: a 916 KB `State` on that
+  stack left about 110 KB for everything a tap runs above it, and the
+  secure store's first insert (a 36 KB frame over `native.list`'s
+  72 KB) walked off the end on the first language switch — Teams on an
+  iPhone 12 Pro Max, 2026-09-10 — while the Simulator, on 8 MB, never
+  showed it. [getting-started.md](../getting-started.md) builds on the
+  heap from Part 1 for this reason. A device crash is read through
+  `xcrun devicectl device process launch --console`, which prints Zig's
+  trace as unsymbolicated addresses; `atos -o <binary> -arch arm64 -l
+  <load address>` names them, and the load address is the trace's
+  `main` frame less `_main`'s file offset (`nm`), rounded down to 16 KB.
 
 ## Windows specifics
 
@@ -354,12 +659,35 @@ of the same contract — plain C, message loop, no framework. Its twists:
   keys, so nothing fires twice). A Space spent on activation latches its
   echoing `WM_CHAR` off: the pair arrives whether or not core wanted
   both, and the choice belongs to the press, not to the echo.
+  `WM_RBUTTONDOWN` is `on_long_press` — a touch press-and-hold arrives
+  that way too, so the left press it began is cancelled first, as the
+  contract requires.
+- **Chords.** Ctrl+A/C/X/Z (Ctrl+Y and Ctrl+Shift+Z for redo),
+  Ctrl+←/→, and Ctrl+Backspace/Delete become the semantic editing keys,
+  Shift riding along as the selection bit. A chord is Ctrl *alone*:
+  AltGr is Ctrl+Alt on international layouts, so matching on Ctrl with
+  Alt down would eat the character AltGr types. Ctrl+V is not a key —
+  paste is the platform's verb, so it makes the very clipboard read
+  `nokre_shell_request_paste` makes ("The honest document" above), with
+  `CF_UNICODETEXT`'s CRLF line endings squeezed to core's LF on the way
+  into `on_text`. Nothing extra swallows the chords' echoes:
+  `TranslateMessage` queues a `WM_CHAR` of 0x01–0x1A for Ctrl+letter
+  and 0x7F for Ctrl+Backspace whatever `WM_KEYDOWN` returned, and the
+  control-character filter above already drops exactly those.
 - **IME.** IMM32: `WM_IME_COMPOSITION` streams `GCS_COMPSTR` as
   `on_ime_update` (caret converted from UTF-16 units to the UTF-8 byte
   offset the contract asks for), `GCS_RESULTSTR` as `on_ime_commit`, and an end
   without a result cancels. The IME's own composition window is
   suppressed — core renders the composition inline — while the
-  candidate list stays.
+  candidate list stays, and that list is docked at the caret
+  (`ImmSetCompositionWindow` plus `ImmSetCandidateWindow` from
+  `caret_rect`, at composition start and on every update) instead of
+  opening at the window's origin, which is where an IMM context with no
+  form of its own puts it. The rects cross the shell's integer device
+  scale on the way out, since core answers in logical pixels and IMM
+  wants client ones, and the candidate form is `CFS_EXCLUDE` — the
+  caret's line is what the list must not cover, so an engine that would
+  sit on the text being composed drops below it.
 - **Deep links** ([services.md](../services.md)). The one shell with no
   packaging derivation: an unpackaged Win32 app has no verified https
   App-Link (that is MSIX's `windows.appUriHandler`, a different packaging
@@ -439,9 +767,36 @@ shell.m. Its twists:
   the same reasoning. Unclaimed drags bracket
   `BEGIN`/`MOVE`/`END` with the anchor locking core's routing, and
   flings hand off to `OverScroller` — the platform's own physics, the
-  iOS hidden-UIScrollView bargain — with a Choreographer callback
-  running only while decelerating. A touch during a fling stops it
-  without also activating what it lands on.
+  iOS hidden-UIScrollView bargain — stepped inside the paced frame
+  below while decelerating. A touch during a fling stops it without
+  also activating what it lands on. The detector's long press is armed
+  only while a field holds focus (`setIsLongpressEnabled` follows
+  `wants_text_input`) and then sends `on_long_press` wherever it landed,
+  since core hit-tests the point itself. Arming it everywhere would cost
+  the tap: a recognized long press cancels the `onSingleTapUp` that
+  would otherwise follow, so a slow press on a button would stop
+  activating it.
+- **Pacing.** One `Choreographer` frame callback draws; input is
+  applied to core on arrival and only marks, and the callback is armed
+  by a mark, a geometry change or a running fling — never while the app
+  is at rest, so idle stays silent (no `doFrame`, no post). A drawing
+  frame arms the next slot *before* it draws, and that order is the
+  whole point: the draw holds the main thread past the vsync, the
+  batched touch moves are only received when it returns, and a vsync
+  requested after its slot has begun fires a slot late — so a frame a
+  hair over the 11.1 ms slot cost two of them. Measured on a Lenovo
+  TB336FU at 90 Hz scrolling the Library with a virtual finger through
+  `uinput` (125 Hz, paced on the device): 45 fps with 89 % of frame
+  intervals at two vsyncs before, 81 fps with 94 % at one after, the
+  frame itself unchanged (dequeue → queue 9.9 → 8.8 ms median, p90
+  11.2 → 11.0). What the pacing costs is a tap: its UP is delivered at
+  once, and the draw now waits for the next vsync rather than starting
+  inside the handler — UP → first post 5.9–8.4 ms before, 9.1–19.3 ms
+  after, at most one slot. A drag costs nothing, since its moves were
+  already delivered at the vsync. The cadence that remains above one
+  vsync is the frames that run past the slot, and they belong to the
+  raster: the shell arms ahead but still draws on the thread that
+  receives input.
 - **Back.** Android's gesture navigation owns both screen edges, so
   there is no drag for the app to see and no `on_edge_pan` leg here:
   the OS runs its own threshold, draws its own predictive-back preview,
@@ -451,15 +806,49 @@ shell.m. Its twists:
   `onBackPressed` — because which one is live is the consumer
   manifest's `enableOnBackInvokedCallback` choice and, from API 36, the
   platform's default; the system never uses both.
-- **Text input.** The view's `InputConnection` document is only the
-  in-progress composition (suggestions off, no extract UI):
-  `setComposingText` streams `on_ime_update`, commits and
-  `finishComposingText` land as `on_ime_commit`, an emptied composition
-  cancels. The keyboard shows and hides off `wants_text_input` after
-  every event, and text crosses JNI as standard-UTF-8 `byte[]` — never
+- **Text input.** The view's `InputConnection` is the focused field
+  ("The honest document" above): the four getters and `getExtractedText`
+  slice the snapshot, `setSelection` states it back as `on_select`, and
+  `onCreateInputConnection` fills `initialSelStart`/`initialSelEnd` —
+  the one selection report that cannot travel as `updateSelection`,
+  because there is no connection yet to send it on. Every later one
+  does, after each dispatch, so the keyboard's own idea of the caret
+  tracks core's. `getSurroundingText` is overridden beside the older
+  getters and not left to `BaseInputConnection`, whose answer comes from
+  an editable that is empty here — an IME on API 31 or later asks only
+  the new question. Offsets cross as UTF-16, converted in this shell
+  against the same bytes core is holding. The composition is *not* in
+  those bytes — core keeps the pre-edit beside the field — so the
+  connection splices it back in at the caret, and that splice is exactly
+  the composing region the IME is told about; `setComposingText` streams
+  `on_ime_update`, commits and `finishComposingText` land as
+  `on_ime_commit`, an emptied composition cancels.
+  `deleteSurroundingText` measures its two lengths from the two ends of
+  the *selection*, and each run travels as its own `on_delete_range` —
+  the run after the selection first, so the earlier run's offsets are
+  still the ones this shell computed. Mid-composition it does nothing at
+  all: the pre-edit is the IME's own to edit.
+  `deleteSurroundingTextInCodePoints` walks the document's code-point
+  boundaries and hands the same method the char counts, so there is one
+  implementation of the deletion. Suggestions stay off, and whether the keyboard's smart
+  mutations come back is its own undecided question. The same snapshot
+  is what `AccessibilityNodeInfo.setTextSelection` carries on the
+  focused field's node, which is the door
+  [accesskit.zig](../../src/a11y/accesskit.zig) names when it declines
+  to carry a range itself. The keyboard shows and hides off
+  `wants_text_input` after every event, and text crosses JNI as
+  standard-UTF-8 `byte[]` — never
   `GetStringUTFChars`, whose *modified* UTF-8 would mangle emoji.
   Hardware keys map in `onKeyDown`, with printable characters sent as
-  text instead — Space by whichever leg `wants_text_input` selects. The
+  text instead — Space by whichever leg `wants_text_input` selects — and
+  the Ctrl chords map onto the semantic keys before anything else, so
+  Ctrl+Left is a word and not an arrow. Ctrl+V is not among them,
+  because a paste is not a key: it is `nokre_shell_request_paste`'s own
+  read of `ClipboardManager`'s primary clip, delivered as text, and the
+  chord and the framework's edit row reach it through the one method. An
+  unmapped Ctrl chord types nothing — `KeyCharacterMap` ignores Ctrl, so
+  the text fallback would write the bare letter — unless Alt is held
+  with it, which is how some layouts spell AltGr. The
   editor declares `IME_ACTION_SEARCH` exactly while
   `wants_submit_action` says the field would act on one, and
   `IME_ACTION_NONE` otherwise. `imeOptions` is read once, at
@@ -496,6 +885,14 @@ shell.m. Its twists:
   and is still not done: the recreate path has to be correct regardless
   (the system recreates for reasons no `configChanges` list opts out
   of), and one lane that always works beats two that mostly do.
+- **Blit.** None: the shell locks the window buffer first and hands it
+  to `nokre_android_frame_into`, and the shim rasterises the frame's
+  bands straight into it (`hsk_surface_render_into`) — RGBX on both
+  sides, so no row is copied. The source declines a frame that does
+  not begin by painting every pixel or a buffer smaller than the frame,
+  and the shell then takes `nokre_android_frame` and copies row by row
+  as it always did. On a Lenovo TB336FU at 1600x2560 the copy was
+  2.9 ms of an 11.6 ms frame.
 - **Packaging.** `zig build -Dtarget=aarch64-linux-android` produces
   one static library of all the Zig (no C rides along — qrcodegen and
   the shim need bionic headers zig does not bundle); the example's
@@ -534,12 +931,13 @@ and one backend per platform is the charter. Its twists:
   field — every other platform derives identity from the bundle or
   package, not the window.
 - **On demand.** The loop blocks in `poll()` over the display fd, a
-  worker/a11y wake `eventfd`, a keyboard-repeat `timerfd`, the
-  single-instance socket, and the D-Bus fd; it renders only when the
-  frame is dirty (a configure, an input event whose `wants_frame` is
-  true, a wake). No frame-callback ticker — an app at rest costs zero
-  CPU, and the `wl_display_prepare_read`/`read_events` handshake keeps
-  the sleep race-free.
+  worker/a11y wake `eventfd`, a keyboard-repeat `timerfd`, a
+  long-press `timerfd`, the single-instance socket, the D-Bus fd, and
+  the read end of a paste transfer while one is open; it renders only
+  when the frame is dirty (a configure, an input event whose
+  `wants_frame` is true, a wake). No frame-callback ticker — an app at
+  rest costs zero CPU, and the `wl_display_prepare_read`/`read_events`
+  handshake keeps the sleep race-free.
 - **Input.** `BTN_LEFT` press is the tap; `wl_pointer.axis_value120`
   sends `FREE` scrolls at 48 logical px per detent with sub-notch
   remainders (the Windows `WHEEL_DELTA` parity), falling back to `axis`
@@ -549,13 +947,49 @@ and one backend per platform is the charter. Its twists:
   twice. Space, having no text system here to defer the choice to, is
   routed by `wants_text_input` in `dispatch_key` itself: a focused field
   makes it a character like any other. The compositor delegates
-  key repeat, so the shell drives one `timerfd` for the held key.
+  key repeat, so the shell drives one `timerfd` for the held key —
+  and each semantic key says whether it repeats at all, because a held
+  Ctrl+Z unwinding a field's whole history is not what holding a key
+  means, while a held Ctrl+Backspace is.
+  The Ctrl chord table is GTK's (A, C, X, Z, Y and Shift+Z, ←, →,
+  Backspace, Delete), read off **level 0 of the layout** so Shift stays
+  a modifier bit rather than a second table, and searching the keymap's
+  other groups for a Latin letter when the active one has none — a
+  Persian or Cyrillic group spells Ctrl+C with a keysym no table can
+  hold, and the Latin group beside it is where the letter is. Ctrl+V is
+  not in the table: paste is the platform's verb, not a key.
+  `BTN_RIGHT` is `on_long_press`; so is a `wl_touch` press held 500 ms
+  without wandering, which is the one recognizer this shell owns
+  (Wayland recognizes nothing for a client) and the reason for the
+  second `timerfd` — key repeat can be pending while a finger rests,
+  and one timerfd carries one deadline. Firing it cancels the press
+  first, as the contract requires. Touch otherwise *is* the pointer stream, one finger at a time; there
+  is no touch scrolling here and so nothing for `wants_pointer_stream`
+  to arbitrate.
 - **IME.** `zwp_text_input_v3`: `preedit_string` streams `on_ime_update`
   (the caret is a UTF-8 byte offset by contract, and `cursor_begin`'s
   -1 "hide it" maps to the end), `commit_string` lands
   as `on_ime_commit`, and the batch applies on `done` — the enable/disable
   follows `wants_text_input` after every event, which is what raises an
-  on-screen keyboard where the compositor offers one.
+  on-screen keyboard where the compositor offers one. The document is
+  the field ("The honest document" above): `set_surrounding_text` from
+  `editable_snapshot` and `set_cursor_rectangle` from `caret_rect`, so
+  the candidate popup docks at the caret, pushed only when one of them
+  moved — a commit per event would reset a live composition. The bare
+  `value` is already the right document here and nothing is spliced into
+  it, because v3 defines both the surrounding text and the deletion
+  lengths as excluding the pre-edit; a shell that spliced would place
+  every deletion an IME asks for wrong by the composition's own length.
+  The protocol carries at most 4000 bytes of surrounding text, so a longer
+  field crosses as a window centred on the caret, cut at codepoint
+  boundaries with an out-of-window anchor clamped to the edge; an
+  `obscured` field crosses as *no* text at all under
+  `content_purpose` password, stated empty rather than skipped so the
+  IME cannot keep holding the previous field's sentence.
+  `delete_surrounding_text` arrives before the commit it makes room for
+  and travels as one `on_delete_range`: v3 measures both lengths from
+  the cursor itself, so the two runs meet there and the deletion is the
+  single span around it.
 - **Deep links** ([services.md](../services.md)). Like the Windows leg,
   no packaging derivation: an unpackaged app has no verified https
   association, so the URL arrives through a custom scheme the developer
@@ -586,8 +1020,20 @@ and one backend per platform is the charter. Its twists:
   language restarts the app, as they must for the GTK and Qt programs
   beside it.
 - **Clipboard & appearance.** Copy is a `wl_data_source` offering the
-  text mime-types and set as the selection; nokre never reads the
-  clipboard (write-only by charter). Dark mode is the
+  text mime-types and set as the selection. The *service* stays
+  write-only; the one read is the paste verb's, on the user's own
+  action, out of the `wl_data_offer` the compositor already handed it
+  ("The honest document" above). That read is a `receive` of
+  `text/plain;charset=utf-8` into a pipe the poll loop drains across
+  iterations, so `nokre_shell_request_paste` returns before the bytes
+  arrive — the header's "otherwise soon, on the main thread" — and no
+  slow source can stall the window. A selection this process *owns*
+  skips the pipe and delivers its own bytes: the compositor would ask
+  this thread for them, and a clipboard past the pipe's capacity would
+  block that write against a reader that is this same loop. A transfer
+  over 64 KiB is dropped whole rather than truncated mid-codepoint, and
+  a second Ctrl+V abandons a transfer still in flight instead of
+  queueing behind a source that never wrote. Dark mode is the
   `org.freedesktop.appearance color-scheme` value read from
   xdg-desktop-portal over D-Bus, re-read on the portal's `SettingChanged`
   signal; absent a portal the shell reports light, the honest default.
@@ -718,7 +1164,11 @@ adapter:
 
 Port `shell.h` to the platform's windowing API (~300–500 lines of native
 code), map keycodes to the `NOKRE_KEY_*` enum — Space by the one-leg rule
-above, which no golden can catch for you — blit RGBX. Add
+above, which no golden can catch for you, and the platform's own editing
+chords onto the semantic keys, since core will not map them for you —
+blit RGBX. Fill the platform's text document from `editable_snapshot`
+rather than from the composition, which is the mistake this contract was
+widened to stop ("The honest document" above). Add
 `nokre_locale_install` with it — the one service hook that has no unlinked
 path, so an omission is an unresolved symbol rather than a missing
 feature (the contract, including the fire-before-you-return clause, is

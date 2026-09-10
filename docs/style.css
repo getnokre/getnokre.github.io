@@ -113,6 +113,7 @@
   --px-h1: 32px;
   --lh-h1: 40px;
 }
+:is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #808080; color: #eaeaea; }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-appearance]) {
@@ -132,6 +133,7 @@
     --auth-fill: #ffffff;
     --auth-ink: #000000;
   }
+  :root:not([data-appearance]) :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
 }
 
 :root[data-appearance="light"] { color-scheme: light; }
@@ -153,6 +155,7 @@
   --auth-fill: #ffffff;
   --auth-ink: #000000;
 }
+:root[data-appearance="dark"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
 
 /* ---- reset ------------------------------------------------------ */
 
@@ -314,6 +317,79 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    only a pointer can discover is information withheld from touch
    and keyboard users, so the whole category is absent — here as in
    the library. */
+
+/* ---- selection --------------------------------------------------- */
+
+/* Selection of static text is a *substrate* trait, the way line
+   wrapping is: the browser owns it and Skia has none, which is what
+   this substrate bought when it stopped being a canvas
+   (internals/dom-substrate.md). What a canvas never had to decide is
+   *which* text, and the browser's own answer is all of it — so a
+   reader dragging across a screen to copy one sentence picks up the
+   button words, the destinations, the badges and the field labels
+   standing around it, and pastes a run of chrome.
+
+   So the fence, and it is one rule: prose selects, chrome and
+   control words do not. Everything named below is a word the app
+   did not write as prose — a control's own label, a destination, a
+   picker row, a glyph that pastes as a private-use codepoint, a
+   run standing off-screen for a screen reader, a stand-in for a
+   value that has not arrived. What is deliberately *absent* is
+   every prose kind — text, heading, code_block, blockquote, list
+   and items, cells, document, quantity, a notice's words, a field's
+   problem, a tile group's caption — which is the set a reader was
+   dragging across in the first place.
+
+   Two of them are decisions rather than applications of the rule,
+   and both went to the reader:
+
+   - **A link's words select.** A link is prose that has somewhere
+     to go — the one control kind that stands inside a sentence —
+     and drag-against-click on an anchor is a question every browser
+     settled long before this driver existed. Its chrome cousins are
+     fenced by name (`.chip` under `.nav`, `.tile`), so what is left
+     here really is a word in a line.
+   - **A `copyable`'s value selects**, which is the one thing in
+     this block that has to be said out loud rather than left
+     alone: it lives inside a `<button>`, where an engine's own
+     stylesheet refuses selection — so the single value on the page
+     a reader came to carry away was the *least* selectable text on
+     it. Its copy control is still the primary path and the check is
+     still the receipt; this is for the reader who wants half of the
+     value, or who will not trust a clipboard they cannot see.
+
+   Nothing here withholds anything. `user-select` does not touch
+   find-in-page, translation, reader mode, print or the
+   accessibility tree — all of which still read every fenced word —
+   so what the fence costs is a drag nobody meant. The `-webkit-`
+   half is not legacy: Safari still wants it. */
+.icon,
+.badge,
+.btn,
+.ctl,
+.seg,
+.tile,
+.field-label,
+.field-box.select,
+.ranking,
+.nav,
+.icon-button,
+.picker-item,
+.pending,
+.visually-hidden,
+.skip {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* And the one value the fence has to hand *back*, against the
+   engine rather than against the rule above — the note on
+   `copyable` in that block is the argument. The label beside it
+   stays fenced: it names the value, it is not the value. */
+.copyable code {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 /* ---- the root ---------------------------------------------------- */
 
@@ -895,20 +971,30 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
    needed it: inert also hides what it covers from assistive
    tech, which the real content must not be. */
 
-/* A value that has not arrived: a block `--pending` characters
-   wide, sized in `ch` — the reference advance the other substrate
-   measures its block in, so the two agree on a width. Empty and
+/* A value that has not arrived: one empty cell per character,
+   `1ch` wide — the reference advance the other substrate measures
+   its block in, so the two agree on a width. Cells and not one
+   sized box, because a browser never breaks inside an atomic
+   inline and always may between two (CSS Text §5.1): a run wider
+   than the column wraps at the edge, as `wrap.breakWord` does,
+   where the one box it used to be overflowed. Empty and
    `aria-hidden`, so there is nothing to leak and nothing to read.
-   Rounded, matching the other substrate: a square bar of this tone
-   reads as a redaction. */
-.pending {
+   The run's ends round, matching the other substrate — a square
+   bar of this tone reads as a redaction — and a break inside it
+   is square, as `box-decoration-break: slice` would leave it.
+   `font: inherit` on both, because `ch` resolves in the cell's
+   own face and the UA's bold `b` ran ten cells 12% wide. */
+.pending { display: inline; font: inherit; }
+.pending > b {
   display: inline-block;
-  width: var(--pending, 6ch);
+  font: inherit;
+  width: 1ch;
   height: 0.8em;
   vertical-align: -0.1em;
-  border-radius: 3px;
   background: var(--g10);
 }
+.pending > b:first-child { border-start-start-radius: 3px; border-end-start-radius: 3px; }
+.pending > b:last-child { border-start-end-radius: 3px; border-end-end-radius: 3px; }
 /* A field's value is an attribute, so its block rides on the box
    (`serialize.text_input`). */
 .pending-box > input { color: transparent; -webkit-text-fill-color: transparent; }

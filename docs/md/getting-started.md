@@ -180,7 +180,13 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(app.artifact);
     if (app.shim) |shim| b.installArtifact(shim); // iOS: Xcode links both
-    if (app.pkg) |pkg| b.installDirectory(.{ .source_dir = pkg, .install_dir = .prefix, .install_subdir = "pkg" });
+    // nokre's install, not `b.installDirectory`: the destination holds
+    // exactly the generated tree, and a file the declaration stopped
+    // emitting does not survive there (docs/services.md).
+    if (app.pkg) |pkg| b.getInstallStep().dependOn(nokre.addInstallExactDirectory(b, .{
+        .source_dir = pkg,
+        .install_subdir = "pkg",
+    }));
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&b.addRunArtifact(app.artifact).step);
@@ -246,17 +252,23 @@ pub fn main() !void {
     defer _ = gpa_state.deinit();
     const gpa = gpa_state.allocator();
 
-    var state = State{};
-    var app = try h.App.init(gpa, .{
+    // Heap, never a local: iOS gives the main thread 1 MB, and a State
+    // on that stack is taken from every frame above it (Part 8).
+    const state = try gpa.create(State);
+    defer gpa.destroy(state);
+    state.* = .{};
+    const app = try gpa.create(h.App);
+    defer gpa.destroy(app);
+    app.* = try h.App.init(gpa, .{
         .viewport = .{ .w = 480, .h = 640 },
         .routes = &routes,
-        .ctx = &state,
+        .ctx = state,
     });
     defer app.deinit();
-    state.app = &app;
+    state.app = app;
     try app.navigate("home");
 
-    try h.platform.run(&app, .{ .title = .{ .fixed = "Notes" } });
+    try h.platform.run(app, .{ .title = .{ .fixed = "Notes" } });
 }
 ```
 
@@ -438,13 +450,13 @@ pub const nav_items = [_]h.Destination{
 and in `main`:
 
 ```zig
-    var app = try h.App.init(gpa, .{
+    app.* = try h.App.init(gpa, .{
         .viewport = .{ .w = 480, .h = 640 },
         .routes = &routes,
-        .ctx = &state,
+        .ctx = state,
     });
     defer app.deinit();
-    state.app = &app;
+    state.app = app;
     try app.setNav(&nav_items);
     try app.navigate("notes");
 ```
@@ -522,8 +534,8 @@ what links it. It hands you the inbound URL and stops there, because
 One handler, wired in `main` once the app exists:
 
 ```zig
-    state.app = &app;
-    h.services.deep_link.setHandler(&app, .bind(onDeepLink, &state));
+    state.app = app;
+    h.services.deep_link.setHandler(app, .bind(onDeepLink, state));
     try app.setNav(&nav_items);
     try app.navigate("notes");
 ```
@@ -2058,7 +2070,13 @@ pub fn main() if (is_wasm) void else anyerror!void {
 }
 
 fn run(gpa: std.mem.Allocator) !void {
-    // …the body Part 3 wrote, unchanged.
+    // …the body Part 3 wrote, unchanged — which is why Part 1 built on
+    // the heap: iOS gives UIApplicationMain's thread 1 MB where a macOS
+    // process, the Simulator included, gets 8 MB, so a State held as a
+    // local here is subtracted from every frame a tap runs above it. A
+    // 916 KB State once left 110 KB, and the secure store's first insert
+    // walked off the end on a phone the Simulator had passed
+    // (internals/platform-shells.md, iOS specifics).
 }
 
 /// Android entry: the Activity boots the app through the JNI shell.
@@ -2066,8 +2084,9 @@ pub fn nokreAndroidBuild(gpa: std.mem.Allocator) !*h.App {
     return nokreWebBuild(gpa);
 }
 
-/// Web entry: the browser owns the event loop; everything lives on the
-/// heap because no enclosing stack frame outlives this call.
+/// Web entry: the browser owns the event loop, so nothing may live in a
+/// frame — none outlives this call. The same heap `main` builds on, for
+/// the other reason.
 pub fn nokreWebBuild(gpa: std.mem.Allocator) !*h.App {
     const state = try gpa.create(State);
     errdefer gpa.destroy(state);
@@ -2117,11 +2136,15 @@ declaration:
         .apple_icon = b.path("assets/AppIcon.icon"),
 ```
 
-pointing at the `.icon` bundle Icon Composer exports. nokre checks it and
-delivers it whole to `pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon`;
-Xcode compiles it, and the contract — including the Xcode 26 floor — is
-[services.md](services.md). Part 3's `.deep_link` added to that tree:
-`ios/App.entitlements` (point Xcode's `CODE_SIGN_ENTITLEMENTS` at it),
+pointing at the `.icon` bundle Icon Composer exports. nokre checks it,
+delivers it whole to `pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon`
+for Xcode to compile, draws it flat itself for the Android and web
+icons, and compiles it through `xcrun actool` into the `.icns`, so every
+platform shows the one picture; the contract — including the Xcode 26
+floor, which is now every platform's — is [services.md](services.md). Part 3's `.deep_link` added to that tree:
+the associated-domains key inside `ios/App.entitlements` (a file every
+build writes, so the Xcode project below points `CODE_SIGN_ENTITLEMENTS`
+at it once and for good — [services.md](services.md), "package_info"),
 the App-Links `intent-filter` inside the manifest, and a `.well-known/`
 directory with `assetlinks.json` and `apple-app-site-association` — copy
 that directory to each claimed domain's web root and replace the two
@@ -2155,32 +2178,88 @@ below, and a hand-rolled `.app` has one directory to hand to `actool`.
 
 **iOS.** Build Skia for iOS once, then let Xcode own packaging and
 signing, with a build phase calling `zig build` for the Zig side — the
-kitchen sink's project is the template to copy:
+kitchen sink's project is the template to copy. Xcode 26 is the floor
+(the `.icon` format above is why), and it ships without the iOS
+platform component: until `xcodebuild -downloadPlatform iOS` has run
+once, every iOS build refuses with `iOS <version> is not installed`.
 
 ```sh
+xcodebuild -downloadPlatform iOS                # once per Xcode
 (cd ../nokre && tools/build-skia-ios.sh)     # once
 cp -R ../nokre/examples/kitchen_sink/ios ios
 ```
 
-Then repoint the copy at your app: the build phase's `zig build` runs in
-*your* project directory; the link step consumes your `libnotes.a` and
-the shim (`app.artifact` and `app.shim` — Part 1's build.zig installs
-both); `INFOPLIST_FILE` and the asset catalog read from the `pkg/ios`
-tree your install step fills; and `PRODUCT_BUNDLE_IDENTIFIER` must equal
-the declared id — that one duplication belongs to Apple's signing
-machinery, and Xcode fails the build if it disagrees, so drift is loud.
-If you declared an `.apple_icon`, one addition: drag
+The project is two targets: `ZigLibraries`, one script phase that
+runs `zig build` and fills the `pkg/ios` tree, and the app, which
+depends on it. The split is Xcode's doing — it reads
+`CODE_SIGN_ENTITLEMENTS` before any script phase of the target it
+signs, so a generated entitlements file has to come from a target the
+app depends on, or the first build fails on a file nothing has written
+yet. Then repoint the copy at your app: `ZigLibraries`' `zig build` runs
+in *your* project directory and drops `-Dskia` — that is nokre's own
+build option, for its own examples; `addApp` links Skia into every app
+it builds; the link step consumes your `libnotes.a` and the shim
+(`app.artifact` and `app.shim` — Part 1's build.zig installs both);
+`INFOPLIST_FILE`, `CODE_SIGN_ENTITLEMENTS` and the asset catalog read
+from the `pkg/ios` tree that target fills, and need no edit — the app
+target also sets `CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION`, because
+Xcode snapshots the entitlements when it plans the build and refuses a
+file that changed under it, which a generated one does on the first
+build and whenever the declaration changes. The plan itself is made
+before any phase runs, from the file as the *previous* build left it —
+so the scheme carries a build pre-action that runs `zig build pkg`
+with the same target, prefix and `NOKRE_ZIG_FLAGS` first, and the plan
+reads the current declaration. Without it a declaration that drops a
+capability is provisioned against the old file and refused before the
+phase that would have rewritten it, which no second build repairs; a
+pre-action's own failure is silent by Xcode's design, so its output
+goes to `ios/build/pre-build-pkg.log`. And
+`PRODUCT_BUNDLE_IDENTIFIER` must equal the declared id — that one
+duplication belongs to Apple's signing machinery. Xcode alone only
+*warns* when the two disagree (and an unsigned build succeeds), so the
+app target's own first phase reads the generated `Info.plist` back and
+fails with both ids: `error: PRODUCT_BUNDLE_IDENTIFIER is 'x' but
+build.zig declares 'y'`. If you declared an `.apple_icon`, one addition: drag
 `ios/build/pkg/AppIcon.icon` into the project so it joins the target's
-Resources phase. The copied build phase already mirrors it there on every
+Resources phase. `ZigLibraries` already mirrors it there on every
 build (the template's script does this whether or not an icon is
 declared), and `ASSETCATALOG_COMPILER_APPICON_NAME` already says
 `AppIcon`, which is the name nokre normalizes the bundle to — so that one
-drag is the whole wiring, and the icon still has exactly one source. It
-wants Xcode 26; an older `actool` does not know the format.
+drag is the whole wiring, and the icon still has exactly one source.
 The per-target split of who compiles what is
 [internals/platform-shells.md](internals/platform-shells.md). The
 Simulator needs no signing setup; for your own iPhone, a free Apple ID's
-personal team is enough.
+personal team is enough — unless the app declares `oauth_apple`,
+`.deep_link` domains or push, whose capabilities a personal team cannot
+provision; those sign only under a paid team. The knob is the
+declaration and nothing in the signing invocation: an app that must sign
+under a personal team declares those off for that build, and the
+entitlements nokre writes are then an empty dict the project signs with
+unchanged. Passing a bare `CODE_SIGN_ENTITLEMENTS=` to `xcodebuild`
+instead does not drop them — Xcode 26.6 provisions it against the
+project's own file and refuses the capability by name. The template excludes
+`x86_64` from Simulator builds — the slice `tools/build-skia-ios.sh`
+refuses to produce — so `-destination 'generic/platform=iOS Simulator'`
+links rather than failing on a second architecture an IDE Run, building
+the active one, never asks for. Keep the project's Debug
+`GCC_OPTIMIZATION_LEVEL = 2` as well — the rule the Android line below
+states, that a debug build differs in signing and debuggability and not
+in how the frame path is compiled. Xcode's own template writes `0`,
+and here it reaches only what Xcode compiles, the UIKit shell: the shim
+and HarfBuzz are `zig build`'s on iOS and optimised whichever way.
+
+Your own `-D` options — the ones your build.zig declares, a profile or
+a feature flag — reach that `zig build` through one environment
+variable both templates read, `NOKRE_ZIG_FLAGS`: one flag per line, so
+a value may contain anything but a newline, blank lines ignored, and an
+empty or unset variable leaves your build.zig's own defaults, which is
+what a bare Run from the IDE wants. Xcode hands a script phase every
+environment variable and every build setting, so
+`NOKRE_ZIG_FLAGS=$'-Dprofile=prod\n-Dtelemetry=false' xcodebuild …`
+and a user-defined build setting of that name are the same channel;
+Gradle reads the environment. What a flag *means* is yours — nokre has
+no notion of a profile, so a rule like "a Release archive must name
+one" is a line in your copy, not in the template.
 
 **Android.** The same split with Gradle in Xcode's chair: a Gradle task
 calls `zig build`, and the NDK's CMake compiles the shell and links
@@ -2193,8 +2272,14 @@ cp -R ../nokre/examples/kitchen_sink/android android
 
 Repoint the copy the same way — the Zig invocation, the consumed static
 library, and the applicationId, which Gradle reads from the generated
-identity properties so it tracks your declaration. Open the project in
-Android Studio and Run, or `./gradlew installDebug` headlessly.
+identity properties so it tracks your declaration; `NOKRE_ZIG_FLAGS`
+reaches both of its `zig build` calls as above. Open the project in
+Android Studio and Run, or `./gradlew installDebug` headlessly. Keep
+the template's `-DCMAKE_BUILD_TYPE=RelWithDebInfo`: a debug APK differs
+in signing and debuggability, not in how the frame path is compiled,
+and without that line AGP's own `Debug` compiles the shim and HarfBuzz
+at `-O0` — shaping sits on every frame, and a tablet frame went from
+27 ms to 190 ms that way.
 
 **Web.** The lightest of the six. There is no native link to arrange, no
 archive to hand on, and no SDK — and nothing to author either: `addApp`
@@ -2213,11 +2298,10 @@ pass `.target = if (web) nokre.webTarget(b) else target` to `addApp`,
 and install what comes back beside the packaging tree:
 
 ```zig
-    if (app.web) |site| b.installDirectory(.{
+    if (app.web) |site| b.getInstallStep().dependOn(nokre.addInstallExactDirectory(b, .{
         .source_dir = site,
-        .install_dir = .prefix,
         .install_subdir = "web",
-    });
+    }));
 
     const serve = nokre.addWebServe(nokre_dep, app, .{}); // .port = 8000
     b.step("serve", "Serve the web build at http://localhost:8000").dependOn(&serve.step);

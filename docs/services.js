@@ -20,6 +20,11 @@ export function silentHooks() {
   return {
     nokre_shell_request_frame: () => {},
     nokre_shell_write_clipboard: () => {},
+    // A paste is the platform's verb on a user action, and on the web
+    // the platform is the browser: a page that asks outside a real
+    // paste gesture is refused, so the ask goes nowhere by default and
+    // the page instance is where a real one would answer.
+    nokre_shell_request_paste: () => {},
     nokre_open_url_open: () => 1, // no window to open from — "did not start", honestly
     nokre_share_show: () => {},
     // A compute instance has no sheet to show, so its boot probe says

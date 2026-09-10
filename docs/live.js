@@ -1,10 +1,16 @@
 // The DOM substrate's live driver, browser half.
 //
-// It owns three things and nothing else: which element the reader
-// meant, the bytes going into the document, and the address bar. Every
-// question of *meaning* — what a press does, what a key does to a
+// It owns four things and nothing else: which element the reader meant,
+// where in a field they meant it, the bytes going into the document,
+// and the address bar. The second of those is the browser's because the
+// browser lays the page out — a real `<input>` holds the reader's own
+// selection, and core's rects describe a picture nobody is looking at.
+// Every question of *meaning* — what a press does, what a key does to a
 // field, which subtree a route rebuilds — is answered in wasm by the
-// same core every other nokre platform runs.
+// same core every other nokre platform runs. The one thing that looks
+// like meaning and is not is the chord table: which modifier spells
+// "delete the word behind the caret" is a fact about a platform, so it
+// is a shell's everywhere, this one included (core/event.zig's `Key`).
 //
 // There is no framework here and no dependency. What it does depend on
 // is the shell hooks a linked service calls out through — the clipboard
@@ -36,14 +42,109 @@
 
 import { appHooks, registerServiceWorker, reportAuthToOpener, seedSecureStore } from "./services.js";
 
-// core/event.zig's `Key`, by the browser's name for each, in that
-// enum's order. Anything not here is not a key nokre has — the set is
-// closed there too, so this table is the whole map.
+// core/event.zig's `Key`, in that enum's order. Anything not here is
+// not a key nokre has — the set is closed there too, so this table is
+// the whole map, and the ordinals are the wire that enum's comptime
+// block pins.
+//
+// The two halves are keyed differently because only one half has a
+// browser name. A key the reader can press has one and it is what
+// `e.key` reports; the editing commands are *semantic* — "delete the
+// word behind the caret" is ⌥⌫ here and Ctrl+Backspace elsewhere — so
+// no `e.key` names them and they are keyed by nokre's own spelling, for
+// `chordKey` to reach. The two cannot collide: `e.key` is either one
+// character or a name in HeadCase, and nothing below is either.
 const KEY_BY_CODE = {
   Tab: 0, Enter: 1, " ": 2, Escape: 3, Backspace: 4, Delete: 5,
   ArrowLeft: 6, ArrowRight: 7, ArrowUp: 8, ArrowDown: 9,
   Home: 10, End: 11, PageUp: 12, PageDown: 13,
+  word_left: 14, word_right: 15,
+  delete_word_backward: 16, delete_word_forward: 17,
+  select_all: 18, copy: 19, cut: 20, undo: 21, redo: 22,
+  delete_to_line_start: 23, delete_to_line_end: 24,
 };
+
+// The elements this driver treats as text: a real field the reader
+// types into, which is not every `<input>` the serializer writes (a
+// checkbox and a radio are inputs and hold no selection at all).
+const EDITABLE = "input[type=text], input[type=password], textarea";
+
+// Which modifier spells an editing command, decided from the platform
+// **here**. That is the arrangement on all five native shells and it is
+// deliberate: a chord never travels, so core carries no per-platform
+// table and never asks what platform it is on (core/event.zig's `Key`).
+// This is the browser's copy of `key_from_ctrl_chord` on Windows and
+// `chord_key` on Linux; macOS gets its own column because ⌥ moves by
+// word there and ⌘ commands.
+const APPLE = /mac|iphone|ipad|ipod/i.test(
+  navigator.userAgentData?.platform ?? navigator.platform ?? "",
+);
+
+// The letter under the finger. `key` is what the reader's layout
+// prints, which is the answer their fingers expect on any Latin
+// layout; `code` is the physical key it is printed on, which is the
+// only answer left on a layout that prints no Latin letter at all —
+// the same two-step the Linux shell's `latin_letter` makes against the
+// keymap, so ⌘A selects all on a Cyrillic layout here too.
+function letterOf(e) {
+  const key = e.key ?? "";
+  if (/^[a-zA-Z]$/.test(key)) return key.toLowerCase();
+  return /^Key([A-Z])$/.exec(e.code ?? "")?.[1].toLowerCase();
+}
+
+// One chord, as the semantic key it means, or undefined for a chord
+// this driver does not claim — which then travels as its plain key with
+// the modifier bits set, exactly as Ctrl+Tab does on every shell.
+//
+// **Copy and cut are deliberately absent**, and they are the one pair
+// whose absence is a decision rather than a gap: the clipboard write of
+// a real `<input>` is the browser's own, and intercepting it would
+// hand core a job it can only do worse (no user gesture, no
+// `text/plain` flavour, no permission). So ⌘C/⌘X stay uncancelled and
+// only the *deletion* half of a cut comes back, as `deleteByCut` on the
+// beforeinput lane.
+function chordKey(e) {
+  const command = APPLE ? e.metaKey : e.ctrlKey;
+  const word = APPLE ? e.altKey && !e.metaKey : e.ctrlKey;
+  if (word) {
+    switch (e.key) {
+      case "ArrowLeft": return KEY_BY_CODE.word_left;
+      case "ArrowRight": return KEY_BY_CODE.word_right;
+      case "Backspace": return KEY_BY_CODE.delete_word_backward;
+      case "Delete": return KEY_BY_CODE.delete_word_forward;
+    }
+  }
+  if (command) {
+    // ⌘⌫ is macOS' delete-to-line-start; the same command is Ctrl+U in
+    // every readline binding, which is the `else` column's own row
+    // below rather than a Ctrl+Backspace that already means the word.
+    if (APPLE && e.key === "Backspace") return KEY_BY_CODE.delete_to_line_start;
+    switch (letterOf(e)) {
+      case "a": return KEY_BY_CODE.select_all;
+      // Shift picks the branch here rather than travelling as "undo,
+      // extending a selection", which is not a thing. Ctrl+Y is the
+      // second redo chord every Windows and GTK user brings with them,
+      // and is nothing on a Mac.
+      case "z": return e.shiftKey ? KEY_BY_CODE.redo : KEY_BY_CODE.undo;
+      case "y": return APPLE ? undefined : KEY_BY_CODE.redo;
+      default: break;
+    }
+  }
+  // Emacs' pair, and **only on a Mac**, where macOS binds ⌃U and ⌃K in
+  // every text field and no browser wants either. Elsewhere they are
+  // the browser's own — Ctrl+K opens the omnibox in Chrome and cannot
+  // be cancelled at all, Ctrl+U is view-source — so the Windows and
+  // Linux column reaches these two commands through no chord rather
+  // than through one the reader will not get.
+  if (APPLE && e.ctrlKey && !e.metaKey && !e.altKey) {
+    switch (letterOf(e)) {
+      case "k": return KEY_BY_CODE.delete_to_line_end;
+      case "u": return KEY_BY_CODE.delete_to_line_start;
+      default: break;
+    }
+  }
+  return undefined;
+}
 
 // The inputTypes a composition session emits: the first pair during it
 // (every engine), the second at its edges (WebKit). None are this
@@ -107,6 +208,82 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
 
   const source = await WebAssembly.instantiateStreaming(fetch(wasm), { env });
   nk = source.instance.exports;
+
+  // ---- the selection, both ways ------------------------------------
+  //
+  // A real `<input>` is the reader's own selection surface: they drag
+  // in it, double-click a word in it and ⌘A it, and none of that passes
+  // through core. So the browser is the one that knows where the
+  // selection is, and core is the one that decides what an edit does to
+  // it — which only works while the two agree. They are made to agree
+  // in both directions and nowhere else: `sendSelection` before every
+  // edit that acts on a range and on every `selectionchange`, and
+  // `restoreFocus` writing core's answer back after a frame.
+  //
+  // The offsets cross as **bytes**. Core counts UTF-8 and a field
+  // counts UTF-16 units, and the conversion is the glue's here for the
+  // reason it is each native shell's (platform/shell.h's
+  // `nokre_editable_snapshot`): core carrying a second index space for
+  // every string it owns would charge the platforms that never asked.
+  const byteAt = (value, units) => bytes.encode(value.slice(0, units)).length;
+  const unitAt = (value, byte) => utf8.decode(bytes.encode(value).subarray(0, byte)).length;
+
+  // `anchor` is the fixed end and `cursor` the live one — where the
+  // caret is, and where a following Shift+motion extends from. A
+  // browser states which is which as `selectionDirection`, so the order
+  // survives the crossing instead of being guessed at.
+  function sendSelection(el) {
+    // Not mid-composition: the preedit is in the field's value and not
+    // in core's, so every offset in it names a different string.
+    if (composing || el.selectionStart === null || el.selectionStart === undefined) return;
+    const back = el.selectionDirection === "backward";
+    nk.nokre_dom_select_range(
+      byteAt(el.value, back ? el.selectionEnd : el.selectionStart),
+      byteAt(el.value, back ? el.selectionStart : el.selectionEnd),
+    );
+  }
+
+  // This element if it is a field, and null for anything else — a
+  // press target, a document's `activeElement`, a pointer's target.
+  function editableOf(el) {
+    return el && el.matches?.(EDITABLE) ? el : null;
+  }
+
+  // A selection the reader is still drawing. Anything that lands a
+  // frame mid-drag — a worker reply, a resize, a response — would
+  // otherwise write core's copy of the range back into the field the
+  // pointer is inside, and a `setSelectionRange` under a held button is
+  // the end of the drag in every engine.
+  let dragging = false;
+  const doc = into.ownerDocument;
+  doc.addEventListener("pointerdown", (e) => {
+    dragging = editableOf(e.target) !== null;
+  });
+  // Both endings, because only one of them is the reader letting go
+  // where they meant to: a button released outside the window still
+  // ends the drag on this document, and a recognizer that loses the
+  // pointer sends `pointercancel` and nothing else. A flag that stayed
+  // true would stop restoring the caret for the rest of the session.
+  for (const ending of ["pointerup", "pointercancel"]) {
+    doc.addEventListener(ending, () => {
+      dragging = false;
+    });
+  }
+
+  // The browser moved the selection: a drag, a double-click on a word,
+  // a ⌘A this driver left to it, a caret placed by a click. Every
+  // engine ends up firing this at the document, so that is where it is
+  // heard and `activeElement` is what says whose selection moved.
+  //
+  // No frame. Nothing in the markup carries a selection — the field
+  // is the browser's own and already shows it — so a frame here would
+  // repaint nothing and hand `restoreFocus` a chance to fight the drag
+  // that is still in progress. What core is owed is the *fact*, and it
+  // is owed it before the next edit rather than at a paint.
+  doc.addEventListener("selectionchange", () => {
+    const field = editableOf(doc.activeElement);
+    if (field) sendSelection(field);
+  });
 
   // Strings in: one scratch buffer, filled then consumed by the export
   // that was waiting for it.
@@ -186,7 +363,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // document has no business restyling the page around it. Without the
   // appearance attribute the sheet falls back to the media query, which
   // is all a page with no app behind it has.
-  const root = into.ownerDocument.documentElement;
+  const root = doc.documentElement;
   const dark = matchMedia("(prefers-color-scheme: dark)");
   const SHAPE = ["", "desk", "desk-narrow"];
 
@@ -344,9 +521,12 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     for (const root of roots) root.addEventListener(type, handler);
   }
 
-  // Focus and the caret live on the tree, not in the DOM — `focus.zig`
-  // moves one and `editing.zig` the other — so after the document is
-  // rewritten they are put back from there rather than guessed at.
+  // Focus and the selection live on the tree, not in the DOM —
+  // `focus.zig` moves one and `editing.zig` the other — so after the
+  // document is rewritten they are put back from there rather than
+  // guessed at. Which is the second half of a bargain: the browser
+  // states the selection the reader made (`sendSelection`), core
+  // decides what an edit does to it, and this writes the decision back.
   function restoreFocus() {
     const node = nk.nokre_dom_focused_node();
     const span = nk.nokre_dom_focused_span();
@@ -364,21 +544,39 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     if (!el) return;
     if (el !== document.activeElement) el.focus({ preventScroll: true });
 
-    // The caret is restored on every frame, not only when focus moved.
-    // `editing.zig` owns where it sits, and writing a field's value
-    // puts the DOM's own back at one end — so the frame after a
+    // The selection is restored on every frame, not only when focus
+    // moved. `editing.zig` owns both of its ends, and writing a field's
+    // value puts the DOM's own back at one end — so the frame after a
     // keystroke would leave it there, which is a cursor that jumps to
     // the start of what you are typing.
     //
+    // The whole **range**, with the end the caret is on. Restoring a
+    // collapsed caret from `cursor` alone is what this used to do, and
+    // it destroyed a selection the reader had made on the next event
+    // that landed a frame — including the one they made in order to
+    // replace it.
+    //
     // Not mid-composition, though: the caret is the IME's then — core's
     // own points before the preedit — and poking a field's selection
-    // under an open session aborts it, the patchNode rule.
-    if (composing) return;
+    // under an open session aborts it, the patchNode rule. Nor while
+    // the pointer is down in a field: that is a selection still being
+    // drawn, and a write into it ends the drag.
+    if (composing || dragging) return;
     const caret = nk.nokre_dom_caret();
     if (caret < 0 || !el.setSelectionRange) return;
-    // The cursor is a byte offset; a field's own is in UTF-16 units.
-    const at = utf8.decode(bytes.encode(el.value).subarray(0, caret)).length;
-    if (el.selectionStart !== at || el.selectionEnd !== at) el.setSelectionRange(at, at);
+    // Both offsets are core's bytes; a field's own are UTF-16 units.
+    const to = unitAt(el.value, caret);
+    const from = unitAt(el.value, nk.nokre_dom_anchor());
+    const start = Math.min(from, to);
+    const end = Math.max(from, to);
+    // A caret has no direction to disagree about — engines spell a
+    // collapsed one "none" and "forward" both — so it is compared only
+    // where there is a range, or every frame would rewrite it.
+    const way = from > to ? "backward" : "forward";
+    if (el.selectionStart === start && el.selectionEnd === end) {
+      if (start === end || el.selectionDirection === way) return;
+    }
+    el.setSelectionRange(start, end, way);
   }
 
   // core/router.zig's `Change`, in that enum's order.
@@ -475,6 +673,16 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // input — two calls would be two inputs, and every rule an input
     // carries would run twice.
     nk.nokre_dom_press(Number(stop.dataset.n), stop.dataset.s === undefined ? -1 : Number(stop.dataset.s));
+    // And then where in the field it landed, which the press could not
+    // carry. Activating a field means placing the caret, and core puts
+    // it at the value's end because the road a semantic press takes has
+    // no coordinate on it (`input.activate`) — the shells that have one
+    // place it themselves. Here the browser has already placed it, on
+    // the mousedown that started this, so what it placed is stated
+    // rather than recomputed: a click mid-value keeps its caret, and a
+    // drag that ended in this click keeps the range it drew.
+    const field = editableOf(stop);
+    if (field) sendSelection(field);
     frame();
   });
 
@@ -503,7 +711,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // twice, once in the IME and once in core. The old canvas glue kept
     // this same silence.
     if (composing || e.isComposing) return;
-    const key = KEY_BY_CODE[e.key];
+    // A chord is claimed **only inside a field**, and that is the whole
+    // of where an editing command means anything: outside one ⌘A, ⌘C
+    // and ⌘Z are the reader's own — select the page, copy it, undo a
+    // form the host document wrote — and page-wide selection is on the
+    // list of what this substrate traded pixel goldens for. Cancelling
+    // them everywhere would take it back.
+    const editable = e.target.matches(EDITABLE);
+    const key = (editable ? chordKey(e) : undefined) ?? KEY_BY_CODE[e.key];
     if (key === undefined) return;
     // Where a screen is a document, a link is the browser's on the
     // keyboard exactly as it is under a press — the click handler above
@@ -522,12 +737,18 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // The reader's modifiers ride along, the click handler's point:
     // Ctrl+Enter is "open in a new tab", which core has no way to mean.
     if (documents && e.key === "Enter" && e.target.closest("a[href]")) return;
-    const editable = e.target.matches("input[type=text], input[type=password], textarea");
     // Inside a field the arrows and Home/End are the caret's, and
     // `editing.zig` is what moves it — so they go through like any
     // other key. Space in a field is text, not activation.
     if (editable && e.key === " ") return;
     e.preventDefault();
+    // Every key below acts on a *range* when there is one — Backspace
+    // deletes it, a plain arrow collapses onto the end it points at,
+    // cut carries it off — so core is told what the reader has selected
+    // before it is asked to act on it. The reader may have made that
+    // selection with a drag, a double-click or a ⌘A this driver never
+    // saw (`sendSelection`).
+    if (editable) sendSelection(e.target);
     nk.nokre_dom_key(key, mods(e));
     frame();
   });
@@ -546,6 +767,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     }
     if (composing || e.isComposing) return;
     e.preventDefault();
+    // What the edit is *about*. Every arm below either replaces the
+    // selection or deletes it, and the reader made it in the browser —
+    // dragging in a real field, double-clicking a word, ⌘A — so core's
+    // copy of it is only as fresh as this call. Before the edit and not
+    // after: an insertion replaces the range it was told about
+    // (`editing.insertText`), and one told about nothing appends.
+    sendSelection(e.target);
     if (e.inputType === "insertText" && e.data) {
       nk.nokre_dom_text(put(e.data));
     } else if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") {
@@ -557,17 +785,28 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       if (!data) return;
       nk.nokre_dom_text(put(data));
     } else if (e.inputType === "deleteContentBackward" || e.inputType === "deleteByCut") {
-      // A cut's clipboard write already happened on the `cut` event;
-      // what is owed here is the deletion. core's editing model is a
-      // caret, not a range, so it deletes what one Backspace deletes.
+      // A cut's clipboard write already happened, on the browser's own
+      // `cut` — the one half of a cut this driver does not touch, so
+      // the reader gets the flavours, the permission and the gesture a
+      // real field has. What is owed here is the deletion, and it is
+      // the *selection* the browser just carried off: the call above
+      // stated it, and Backspace over a range deletes exactly that
+      // range (`editing.editKey`).
       nk.nokre_dom_key(KEY_BY_CODE.Backspace, 0);
     } else if (e.inputType === "deleteContentForward") {
       nk.nokre_dom_key(KEY_BY_CODE.Delete, 0);
+    } else if (e.inputType === "historyUndo" || e.inputType === "historyRedo") {
+      // A field's history is core's now (`App.edit_history`), so these
+      // are the two keys rather than nothing: the browser's own undo
+      // stack was emptied by every `preventDefault` above it and would
+      // step back to a value nobody typed. They arrive here from the
+      // edit menu and the trackpad gesture; the chord itself is claimed
+      // a lane earlier, in `chordKey`.
+      nk.nokre_dom_key(KEY_BY_CODE[e.inputType === "historyUndo" ? "undo" : "redo"], 0);
     } else {
-      // Deliberately unhandled: history undo/redo has no tree-side
-      // meaning (the tree is the history), and formatting inputs cannot
-      // apply to a plain field. preventDefault above has already
-      // refused the DOM's own edit.
+      // Deliberately unhandled: a formatting input cannot apply to a
+      // plain field. preventDefault above has already refused the DOM's
+      // own edit.
       return;
     }
     frame();

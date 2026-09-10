@@ -176,10 +176,12 @@ calls `ch`, so both substrates draw the same width — and its *words* never
 enter the tree, so neither substrate can leak them. `nokre.pendingChars(n)`
 is the same thing for a screen with no example string to hand.
 
-It is a *value*, not a paragraph: a run of markers has no spaces, so it
-cannot wrap, and it is clamped at 120 characters. A wait the shape of
-prose is several pending lines, which is the consumer's call — the same
-call as the one below.
+It is clamped at 120 characters. A run wider than its column breaks at
+the edge on both substrates — the raster's `wrap.breakWord`, the DOM's
+one cell per character — so a long one is several pending lines, each
+still a block. A wait the shape of prose is still the consumer's call,
+the same call as the one below: size it by a sentence's worth of
+example, not a paragraph's.
 
 **A list of unknown length is the consumer's call.** Draw a fixed few
 rows and name each by the value it is waiting for:
@@ -921,8 +923,11 @@ The split is what the row *is*. Actions have to stay reachable and a user
 needs all of them, so one row plus a control that opens the rest is the
 honest shape; folding three status chips behind `More` would hide state
 behind a press, and clipping them would hide it outright. Wrapping is
-also the answer for the rows that cannot fold — a lone action, and a row
-of actions inside a sheet, which has no second sheet to fold into.
+also the answer for the one row of actions that cannot fold — a lone
+action, which a control named `More` would hide twice. Where the row
+stands changes nothing: a row of actions inside a sheet folds like a
+screen's, its tail opening as a sheet stacked over the one it is in
+(since 2026-09-09, when sheets began to stack).
 
 Width is not an input to the choice. A row is a row of actions or it
 isn't, at every viewport, so resizing the window can change where a line
@@ -1471,20 +1476,32 @@ Details worth knowing:
   focus lands on the control that now holds it; when the row grows back,
   focus moves off the departing control to the row's trailing end
   (WCAG 3.2.2).
-- **Pressing an action in the sheet closes it**, the way choosing a row
-  closes a picker — unless the press did nothing (disabled, or work
-  already running), in which case the sheet stays where it is.
-- **Not inside a sheet.** There is one sheet at a time, so a row already
-  inside one has nowhere to fold to; it keeps every action it was given
-  and [wraps](#a-row-too-narrow-for-its-children) to a second line. A
-  sheet is a handful of controls, not a toolbar.
+- **Pressing an action in the sheet pops it first, then runs the
+  action**, the way choosing a row closes a picker — unless the press
+  did nothing (disabled, or work already running), in which case the
+  sheet stays where it is. The order matters inside a sheet: the row's
+  own sheet stands again before the action runs, so a Cancel found in
+  the tail closes the sheet it was declared in, not the tail. On a
+  screen the last sheet's departure rebuilds the screen, and that
+  rebuild lands after the action, from the state the action wrote.
+- **Inside a sheet too.** A row of actions inside a sheet folds like a
+  screen's, and its tail is a sheet stacked over the one it is in
+  ([the sheet stack](#sheet)). The covered sheet's node goes while the
+  tail stands — the tail lists copies, restated whole as always — and
+  is rebuilt from state when the tail goes. Esc from the tail returns
+  to the sheet with the row, the keyboard on its `More` control once
+  layout has folded the row again: the same place Esc from a screen's
+  tail returns it to.
 - **The sheet closes if what it lists stops being true.** The window
   grew and the actions are back on the row; it folded deeper and the
   open list no longer names everything hidden; or a folded original
   changed *state* — its words, `disabled`, `in_progress`, progress,
   form (emphasis, icon, or provider mark), a link's destination, or the action
   itself. The sheet restates each action whole, so on any of these it
-  is dismissed rather than left saying something untrue.
+  is dismissed rather than left saying something untrue. A screen's
+  row can move under its tail this way; a sheet's row went with its
+  sheet's node, so its tail goes on the first re-present instead — a
+  `refresh` under it — and the sheet with the row answers the state.
 - **In tests**, a folded action is not addressable by its words:
   `getByLabel` reports it as folded, and `tap` on a node id you kept
   fails with `error.Folded`. Reach it the way a user does — `tapLabel("More")`,
@@ -1768,8 +1785,9 @@ platforms with an on-screen keyboard: Android's return key reads
 "Search", iOS's takes the Search return type, and the web's field gets
 `enterkeyhint="search"`. A field with nothing wired promises nothing,
 which is why the label follows the action rather than a flag).
-Editing is UTF-8 codepoint-aware (backspace/delete,
-←/→, Home/End). `composition` holds in-progress IME text, rendered dark
+The field does not scroll sideways: a value or a
+placeholder wider than it is cut at the outline, never painted past it.
+`composition` holds in-progress IME text, rendered dark
 with an underline, and `composition_cursor` is where the IME's own caret
 sits *inside* it — during a CJK conversion the user moves back through
 the reading to fix a syllable, so the caret is drawn there rather than
@@ -1778,8 +1796,62 @@ a builder sets neither. IME is live on every platform, the web included
 ([internals/platform-shells.md](internals/platform-shells.md) has the
 per-shell contract).
 
+#### Editing, and what a selection is here
+
+A field carries a `cursor` and an `anchor`, both byte offsets. The
+anchor is `null` for a plain caret — a field that says where the caret
+goes and nothing else holds a caret — and an offset when there is a
+**selection**, which every operation is then written in terms of:
+typing, a paste, an IME commit, Backspace and Delete all *replace* it.
+Both are the app's to set (`.anchor = 0` with the cursor at the end
+opens the field selected) and both are clamped to the value at every
+door they arrive through, so a stale offset from a rebuild or a shell
+can never split a character. Read the pair back with `selection()`,
+which orders it.
+
+Motion and deletion step by **grapheme cluster**, not by codepoint: `e`
+plus a combining accent is one Backspace, and so are a flag, a keycap
+and an emoji family. Words are the platform's word semantics — letters
+of any script, digits (Persian ones included) and `_` are word
+characters, and everything else is a break.
+
+The keys, by name rather than by chord, because the chord is each
+platform's and the shell maps it (`docs/internals/platform-shells.md`):
+←/→ and Home/End move; Shift extends instead of collapsing; a plain
+←/→ over a selection collapses it to that end without moving further;
+`word_left`/`word_right` move a word; `delete_word_backward`/
+`delete_word_forward` take a word, or the selection when there is one;
+`select_all`, `copy`, `cut`, `undo`, `redo`; Escape ends an IME
+composition, or — with none — collapses the selection.
+
+**Undo is per field and bounded.** A run of ordinary typing folds into
+one entry, so taking back a word is one press; a space, a deletion, a
+paste and an IME commit each open the next. The stack is forgotten when
+the keyboard leaves the field, because undo everywhere on a screen is a
+verb nobody can predict.
+
+On touch, a **long press** inside the field selects the word under it,
+raises two grab handles under the ends of the range, and opens an edit
+row — Cut, Copy, Paste, Select all, framework chrome in the app's
+language, with Cut and Copy simply absent while nothing is selected. A
+secondary click on a desktop opens the same row. Dragging a handle
+moves that end; dragging from a press inside the field selects from
+where it landed.
+
+**Paste is the platform's verb, never a read.** The row's Paste asks
+the shell to paste; the shell reads its own clipboard on that action
+and delivers the bytes as ordinary text input. There is no call that
+answers what is on the clipboard ([services.md](services.md)).
+
+A selected run is drawn as a `.g6` band with its glyphs at `.g11` — the
+same two tones a selected chip and an off control spend — and the web's
+`::selection` uses them too.
+
 While the field holds focus, a pointer release that lands on nothing
-interactive clears it, and on-screen keyboards follow focus down. That
+interactive clears it, and on-screen keyboards follow focus down. A
+keyboard rising shortens the visible area rather than covering it, and
+the field is revealed into what is left — through its own scroll region
+first, then the window — so typing never happens under the keys. That
 is dismissal without spending a pixel of chrome — no Done bar, no
 tap-catching scrim — the least intrusive answer, the same restraint
 that keeps content from scrolling itself.
@@ -1787,8 +1859,13 @@ that keeps content from scrolling itself.
 `obscured` makes it a password field: every codepoint (composition
 included) renders as a bullet at a fixed advance, and the value is
 withheld from assistive tech (announced as a secure field) and from
-test traces. Editing, placeholder, and caret behavior are unchanged.
-The placeholder stays plain — it is a hint, not the secret.
+test traces. Editing, placeholder, and caret behavior are unchanged —
+it selects and deletes like any other field, because someone fixing a
+mistyped password needs the same motions everyone else has. **Copy and
+cut carry nothing off it** (silently, like every inert key): the whole
+of the flag is that the value does not leave, and the clipboard is
+where it would. The placeholder stays plain — it is a hint, not the
+secret.
 
 #### `problem`: what is wrong with the value
 
@@ -1901,8 +1978,11 @@ belongs to the page, so the default's reason survives the exception.
 The indicator is the same quiet one a `scroll_region` draws. ↑/↓ move
 the caret between visual lines preserving its horizontal position;
 Home/End go to the bounds of the caret's line (the whole value is a ↑/↓
-walk away). Everything else — codepoint-aware editing, placeholder, IME
-composition — matches `text_input`, `problem` and `disabled` included:
+walk away), and Shift extends the selection across either, so a range
+spans wrapped lines and is drawn as one band per line it crosses.
+Everything else — the range model, cluster and word motion, undo, the
+edit row and its handles, placeholder, IME composition — matches
+`text_input`, `problem` and `disabled` included:
 the words hang under the field the same way, the field is announced
 invalid the same way, and a multi-line value goes on the wire the same
 way. Semantics: a multiline text field carrying the value.
@@ -2653,7 +2733,12 @@ out from under a reader's own keyboard focus.
 ### `sheet`
 The only modal surface, declared to the app as a *builder* — a fn the
 framework calls to build the sheet, and calls again whenever it must be
-built again — never appended directly to build content:
+built again — never appended directly to build content. Sheets
+**stack** (since 2026-09-09): `App.sheets` holds one level per open
+sheet, bottom first, and the tree holds the top one's node alone —
+rendering, focus scope, hit testing, the scrim and the a11y snapshot
+see the one dialog they always saw, and what stands underneath is kept
+builders, not nodes.
 
 ```zig
 const Sheet = enum(u32) { filter = 1, saved_views }; // this controller's sheets, named
@@ -2703,40 +2788,75 @@ you write it.)
 That one declaration is the whole lifecycle:
 
 - **State changed under the open sheet?** Call `openSheetAs` again with
-  the same name and builder — the sheet is rebuilt in place, never
-  stacked. (`App.refresh` does it for you when a sheet owns the
+  the same name and builder — the sheet on top is rebuilt in place,
+  never stacked. (`App.refresh` does it for you when a sheet owns the
   screen.) The builder always starts from a tree with no sheet in it
-  (the framework takes the open one down first), so building is always
-  building from scratch, and a builder never calls `dismissSheet`
-  itself.
-- **The screen reloaded?** The builder runs again over the rebuilt
-  screen, unasked: a sheet survives `reload` the way scroll does,
-  because a reload is the same screen answering changed state. A real
-  navigation is a different screen, and drops the sheet.
-- **Done with it?** `App.closeSheet()` — the sheet comes down and the
-  screen behind is rebuilt from the state the sheet just changed. That
-  pair is one verb because it was one pair at every close handler ever
+  (the framework takes the standing one down first), so building is
+  always building from scratch, and a builder never calls
+  `dismissSheet` itself. Focus rides the rebuild the way it rides a
+  reload — re-found by name, the caret with it — so a field whose
+  `on_change` re-presents the sheet keeps the on-screen keyboard up
+  between two letters. *Its own* sheet is the one on top with the same
+  name, the same controller and the same builder — the name alone
+  would make two controllers' first sheets one sheet, and the name and
+  controller alone would make a controller's two unnamed sheets one.
+- **A sheet over the sheet?** The same door: `openSheetAs` with
+  another name — or another controller's, or the untyped `openSheet`
+  with another builder — while a sheet stands **stacks** the new one
+  over it. There is one verb and no push (decided 2026-09-09, after a
+  push pair was tried). The new sheet takes the tree, the covered one
+  stays open underneath as its kept builder, and when the one on top
+  goes the covered one is **built again from the state as it is
+  then**, the keyboard returning to the stop it held there by name,
+  caret and all. `refresh` re-runs the top builder only; a covered
+  builder answers changed state when it returns to the top.
+  `sheetTagAs` and `openSheetTag` answer for the top — a sheet of yours
+  under someone else's is not the one the user is looking at.
+- **Replace the sheet instead?** That is your act, not the door's:
+  take the standing one down first — `App.dismissSheet()` (no rebuild
+  of the screen) or `App.closeSheet()` (the screen rebuilt when the
+  stack empties) — and then open. A controller that used to open its
+  next dialog straight over its last one now finds the last one still
+  underneath; dismiss first if that was a replacement.
+- **The screen reloaded?** The top builder runs again over the rebuilt
+  screen, unasked, and every level under it is kept: a sheet survives
+  `reload` the way scroll does, because a reload is the same screen
+  answering changed state. A real navigation is a different screen,
+  and drops the whole stack.
+- **Done with it?** `App.closeSheet()` — the sheet on top comes down,
+  the one under it stands again, and when it was the last the screen
+  behind is rebuilt from the state the sheets just changed. That pair
+  is one verb because it was one pair at every close handler ever
   written; the rebuild is the deliberate `reload` (closing a sheet is
   the user's own gesture) and its error is unactionable, so it is
   swallowed there rather than at your call site. A Cancel button wires
   straight to it — `.on_press = .bind(nokre.App.closeSheet, app)`, the
   App being the only state the verb takes — so a controller declares no
   close of its own. The framework's own dismissals go through the same
-  verb (Esc, the scrim, the ×), which is what lets `App.refresh` leave
-  the content behind a live sheet alone: whatever the user writes under
-  their own dialog is on screen the moment the dialog goes.
+  verb (Esc, the scrim, the ×, each popping one level), which is what
+  lets `App.refresh` leave the content behind a live sheet alone:
+  whatever the user writes under their own dialog is on screen the
+  moment the last dialog goes. (`App.dismissSheet` is the pop without
+  the rebuild, for a caller about to build the screen itself.)
 - **The sheet closed?** However it happened — Esc, the close control, a
   tap outside, `closeSheet`, `dismissSheet`, a navigation — the builder
-  is dropped (so `sheetTagAs` already answers null) and its optional
-  `on_dismiss` told. That callback is for *work* a closure owes — free
-  a held row, cancel a request the dialog was waiting on — not for
-  recording that the sheet closed, which is now the framework's answer.
-  A sheet that owes such work declares the `SheetBuilder` struct itself
-  and hands it to `App.openSheet`, the untyped door underneath:
-  `on_dismiss` is a second function over the same context, and binding
-  fills a pair, not a struct. A builder that presents nothing has
-  *declined* — its subject vanished — and is dropped quietly, with no
-  `on_dismiss`: the state already knows.
+  is dropped (so `sheetTagAs` already answers null, or the sheet now on
+  top) and its optional `on_dismiss` told, before the builder under it
+  runs, so that one reads the state the closure wrote. A navigation
+  tells every level's, top-down. That callback is for *work* a closure
+  owes — free a held row, cancel a request the dialog was waiting on —
+  not for recording that the sheet closed, which is now the framework's
+  answer. A sheet that owes such work declares the `SheetBuilder`
+  struct itself and hands it to `App.openSheet`, the untyped door
+  underneath: `on_dismiss` is a second function over the same context,
+  and binding fills a pair, not a struct.
+- **A builder that presents nothing has declined** — its subject
+  vanished — and its level is dropped quietly, with no `on_dismiss`:
+  the state already knows. The level under it builds instead, and so
+  on down; a stack that empties this way leaves the screen behind
+  standing as it is, since no user gesture closed anything, except
+  under `closeSheet` and `refresh`, which go on to rebuild the screen
+  once nothing owns it.
 
 Both doors answer a **declared** error set, `App.OpenSheetError`:
 `OutOfMemory`, or `SheetBuildFailed` when the builder itself said no.
@@ -2758,10 +2878,11 @@ behind the sheet is inert — unreachable by Tab, tap, and scroll — and is
 dimmed by a 1px `.paper` checkerboard scrim, which keeps the pixels
 inside the thirteen-gray palette. The close control, Esc and a tap on
 the scrim all take the `App.closeSheet` road — one user gesture, one
-outcome, screen behind rebuilt — and focus returns to the element that
-had it. (`App.dismissSheet` is the same closure *without* the rebuild,
-for a caller that is about to build the screen itself.) One sheet at a
-time; a second `presentSheet` is rejected at the call site.
+outcome, the sheet underneath standing again or the screen behind
+rebuilt — and focus returns to the element that had it. One sheet
+*node* at a time: a second `presentSheet` inside one builder is
+rejected at the call site, and a sheet over a sheet is `openSheet`'s
+while one stands.
 
 It appears in place, fully formed — no slide, no fade (WCAG 2.3.3, and
 nokre has no animation to begin with).

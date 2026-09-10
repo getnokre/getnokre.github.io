@@ -476,6 +476,8 @@ plus the field camel-cased at its underscores:
 | `important` / `other` | `chromeImportant` / `chromeOther` |
 | `copied` | `chromeCopied` |
 | `more` | `chromeMore` |
+| `cut` / `copy` | `chromeCut` / `chromeCopy` |
+| `paste` / `select_all` | `chromePaste` / `chromeSelectAll` |
 | `regions` | `chromeRegions` |
 
 A catalog missing one of them does not compile — the posture the rest
@@ -867,10 +869,18 @@ the edit in front of you belongs on the build that edit runs.
   its directory, the set `translate-arb --dir` levels — and a locale
   with no file in the vocabulary directory is left alone.
 
-  Matching is by substring, which is what survives the morphology of
-  real destination languages: *halka* is inside *halkanın*, *Guthaben*
-  inside *Guthabenstand*, ارتباط inside ارتباطات. Four things are
-  normalized first, each because one language writes one word two ways
+  A destination matches at a **word start, whatever follows it**: the
+  term preceded by a non-letter or the edge of the value, then any
+  letters. What follows is the inflection or the compound the term
+  heads, which is what survives the morphology of real destination
+  languages — *halka* begins *halkanın*, *Guthaben* begins
+  *Guthabenstand*, ارتباط begins ارتباطات. What precedes is a different
+  word: *verschlüsselt* does not spend *Schlüssel* and *Passwort* does
+  not spend *Passphrase*, so a compound the term ends —
+  *Privatschlüssel* — is a phrase for the vocabulary to list
+  (`private key = Privatschlüssel`), the same way *Terms of Service*
+  already is. Four things are normalized first, each because one
+  language writes one word two ways
   — Turkish dotted and dotless i, the Arabic and Persian letter forms
   of a single letter, Persian harakat (optional orthography), and the
   zero-width non-joiner and tatweel, which are spacing rather than

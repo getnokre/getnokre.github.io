@@ -34,9 +34,9 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `toggle` | `switch` | on (carried as checked), focused, `disabled`; `in_progress`: disabled *and* busy, the value still carried, still a focus stop |
 | `checkbox` | `checkbox` | checked, focused, `disabled`; `in_progress` as `toggle` |
 | `copyable` | `button` | copied value carried, focused; a `status` child while acknowledged |
-| `text_input` | `text_field` | value, composition, focused; `problem` as the description, with `invalid` set; `disabled` alone, never with `busy` |
-| `text_input` (obscured) | `password_field` | value withheld — the `problem` is not |
-| `text_area` | `multiline_text_field` | value, composition, focused; `problem` and `disabled` as `text_input`'s |
+| `text_input` | `text_field` | value, composition, focused; the selection while the reader is in it, the caret being its collapsed case (below); `problem` as the description, with `invalid` set; `disabled` alone, never with `busy` |
+| `text_input` (obscured) | `password_field` | value withheld — and the selection's offsets with it; the `problem` is not |
+| `text_area` | `multiline_text_field` | value, composition, selection, focused; `problem` and `disabled` as `text_input`'s |
 | `list` / `list_item` | `list` / `listitem` | —; the derived marker is presentation and is never announced |
 | `code_block` | `code` | content announced whole, focused |
 | `blockquote` | `blockquote` | —; the attribution is words inside it |
@@ -158,6 +158,50 @@ tighter-fitting attribute and the one screen readers support least
 evenly — and that relation computes to the same accessible description
 the native snapshot carries. One property, two spellings.
 
+A field the reader is **standing in** carries where their selection is:
+byte offsets into the value, on cluster boundaries, the caret being the
+case where the two ends meet. Standing in is the field holding focus,
+or — while the edit row stands on it
+([elements.md](elements.md#text_input)) — the field that row was opened
+on, because a menu about a field is not leaving it. Every other field
+states nothing: a range on a field nobody is in is state, not a place.
+An **obscured** field states nothing either, and the length of what is
+selected goes nowhere rather than travelling in a range's clothes — the
+slot's whole contract is offsets *into the value*, and that value is
+withheld, so the only pairs inside it are dishonest ones. It is the
+same line the `problem` draws from the other side: the secret is what
+was typed, and offsets index exactly that.
+
+**Which backend carries it is the shortest list on this page, and the
+absences are decisions.**
+
+- **The AccessKit bridge — macOS, Windows, Linux — cannot express it
+  against this tree, and carries nothing in its place.** AccessKit
+  states a selection as two positions, each naming a node whose role is
+  a *text run* and indexing that run's own character table; nokre gives
+  a field no text-run children, so a position stated against the field
+  node would index a table that does not exist. The alternative was to
+  spell the fact into the node's description — "3 characters selected"
+  — and it is worse: an announcement no platform makes and no app
+  wrote, in the slot that holds the app's own words, doubled by any
+  screen reader already tracking a caret of its own. A fabricated
+  announcement is worse than silence.
+- **On the web there is nothing to carry.** A field is a real
+  `<input>`, so its selection is the browser's own — like the wrapping
+  around it — and core's copy is kept in step with it rather than
+  announced beside it ([internals/dom-substrate.md](internals/dom-substrate.md)).
+- **iOS and Android reach a caret through the text document, not
+  through this node.** `UITextInput` and an `InputConnection` *are* the
+  field while it is being edited, and both are answered from
+  `App.editableSnapshot` — a different door with a different audience,
+  which is why it carries an obscured field's offsets where this one
+  will not.
+
+The fact is not left unasserted by any of that: it is pinned in nokre's
+own snapshot tests, read by the harness's `expectSelection` and
+`expectSelectedText` ([testing.md](testing.md#assertions)), and held to
+cluster boundaries by the audit's `malformed_selection`.
+
 One node is derived rather than mirrored from an element: an
 acknowledged `copyable` (see [elements](elements.md#copyable)) gains a
 `status` child labeled `Copied`, the same polite live region a notice
@@ -193,9 +237,10 @@ active layer: normally the whole window, but while a sheet or the notices
 pane is open, only that layer — the background is inert, so there is
 nothing outside the
 scope to reach. This is not a focus trap in the WCAG 2.1.2 sense: Esc
-always dismisses the sheet (or minimizes the pane), and focus returns to
-the element that opened
-it. The focus indicator — one 2px `ink` stroke, either standing 2px
+always dismisses the sheet on top (or minimizes the pane), and focus
+returns to the element that opened it — into the sheet it covered, by
+name, when sheets are stacked. The focus indicator — one 2px `ink`
+stroke, either standing 2px
 clear of the element or taking over the outline the element already
 draws, never both at once — comes from the renderer, identically on
 every platform. The focus *position* always exists and is always
@@ -415,6 +460,18 @@ fails on:
   — so what reaches it is a controller that set the reason and forgot
   to lower the flag, a bug the app cannot see and every screen reader
   can
+- `malformed_selection` — a text field whose selection is not a place
+  a caret can be: either end past the value, or inside a character
+  rather than between two. Both ends face `segment.clusterFloor`, the
+  one vetting rule every road into a field already runs — `append`,
+  `setContent`, and a shell stating a range — so the rule states that
+  the rule held rather than offering a second opinion about what a
+  caret position is. What it catches is a road that skipped it: a
+  `cursor` written into the element by hand, or a future edit that
+  gives some new caller a way to move an offset without the clamp. The
+  cost of a miss is not cosmetic — a range that splits a codepoint
+  hands the measurer, the renderer's highlight and the snapshot above
+  invalid UTF-8 out of a field the user is holding
 - `empty_list` — a `list` with no items. This one is not about
   mutation: a list is appended before its items exist, so `append` has
   nothing to check and the whole-tree pass is the only place the rule

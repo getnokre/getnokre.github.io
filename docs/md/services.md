@@ -39,7 +39,7 @@ internals doc.
 | --- | --- | --- |
 | `secure_store` | Encrypted key/value for small secrets: get, set, delete, list. | **Working** — five native backends; web is session-scoped |
 | `package_info` | App identity: name, id, version, build, installer source. One struct. | **Working** |
-| `clipboard` | One verb: copy UTF-8 text out. Write-only by design. | **Working** |
+| `clipboard` | Copy UTF-8 text out; ask the platform to paste. Still no read. | **Working** |
 | `deep_link` | Inbound URL at launch and while running. Delivers the URL; routing is the app's. | **Working** — native + web; Windows is custom-scheme only |
 | `worker` | Long-lived compute actors off the UI thread: typed messages in, typed replies out, in order on the UI thread. | **Working** |
 | `http` | Request/response client: a request from any action, one typed `Result` back on the UI thread. | **Working** |
@@ -249,7 +249,7 @@ flow, the dev store's file format and its four gates, and why each
 refusal holds — is
 [internals/secure_store.md](internals/secure_store.md).
 
-### clipboard: one verb, write-only
+### clipboard: text out, and a paste the platform performs
 
 `app.copyText(utf8)` replaces the system clipboard with text — the
 whole surface. Activating a `copyable` element lands here
@@ -260,16 +260,29 @@ nothing, because there is no control it belongs to, and that screen's
 feedback stays the screen's business.
 
 Write-only is the design: reading the clipboard is a permission prompt
-and a privacy posture nokre refuses to take, and paste already
-arrives as ordinary text input through the platform's IME/text events.
-Nothing links — every shell exports the same C hook (NSPasteboard,
-UIPasteboard, the Win32 clipboard, `navigator.clipboard` on the web,
-ClipboardManager on Android, a `wl_data_source` selection on the Wayland
-shell on Linux).
+and a privacy posture nokre refuses to take. Nothing links — every
+shell exports the same C hook (NSPasteboard, UIPasteboard, the Win32
+clipboard, `navigator.clipboard` on the web, ClipboardManager on
+Android, a `wl_data_source` selection on the Wayland shell on Linux).
+
+`app.requestPaste()` is the other direction, and it is deliberately not
+a read: **a paste is the platform's verb on an explicit user action,
+never a read core can ask for.** The call hands the ask to the shell,
+which reads its own clipboard right then and delivers the bytes back as
+ordinary text input — so by the time core sees a paste it is a typed
+insertion like any other, replacing the field's selection and taking
+its own place in the field's undo. Nothing is returned, and there is no
+call that answers what the clipboard holds. The framework's own Paste
+row calls it ([elements.md](elements.md)); an app with a paste control
+of its own calls it too. Every platform's paste verb — ⌘V, the edit
+menu, the long-press row, the browser's own paste — arrives the same
+way.
 
 In tests the app's mock journals every write, in order:
 `app.services.clipboard.copies()`, or the harness's
-`expectCopied(text)` ([testing.md](testing.md)).
+`expectCopied(text)` ([testing.md](testing.md)). The paste side is
+`primePaste(text)` — what the platform clipboard holds — and
+`pasteRequests()`, the count of asks.
 
 ### package_info: identity is declared, not discovered
 
@@ -282,11 +295,15 @@ comptime: the same four values on every platform, wasm included.
 Nothing is read back at runtime; instead the manifests are packaging
 *outputs*. The emitters in
 [src/packaging/packaging.zig](../src/packaging/packaging.zig) generate
-them all from this one declaration — `Info.plist`, `AndroidManifest.xml`
-(plus the identity properties Gradle reads), the web page and its app
-manifest (which a web build folds into the site it hands back —
-[getting-started.md](getting-started.md)), and the app icon in each
-platform's format — so no file can
+them all from this one declaration — `Info.plist` and
+`App.entitlements` (written on every build, an empty dict when no
+service signs for a capability, so an Xcode project's static
+`CODE_SIGN_ENTITLEMENTS` points at it unconditionally and a service
+linked later lands in the signature without a project edit),
+`AndroidManifest.xml` (plus the identity properties Gradle reads), the
+web page and its app manifest (which a web build folds into the site it
+hands back — [getting-started.md](getting-started.md)), and the app
+icon in each platform's format — so no file can
 become a second source of truth or need hand-writing; generated ones
 stay gitignored. The icon is derived too: a deterministic grayscale
 mark computed from the id
@@ -295,8 +312,8 @@ no-custom-visual-identity refusal ([introduction.md](introduction.md))
 applied to the home screen. The same id draws the same mark everywhere,
 forever; renaming the display name keeps it.
 
-An app that has real art for Apple's platforms declares it, and that is
-the one packaging *input* nokre takes:
+An app that has real art declares it, and that is the one packaging
+*input* nokre takes:
 
 ```zig
     .apple_icon = b.path("assets/AppIcon.icon"),   // requires .pkg
@@ -307,23 +324,81 @@ tool exports, holding `icon.json` and the layer images it names under
 `Assets/`. That format earns the exception by being a declaration
 itself: appearance (light, dark, tinted), lighting, shadow and the glass
 material are values over vector layers, and every idiom's pixels are
-compiled by Xcode's `actool`, never by nokre — which resamples nothing,
-re-encodes nothing, and models none of the schema. The bundle is checked
-where it is declared (a `.icon` directory, a parseable `icon.json`, every
-layer image it names present) and delivered whole to
-`pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon` — one icon, both
-Apple platforms, which is Icon Composer's own claim, not a duplication
-nokre invented. It replaces the derived appiconset rather than joining
-it: `actool` resolves the app icon by name, and two answers named
-`AppIcon` is one too many. **Xcode 26 is the floor** — an older `actool`
-cannot compile a `.icon` at all, and the answer on one is to declare no
-`apple_icon` and ship the derived mark. Android and the web keep the
-mark either way; `.icon` is an Apple format and nothing else reads it.
-Pointing an Xcode project at the delivered bundle — and assembling the
-macOS `.app` around what `pkg/macos/` carries — is
-[getting-started.md](getting-started.md).
+compiled by Xcode's `actool`, never by nokre — which models none of the
+schema. The bundle is checked where it is declared (a `.icon` directory,
+a parseable `icon.json`, every layer image it names present) and
+delivered whole to `pkg/ios/AppIcon.icon` and `pkg/macos/AppIcon.icon` —
+one icon, both Apple platforms, which is Icon Composer's own claim, not
+a duplication nokre invented. It replaces the derived appiconset rather
+than joining it: `actool` resolves the app icon by name, and two answers
+named `AppIcon` is one too many.
 
-An app whose mark is real art *everywhere* states that too, in the
+#### The Apple icon is rendered
+
+**Since 2026-09-10 the bundle is the icon everywhere, not only on
+Apple's platforms.** While the build graph is assembled nokre draws the
+bundle flat — the fill, then every layer at its own box, scale and
+translation, first-listed on top, at its opacity — into a 1024 square
+(`packaging.flat_icon`), and runs `xcrun actool` over it once, for
+macOS 26, which yields Apple's own `.icns`. The square is the master
+every Android mipmap, every web icon and the tab glyph are area-averaged
+from, and the `.icns` lands in `pkg/macos/AppIcon.icns` as actool wrote
+it — so a launcher and a browser tab show the picture the iPhone shows,
+and the Dock shows Apple's rendering of it.
+
+**Flat, and drawn by nokre, because actool cannot draw it flat.** Apple's
+compile of a bundle carries the Liquid Glass the OS will draw it under —
+a bezel around the whole icon, a specular, a shadow, a translucency —
+and under an Android launcher's circle or a browser tab's square the
+bezel is cut at the edge midpoints, so the corners read as broken. No
+manifest key turns the bezel off: a fill with no layers renders it too
+(Xcode 26.6, measured 2026-09-10). So the non-Apple master is nokre's
+composite of the manifest's geometry, and the material — `glass`,
+`specular`, `shadow`, `translucency`, `lighting`, `blur-material`, and
+every `-specializations` appearance variant — is read by nobody: the
+flat picture is the default appearance, layers in their own colours (or
+one solid gray where the layer says so), on the background fill, edge to
+edge. The geometry is actool's, measured on its own render with the
+material off: a layer's box is the SVG's width/height (viewBox when
+unstated) times `scale`; `translation-in-points` moves it right and
+down, a point a pixel; the first entry of `groups` and of `layers` is
+the topmost. Layers are SVG through nokre's rasteriser — the mark's
+subset, refused by name where it falls outside — or PNG through its
+reader. What the flat draw cannot do it refuses rather than
+approximates, naming the layer and the Icon Composer setting: a
+background or layer fill that is not one solid gray, a blend mode other
+than normal, a hue anywhere.
+
+The render is *not* placed in the derived mark's footprint: a square
+row takes it whole, and an Android adaptive foreground takes it at the
+visible 72 of the 108 dp canvas on the render's own corner field, which
+is the rule iOS applies — full bleed under the platform's own mask. An
+OEM's circle therefore crops what the superellipse would have kept, and
+that is the platform's mask doing its job on the same picture, not a
+second icon; `icon.adaptive_visible` is the one constant that would
+zoom past it.
+
+What `.mark` still feeds with a bundle declared: the share card, and
+nothing on a launcher or a tab. In particular the adaptive
+`favicon.svg` is not written — it is the mark's glyph, and a tab that
+showed it would be the one surface not showing the render.
+
+The actool compile is cached under `.zig-cache` by `std.Build.Cache`,
+keyed on the bundle's every file, actool's own binary and the argv, so
+it runs once per change and a cache hit costs a directory walk; the flat
+draw is a few vectors rasterised in integers and is not cached. Both are
+byte-stable — the `.icns` comes back identical run to run on one
+toolchain, and every PNG row is nokre's own integer pipeline — which is
+what a content-addressed deploy needs. **Xcode 26 on macOS is the
+floor**, for the `.icns`: a host with no `actool` fails the packaging
+tree naming it, and never falls back to the mark — a declared bundle
+whose render is missing ships nothing the mark could stand in for. An
+older `actool` cannot compile a `.icon` at all; the answer on one is to
+declare no `apple_icon` and ship the mark. Pointing an Xcode project at
+the delivered bundle — and assembling the macOS `.app` around what
+`pkg/macos/` carries — is [getting-started.md](getting-started.md).
+
+An app with a mark but no Icon Composer bundle states that in the
 option beside it. That is the next section.
 
 ### The mark is declared
@@ -435,11 +510,12 @@ shade — the adaptive favicon flips one fill, and a two-tone mark cannot
 ride that: flatten it, or declare a `.png` silhouette, which states up
 front that it carries no adaptive favicon.
 
-The declared mark and `apple_icon` are independent and compose: with
-both, Apple's platforms get the bundle its own tool compiles while
-everything else gets the master. With neither, every surface keeps the
-derived mark, which remains the default and the fallback — nothing
-layers one over the other.
+The declared mark and `apple_icon` are independent, and the bundle
+wins: with both, every launcher and tab shows the bundle drawn flat and
+the Dock actool's render of it ("The Apple icon is rendered", above),
+and the mark draws the share card alone. With neither, every surface keeps the derived mark,
+which remains the default and the fallback — nothing layers one over
+the other.
 
 ### The tab glyph
 
@@ -460,7 +536,8 @@ two pixels thinner than it had to be. So the master is cropped to its
 ink (`Master.inkBounds`, which the card reads too), scaled by its longer
 edge, and centred on the master's own field. The derived mark fills the
 same canvas as its 5×5 grid, whose paper cells are drawn rather than
-margin.
+margin, and a rendered Apple icon fills it as the picture it already
+is — there is no ink box to crop a full-bleed render to.
 
 Every entry is a complete PNG, and every field of the directory is read
 back out of that PNG's own header — an ICO whose directory disagrees
@@ -700,9 +777,11 @@ set, never declared — the always-linked `http` implies Android's
 `INTERNET`, `secure_store` implies nothing anywhere (Keychain and
 Keystore need no manifest entry) — each service's row lives with the
 emitters. One duplication survives, and it is Apple's: the Xcode
-project's `PRODUCT_BUNDLE_IDENTIFIER` belongs to the signing machinery,
-and Xcode fails the build if it disagrees with the declared id — drift
-is loud, never silent.
+project's `PRODUCT_BUNDLE_IDENTIFIER` belongs to the signing machinery.
+Xcode itself only warns when it disagrees with the declared id, so the
+template's build phase reads the generated `Info.plist` back and fails
+the build with both ids ([getting-started.md](getting-started.md),
+Part 13) — drift is loud, never silent.
 
 The in-repo examples consume the tree automatically (`zig build pkg` →
 `zig-out/pkg`; the Android example's Gradle regenerates it at every
@@ -716,12 +795,25 @@ that declares `pkg_*` gets the same tree as named write-files:
 
 ```zig
 const pkg = b.step("pkg", "Generate packaging manifests");
-pkg.dependOn(&b.addInstallDirectory(.{
+pkg.dependOn(nokre.addInstallExactDirectory(b, .{
     .source_dir = nokre.namedWriteFiles("pkg").getDirectory(),
-    .install_dir = .prefix,
     .install_subdir = "pkg",
-}).step);
+}));
 ```
+
+**The tree is installed as a replacement, never an overlay** — which is
+why the install goes through `nokre.addInstallExactDirectory` and not
+`b.addInstallDirectory`. std's install step copies the source in and
+removes nothing, so the prefix ends up holding the union of every
+declaration it has ever seen, and Xcode, Gradle or a static host then
+reads a file the declaration stopped emitting as if it were current.
+Added 2026-09-10, after a re-exported Icon Composer bundle with renamed
+layers left three retired SVGs inside a packaged `AppIcon.icon` that
+declared two; `icon.json` named only the live ones so actool ignored the
+rest, which is the quiet version of the same failure. nokre prunes the
+destination of what the source no longer carries before the copy, so the
+installed tree is exactly the generated one — the bundle, the rendered
+`ic_launcher` set, the web icons and the `.icns` alike.
 
 ```zig
 const nokre = b.dependency("nokre", .{
@@ -1035,7 +1127,11 @@ native blocks one visible thread per request on `std.http.Client` and
 nothing else (no pool hides under it, deliberately — the reason is
 [internals/http.md](internals/http.md#no-pool-under-the-native-transport),
 and one consequence is that a host's addresses are tried in sequence
-rather than raced), the web hands the job to the browser's `fetch`,
+rather than raced; another is that iOS and Android are *native* here
+too — Zig sockets, never NSURLSession or HttpURLConnection — so App
+Transport Security and Android's cleartext policy do not see these
+requests, and a plain-`http://` dev host needs no plist exception and
+no `usesCleartextTraffic`), the web hands the job to the browser's `fetch`,
 tests park the request until the test answers it — and the consumer
 contract never changes: no futures, no locks, no callback off the UI
 thread. Requests and
@@ -1155,22 +1251,30 @@ parsed for you; a URL is the app's to read.
 Like secure_store — and unlike http — it links, and linking requires
 `pkg_id`: the iOS entitlement and the Android assetlinks are keyed to the
 app's identity, and the domains the app claims drive the packaging
-derivation. Linking is the domains:
+derivation. The link and the claim are two declarations, and the claim
+implies the link:
 
 ```zig
 const nokre = b.dependency("nokre", .{
     // ...
     .pkg_id = @as([]const u8, "com.example.notes"),
-    // Claim the domains the OS should route into the app. Empty (unset)
-    // leaves the service unlinked; every setHandler call site is then a
-    // comptime error naming this fix.
-    .deep_link = @as([]const []const u8, &.{ "notes.example.com", "example.com" }),
+    // Claim the domains the OS should route into the app. Neither this
+    // nor `.deep_link` leaves the service unlinked; every setHandler call
+    // site is then a comptime error naming this fix.
+    .deep_link_domains = @as([]const []const u8, &.{ "notes.example.com", "example.com" }),
 });
 ```
 
+`.deep_link = true` alone links with no claim: the handler still lands
+the launch URL, a custom-scheme open and the web fragment, and the
+packaging derives none of the four artifacts below. That is what a
+build signed by a team that cannot provision associated domains
+declares — a personal Apple team is one — so the same app builds under
+it with the handler intact and without the entitlement.
+
 That one declaration lights up the packaging tree
 ([packaging.zig](../src/packaging/packaging.zig)): the iOS
-associated-domains entitlement (`ios/App.entitlements`), the Android
+associated-domains key in `ios/App.entitlements`, the Android
 App-Links `intent-filter` (`autoVerify`, one https `<data>` host per
 domain), and the two server files the developer hosts at each domain's
 `/.well-known/` — `assetlinks.json` and `apple-app-site-association`.

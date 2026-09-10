@@ -124,19 +124,27 @@ have already told you so.
 
 `tap(id)`, `tapLabel`, `tapLink(stop)`, `pressKey`, `typeText`,
 `composeText(composition, committed)` (full IME start→update→commit
-sequence), `selectOption(group_label, option)`,
+sequence), `paste(text)`, `selectOption(group_label, option)`,
 `swapSlots(label, a_words, b_words)`, `scroll(id, delta)`,
 `focusVia(id)`, `back()`, `edgePanBack()`.
 
-Five verbs sit above those primitives, because every consumer ends up
-wanting exactly them — both shipped apps wrote the same ones, with
+`paste(text)` is the platform's own paste verb with `text` on the
+clipboard: it primes the clipboard mock and makes the request, and the
+bytes come back through `on_text` exactly as a shell delivers them —
+replacing the selection, with one undo entry, into whatever is focused.
+Nothing is *read* from the clipboard by anyone, here or in an app: the
+service is write-only and a paste is the platform acting on a user's
+explicit verb ([services.md](services.md#clipboard-text-out-and-a-paste-the-platform-performs)).
+
+A tier of verbs sits above those primitives, because every consumer ends
+up wanting them — both shipped apps wrote the same ones, with
 the same fallbacks, before they moved here. Each names its control by
 **role plus accessible name**: a bare label stops being an identity
 the moment the chosen locale can change under it.
 
 They live one layer below the harness, in `testing.driver`, as free
 functions over `*App` that name no mock — because a *driver* against a
-real server needs the same five and can never hold a `HarnessApp`
+real server needs the same ones and can never hold a `HarnessApp`
 ([below](#driving-an-app-outside-zig-test)). The harness adds a trace
 step and a re-audit around each; a driver adds a wait in front. The
 ladder itself is written once.
@@ -177,17 +185,53 @@ ladder itself is written once.
   loudly, because no amount of scrolling brings one back — that one is
   `press`'s business.
 - `typeInto(label, text)` puts the caret in the named field and types,
-  appending like typing does. The label is looked up among the two
-  text-entry roles only (`text_input`, `text_area`), so the words can
-  never land on a control that merely shares them.
-- `clearField(label)` empties that field the way a user empties one: to
-  the end, then back over what is there. `clearField` then `typeInto`
-  is "leave this field holding exactly this" — two acts, because they
-  are two acts for a user, and a fixture whose fields start empty needs
-  only the second. It counts *bytes* as its budget, so a field holding
-  multi-byte text is emptied rather than nearly emptied, and it re-reads
-  the field by label between keystrokes, so a screen that rebuilds on
-  every edit does not strand it on a stale node.
+  appending like typing does — one codepoint per event, as a keyboard
+  delivers them, so a screen that rebuilds in `on_change` is rebuilt
+  under the driver once per letter, the way it is under a thumb. The
+  label is looked up among the two text-entry roles only (`text_input`,
+  `text_area`), so the words can never land on a control that merely
+  shares them.
+- `raiseKeyboard(height)` stands an on-screen keyboard of that height
+  the way the touch shells report one — a shorter viewport, the
+  home-indicator band under it — and core reveals the focused field on
+  the shrink; `lowerKeyboard()` puts the viewport back. A test about
+  what a typing user sees stands its field under one of these before
+  it photographs.
+- `clearField(label)` empties that field the way a user empties one:
+  select all, then one Backspace over the range. `clearField` then
+  `typeInto` is "leave this field holding exactly this" — two acts,
+  because they are two acts for a user, and a fixture whose fields
+  start empty needs only the second. **Two keystrokes, no budget**: it
+  used to walk to the end and count bytes back, because Backspace could
+  only take one character at a time, and a field now has a range — so
+  emptying one is a single edit, with one `on_change` and one undo
+  entry instead of one per character. The field is re-read by label
+  afterwards, so a screen that rebuilds on every edit does not strand
+  the verb on a stale node.
+- `select(label, start, end)` names a byte range in a field, `start`
+  the anchor and `end` the live end, so a Shift+arrow after one extends
+  from where it left the caret; equal offsets place a caret. An offset
+  past the value, or one *inside* a character, is a loud refusal
+  (`error.OffsetOutOfRange`, `error.OffsetInsideCluster`) rather than
+  the silent clamp a shell's offsets get: core is right to clamp a
+  platform's stale index, and a test naming a place no caret can be is
+  a scenario that would go on asserting about a range it never asked
+  for.
+- `dragSelect(label, from_offset, to_offset)` selects the same range by
+  dragging: press at one caret, travel to the other, release. The
+  pointer road rather than `select`'s, so a test about the drag
+  exercises the hit testing and the press-move under it — and it
+  refuses like `tap` does when the press would land on something else.
+- `longPress(label)` presses and holds inside the field, which is one
+  verb for a touch shell's long press and a desktop shell's secondary
+  click because they mean one thing. It selects the word under the
+  finger, raises the two handles and opens the edit row
+  ([elements.md](elements.md#text_input)) — the one verb that reaches
+  all three. It holds in the middle of the field's text box, moving to
+  the nearest place a finger fits when something is drawn over it;
+  *which* word that lands on is the screen's business, exactly as it is
+  for a person, so a test that means a particular range names it with
+  `select`.
 - `goTab(title)` crosses the nav to the destination with that title,
   whichever shape the nav is in
   ([elements.md](elements.md#navigation-chrome)): the
@@ -774,6 +818,21 @@ expectation can't be met there, a screen reader user can't meet it either.
   is the assertion that a field is **clean**, which is the shape the
   other half of every validation test wants: a form that refused a
   value and then accepted the correction.
+- `expectSelection(label, start, end)` — where the reader's selection
+  sits in a field, as byte offsets, the caret being the case where the
+  two ends meet. Read off the node's selection, so a range no screen
+  reader could be told about is one no test can assert: a field nobody
+  is standing in states none, and an obscured one withholds the offsets
+  along with the value they index
+  ([accessibility.md](accessibility.md#derivation)).
+- `expectSelectedText(label, text)` — the same fact as the bytes a
+  reader would hear read back, for the test where *which words* are
+  selected is the point and the offsets are arithmetic the fixture's
+  copy would break.
+- `expectPasteRequested()` — that the app asked the platform to paste.
+  That ask is the whole observable effect: the clipboard service is
+  write-only, so there is no read to journal, and what comes back is
+  the shell's bytes arriving as ordinary text.
 - `expectRoute(route)` — the screen on top ([routing.md](routing.md));
   pair it with `app.router.depth()` when the depth is the point, since
   a push and a `switchTo` land on the same route
@@ -1650,9 +1709,11 @@ screen it could not land on.
 `HarnessApp`: a `*App`, a `Pacer`, and **the harness's own verb names
 running the harness's own ladders**, each with a wait in front. It is
 not a copy of the harness and not a parallel vocabulary — `press`,
-`reveal`, `back`, `typeInto`, `clearField`, `selectOption`, `swapSlots`,
+`reveal`, `back`, `typeInto`, `clearField`, `select`, `dragSelect`,
+`longPress`, `selectOption`, `swapSlots`,
 `goTab`, `expectPresent`, `expectAbsent`, `expectDestination`, `expectRoute`,
-`expectValue`, `expectProblem`, `expectDisabled`, `expectEnabled`,
+`expectValue`, `expectProblem`, `expectSelection`, `expectSelectedText`,
+`expectDisabled`, `expectEnabled`,
 `expectNotified` mean here exactly what they mean in a unit test,
 because the ladder under each is the same function in `testing.driver`.
 `expectGone` is the one that is *not* on that list, and it reads like an
@@ -1686,7 +1747,7 @@ try d.expectPresent(.heading, "Your circles");
 try d.expectRoute("circles");
 ```
 
-Six rules the set follows, each of them a decision:
+The rules the set follows, each of them a decision:
 
 - **Every acting verb re-audits**, exactly as the harness's do. That is
   what makes driving by accessible name safe: two live controls sharing
@@ -1705,6 +1766,21 @@ Six rules the set follows, each of them a decision:
   nothing (`error.NotSubmittable`, which a `text_area` also gets,
   because its return key makes a newline). A scenario that "submitted"
   into a no-op would be asserting against itself.
+- **`paste` and `expectPasteRequested` are the two verbs that could not
+  cross, and the reason is the mock.** Priming a clipboard is a mock's
+  act and counting the asks is reading a mock's journal; a driver
+  against a real shell holds neither. What it holds instead is the
+  platform clipboard, which `app.requestPaste()` asks for directly —
+  and the only half a live platform makes observable is the outcome,
+  which is the field's value. Every other verb of the selection set
+  crossed: `select`, `dragSelect` and `longPress` name no mock, and so
+  do the two assertions.
+- **`expectSelection` and `expectSelectedText` do not wait**, and it is
+  `expectBusy`'s argument rather than `expectAbsent`'s: a selection is
+  not something a reply brings, it is the outcome of the verb the
+  driver just called, so waiting for one to appear would be waiting on
+  a transient — and a rebuild that dropped it is a defect the verb
+  should report rather than sit through.
 - **`press` checks the fold without waiting.** A control its row folded
   away is invisible to every query, so waiting a full deadline to
   discover that — and another for a "More" that is not there either —

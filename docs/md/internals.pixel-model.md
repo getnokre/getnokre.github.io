@@ -214,6 +214,35 @@ the shim ignores anything else by design.
   proportional to 1×.
 - Run widths are ceiled to integers (`hsk_text_width`), so layout never
   underestimates and wrap points are integer-stable.
+- A surface rasterises in horizontal bands, in parallel, and the bytes
+  are the single surface's ([nokre_skia.cpp](../../shim/nokre_skia.cpp),
+  the bands section): draw calls are recorded and replayed when the
+  pixels are asked for, each band an `SkSurface` over its own rows of
+  the one frame, so each pixel is one band's and every band sees every
+  op in order. Rects, lines, the dither and glyph masks are per pixel —
+  a clip only decides which pixels are written — so a band draws them.
+  An anti-aliased path is not: Skia chops a path at the clip's bounds
+  when the path exceeds them and subdivides the chopped piece
+  differently, so a rounded fill or stroke whose rows cross a band edge
+  is drawn by the calling thread on the whole surface between the band
+  segments, under the same clip stack, exactly as the single surface
+  draws it. The band count is a platform property, stated in
+  [canvas_skia.zig](../../src/render/skia/canvas_skia.zig)'s
+  `renderThreads`: the five native shells get the *performance* cores —
+  on a big.LITTLE phone each small core added lengthens the slowest
+  band and the frame with it (a 2+6 tablet: one thread 14.8 ms, two
+  12.7, four 13.8, eight 15.0) — and the web, which has no threads and
+  no Skia, would get one band on the same path. `tests/goldens/band-edges.ppm`
+  was minted on the single surface and holds every kind of ink across
+  every band edge.
+- Measured widths are memoised
+  ([measure_memo.zig](../../src/render/measure_memo.zig)): layout asks
+  for a screen's every run on every frame — ~700 on a statement list,
+  wrap growing each line a word at a time — and a scroll changes none
+  of the bytes. A width is a pure function of the bundled faces, so the
+  memo can skip HarfBuzz for a run it has seen and can never answer a
+  different number. On a 1600x2560 tablet it took a scroll frame from
+  27 ms to 15 ms, of which shaping is now the 1 ms the draw path spends.
 
 ## The type scale
 

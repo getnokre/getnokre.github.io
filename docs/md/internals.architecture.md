@@ -47,7 +47,9 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/app.zig](../../src/core/app.zig) | the App struct: state, lifecycle, dispatch |
 | [src/core/input.zig](../../src/core/input.zig) | press/release, key handling, hit testing |
 | [src/core/scrolling.zig](../../src/core/scrolling.zig) | the scroll chain: regions, horizontal tracks, the gesture lock |
-| [src/core/editing.zig](../../src/core/editing.zig) | text-field editing, IME protocol |
+| [src/core/segment.zig](../../src/core/segment.zig) | grapheme cluster and word boundaries — the subset of UAX #29 a caret steps by, and the one vetting rule (`clusterFloor`) every byte offset arriving from outside core is put through |
+| [src/core/editing.zig](../../src/core/editing.zig) | text-field editing: the selection and every operation written in terms of it, IME protocol, and the offset↔pixel questions a shell or a renderer asks about a field |
+| [src/core/history.zig](../../src/core/history.zig) | undo and redo for the focused field: bounded snapshots in their own arena, one field at a time |
 | [src/core/overlays.zig](../../src/core/overlays.zig) | modal sheet + select and section pickers |
 | [src/core/nav.zig](../../src/core/nav.zig) | the nav roster (plus the current screen when it is off it) and its two shapes: row of items → collapsed chip |
 | [src/core/desk.zig](../../src/core/desk.zig) | a desk's own chrome: the region switcher a window too narrow to stand the band offers instead ([../elements.md](../elements.md)) |
@@ -75,6 +77,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/render/canvas.zig](../../src/render/canvas.zig) | `Canvas` vtable + `Recording` canvas |
 | [src/render/renderer.zig](../../src/render/renderer.zig) | tree → canvas draw calls |
 | [src/render/skia/canvas_skia.zig](../../src/render/skia/canvas_skia.zig) | Skia-backed `Canvas` + `Measurer` |
+| [src/render/measure_memo.zig](../../src/render/measure_memo.zig) | the width memo that measurer answers through — a run shaped once per process, not once per frame |
 | [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-substrate.md](dom-substrate.md)) |
 | [src/render/dom/stylesheet.zig](../../src/render/dom/stylesheet.zig) | that substrate's stylesheet, generated from color/text/layout |
 | [src/render/dom/live.zig](../../src/render/dom/live.zig) / [live.js](../../src/render/dom/live.js) | that substrate's live driver: the app in a browser, wasm32-freestanding, no Skia |
@@ -97,8 +100,9 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/services/http/http.zig](../../src/services/http/http.zig) | request/response client, one API per platform ([http.md](http.md)) |
 | [src/services/secure_store/secure_store.zig](../../src/services/secure_store/secure_store.zig) | encrypted key/value for small secrets, sync, namespaced by `pkg_id` ([secure_store.md](secure_store.md)) |
 | [src/packaging/packaging.zig](../../src/packaging/packaging.zig) | platform manifests and the derived app icon ([icon.zig](../../src/packaging/icon.zig)) generated from the build declaration — build-time only, never compiled into apps ([../services.md](../services.md)) |
-| [src/packaging/apple_icon.zig](../../src/packaging/apple_icon.zig) | the declared Icon Composer bundle: checked where declared, delivered whole, never generated ([../services.md](../services.md)) |
-| [src/services/clipboard/clipboard.zig](../../src/services/clipboard/clipboard.zig) | one verb: copy text out, via the shell's C hook ([services.md](../services.md)) |
+| [src/packaging/apple_icon.zig](../../src/packaging/apple_icon.zig) | the declared Icon Composer bundle: checked where declared, delivered whole to Apple's platforms, compiled by actool into the macOS `.icns` ([../services.md](../services.md)) |
+| [src/packaging/flat_icon.zig](../../src/packaging/flat_icon.zig) | the same bundle drawn flat — geometry without the material — into the master every Android and web icon is cut from; actool cannot, and the file says why |
+| [src/services/clipboard/clipboard.zig](../../src/services/clipboard/clipboard.zig) | copy text out, and ask the shell to paste — two C hooks, and still no read ([services.md](../services.md)) |
 | [src/services/deep_link/deep_link.zig](../../src/services/deep_link/deep_link.zig) | inbound URLs at launch and while running, delivered on the UI thread; routing stays the app's ([services.md](../services.md)) |
 | [src/services/locale/locale.zig](../../src/services/locale/locale.zig) | the device's BCP 47 tag, cached at boot and re-reported on change; feeds `l10n.Bundle.resolve` ([services.md](../services.md)) |
 | [src/services/oauth/oauth.zig](../../src/services/oauth/oauth.zig) | the sign-in browser session: one authorize URL out, one callback URL back, plus PKCE ([oauth.md](oauth.md)) |

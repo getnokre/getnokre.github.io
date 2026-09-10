@@ -1034,6 +1034,16 @@ Four things follow from the browser owning the page:
   through `beforeinput`: the DOM's own edit is refused, the bytes go to
   core, and the field then shows what core decided.
 
+  **The selection travels the other way first.** A real `<input>` is the
+  reader's own selection surface — they drag in it, ⌘A it and
+  double-click a word in it, and none of that passes through core — so
+  the browser is the one that knows where a selection is, and the glue
+  states it inward before every edit that acts on a range. That is the
+  same door iOS's handles and Android's `setSelection` come through, and
+  core vets it the same way. Without it the browser writes a whole
+  selected run to the clipboard on a cut and core, knowing only a caret,
+  deletes one character of it.
+
 ### The three facts no markup carries
 
 The appearance, the chrome direction and the screen's shape belong to
@@ -1626,17 +1636,24 @@ tests pin dropped from nine declarations to three with it: the whole
 transparency cascade existed to stop the template's fake words
 rendering, and there are no fake words any more.
 
-A pending value emits `<i class="pending" style="--pending:Nch">` —
-empty, `aria-hidden`, sized in `ch`, which is the reference advance the
-Skia substrate measures its block in, so the two agree on a width rather
-than one computing from a measurer and the other from line boxes. Two
-slots cannot hold an element and are handled beside it: a field's value
-is an attribute, so the block rides on `.field-box.pending-box`; and a
-`qr` whose payload is pending was never encoded at all
+A pending value emits `<i class="pending" aria-hidden="true">` holding
+one empty `<b>` per character — each an inline-block `1ch` wide, the
+reference advance the Skia substrate measures its block in, so the two
+agree on a width rather than one computing from a measurer and the
+other from line boxes. Cells and not one sized box, because a browser
+never breaks inside an atomic inline and always may between two (CSS
+Text §5.1): a run wider than the column wraps at the edge, where the
+one `--pending:Nch` box it used to be overflowed a phone column the
+Skia substrate's `wrap.breakWord` had already wrapped. Two slots cannot
+hold an element and are handled beside it: a field's value is an
+attribute, so the block rides on `.field-box.pending-box`, one line by
+nature; and a `qr` whose payload is pending was never encoded at all
 (`Tree.append`), so it emits no modules and no camera is handed a code
 that stands for nothing.
 
-The corners now match: both substrates round the block at 3px.
+Both substrates round the block at 3px. The DOM rounds a run's two
+ends and leaves a line break inside it square — `box-decoration-break:
+slice`, in effect — where the Skia substrate rounds every line's block.
 
 ### An element's own `disabled`, which is the other half
 
@@ -1682,7 +1699,12 @@ scaling, no system fonts — hold everywhere else and only mostly here.
 the page. The app is one ~200 KB wasm module rather than megabytes of
 Skia behind an emscripten toolchain nobody wanted to install. Text
 selection, find-in-page, translation, reader mode, print and real links
-came back. `tools/build-skia-wasm.sh`, `tools/build-web.sh`,
+came back. Selection is the browser's **for prose** and fenced
+everywhere else — a control's own words, a destination, a badge, a
+glyph, a field's label — because the answer a browser gives left alone
+is "all of it", and a reader dragging across a screen to copy one
+sentence was picking up the chrome around it (stylesheet.zig,
+"selection"). `tools/build-skia-wasm.sh`, `tools/build-web.sh`,
 `src/platform/web/` and the ARIA mirror stopped needing maintenance —
 and one target came off the nokre-owned-Skia list, because the web now
 builds none.

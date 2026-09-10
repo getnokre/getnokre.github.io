@@ -143,6 +143,10 @@ framework cannot express them.
   moves *focus* to the row beneath it. That last one is the line worth
   watching: it looks like hover and is not, because hover is a state
   with no keyboard equivalent and this is the very state ↑/↓ move.
+  The one drag on this list is the same bargain in a text field: a
+  pointer moving inside the field it pressed moves that field's
+  *selection*, which is the state Shift+arrow already moves, and
+  nothing outside that field follows it.
   Nothing else on screen follows a pointer, and nothing else may.
 - **No device-conditional affordances.** A control that exists on one
   kind of device and nowhere else is hover wearing a different input

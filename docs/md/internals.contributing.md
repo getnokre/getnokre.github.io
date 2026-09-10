@@ -115,7 +115,13 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    [substrates.md](substrates.md) named: the switch there has no `else`,
    so this step is a compile error until it is done. Pick the tag whose
    implicit role is already the one `roleOf` gives the element, and
-   state the role explicitly only when no tag carries it.
+   state the role explicitly only when no tag carries it. Then say which
+   side of the **selection fence** the element's words stand on — prose a
+   reader may drag across and copy, or chrome the sheet fences
+   ([stylesheet.zig](../../src/render/dom/stylesheet.zig), "selection").
+   That one is a compile error too, in `fenceOf` beside the contract row
+   in step 8, because selection is the browser's by default and a kind
+   nobody asked would quietly become selectable chrome.
 5. A11y mapping in [semantics.zig](../../src/a11y/semantics.zig), and its
    row in the table in [accessibility.md](../accessibility.md). A new
    `A11yRole` **appends** — the enum's ordinals are a wire contract that
