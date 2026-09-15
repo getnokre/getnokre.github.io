@@ -126,7 +126,28 @@ have already told you so.
 `composeText(composition, committed)` (full IME start→update→commit
 sequence), `paste(text)`, `selectOption(group_label, option)`,
 `swapSlots(label, a_words, b_words)`, `scroll(id, delta)`,
+`scrollElastic(id, deltas)`, `scrollFling(id, velocity, band_ms)`,
+`endScrollGesture()`, `stateScrollPresentation(mode)`,
+`stateScrollBarVisible(shown)`, `dragScrollThumb(id, deltas)`,
 `focusVia(id)`, `back()`, `edgePanBack()`.
+
+`stateScrollPresentation` and `stateScrollBarVisible` say what a shell
+says about the scroll bar (`.transient` is the header's INDICATOR), and
+`dragScrollThumb` takes an interactive thumb at its middle — the root's
+for the window — and moves it by each delta along its own axis, leaving
+the press held for the same reason the brackets stay open
+([elements.md](elements.md#scroll_region)).
+
+`scrollElastic` is a touch drag over `id` opened the way a shell with
+rented physics opens one, as an elastic bracket, with one move per delta
+— hand-picked, not a curve. `scrollFling` is the curve: the canonical
+flick, a fling at a constant `velocity` into the wall and `band_ms` of
+the band its impact starts, run as a shell with no rented band runs it —
+shell.h's integrator, on a 16 ms frame clock, through the same core
+functions — so a golden of it is the band those shells show. Both leave
+the bracket open, because the frame worth a golden is the one still past
+the wall, and `endScrollGesture()` closes it. What the pull does and
+does not move is [elements.md](elements.md#scroll_region)'s.
 
 `paste(text)` is the platform's own paste verb with `text` on the
 clipboard: it primes the clipboard mock and makes the request, and the

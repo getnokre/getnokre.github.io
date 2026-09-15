@@ -310,7 +310,9 @@ Things worth noticing, because they generalize:
   state changes and you say so; an app at rest costs zero CPU. Patch one
   node (as here, `patchText` — content plus `invalidate`, and a no-op if
   the node is gone) or rebuild a whole screen — Part 3 adds that second
-  style. `app.invalidate()` is the bare form underneath both.
+  style. `app.invalidate()` is the bare form underneath both, and not
+  optional: a tree edited without it can be torn by the next scroll,
+  which redraws only what scrolled.
 - **Focus, keyboard access, and the a11y tree came for free.** None of
   that was written above, and none of it can be forgotten.
 

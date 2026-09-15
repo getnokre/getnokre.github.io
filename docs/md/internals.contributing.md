@@ -109,7 +109,13 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    same leading/trailing choices with the renderer's `mirrored(app)` /
    `startX(app, …)`. Content that must not mirror (paragraph text aligns
    by its own bytes; a QR symbol never flips) stays put — say why in a
-   comment, as the QR and radio cases do.
+   comment, as the QR and radio cases do. An element that scrolls draws
+   its bar through `drawVerticalBar` or `drawHorizontalBar`, which is
+   also where the damage model learns it exists: an owner drawn around
+   them is a scroll no partial frame rasterises
+   ([pixel-model.md](pixel-model.md#partial-frames)). Its strip is a
+   function in [scroll_bar.zig](../../src/core/scroll_bar.zig), and its
+   layout reserves that strip under `Ctx.scroll_bar_layout`.
 4. Markup in [render/dom/serialize.zig](../../src/render/dom/serialize.zig)
    — the second substrate's draw, and the recurring tax
    [substrates.md](substrates.md) named: the switch there has no `else`,
@@ -196,7 +202,8 @@ The authoring rules that keep the shell/service split honest:
   links something (secure_store's Keychain, deep_link's URL
   registration) gates on its `nokre_*_options.linked` and is a curated
   comptime error at the call site when unlinked. A service that links
-  *nothing* — clipboard, clock, haptic, http, locale, open_url, share,
+  *nothing* — clipboard, clock, haptic, http, locale, open_url,
+  scroll_activity, share,
   worker — has no unlinked state to error on, so
   it gets no options module and no build flag: adding one would be
   ceremony over a decision the app never makes. For those, "optional"
@@ -234,7 +241,7 @@ The authoring rules that keep the shell/service split honest:
   `Services` ([services.zig](../../src/services/services.zig)):
   define `Service = if (builtin.is_test) Mock else PlatformService`
   (`services.Stateless` where the release half holds nothing, as
-  clipboard, clock, haptic and open_url do — writing your own `init`/
+  clipboard, clock, haptic, open_url and scroll_activity do — writing your own `init`/
   `deinit` pair is then how a service says it *does* keep state, which
   is secure_store's shape: its release half carries the `CountCache`),
   give the mock a `mock(config)` constructor plus `init(gpa)`/`deinit`
@@ -304,6 +311,14 @@ for the full list. The ones that don't have a `docs/testing.md` page:
   [tests/web_browser.mjs](../../tests/web_browser.mjs). Every assertion
   reads back what the wasm app recorded through probe exports.
 - **A real parse of the shipped JavaScript** — same gate as above.
+- **Partial frames** — `zig build test -Dskia -Dgolden`: every golden
+  frame is also rasterised tile by tile over a black frame — the tiles
+  no rounded corner refuses partially, and all of them, whole exactly
+  when one does — and must come out the same bytes
+  ([tests/partial_raster.zig](../../tests/partial_raster.zig)); and the
+  frame source a shell installs is driven through scroll sequences in
+  [src/skia_test.zig](../../src/skia_test.zig), its kept buffer held to
+  a whole raster after every step ([pixel-model.md](pixel-model.md#partial-frames)).
 
 Goldens are byte-exact. CI never creates goldens ([testing.md](../testing.md)
 has the workflow).

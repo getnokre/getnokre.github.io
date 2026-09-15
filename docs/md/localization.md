@@ -285,10 +285,12 @@ Under `.rtl` every leading/trailing choice flips together: intrinsic
 blocks and tables snap to the right, horizontal stacks and nav slots run
 right-to-left, field labels and values lead from the right, the back and
 tile chevrons point the other way, toggle knobs travel the other way,
-and the overlay scrollbar moves to the left. Two things deliberately do
-*not* follow the chrome: paragraph text still aligns by its own content
-(an English caption stays left-aligned inside a mirrored screen), and a
-QR code's modules never mirror — a mirrored symbol does not scan. The
+and a vertical scroll bar moves to the left. Three things deliberately
+do *not* follow the chrome: paragraph text still aligns by its own
+content (an English caption stays left-aligned inside a mirrored
+screen), a QR code's modules never mirror — a mirrored symbol does not
+scan — and a code block's lines, bar included, never mirror
+([elements.md](elements.md), `code_block`). The
 vertical axis is direction-blind throughout, so `↑`/`↓` in a radio group
 mean the same thing in both, while `←`/`→` swap with the layout.
 

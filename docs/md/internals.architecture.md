@@ -46,7 +46,9 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/router.zig](../../src/core/router.zig) | named-screen stack with per-entry arguments, instant rebuilds, the current-route observer |
 | [src/core/app.zig](../../src/core/app.zig) | the App struct: state, lifecycle, dispatch |
 | [src/core/input.zig](../../src/core/input.zig) | press/release, key handling, hit testing |
-| [src/core/scrolling.zig](../../src/core/scrolling.zig) | the scroll chain: regions, horizontal tracks, the gesture lock |
+| [src/core/scrolling.zig](../../src/core/scrolling.zig) | the scroll chain: regions, horizontal tracks, the gesture lock, the room `on_scroll` answers and the overshoot past a wall, and the scroll state a shell states — the bar's presentation and visibility — and the activity it is told of |
+| [src/core/scroll_bar.zig](../../src/core/scroll_bar.zig) | the scroll bar: where each owner's bar and thumb stand, its tone, and the thumb a pointer drags |
+| [src/core/rubber_band.zig](../../src/core/rubber_band.zig) | the band's pull and recall curves, pure — shell.h's integrator runs them on a shell's clock |
 | [src/core/segment.zig](../../src/core/segment.zig) | grapheme cluster and word boundaries — the subset of UAX #29 a caret steps by, and the one vetting rule (`clusterFloor`) every byte offset arriving from outside core is put through |
 | [src/core/editing.zig](../../src/core/editing.zig) | text-field editing: the selection and every operation written in terms of it, IME protocol, and the offset↔pixel questions a shell or a renderer asks about a field |
 | [src/core/history.zig](../../src/core/history.zig) | undo and redo for the focused field: bounded snapshots in their own arena, one field at a time |
@@ -76,6 +78,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/workers/thread.zig](../../src/workers/thread.zig) / [post.zig](../../src/workers/post.zig) | native / web worker transports |
 | [src/render/canvas.zig](../../src/render/canvas.zig) | `Canvas` vtable + `Recording` canvas |
 | [src/render/renderer.zig](../../src/render/renderer.zig) | tree → canvas draw calls |
+| [src/render/damage.zig](../../src/render/damage.zig) | which pixels a frame may leave standing: the rects a scroll earns, and whole for everything else ([pixel-model.md](pixel-model.md#partial-frames)) |
 | [src/render/skia/canvas_skia.zig](../../src/render/skia/canvas_skia.zig) | Skia-backed `Canvas` + `Measurer` |
 | [src/render/measure_memo.zig](../../src/render/measure_memo.zig) | the width memo that measurer answers through — a run shaped once per process, not once per frame |
 | [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-substrate.md](dom-substrate.md)) |
@@ -89,11 +92,13 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/testing/queries.zig](../../src/testing/queries.zig) / [driver.zig](../../src/testing/driver.zig) | semantic queries — find by what users perceive, never by index — and the synthetic input driver, both through `App.dispatchInput` |
 | [src/testing/wait.zig](../../src/testing/wait.zig) / [driver_app.zig](../../src/testing/driver_app.zig) | the driver tier: deadline-bounded waits against a caller-injected clock, and `DriverApp` — the harness's verb names over a live `App`, no mock in reach ([testing.md](../testing.md#driving-an-app-outside-zig-test)) |
 | [src/testing/audit.zig](../../src/testing/audit.zig) | the accessibility audit: the whole-tree content rules construction-time validation cannot cover |
+| [src/testing/rubber_band_integrator.zig](../../src/testing/rubber_band_integrator.zig) | shell.h's band integrator over a live `App`, the one copy the canonical flick (`driver.scrollFling`) and the carry tests share |
 | [src/testing/trace.zig](../../src/testing/trace.zig) / [golden.zig](../../src/testing/golden.zig) / [diag.zig](../../src/testing/diag.zig) | per-step tracing (`TreeSink`, and `Tee` for fanning one step at both instruments), byte-exact PPM goldens, and the harness's one stderr gate |
 | [src/testing/shell.zig](../../src/testing/shell.zig) | the headless shell a driver binary names instead of hand-exporting the C hooks a shell owes ([internals/platform-shells.md](platform-shells.md)) |
 | [src/core/test_app.zig](../../src/core/test_app.zig) | the mocked App nokre's *own* unit tests build on — internal, not the consumer fixture above |
 | [src/platform/platform.zig](../../src/platform/platform.zig) | comptime backend selection |
 | [src/platform/c_shell.zig](../../src/platform/c_shell.zig) | shared Zig side of the C shell contract ([shell.h](../../src/platform/shell.h)); names no rendering backend |
+| [src/platform/rubber_band_exports.zig](../../src/platform/rubber_band_exports.zig) | the band's two curves exported to shells, compiled into every native binary whether or not a shell runs |
 | [src/platform/skia_frame.zig](../../src/platform/skia_frame.zig) | the Skia frame source the shells install: surface lifecycle and the render call ([substrates.md](substrates.md)) |
 | [src/services/services.zig](../../src/services/services.zig) | the `Services` struct: per-app service injection at `App.init` ([../services.md](../services.md)) |
 | [src/services/package_info/package_info.zig](../../src/services/package_info/package_info.zig) | app identity, declared once in build.zig ([services.md](../services.md)) |
@@ -107,6 +112,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/services/locale/locale.zig](../../src/services/locale/locale.zig) | the device's BCP 47 tag, cached at boot and re-reported on change; feeds `l10n.Bundle.resolve` ([services.md](../services.md)) |
 | [src/services/oauth/oauth.zig](../../src/services/oauth/oauth.zig) | the sign-in browser session: one authorize URL out, one callback URL back, plus PKCE ([oauth.md](oauth.md)) |
 | [src/services/haptic/haptic.zig](../../src/services/haptic/haptic.zig) | the back gesture's threshold knock — injected like every service, callable by no app ([haptics.md](haptics.md)) |
+| [src/services/scroll_activity/scroll_activity.zig](../../src/services/scroll_activity/scroll_activity.zig) | the shell's hook for scroll activity ([shell.h](../../src/platform/shell.h)'s `nokre_shell_scroll_activity`) — injected like every service, callable by no app |
 | [src/services/iap/iap.zig](../../src/services/iap/iap.zig) | the platform stores: catalog, payment sheet, purchase stream, finish, restore — and `available` where there is no store ([iap.md](iap.md)) |
 | [src/services/open_url/open_url.zig](../../src/services/open_url/open_url.zig) | one verb: hand a URL to the system browser, behind a closed scheme allowlist; external link activation lands here ([services.md](../services.md)) |
 | [src/services/share/share.zig](../../src/services/share/share.zig) | one verb: put the OS share sheet up with UTF-8 text on it — and `available` where there is no sheet ([services.md](../services.md)) |
@@ -123,7 +129,7 @@ One loop, everywhere:
 2. Dispatch mutates semantic state: focus, toggle on, input value,
    scroll offset — or invokes an app `Action`, which edits the tree and
    calls `app.invalidate()`.
-3. When `app.needs_frame` is set, the shell asks its installed frame source
+3. When `app.wantsFrame()`, the shell asks its installed frame source
    for one: `performLayout` (dirty-flagged) then `renderer.render(app,
    canvas)`. The shell reconciles the viewport and safe area the OS
    reported and blits the buffer it gets back; what is *in* the buffer is

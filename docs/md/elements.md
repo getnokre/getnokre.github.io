@@ -995,23 +995,54 @@ function already; reach for `Cursor.standIn` when it does not.
 ### `scroll_region`
 A viewport over vertically flowing children. `height` fixes the viewport
 height; leave it null to fill the space remaining below the region.
-Content is clipped; a 2px indicator bar reflects the offset. Focusable:
-arrow keys, page up/down, home/end scroll it. `content_height` is written
-by layout.
+Content is clipped; a bar reflects the offset. Focusable: arrow keys,
+page up/down, home/end scroll it. `content_height` is written by layout.
 
-The bar has two tones, switched by state, never by time: emphasized
-while its surface is engaged — focused, held by a touch drag, or the
-last thing scrolling input moved — and quiet at rest. The overlay
-scrollbar's prominent-when-relevant behavior without its two failures:
-"fade after the scroll stops" needs the wall-clock timer the
-deterministic core refuses, and a bar that vanishes at rest takes the
-only sign the content scrolls with it. So emphasis latches until the
-next non-scroll input, and the resting bar stays readable. At rest the
-primary "more is there" affordance is the content itself, cut
-mid-element at the viewport edge; the audit fails a fixed-height region
-whose offset-0 edge cuts nothing visible (see
-[accessibility](accessibility.md)) — adjust the height a few px so the
-edge crosses ink, not a gap or a text line's leading.
+**How the bar is presented is the platform's decision; what it looks
+like is nokre's.** The shell states one of three presentations from the
+platform's own scroll bar setting — and, where that setting depends on
+it, the pointing device — and nokre draws each deterministically, the
+way it draws the appearance the shell states
+([internals/platform-shells.md](internals/platform-shells.md)):
+
+- **none** — no bar on any surface.
+- **indicator** — the thin 2px overlay bar, shown while the shell says
+  so and only on the surface scrolling input is on: the one a scroll,
+  a scroll key, a reveal or a drag last moved, or the one a touch drag
+  has moved in the gesture it is still holding. nokre tells the shell
+  each time a scroll the reader made moves something, and the shell's
+  own inactivity timer takes the bar down; a move nobody made — content
+  that shrank, a screen coming back to where it was — raises nothing.
+- **interactive** — the classic desktop scroll bar: a faint 16px trough
+  with a thumb inside it, persistent, and never shorter than a pointer
+  target (24px). A pointer takes the thumb anywhere along its length and
+  up to a pointer target across it (WCAG 2.5.8), the part the trough
+  cannot hold reaching in over the content beside it. A press on the
+  thumb drags the offset directly, with no momentum on release; a press
+  on the trough beside it does nothing, and the content beside the
+  trough past the thumb's ends keeps its own presses. Every offset a
+  drag reaches the scroll keys already reach. **It reserves its trough**:
+  every scroll surface gives the trough's width up at its inline end —
+  the region, a desk region, and the page itself, whose column is
+  centred in what is left — whether or not it overflows, so the trough
+  stands empty when the content fits and switching into the
+  presentation reflows the screen the way a resize does. A sideways
+  scroller grows its trough below its content only when it overflows.
+
+A shell that states none of them gets the legacy bar: always there,
+2px, reserving nothing.
+
+A drawn bar has two tones, switched by state: emphasized while the
+surface is engaged — focused, held by a touch drag or a thumb, or the
+last thing scrolling input moved — and quiet at rest. A bar that fades
+fades on the shell's timer, never core's
+([introduction.md](introduction.md), "No transitions or animation").
+The bar is never the only sign the content scrolls: the primary "more
+is there" affordance is the content itself, cut mid-element at the
+viewport edge. The audit fails a fixed-height region whose offset-0 edge
+cuts nothing visible (see [accessibility](accessibility.md)) — adjust
+the height a few px so the edge crosses ink, not a gap or a text line's
+leading.
 
 The window itself needs no wrapper: content taller than the viewport
 scrolls implicitly — wheel outside any scroll region, scroll keys when no
@@ -1020,9 +1051,23 @@ view. The implicit window scroll is not a tab stop.
 
 Wheel scrolling routes at the pointer, event by event: delta a region
 cannot consume chains outward to enclosing regions and then the window.
-A touch drag instead belongs to the scroller it starts in — momentum
-included — even when the finger leaves it or its content runs out;
-nothing else moves until the finger lifts.
+A touch drag, or a trackpad gesture on macOS or iPadOS, instead belongs
+to the scroller it starts in — momentum included — even when the finger
+leaves it or its content runs out; nothing else moves until the gesture
+ends.
+
+At a wall, such a gesture pulls the content past the end and springs it
+back — the same band on iOS, Android and macOS. nokre draws that
+displacement and nothing else: the content moves inside the region's
+own clip, and beyond its end shows whatever the frame has underneath —
+the page's paper, or a sheet's surface — since a region paints no ground
+of its own. It is transient display state.
+Layout, hit-testing, the accessibility tree and the audit all read the
+offset stopped at the wall, the bar's thumb stays pinned at the end of
+its track, nothing takes a tap while the content is displaced, and the
+displacement is gone by the time the gesture ends. A wheel stops at the
+wall, and so does a gesture wherever the platform's own scroll views
+show no edge.
 
 ### `region`
 One place on a **desk**: the roster you pick from, the subject in hand,
@@ -2025,7 +2070,12 @@ log, an import — where growing to content pushes the form's own submit
 button off the screen. The window follows the **caret**, not a bar
 somebody drags: ↑/↓ is how a reader moves it and the wheel still
 belongs to the page, so the default's reason survives the exception.
-The indicator is the same quiet one a `scroll_region` draws. ↑/↓ move
+Its bar is the 2px overlay one a `scroll_region` draws, shown whenever
+the value is longer than the cap and emphasized while the field is
+focused, under every presentation but none
+([`scroll_region`](#scroll_region)) — interactive included, since
+nothing drags a window that follows the caret, so it reserves nothing
+and has no thumb. ↑/↓ move
 the caret between visual lines preserving its horizontal position;
 Home/End go to the bounds of the caret's line (the whole value is a ↑/↓
 walk away), and Shift extends the selection across either, so a range
@@ -2284,8 +2334,10 @@ behavior, no API — on the overflowing `segmented` track's terms: it
 declines the advised margin and bleeds to the nearest drawn edge (the
 screen at the root, a box's border otherwise), so lines clip mid-glyph
 at that edge rather than mid-page, while resting lines keep the content
-alignment. A 2px indicator in the `scroll_region` pattern rides the
-bottom, quiet at rest and emphasized while the block is engaged.
+alignment. A bar in the `scroll_region` pattern rides the bottom,
+quiet at rest and emphasized while the block is engaged — over the last
+line's leading, or in a strip below the lines where the presentation is
+interactive.
 Focusable, because it scrolls: ←/→ walk it four mono advances at a time
 (a code indent), and every other key falls through to the page. A
 horizontal wheel or drag over it scrolls it; vertical delta belongs to
@@ -2297,8 +2349,8 @@ bytes, like a `qr` symbol's modules: source is written left-to-right and
 its leading whitespace *is* its structure, so right-anchoring lines
 under `App.setDirection(.rtl)` would shred the indentation and put every
 line's end on screen first. Offset 0 shows the start of the lines in
-both directions. The indicator does mirror, hugging the trailing edge
-like every other scroll bar.
+both directions. Its bar does not mirror either: the thumb stands
+where the lines are, so dragging it moves them the way it moves.
 
 There is deliberately no horizontal twin of the
 `cleanly_clipped_scroll_region` audit rule: a scroll region's height is
@@ -2366,13 +2418,15 @@ behavior with no API.
   where chips clip: mid-chip at the screen edge, not mid-page — the
   static "more is there" affordance, nokre having no animation to hint
   with — scrolling through the margin band on their way there.
-- **The indicator.** A 2px bar in the `scroll_region` pattern — both
-  tones included, quiet at rest and emphasized while the track is
-  engaged — rides the bottom of the track, within the content span. It
+- **The indicator.** A bar in the `scroll_region` pattern — its
+  presentations and both tones included, quiet at rest and emphasized
+  while the track is engaged — rides the bottom of the track, within the
+  content span. It
   stands in a strip the track grows for it rather than in the chips'
   own padding, so a scrolling track is deeper than the same track when
   it fits — deeper above the chips as well as below, or the band would
-  read as chips pushed against its top edge.
+  read as chips pushed against its top edge — and deeper again for an
+  interactive bar.
 - **Input.** The offset is scroll state like `scroll_region`'s —
   consumers never write it. Horizontal wheel/trackpad input over the
   track scrolls it freely without touching the selection; a selection

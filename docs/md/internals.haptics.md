@@ -13,13 +13,12 @@ service row: [../services.md](../services.md).
 
 The obvious way to do iOS-style back is the interactive slide: two
 screens on screen at an offset, tracking the finger, settling under its
-own power on release. Every part of that is something nokre cannot have.
-The settle needs frames nobody asked for — a display link in each of five
-shells, which retires "an app at rest costs zero CPU" and, with a ticker
-in the building, the argument against a spinner with it. A screen 40%
-slid has no tree behind it, so it has no accessible description and no
-byte-exact frame to golden. And the timing would be wall-clock, which the
-core is not allowed to read.
+own power on release. That is something nokre cannot have. A screen 40%
+slid has no tree behind it — it is two screens and a state in flight — so
+it has no accessible description and no byte-exact frame to golden, and
+the frames that would settle it have no tree behind them either. The clock
+is not the objection ([../introduction.md](../introduction.md), "No
+transitions or animation", draws that line); the missing tree is.
 
 So the gesture is kept and the motion is dropped. **Nothing moves.** The
 finger travels, a threshold is crossed, and the feedback for that

@@ -47,14 +47,16 @@ internals doc.
 | `oauth` | The sign-in browser session: open an authorize URL where the user can trust it, get the callback URL back. | **Working** — all six platforms; no vendor SDK |
 | `iap` | The platform stores: catalog, payment sheet, purchase-update stream, finish, restore. | **Working** — StoreKit and Play Billing; no store on Windows, Linux, or the web |
 | `haptic` | The back gesture's threshold knock. **Framework-internal: no app can call it.** | **Working** — iOS only, the one platform that runs a threshold of nokre's own ([internals/haptics.md](internals/haptics.md)) |
+| `scroll_activity` | Tells the shell a scroll the reader made moved something, so a fading scroll bar restarts its fade. **Framework-internal: no app can call it.** | **Working** — every native shell; only a shell presenting the fading bar acts on it ([elements.md](elements.md#scroll_region)) |
 | `open_url` | One verb: hand a URL (https/http/mailto — a closed set) to the system browser. Fire-and-forget. | **Working** — every shell and the web; nothing links |
 | `share` | One verb: put the OS share sheet up with UTF-8 text on it; the user picks the destination. Fire-and-forget. | **Working** — four native sheets and the web's `navigator.share`; no sheet on the Linux desktop, and `available` says so |
 | `clock` | One verb: the wall clock, in milliseconds since the Unix epoch, UTC. Read on demand. | **Working** — every target; nothing links, and no shell is involved |
 | `notification` | The OS's own notification surface: ask, post, schedule, cancel, and one lane back for taps, arrivals and push tokens. | **Working** — all six platforms for the local half; push on four, and `scheduleAvailable` is false on the Linux desktop and the web |
 
-`haptic` is on this list for completeness, not for use: it is a
-`Services` field because everything platform-flavored is injected and
-observable in tests, and it has no consumer verb at all. "Buzz when I say
+`haptic` and `scroll_activity` are on this list for completeness, not
+for use: each is a `Services` field because everything
+platform-flavored is injected and observable in tests, and neither has a
+consumer verb at all. "Buzz when I say
 so" is a feedback hook in the same family as a styling hook. The roster
 grows the way the element set does — a row is argued on semantics, and
 `open_url` earned its place when the `document` element's motivating
@@ -1922,9 +1924,9 @@ of it.
 utility.** A frame is a function of state, so a screen that changed
 because time passed changed for a reason no golden can hold still and no
 test can reproduce — which is exactly what the refusals that name a
-clock are protecting: no animation, no fading scrollbar, no
-self-clearing copy mark, no velocity on the back gesture
-([introduction.md](introduction.md)). Nothing in nokre's core or its
+clock are protecting: no animation, no self-clearing copy mark, no
+velocity on the back gesture ([introduction.md](introduction.md), which
+also says why a scroll bar faded by the shell's timer is not one). Nothing in nokre's core or its
 renderers calls this, ever. It is `oauth`'s randomness carve-out
 restated — a service is not core — and it costs the pixel model nothing,
 because a timestamp an app read is app state, and the frame that renders

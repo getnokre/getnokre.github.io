@@ -319,6 +319,63 @@ them cuts the join (`tests/goldens/long-word-title-rtl.ppm`, and the
 mirrored tile beside it). A per-script hyphen would buy German a mark the
 web substrate still could not draw.
 
+## Partial frames
+
+The frame source a shell installs
+([skia_frame.zig](../../src/platform/skia_frame.zig)) keeps its buffer
+from frame to frame and rasterises only the pixels the app's own state
+says can differ from the frame the buffer holds. The buffer is always the
+whole frame, and **every shell presents the whole buffer**: what a
+partial frame saves is the CPU raster in core, not the blit.
+
+**What is partial**, decided in
+[render/damage.zig](../../src/render/damage.zig) by comparing the scroll
+owners the renderer noted while drawing the last frame with the ones it
+notes drawing this one — each owner's rect as drawn (moved by every
+overshoot it is drawn inside, cut by the clips it is drawn under), its
+bar's strip, extent, offset, overshoot and bar tone
+(`scroll_bar.barTone`, the one rule the renderer draws by):
+
+- a scroll region, a desk region, a segmented track or a code block
+  whose offset or overshoot moved rasterises its rect, bar included;
+- a bar that appeared, went, or changed tone rasterises its strip —
+  which is how the latch moving from one surface to another reaches two;
+- an owner carried by one of those (a nested region, a track in a
+  region) adds nothing, as long as its rect before and after lies
+  inside one of the rects already found.
+
+Such a frame is asked for through `App.damage_inputs`, never
+`needs_frame`, and only by the writers of scroll state: scrolling.zig's
+offset and overshoot writers and `setBarVisible`, the latch release in
+`dispatchInput` and `deliverSemantic`, and a bar grip's press, release
+and cancel.
+
+**What is whole** is everything else: the window's own offset or
+overshoot, since the root is unclipped and the page shows between the
+nav's plates and through the safe band; any frame asked for through
+`needs_frame`, and any relayout `layout_dirty` asked for —
+`damage_inputs.unbounded_changes` counts both, so a frame another caller
+drew in between still counts; a change of viewport, safe band,
+appearance, presentation, direction, shape or focus; an owner set that
+changed, or a geometry change no found rect covers; the first frame, a
+new surface, and a frame drawn into a shell's own buffer
+(`render_into`). The comparison, not the setters, finds what moved, so a
+setter that forgot to say so is still seen, and a writer that sets
+`needs_frame` can never be mistaken for a scroll. A tree edited without
+`invalidate` is the one change nothing sees until the next whole frame.
+
+**Rasterising inside a rect** replays the frame's whole op list under a
+clip to it (`hsk_surface_pixels_within`), so chrome drawn after the
+content is drawn again inside the rect too. Rects, lines, the dither,
+the clear and glyph masks are per pixel. An anti-aliased path is not,
+for the raster bands' reason above, and clipping every op to the rect
+alike moved bytes at tile edges across the golden suite. What moves
+is where a corner's curve crosses a scanline, so a rect is refused — and
+the frame rasterised whole — when it reaches a corner square of a
+rounded fill or stroke that it neither holds whole nor holds the clip
+stack of (`cutsPath`). A region scrolled inside a sheet is the common
+case: the nav's plates under the scrim have corners in its rect.
+
 ## Where the guarantee stops, and why there
 
 Text glyph rasterization is determined by the font binary **and the Skia
@@ -347,4 +404,5 @@ own regenerated set ([../testing.md](../testing.md)).
 
 Golden tests ([testing.md](../testing.md)) compare full frames byte-for-byte —
 no tolerance, no perceptual diff. If a byte changes, a human reviews a
-picture.
+picture. Partial frames are held to the same bytes by their own gate
+([contributing.md](contributing.md), "What nokre tests for itself").

@@ -178,10 +178,26 @@ framework cannot express them.
   spinner is animation too — waiting is written in words. The back
   gesture is where this gets tested hardest and holds: the finger moves
   and *the screen does not*, because a screen half-slid has no tree
-  behind it to describe or to golden, and finishing the slide after the
-  finger lifts would need frames nobody asked for. What replaces the
-  motion is a threshold, marked as it is crossed —
+  behind it to describe or to golden. What replaces the motion is a
+  threshold, marked as it is crossed —
   [routing.md](routing.md#the-back-gesture) has the mechanics.
+  The line itself is one question: **who generates the frames?** nokre
+  never changes state because time passed; a shell may change nokre's
+  *input* in response to what the platform does, including what the
+  platform does with time. Momentum is that case: its frames move pixels
+  after the finger lifts on every touch and trackpad shell, and each one
+  answers a delta the platform delivered. The band a scroll pulls past
+  its wall is that case too. Where a platform rents its band physics,
+  that physics sends the pull and the recall; where it rents none, the
+  shell ticks the recall on its own clock through a pure curve core
+  defines, and sends what the curve answers as input. Those frames are
+  bounded, they finish a gesture the platform's own scroll views would
+  finish, every one of them has a current tree behind it, and core never
+  reads time ([elements.md](elements.md#scroll_region)). A scroll bar
+  that fades after scrolling stops is that case as well: the shell's
+  timer states whether the bar is shown, and core draws the bit. The back
+  gesture's settle fails the question for the reason above, not for its
+  clock.
 - **No color.** Thirteen fixed steps of gray, five semantic aliases
   (`ink`, `dark`, `mid`, `light`, `paper`). Color as information excludes
   color-blind users, so information must survive grayscale anyway —

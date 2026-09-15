@@ -31,7 +31,28 @@ A shell's complete job description:
 
 Anything smarter than that belongs above the platform line and is rejected
 in review. This is what keeps six platforms maintainable by very few
-people. OS capabilities beyond this contract (secure storage, inbound
+people. The review admits a case past it only by name, and each named
+case is here, so the gate reads it knowingly:
+
+- **The shell states the scroll indicator's presentation**, and under
+  indicator whether the bar is shown right now, off the shell's own
+  inactivity clock. Both are inputs like the appearance. Core draws
+  every presentation, geometry and tone included
+  ([../elements.md](../elements.md#scroll_region) says what each draws)
+  — the platform's own scroll bar is never rented, because it would be a
+  second copy of core's extents and offsets drawn outside the frame.
+  What a shell owes is shell.h's, beside `on_scroll_presentation` and
+  `on_scroll_indicator`.
+- **The shell completes a gesture past a wall core reported.** Where the
+  platform rents it no band physics, the shell finishes an elastic
+  bracket on its own clock with core's curve, so its frames are input a
+  shell made in answer to the platform — the side of the line
+  [../introduction.md](../introduction.md) draws under "No transitions
+  or animation". What it owes is shell.h's: the recall rule beside
+  `NOKRE_SCROLL_BEGIN_ELASTIC`, and the integrator beside
+  `nokre_core_scroll_pull`.
+
+OS capabilities beyond this contract (secure storage, inbound
 links, sign-in, …) are separate optional modules — see
 [services.md](../services.md).
 
@@ -62,9 +83,12 @@ between the two — plus two facts about the press itself: how many clicks
 deep it is and a `NOKRE_POINTER_SOURCE_*` for what is making it),
 `on_key` (portable keycode enum + modifier bits), `on_text`
 (committed UTF-8), `on_ime_update/commit/cancel`, `on_scroll` (deltas
-plus a `NOKRE_SCROLL_*` phase: wheel shells send free events routed at
-the pointer; touch shells bracket a drag begin/move/end so core locks
-the gesture to the scrollers under the initial touch),
+plus a `NOKRE_SCROLL_*` phase: a wheel sends free events routed at the
+pointer; a touch drag, and a trackpad gesture on macOS or iPadOS, is
+bracketed begin/move/end so core locks the gesture to the scrollers
+under the initial touch, and the bracketing shell reads back the room
+left before each wall — shell.h's `nokre_scroll_room` and
+`BEGIN_ELASTIC`),
 `on_edge_pan` (one step of the drag that goes back: which physical edge
 the finger started on, how far in it has come, and a `NOKRE_PAN_*` phase
 whose `CANCEL` is deliberately not `END` — implemented only by iOS,
@@ -82,7 +106,10 @@ would act on Enter — asked beside `wants_text_input` by the two shells
 with a software keyboard, and unused by the other three, which have no
 IME action to set), the five questions about the focused field the next
 section describes (`editable_snapshot`, `field_rect`, `caret_rect`,
-`offset_at`, `selection_rects`), `on_appearance` (OS light/dark), `on_ready`
+`offset_at`, `selection_rects`), `on_appearance` (OS light/dark),
+`on_scroll_presentation` and `on_scroll_indicator` (the scroll bar's
+presentation and the transient indicator's visibility, the named case
+of that name above), `on_ready`
 (native view handle, for attaching the a11y adapter), and
 `on_window_focus`. `nokre_shell_request_frame` lets the Zig side mark the
 view dirty from outside the input stream — assistive-tech actions need
@@ -94,7 +121,9 @@ counterpart and the only *inbound* half of that service: the shell reads
 its own clipboard on an explicit user action and delivers the bytes back
 through `on_text`, which is why nothing is returned and there is no call
 that answers what the clipboard holds ([../services.md](../services.md)
-owns the posture). `nokre_shell_haptic` fires the back gesture's
+owns the posture). `nokre_shell_scroll_activity` is the activity half
+of the named case "the shell states the scroll indicator's
+presentation". `nokre_shell_haptic` fires the back gesture's
 threshold knock and exists on iOS alone, since no other shell runs a
 threshold of nokre's own ([haptics.md](haptics.md)). `nokre_shell_post_main` runs a
 callback on the UI thread from any thread — the worker service's
@@ -548,7 +577,61 @@ wiring over the same shared adapters. The native side (~300–900 lines
 of Objective-C or C per platform) holds no state.
 
 Frames are rendered **on demand**: the shell asks `wants_frame` and only
-repaints when true. No ticker, no vsync loop, zero idle CPU.
+repaints when true. No ticker and zero idle CPU: a shell runs a clock
+only while it has work — the named cases', key repeat, a long press —
+and a shell at rest runs none.
+
+## macOS specifics
+
+[macos/shell.m](../../src/platform/macos/shell.m)'s text-system half is
+above, beside the other shells'. Its scrolling:
+
+- **The scroll bar.** The presentation is AppKit's preferred scroller
+  style — overlay is `indicator`, legacy is `interactive` — stated at
+  boot beside the first appearance report and again on
+  `NSPreferredScrollerStyleDidChangeNotification`. The style already
+  folds all three "Show scroll bars" settings and, under
+  "Automatically", whether a mouse is connected: AppKit's scroller style
+  recommender listens for both the setting and pointing devices
+  connecting and disconnecting, and posts the notification when its
+  answer changes (read from the macOS 26.6 AppKit binary). The setting's
+  path was observed firing on macOS 26.6; a mouse plugged in under
+  "Automatically" was not. The bit follows shell.h's rule beside
+  `on_scroll_indicator`: a push only owes it, and the top of `drawRect:`
+  states it before `on_frame`. The clock's length is AppKit's own,
+  measured (`kNokreScrollBarHold`). The pointer stream is always sent, so
+  a thumb drag needs nothing of its own: AppKit delivers a press's drags
+  and release to the view that took it, outside the window included.
+- **Wheel and trackpad.** A scroll event with neither a phase nor a
+  momentum phase is a wheel: `FREE`, routed at the pointer, stopping at
+  the wall. That is a hard stop, not a gap — AppKit's own scroll views
+  band no wheel either. An event with either phase is a trackpad or
+  Magic Mouse gesture, and the shell brackets it (`BEGIN_ELASTIC` at the
+  pointer on `Began`) and completes the band on its own clock — the named
+  case "the shell completes a gesture past a wall core reported", with
+  shell.h's integrator as the whole spec. What is macOS's own is the
+  mapping onto it: `MayBegin` (fingers down, still) catches a recall and
+  keeps the bracket; the finger's `Ended` or `Cancelled` is the lift,
+  its velocity read off the last 100 ms of deltas; the momentum phase is
+  the fling, pulled until its impact and swallowed from there to its
+  own `Ended`. A lift with no band showing waits for momentum to begin
+  before END (why, and how long, is beside `releaseAt:`). The recall
+  ticks on a display link that exists only while a recall runs (which
+  one is beside `startRecallClock`). A click or a secondary click that
+  lands on the band, or on momentum still running, is refused down to
+  its release. Two events AppKit can fail to send are covered: fingers
+  unheard for `kNokreFingerSilence` are taken as lifted, and a momentum
+  `Began` over fingers still down is taken as their lift. While a mouse
+  button is held, a gesture scrolls as a wheel does (`scrollWheel:`).
+- **Where the platform shows no edge.** A user's
+  `NSScrollViewRubberbanding` default of 0 turns AppKit's own band off,
+  and then the bracket is a plain `BEGIN` and core clamps. Reduce Motion
+  keeps the band, as it keeps AppKit's (the finding is beside
+  `nokre_rubberbanding`).
+- **The lock is AppKit's latching.** A trackpad scroll belongs to the
+  scroller it started over, momentum included, and does not chain
+  outward mid-gesture, as AppKit's own scroll views latch a gesture. A
+  wheel chains event by event.
 
 ## iOS specifics
 
@@ -636,13 +719,53 @@ same contract with twists of its own:
   it, and core claims only fixed chrome with nothing scrollable beneath
   it — so the chip is where the user aimed, and refusing it would leave
   the one press-activated control dead while any fling ran. The fling
-  still stops; `touchesBegan` halts the feeder for every touch.
-  Scrolling borrows a hidden
-  UIScrollView as its physics engine (see the feeder comment in
-  shell.m): UIKit runs drag and flick-deceleration against a vast empty
-  content area, and the offset deltas stream to `on_scroll` bracketed
-  begin/move/end — one drag, momentum included, stays locked to the
-  scroller under the initial touch.
+  still stops: the touch stops the feeder. The exemption ends at a wall,
+  under the recall rule beside `NOKRE_SCROLL_BEGIN_ELASTIC` in shell.h.
+- **Scrolling.** A hidden UIScrollView is the physics engine (the feeder
+  comment in shell.m), its pan transplanted onto the view, and its offset
+  deltas stream to `on_scroll` in an elastic bracket
+  (`BEGIN_ELASTIC`/`MOVE`/`END`) — one drag, momentum and band included,
+  locked to the scrollers under the initial touch. **The wall is real:**
+  the feeder's geometry is the room core answers every call with and
+  nothing of the shell's, so UIKit decelerates into the wall and bands
+  past it with its own rubber band, which core draws as overshoot.
+  Reduce Motion leaves that band on, as it leaves UIKit's own. An axis
+  core refuses (a modal holding the window, a desk's window) gets no
+  band. **The re-seat:** after every answer, and after a layout that
+  changes the view's bounds (a rotation), the shell writes the room
+  back into the feeder wherever the two disagree — the minor axis core
+  dropped, a discard, content that grew or shrank — so a list that grows
+  mid-fling extends the fling, and one that shrinks bands at its new
+  end (how the writes keep UIKit's physics running: `seatFeeder`). **The
+  room is asked for, not remembered,** where core may have dropped an
+  overshoot since the last call: a new drag sends a zero `MOVE` first
+  and continues the bracket only if the answer still shows the content
+  past a wall, and otherwise ends it and opens a new one under the new
+  touch; losing the window's focus sends one too and closes the bracket
+  if nothing is moving. **END** comes from
+  `scrollViewDidEndDragging:willDecelerate:NO`,
+  `scrollViewDidEndDecelerating:` (UIKit's bounce is part of its
+  deceleration, so this arrives with the content back at the wall),
+  `touchesBegan:` halting a fling, a new drag replacing a finished
+  bracket, focus loss, and a recall's arrival — and never while the last
+  room is negative. **A touch during a band** keeps the bracket open:
+  UIKit halts the feeder at touch-down and reports the deceleration
+  ended, and the pan then takes that touch as a drag, a tap included,
+  which continues the same bracket and bounces the band home itself. A
+  band left standing with nothing moving it — a touch another recognizer
+  won — is recalled through the feeder (`setContentOffset:animated:YES`
+  to the wall), and END follows the answer that reaches it. An offset
+  change UIKit makes without beginning a drag is sent as `FREE`. These
+  UIKit facts were observed on the iOS 26.5 Simulator; the live band is
+  verified there, never by a golden.
+- **The scroll bar.** The shell states `indicator` once at boot — iOS
+  has no scroll bar setting, and an iPad's trackpad or mouse keeps
+  UIKit's overlay indicator — and follows `on_scroll_indicator`'s rule
+  in shell.h. `nokre_shell_scroll_activity` only owes the bit, and the
+  top of `drawRect:` states it. The clock is one `NSTimer` that exists
+  only while the bar is shown, and its length is where UIKit's own
+  indicator, measured on the iOS 26.5 Simulator, has finished fading
+  (`kNokreScrollBarHold`).
 - **The back gesture.** Two `UIScreenEdgePanGestureRecognizer`s, left
   and right, reporting translation to `on_edge_pan`; core picks the
   leading edge for the chrome's direction and ignores the other. The
@@ -792,6 +915,10 @@ of the same contract — plain C, message loop, no framework. Its twists:
   `WM_SETTINGCHANGE`'s `ImmersiveColorSet`; the title bar follows via
   `DWMWA_USE_IMMERSIVE_DARK_MODE` (frame chrome is the OS's to theme —
   nokre content itself never recolors).
+- **Scroll bar.** Interactive, stated once at boot, because a Win32
+  window has no overlay-bar setting to follow (beside that call in
+  `nokre_shell_run`; what it draws is
+  [../elements.md](../elements.md#scroll_region)'s).
 - **Toolchain.** The Skia prebuilt is MSVC-ABI, so `-Dskia` builds
   target `x86_64-windows-msvc` (build.zig defaults the ABI; Visual
   Studio's C++ Build Tools required) and text rasterizes through the
@@ -839,11 +966,41 @@ shell.m. Its twists:
   A running fling is halted in that branch *before* the detector sees
   the press, so `onDown` finds nothing to stop and does not also swallow
   it — the iOS exemption by the same reasoning. Unclaimed drags bracket
-  `BEGIN`/`MOVE`/`END` with the anchor locking core's routing, and
-  flings hand off to `OverScroller` — the platform's own physics, the
+  `BEGIN_ELASTIC`/`MOVE`/`END` with the anchor locking core's routing,
+  and flings hand off to `OverScroller` — the platform's own physics, the
   iOS hidden-UIScrollView bargain — stepped inside the paced frame
-  below while decelerating. A touch during a fling stops it without
-  also activating what it lands on. The detector's long press is armed
+  below while decelerating.
+- **The wall and the band.** Android rents no band physics, so this is
+  the shell the named case "the shell completes a gesture past a wall
+  core reported" is about: it runs shell.h's
+  integrator, with `nokre_core_scroll_pull` and
+  `nokre_core_scroll_recall` called through thin JNI wrappers in
+  shell.c so the Java half carries neither curve, and the recall ticked
+  on the same frame callback. The room comes back from every
+  `nativeScroll` in an `int[]` the view keeps as a cache. **The fling
+  is not given the wall as bounds**: it runs on the dominant axis, its
+  deltas go through the pull like a finger's, and the impact is read
+  off the room — why a bounded `OverScroller` cannot serve is beside
+  `NokreView.release`, and when a fling with no band to enter ends is
+  `wallStops`. So there is no mid-fling restart, and no velocity
+  continuity across one to check. A touch during a fling or a recall
+  stops it without activating what it lands on, and over a live band
+  the bracket stays open for the finger that caught it; the claim is
+  refused meanwhile, under shell.h's recall rule. With animations
+  removed (`ValueAnimator.areAnimatorsEnabled()`, read per gesture)
+  the bracket is a plain `BEGIN` and a fling stops dead at the wall,
+  as the platform's own scroll views do.
+- **The scroll bar.** The shell states `indicator` at boot — Android's
+  own scroll views keep their fading overlay bar under a mouse or
+  trackpad too, so there is no device to follow — and restates it on
+  every recreate, which core ignores. It follows
+  `on_scroll_indicator`'s rule in shell.h. `nokre_shell_scroll_activity`
+  only owes the bit, and the frame callback states it after its fling
+  and recall steps and before it decides to draw. The clock is one
+  delayed post that exists only while the bar is up, so idle stays
+  silent, and its length is the platform's own `getScrollDefaultDelay()`
+  plus `getScrollBarFadeDuration()` (`NokreView.BAR_LINGER_MS`).
+- **Long press.** The detector's long press is armed
   only while a field holds focus (`setIsLongpressEnabled` follows
   `wants_text_input`) and then sends `on_long_press` wherever it landed,
   since core hit-tests the point itself. Arming it everywhere would cost
@@ -886,7 +1043,8 @@ shell.m. Its twists:
   answers it per event and has nothing to latch.
 - **Pacing.** One `Choreographer` frame callback draws; input is
   applied to core on arrival and only marks, and the callback is armed
-  by a mark, a geometry change or a running fling — never while the app
+  by a mark, a geometry change, a running fling or a recalling band —
+  never while the app
   is at rest, so idle stays silent (no `doFrame`, no post). A drawing
   frame arms the next slot *before* it draws, and that order is the
   whole point: the draw holds the main thread past the vsync, the
@@ -1159,6 +1317,10 @@ and one backend per platform is the charter. Its twists:
   `org.freedesktop.appearance color-scheme` value read from
   xdg-desktop-portal over D-Bus, re-read on the portal's `SettingChanged`
   signal; absent a portal the shell reports light, the honest default.
+- **Scroll bar.** Interactive, stated once at boot, because the shell
+  reads no desktop's overlay-scrolling preference (beside that call in
+  `nokre_shell_run`; what it draws is
+  [../elements.md](../elements.md#scroll_region)'s).
 - **Accessibility.** AccessKit's Unix adapter (AT-SPI — Orca) registers
   the process on the a11y bus. Unlike the macOS/Windows subclassing
   adapters it has no window handle and runs its handlers on its own
@@ -1285,18 +1447,23 @@ adapter:
 ## Writing a new shell
 
 Port `shell.h` to the platform's windowing API (~300–500 lines of native
-code), map keycodes to the `NOKRE_KEY_*` enum — Space by the one-leg rule
-above, which no golden can catch for you, and the platform's own editing
-chords onto the semantic keys, since core will not map them for you —
-blit RGBX. Fill the platform's text document from `editable_snapshot`
-rather than from the composition, which is the mistake this contract was
-widened to stop ("The honest document" above). Add
-`nokre_locale_install` with it — the one service hook that has no unlinked
-path, so an omission is an unresolved symbol rather than a missing
-feature (the contract, including the fire-before-you-return clause, is
-above). Then run the kitchen-sink example and the golden suite; if
-goldens pass, the platform renders byte-identically and the job is done
-— remembering that byte-identity is per-platform by design
+code), map keycodes to the `NOKRE_KEY_*` enum — Space by the one-leg
+rule above, which no golden can catch for you, and the platform's own
+editing chords onto the semantic keys, since core will not map them for
+you — blit RGBX. Fill the platform's text document from
+`editable_snapshot` rather than from the composition, which is the
+mistake this contract was widened to stop ("The honest document" above).
+Add `nokre_locale_install` and `nokre_shell_scroll_activity` with it —
+the two service hooks that have no unlinked path, so an omission is an
+unresolved symbol rather than a missing feature (the locale contract,
+including the fire-before-you-return clause, is above). Brackets are
+owed as shell.h states them beside `nokre_scroll_room` and
+`NOKRE_SCROLL_BEGIN_ELASTIC`; the two named cases at the top of this
+page — the scroll indicator's presentation, and a gesture completed past
+a wall — are owed where each says; a shell that states no presentation
+keeps the legacy bar. Then run the kitchen-sink example and the golden
+suite; if goldens pass, the platform renders byte-identically and the
+job is done — remembering that byte-identity is per-platform by design
 ([pixel-model.md](pixel-model.md)): the committed goldens are
 macOS-generated, so a new shell validates against its own regenerated
 set, permanently, rather than waiting for one set to serve everything.

@@ -735,9 +735,10 @@ pre.code {
 }
 
 /* The 2px indicator that rides the bottom of anything overflowing
-   horizontally, in the scroll_region pattern: quiet at rest, and
-   never fading on a timer, because a bar that vanishes takes the
-   only sign the content scrolls with it. */
+   horizontally, in the scroll_region pattern, quiet at rest. When a
+   bar shows is the shell's to state and the browser is this
+   substrate's shell (docs/elements.md, scroll_region); a styled
+   WebKit bar never fades, so this one stays up. */
 pre.code::-webkit-scrollbar, .table-wrap::-webkit-scrollbar, .seg-track::-webkit-scrollbar { height: 2px; }
 pre.code::-webkit-scrollbar-track, .table-wrap::-webkit-scrollbar-track, .seg-track::-webkit-scrollbar-track { background: transparent; }
 pre.code::-webkit-scrollbar-thumb, .table-wrap::-webkit-scrollbar-thumb, .seg-track::-webkit-scrollbar-thumb { background: var(--g9); }

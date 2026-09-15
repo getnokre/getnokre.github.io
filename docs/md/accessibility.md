@@ -492,15 +492,21 @@ fails on:
   roster before its main, so the set is only whole here — exactly
   `empty_list`'s argument
 - `cleanly_clipped_scroll_region` — an overflowing fixed-height scroll
-  region whose offset-0 edge cuts nothing visible. The resting
-  indicator is deliberately quiet, so the mid-element cut is what makes
-  the overflow perceivable; an edge landing in a gap, on an element
+  region whose offset-0 edge cuts nothing visible. At rest the bar is
+  quiet or not drawn at all, so the mid-element cut is what makes the
+  overflow perceivable; an edge landing in a gap, on an element
   boundary, or in a text line's leading reads as complete content.
   Fill (null) heights, a desk `region`'s band height and the picker's
   list all resolve against the viewport and are exempt — a rule firing
   at one window size and not another would be unfixable. The scope is
   the **viewport**, which nothing declares, and not the medium, which
-  an app does ([testing.md](testing.md), "The audit matrix")
+  an app does ([testing.md](testing.md), "The audit matrix"). The
+  scroll bar presentation is not a scope either: the rule runs in the
+  layout the app stands in and again in the other layout a
+  presentation can put it in — an interactive bar reserves its strip
+  and rewraps what is beside it ([elements.md](elements.md#scroll_region))
+  — and a failure names the layout it failed in. Two layouts are every
+  one there is, so a pass holds under every presentation
 
 Because the audit inspects the same tree that renders, a passing audit is a
 real guarantee, not a lint heuristic.
