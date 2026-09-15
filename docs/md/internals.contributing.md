@@ -293,9 +293,12 @@ for the full list. The ones that don't have a `docs/testing.md` page:
 - **The desktop link** — `zig build test -Dskia`: examples are built,
   not just installed. Kitchen sink links zero services; hello links
   only those that need identity.
-- **secure_store outside `zig test`** —
+- **The two stores outside `zig test`** —
   [tests/dev_store.zig](../../tests/dev_store.zig): a real `App`
-  driving four verbs through the dev file store on a macOS or Linux host.
+  driving secure_store's four verbs through the dev file store on a
+  macOS or Linux host, then roaming_store's through its own — two
+  backends, one binary, so "the stores do not alias" is asserted
+  against files the OS wrote.
 - **The transport's threads** —
   [tests/http_stress.zig](../../tests/http_stress.zig): two `App`s in
   one process, 1920 requests at a loopback origin. Restoring the async

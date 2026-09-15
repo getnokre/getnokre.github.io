@@ -563,6 +563,18 @@ defer app.deinit(); // the fake dies with the app
 const fake = app.services.secure_store.state.?; // journal, knobs, peek
 ```
 
+`roaming_store` is the same fake — literally the same type, since the
+two services share one pouch contract — on its own field:
+`.services = .{ .roaming_store = .mock(.{ .seeds = … }) }`, read back
+through `app.services.roaming_store.state.?`. A seed there is how a test
+says *another device already wrote this*, which for that store is the
+ordinary case rather than a contrivance. The one thing it adds is
+`remaining`, the byte budget's pre-flight, which answers off the fake's
+own entries ([internals/roaming_store.md](internals/roaming_store.md)).
+The harness's `t.store` stays secure_store's; there is no second alias,
+because a test whose subject is the roaming store is reaching for a
+field name anyway.
+
 Why a sync store needs no settle at all is
 [internals/secure_store.md](internals/secure_store.md).
 
@@ -1288,7 +1300,7 @@ every `zig build test -Dskia`:
 
 | gate | what reaches a real implementation |
 | --- | --- |
-| `tests/dev_store.zig` | the secure_store verbs, against a store the OS answers (desktop POSIX) |
+| `tests/dev_store.zig` | the secure_store and roaming_store verbs, against stores the OS answers (desktop POSIX) |
 | `src/services/http/native_test.zig` | the native http transport's six verbs, over a real loopback socket inside the test binary |
 | `tests/http_stress.zig` | the native http transport's threads, against a loopback socket |
 | `tests/capture.zig` | a `DriverApp`-driven app's artifacts, out of a process with no window — and the PNG read back by a decoder that is not the encoder (`-Dskia`, desktop) |
@@ -1328,7 +1340,7 @@ NSException before a screen exists to fail.
 ### The web's own gate
 
 `zig build test` builds `tests/web_services.zig` — an ordinary nokre app
-with deep_link, oauth and secure_store linked, a two-locale ARB bundle
+with deep_link, oauth, secure_store and roaming_store linked, a two-locale ARB bundle
 behind its screens and a nav roster over them — into a site the same way
 `addApp` builds a consumer's, then boots that site in node against
 `tests/web_browser.mjs`, a browser stub carrying nothing but platform
@@ -1363,6 +1375,13 @@ rather than analyzed:
   reload and a deleted one does not come back; and a storage that is
   blocked or full costs reload-survival and nothing else — the table
   still answers, which is why this leg has no `Unavailable`.
+- **roaming_store** — the other store on the same storage schema: a
+  `set` on one is invisible to the other's `get`, and each boot snapshot
+  takes only its own namespace. Its web table is a different shape — a
+  byte arena behind the budget rather than a fixed slot per entry — so a
+  delete from the *middle* is driven and the survivors read back, which
+  a stale offset would fail and nothing else would catch; and the budget
+  refuses a write with `StoreFull` long before the entry cap.
 - **locale** — the seed lane reaches the first `build`, and the two
   sources are held against each other: a page that says nothing about a
   language boots in the browser's; a page that pins one boots in *its*
@@ -2006,12 +2025,19 @@ carries a gate of its own for it
 `zig build test`.
 
 The one service a driver cannot simply use as it stands is
-`secure_store`, and it has its own answer: `.secure_store_dev = true`
+`secure_store` — and `roaming_store` beside it, which cannot write a
+synchronizable keychain item from an unsigned binary either. Each has
+its own answer: `.secure_store_dev = true`
 swaps the Keychain or the Secret Service for a plaintext file the driver
 owns, because an unentitled binary is refused the data-protection
 keychain and a headless CI machine runs no keyring daemon
 ([services.md](services.md) has the gates that keep it out of a shipping
-build). `nokre.addDevStoreDriver` builds a driver on exactly that
+build), and `.roaming_store = true` on `addDevStoreDriver` adds the
+roaming store's twin, whose variable names a *directory* — the stand-in
+for one account's cloud, so two app instances pointed at it are two
+devices restoring one backup
+([internals/roaming_store.md](internals/roaming_store.md)).
+`nokre.addDevStoreDriver` builds a driver on exactly that
 configuration in one call —
 [getting-started.md](getting-started.md#the-fourth-artifact-a-driver)
 has it and its plainer sibling. nokre's own `tests/dev_store.zig` is a

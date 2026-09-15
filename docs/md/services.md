@@ -37,7 +37,8 @@ internals doc.
 
 | Service | Job | Status |
 | --- | --- | --- |
-| `secure_store` | Encrypted key/value for small secrets: get, set, delete, list. | **Working** — five native backends; web is session-scoped |
+| `secure_store` | Encrypted key/value for small secrets: get, set, delete, list. **Never leaves the device.** | **Working** — five native backends; web is session-scoped |
+| `roaming_store` | The same pouch, opposite posture: entries are meant to reach the account's next device. | **Working** — iCloud Keychain on Apple, the platform backup on Android; device-local elsewhere |
 | `package_info` | App identity: name, id, version, build, installer source. One struct. | **Working** |
 | `clipboard` | Copy UTF-8 text out; ask the platform to paste. Still no read. | **Working** |
 | `deep_link` | Inbound URL at launch and while running. Delivers the URL; routing is the app's. | **Working** — native + web; Windows is custom-scheme only |
@@ -173,14 +174,24 @@ too: a `get` miss is `null`, an empty value is legal and distinct from
 absent, `delete` is idempotent, `set` is an upsert, and `list` of an
 empty store is an empty slice.
 
-**Nothing roams.** Entries never leave the device on any platform:
-`kSecAttrSynchronizable` is never set, and Windows credentials persist
-per-machine. Two devices merging secrets is nondeterminism — an entry
-can only appear because this app wrote it on this device. The cap and
-the namespace are the service's, not the OS's: on Windows the entries
-are visible in the OS's own Credential Manager panel, where a user can
-inspect and delete them — an externally deleted entry surfaces as
-`get → null`; treat it as "signed out", never as impossible.
+**secure_store never roams.** Entries never leave the device on any
+platform: `kSecAttrSynchronizable` is never set, and Windows credentials
+persist per-machine. An entry can only appear because this app wrote it
+on this device, and a lost phone loses everything in here.
+
+If that is the wrong trade for a particular secret, it is a different
+store, not a flag: [`roaming_store`](#roaming_store-the-pouch-that-outlives-the-device)
+below is the same four verbs with the opposite posture, linked
+separately, so one app can hold a session that dies with the device and
+a credential that outlives it. The two never alias — the roaming store's
+namespace carries a suffix outside both the key charset and a
+reverse-DNS id — and nothing crosses between them.
+
+The cap and the namespace are the service's, not the OS's: on Windows
+the entries are visible in the OS's own Credential Manager panel, where
+a user can inspect and delete them — an externally deleted entry
+surfaces as `get → null`; treat it as "signed out", never as
+impossible.
 
 **On the web,** "secure" means session-scoped, not encrypted: entries
 live in the tab's sessionStorage — readable by any same-origin script,
@@ -250,6 +261,90 @@ The wiring — the Keychain/CredMan mappings, the web snapshot/mirror
 flow, the dev store's file format and its four gates, and why each
 refusal holds — is
 [internals/secure_store.md](internals/secure_store.md).
+
+### roaming_store: the pouch that outlives the device
+
+Same four verbs, same caps, same errors, same charset — `ValueBuf` is
+literally the same type — and one thing more: `remaining`. What differs
+is the posture, and it is the whole point.
+
+```zig
+const nokre = b.dependency("nokre", .{
+    // ...
+    .pkg_id = @as([]const u8, "com.example.notes"),
+    .roaming_store = true, // beside .secure_store, or instead of it
+});
+```
+
+```zig
+const rs = nokre.services.roaming_store;
+var buf: rs.ValueBuf = undefined;
+const key = try rs.get(app, "device.key", &buf);   // may be another device's
+try rs.set(app, "device.key", material);           // StoreFull past the budget
+const left = try rs.remaining(app);                // bytes, before you commit
+```
+
+**Where entries go, per platform.** There is no pretending here: two of
+the six carry an entry to a replacement device and four do not.
+
+| Platform | What carries it | What a user has to have done |
+| --- | --- | --- |
+| iOS / macOS | iCloud Keychain (`kSecAttrSynchronizable`) | iCloud Keychain on. Entries also appear on the account's *other* devices, live |
+| Android | the platform's own end-to-end backup, encrypted under the device's lockscreen secret | backup on, and a screen lock set. **No lock screen, no cloud backup** — from Android 12 the rules switch the cloud half off rather than let it go out under Google's key; on 9–11 the platform offers no such switch, and [internals/roaming_store.md](internals/roaming_store.md) states what is left open. A cable transfer to the new phone needs neither |
+| Windows | nothing — device-local, under its own namespace | — |
+| Linux | nothing — device-local, under its own namespace | — |
+| Web | nothing — session-scoped, `secure_store`'s posture exactly | — |
+
+The four that carry nothing still answer every verb normally, so a
+consumer's code path does not fork by platform; what forks is what
+survives a lost device, and that is stated rather than hidden. Nothing
+here is a switch a user sees in your app: the control is the operating
+system's own, where they already exercise it.
+
+**Three things the Apple leg means that the device store never did.**
+`list` may name a key another device wrote. `get` may return a value
+this device never stored. `delete` propagates — signing out here signs
+out there. If merging two devices' writes is wrong for your data, this
+is the wrong store for it.
+
+**The Android leg is the weaker one, stated plainly.** The backup runs
+on the platform's schedule — roughly nightly, idle, on Wi-Fi — so a
+value written shortly before a device is lost may never have travelled.
+The restore lands at install, ahead of the app's first launch, and only
+onto a device signed into the same account. And what protects the value
+*at rest on the device* is the app sandbox and file-based encryption,
+not a Keystore key: a Keystore key is device-bound, so anything wrapped
+in one restores as bytes nothing can open. That is the trade the whole
+service is, and it is why linking it flips `android:allowBackup` to
+`true` — narrowed by rules that name this one file and nothing else the
+app writes.
+
+**One more cap: a budget, in bytes.** 64 KiB for the whole store, keys
+and values together — `key.len + value.len` summed, with no per-entry
+framing, so the number means the same thing on all six platforms. A
+write that would cross it is `StoreFull`, exactly as the 256th distinct
+key is; `remaining` is how you tell which, and how you decide *before*
+committing to something you must then be able to store. Overwriting a
+key already present never trips it, because the bytes it frees are the
+bytes it spends.
+
+It exists because a roaming store's real constraint is how much crosses
+a network into a per-account quota, not how many rows a keychain holds:
+256 entries at the value cap is 688 KiB, which is a document store. The
+number is the smallest credential-roaming facility any of the six
+platforms offers, so a future backend swap is not a contract change.
+
+**A dev store, `secure_store_dev`'s twin.** `.roaming_store_dev = true`
+under the same three gates (Debug, macOS or desktop Linux, alongside the
+linked service). Its variable names a **directory** rather than a file —
+`$NOKRE_ROAMING_STORE_DEV` — because the directory is what stands in for
+one account's cloud: point two app instances at one directory and they
+are two devices restoring one backup, which is the journey worth
+driving.
+
+The wiring — the keychain attributes, the Android backup rules, why
+Block Store is not the Android leg, and what each refusal costs — is
+[internals/roaming_store.md](internals/roaming_store.md).
 
 ### clipboard: text out, and a paste the platform performs
 

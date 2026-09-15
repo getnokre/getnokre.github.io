@@ -104,6 +104,10 @@
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.secure_store/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.secure_store/"/>
 </url>
+<url><loc>https://getnokre.github.io/en/internals.roaming_store/</loc>
+<xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.roaming_store/"/>
+<xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.roaming_store/"/>
+</url>
 <url><loc>https://getnokre.github.io/en/internals.oauth/</loc>
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.oauth/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.oauth/"/>

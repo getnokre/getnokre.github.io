@@ -238,6 +238,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.roaming_store",
+        .title = .titleInternalsRoamingStore,
+        .blurb = .blurbInternalsRoamingStore,
+        .icon = .cloud,
+        .md = "internals/roaming_store.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.oauth",
         .title = .titleInternalsOauth,
         .blurb = .blurbInternalsOauth,

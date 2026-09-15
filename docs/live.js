@@ -40,7 +40,7 @@
 //
 // — and everything below them is the same driver, doing the same thing.
 
-import { appHooks, registerServiceWorker, reportAuthToOpener, seedSecureStore } from "./services.js";
+import { appHooks, registerServiceWorker, reportAuthToOpener, seedStores } from "./services.js";
 
 // core/event.zig's `Key`, in that enum's order. Anything not here is
 // not a key nokre has — the set is closed there too, so this table is
@@ -975,7 +975,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // (services/secure_store/web.zig owns the seed exports; services.js
   // owns the sessionStorage schema, so the scan lives beside the
   // mirror it feeds).
-  seedSecureStore(nk, memory);
+  seedStores(nk, memory);
 
   // The oauth redirect: this page's own address, without query or
   // fragment — the provider appends its own. Seeded before boot like

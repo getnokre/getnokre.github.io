@@ -142,13 +142,25 @@ function b64decode(s) {
 
 /// The boot snapshot, poured through the seed exports strictly before
 /// `nokre_dom_boot` so a boot-time get inside the first build answers
-/// synchronously — no handshake (services/secure_store/web.zig owns
-/// the exports; live.js calls this pre-boot, the locale's ordering).
-/// Absent exports are an unlinked build; blocked storage is an empty
-/// snapshot (and a dead mirror later): a pure session cache where
-/// every call still behaves identically.
-export function seedSecureStore(nk, memory) {
-  if (!nk.nokre_ss_seed) return;
+/// synchronously — no handshake (services/secure_store/web.zig and
+/// services/roaming_store/web.zig own the exports; live.js calls this
+/// pre-boot, the locale's ordering). Absent exports are an unlinked
+/// build; blocked storage is an empty snapshot (and a dead mirror
+/// later): a pure session cache where every call still behaves
+/// identically.
+///
+/// One storage schema, two stores: the `"nokre.ss."` prefix is the
+/// schema and the namespace inside the key is what separates them, so
+/// each store's own seed export filters to its own namespace and the
+/// scan stays namespace-agnostic — it cannot know a pkg_id before wasm
+/// boots.
+export function seedStores(nk, memory) {
+  seedOne(nk, memory, nk.nokre_ss_seed_scratch, nk.nokre_ss_seed);
+  seedOne(nk, memory, nk.nokre_rs_seed_scratch, nk.nokre_rs_seed);
+}
+
+function seedOne(nk, memory, scratch, seed) {
+  if (!seed) return;
   const encoder = new TextEncoder();
   try {
     for (let i = 0; i < sessionStorage.length; i++) {
@@ -166,11 +178,11 @@ export function seedSecureStore(nk, memory) {
       const kb = encoder.encode(key.slice(SS_PREFIX.length));
       // A null scratch means [key][value] exceeds the in-contract
       // ferry — an entry that large cannot be this app's.
-      const ptr = nk.nokre_ss_seed_scratch(kb.length + value.length);
+      const ptr = scratch(kb.length + value.length);
       if (!ptr) continue;
       memory().set(kb, ptr);
       memory().set(value, ptr + kb.length);
-      nk.nokre_ss_seed(kb.length, value.length);
+      seed(kb.length, value.length);
     }
   } catch {}
 }

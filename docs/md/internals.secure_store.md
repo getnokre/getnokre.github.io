@@ -338,7 +338,7 @@ synchronous calls in services.js — which owns the storage schema (the
 `"nokre.ss."` prefix and the base64 bridge), so the scan and the mirror
 cannot drift apart:
 
-1. **Boot snapshot.** live.js calls services.js's `seedSecureStore`
+1. **Boot snapshot.** live.js calls services.js's `seedStores`
    after instantiation, strictly before `nokre_dom_boot`. It scans
    sessionStorage for keys prefixed `"nokre.ss."` — the JS side is
    namespace-agnostic; it cannot know pkg_id before wasm boots —
@@ -347,7 +347,10 @@ cannot drift apart:
    `nokre_ss_seed_scratch` / `nokre_ss_seed` exports — skipping when
    the export is absent (unlinked builds ship none) or when scratch
    returns null (an entry that large is by construction foreign or out
-   of contract). web.zig filters to this app's `"<pkg_id>/"` prefix
+   of contract). It pours the same scan through roaming_store's
+   `nokre_rs_seed*` pair as well: one schema, two namespaces, and each
+   store's own export filters to its own. web.zig filters to this app's
+   `"<pkg_id>/"` prefix
    and applies the same out-of-contract refusals as native list.
    Seeding before boot is what lets a boot-time `get` inside the first
    `build` answer synchronously.
@@ -634,11 +637,19 @@ These are guarantees, not gaps:
   A watcher needs a ticker or an off-thread callback, and nokre has
   neither. If another process changes an entry, you see it on your
   next read — that is the whole contract.
-- **No cross-device sync.** `kSecAttrSynchronizable` is never set;
-  CredMan persists `LOCAL_MACHINE`. Two devices merging secrets is
-  nondeterminism; the consumer argument — an entry can only appear
-  because this app wrote it on this device — is made once in
-  [../services.md](../services.md).
+- **No cross-device sync, *in this store*.** `kSecAttrSynchronizable`
+  is never set; CredMan persists `LOCAL_MACHINE`. Two devices merging
+  secrets is nondeterminism, and an entry here can only appear because
+  this app wrote it on this device.
+  That refusal was asked to be relaxed on 2026-09-15 and was not.
+  What landed instead, the same day, is a **second service**:
+  [roaming_store.md](roaming_store.md) is the same pouch contract with
+  the opposite posture, linked separately, so an app can hold a session
+  that dies with the device and a credential that outlives it. The
+  grounds for splitting rather than relaxing are that both answers are
+  right for different data, and that this store's users get to keep
+  reading the sentence above as a guarantee. Nothing about this store
+  changed: no attribute, no persistence flag, no knob.
 - **No per-item protection levels.** No biometry gates, no per-key
   accessibility classes, no access-control knobs. One store, one
   posture per platform, stated. A payment credential wanting Face ID
@@ -664,3 +675,26 @@ These are guarantees, not gaps:
 
 (The Linux libsecret and Android Keystore backends have both landed —
 see the sections above.)
+
+## Answered
+
+- **A synced posture, asked by rokovski on 2026-09-15, answered the same
+  day.** Not a knob and not a relaxation: a second linked service,
+  [roaming_store.md](roaming_store.md). The ask named the shape almost
+  exactly — one posture per linked store, opted into per app at build
+  time — and the two places the answer departs from it are recorded
+  there: the Android leg rides the platform's own backup rather than
+  Google's Block Store (four reasons, all stated), and the roaming store
+  carries a byte budget this one does not.
+
+  What that service takes from this file it **imports** rather than
+  copies: the caps, the charset, the buffers, the error names and the
+  fake, so `ValueBuf` is one type and the two stores cannot drift into
+  two meanings of `ValueTooLarge`. Four of its six backends are this
+  directory's own C, reached through a shim that redefines
+  `NOKRE_STORE_FN` — which is why `secure_store.h`'s prototypes and the
+  four entry points in `windows.c`, `linux.c`, `android.c` and `dev.c`
+  are written through that macro. `dev.c` carries three more
+  (`NOKRE_DEV_LABEL`, `NOKRE_DEV_ENV`, `NOKRE_DEV_ENV_IS_DIR`) and
+  `android.c` one (`NOKRE_STORE_JAVA_CLASS`). The MockState's four
+  `svc*` verbs are `pub` for the same reason: two services, one fake.

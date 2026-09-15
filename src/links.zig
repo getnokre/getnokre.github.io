@@ -236,6 +236,7 @@ test "doc-relative destinations resolve to flat routes" {
         .{ "README.md", "docs/internals", "internals" },
         .{ "../README.md", "docs/internals", "docs" },
         .{ "internals/secure_store.md", "docs", "internals.secure_store" },
+        .{ "internals/roaming_store.md", "docs", "internals.roaming_store" },
     };
     inline for (cases) |c| {
         const t = try resolve(gpa, c[0], c[1]);
