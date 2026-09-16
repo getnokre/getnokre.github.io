@@ -91,12 +91,31 @@ development succeeds at a user's.
   is the floor a replacement leg would have to clear, so holding to it
   keeps a future backend swap from being a contract change. Windows'
   2560 became every platform's value cap on the same argument.
-- **What it costs the first consumer.** rokovski's token store caps
-  itself at 84 entries of roughly 400 bytes each (a ~110-byte key and a
-  ~290-byte raw record): 33,600 bytes, 51% of the budget, with room for
-  79 more of the same shape. A test spends exactly that and asserts what
-  is left, so a cap changed here has to be argued against the one shape
-  that was measured.
+- **What it buys the first consumer, and the 99% is arithmetic.**
+  rokovski's token store holds records of
+  `token_len:u8 ++ raw token ++ raw signature` — 289 bytes at a
+  2048-bit signature, 577 at a 4096-bit modulus — under 128-byte keys,
+  and its own gate budgets 705 bytes per record as the upper bound. It
+  holds **no record cap of its own**: the count is read off this budget
+  at runtime through `remaining`, so what it can hold is
+  `⌊65536 / 705⌋` = 92. The worst case therefore lands at 92 × 705 =
+  **64,860 of 65,536** — 99% — by construction rather than by luck, and
+  the 676 bytes left over are the remainder of that division, not
+  headroom anyone spent. A derived count always fills its budget to
+  within one record; a count that did not would mean the consumer had
+  stopped reading `remaining`.
+
+  So there is **one knob, and it is `max_total_bytes`.** Raising it
+  raises the consumer's record count with it and the fit stays at 99%;
+  lowering it lowers the count and the fit stays at 99%. What the number
+  decides is not whether the consumer fits — it always does — but how
+  many channels a person can be sending in, which is the thing to argue
+  about if 92 is ever too few. The shape that actually ships spends
+  92 × 417 = 38,364 bytes, 59%, and the distance between that and the
+  ceiling is the distance between the signature in use and the widest
+  one the gate admits. A test spends the ceiling and asserts the 676, so
+  a change to this constant is a failing test rather than a discovery at
+  a user's.
 - **`StoreFull` means both lines, and that is deliberate.** The entry
   cap and the byte budget raise the same error because a consumer's
   answer to either is the same — store less — and `remaining` is how it
@@ -154,14 +173,26 @@ leg:
 | anything else | `Unavailable` |
 
 **No entitlement is derived**, and the silence is the row rather than an
-omission: `kSecAttrSynchronizable` on an item in the app's *own* access
-group needs none. A keychain **sharing** group would need the
-`keychain-access-groups` entitlement, and this service never sets
-`kSecAttrAccessGroup`. This is the one fact here verified only against
-Apple's documentation and not against a signed build on a device; a
-consumer shipping the Apple leg should confirm it once on hardware. The
-packaging test asserts the emitted entitlements file stays empty, so a
-future edit that adds one is a failing test rather than a surprise.
+omission. `kSecAttrSynchronizable` **is** the mechanism: there is no
+separate synchronizable entitlement to declare. The app's default
+keychain access group is derived from its application identifier and
+needs nothing declared; `keychain-access-groups` exists for *additional*
+or *shared* groups, and this service never sets `kSecAttrAccessGroup`,
+so it never asks for one.
+
+The two are also different questions, which is where the doubt came
+from: an access group decides **who may read** an item, and
+`kSecAttrSynchronizable` decides **whether it participates in iCloud
+Keychain sync**. Being synchronizable does not imply Keychain Sharing.
+The packaging test asserts the emitted entitlements file stays empty, so
+an edit that adds one is a failing test rather than a surprise.
+
+What is genuinely unobserved here is narrower, and it is not a library
+question: whether an item this leg writes on one signed device turns up
+on a second signed device under the same Apple Account. That is iCloud
+Keychain doing its own job, it needs two provisioned devices and a
+signed build, and it belongs in a consumer's runbook as a device test —
+not in this repository, which has neither.
 
 ## Android: the platform's own backup, not Block Store
 
@@ -224,10 +255,14 @@ side fails there instead of silently backing up nothing.
 **Why not Block Store**, which is Google's own answer to this and was
 the shape first proposed. Four counts, each independently sufficient:
 
-1. **Quota.** 16 byte arrays of 4 KiB is ~64 KiB total against Auto
-   Backup's 25 MB per app. The first consumer's measured worst case is
-   33.6 KiB — it fits, but at 51% of everything, and the ceiling would
-   then be a real wall rather than a policy line.
+1. **Quota.** 16 byte arrays of 4 KiB is 65,536 bytes *before* any
+   framing, against Auto Backup's 25 MB per app. A consumer deriving its
+   count from the budget does not overflow either way — it holds fewer
+   records — so what the quota decides is capability, and Block Store
+   decides it for us: 64 KiB is Google's number, minus whatever a packed
+   map's per-entry framing costs, and no argument raises it. Under Auto
+   Backup the same ceiling is nokre's own policy line, 385 times inside
+   the platform's bound, and raising it is an edit to one constant.
 2. **Atomicity.** A logical map across 16 arrays is 16 non-atomic
    `storeBytes` calls, so a failure between them leaves a torn store —
    the exact objection that killed chunking on Windows
@@ -332,10 +367,15 @@ directory has copied the cloud.
   empty entitlements file byte-exact.
 - **Nothing runs `apple.m` or the Java backend.** The Apple leg cannot
   be reached from an unsigned test binary at all, and the Android leg is
-  NDK-built by a consumer's Gradle. Both were verified by reading the
-  platform documentation and by construction against secure_store's
-  measured behaviour on the same APIs; neither has been run on a device
-  in this repository, and nothing here pretends otherwise.
+  NDK-built by a consumer's Gradle. Both were written against the
+  platform documentation and against secure_store's measured behaviour
+  on the same APIs; neither has been run on a device in this repository,
+  and nothing here pretends otherwise. The one observation that would
+  need real hardware is the round trip itself — an item written on one
+  signed device read back on a second under the same Apple Account, and
+  its Android twin across a restore — which is a consumer's device test,
+  since it exercises iCloud Keychain and Auto Backup rather than
+  anything this library decides.
 
 ## Refusals
 

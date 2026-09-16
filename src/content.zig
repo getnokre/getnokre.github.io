@@ -402,8 +402,8 @@ fn gallery(app: *App) !void {
     // it has to be up there rather than in a row below the heading: the tree
     // refuses one anywhere but the root.
     try app.setHeaderActions(&.{
-        .{ .icon = .chevron_up, .label = "Back to top" },
-        .{ .icon = .copy, .label = "Copy a link to this page" },
+        .{ .icon = .lucide_chevron_up, .label = "Back to top" },
+        .{ .icon = .lucide_copy, .label = "Copy a link to this page" },
     });
 
     try b.text("The complete, closed set. Every element carries its semantics with " ++
@@ -441,11 +441,11 @@ fn gallery(app: *App) !void {
 
     try b.heading(.h3, "icon");
     const icons = try b.stack(.{ .axis = .horizontal, .gap = 8 });
-    try icons.icon(.{ .name = .shapes, .label = "Shapes" });
-    try icons.icon(.{ .name = .ruler, .label = "Ruler" });
-    try icons.icon(.{ .name = .accessibility, .label = "Accessibility" });
-    try icons.icon(.{ .name = .flask_conical, .label = "Flask" });
-    try icons.icon(.{ .name = .globe, .ink = .mid });
+    try icons.icon(.{ .name = .lucide_shapes, .label = "Shapes" });
+    try icons.icon(.{ .name = .lucide_ruler, .label = "Ruler" });
+    try icons.icon(.{ .name = .lucide_accessibility, .label = "Accessibility" });
+    try icons.icon(.{ .name = .lucide_flask_conical, .label = "Flask" });
+    try icons.icon(.{ .name = .lucide_globe, .ink = .mid });
     try b.styled("One named Lucide glyph, laid out as a square line-height box. An empty label means decorative, and decorative means hidden from assistive tech; a named one is announced and must clear the same contrast gate as text.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "divider");

@@ -58,12 +58,6 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    // The subset script, importable as text (`@embedFile` in icons.zig):
-    // the ICONS table it subsets the icon face from is what the icon
-    // checks — unit test and generation-time both — read as the ground
-    // truth for what the served woff2 can draw.
-    mod.addAnonymousImport("build-fonts.py", .{ .root_source_file = b.path("tools/build-fonts.py") });
-
     const gen = b.addExecutable(.{ .name = "generate", .root_module = mod });
 
     const run = b.addRunArtifact(gen);
@@ -113,6 +107,12 @@ pub fn build(b: *std.Build) void {
     // into its own tree, read out of the assembled site so the two
     // trees cannot disagree.
     mod.addImport("web_assets", nokre_build.webAssets(live, b));
+    // The icon face, likewise read out of the assembled half rather than
+    // derived twice: the two halves here are one tree, so the live app's
+    // face is the generator's face, and the file it writes is the file
+    // the wasm module draws from (`App.icon_face` says why the dependency
+    // module's own face cannot stand in).
+    nokre.addImport("nokre_icon_face", live.icon_face);
     const publish = b.addUpdateSourceFiles();
     publish.addCopyFileToSource(live.artifact.getEmittedBin(), b.pathJoin(&.{ out, "app.wasm" }));
 

@@ -444,8 +444,8 @@ pub const routes = h.Routes(State).table(&.{
 });
 
 pub const nav_items = [_]h.Destination{
-    .{ .route = "notes", .icon = .notebook_pen },
-    .{ .route = "settings", .icon = .settings },
+    .{ .route = "notes", .icon = .lucide_notebook_pen },
+    .{ .route = "settings", .icon = .lucide_settings },
 };
 ```
 
@@ -2324,8 +2324,10 @@ module under the name the page loads, the live driver's modules
 [services.js](../src/render/dom/services.js)) plus the service worker
 ([sw.js](../src/render/dom/sw.js)), the stylesheet the
 library generates out of its own palette and metrics, the bundled
-faces, and the page, manifest and icons your Part 1 declaration
-produces. Half a site is not a smaller site — a missing `services.js` is
+faces — with the icon face cut down to the glyphs your sources spell,
+the same subset your native artifacts embed
+([elements.md](elements.md#icon)) — and the page, manifest and icons
+your Part 1 declaration produces. Half a site is not a smaller site — a missing `services.js` is
 a blank page in a browser rather than an error in a build — so there is
 nothing here to copy by hand and nothing that can fall behind the nokre
 you built against. Upload the directory to any static host and you have

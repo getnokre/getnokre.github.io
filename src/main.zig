@@ -52,7 +52,7 @@ comptime {
     _ = @import("shell.zig");
 }
 
-const nokre_revision = 130;
+const nokre_revision = 133;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -72,11 +72,10 @@ const font_files = [_][]const u8{
     "mono.woff2",         "mono-bold.woff2",
     "mono-italic.woff2",  "mono-bolditalic.woff2",
     "arabic.woff2",       "arabic-bold.woff2",
-    "icons.woff2",
     // The vendor sign-in marks: no page here draws one, but the
     // stylesheet nokre emits declares the face, and a declared face is
     // served (five glyphs, ~1 KB).
-           "brand.woff2",
+    "brand.woff2",
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -238,16 +237,30 @@ pub fn main(init: std.process.Init) !void {
     }
     markup = markup[0..n_markup];
 
-    const subset = try icons.parse(gpa, icons.py);
+    // The membership check no audit can make for this edition: a screen
+    // is drawn into bytes here, outside the process that will show them,
+    // and some of these glyphs were never elements at all — the sheet
+    // writes the external-link mark by codepoint, and the substrate
+    // writes a select's chevron and a tile's itself. So the markup is
+    // read back, and the face this build wrote is the authority
+    // (`icon_face.codepoints`, public for exactly this reader).
+    //
+    // Passing is the expected outcome, not the interesting one: the face
+    // is subset from the very sources these pages are written in, so
+    // every icon a builder names is in it by construction. An uncovered
+    // codepoint means a glyph reached the markup that no source spells —
+    // one assembled from data rather than named, which is the single
+    // thing the scan behind the face cannot see
+    // (../nokre/src/emit_icon_face.zig).
     const emitted = try icons.collectEmitted(gpa, markup, css);
     var uncovered: usize = 0;
     for (emitted) |cp| {
-        if (icons.covered(subset, cp)) continue;
-        std.debug.print("icon U+{X:0>4} ({s}) is not in tools/build-fonts.py's ICONS\n", .{ cp, icons.nameOf(cp) });
+        if (nok.render.icon_face.maps(cp)) continue;
+        std.debug.print("icon U+{X:0>4} ({s}) is in the markup and not in this build's face\n", .{ cp, icons.nameOf(cp) });
         uncovered += 1;
     }
     if (uncovered != 0) {
-        std.debug.print("{d} icon(s) would render as tofu: add them to ICONS and re-run the subset\n", .{uncovered});
+        std.debug.print("{d} icon(s) would render as tofu: no source spells them, so the subset has no outline for them\n", .{uncovered});
         return error.IconNotInFontSubset;
     }
 
@@ -283,6 +296,16 @@ pub fn main(init: std.process.Init) !void {
             .data = bytes,
         });
     }
+
+    // The one face that is not copied from this repository, because it is
+    // not in it: nokre's build subsets lucide.ttf to the glyphs these
+    // sources spell and hands the result to whatever is built from them
+    // (../nokre/docs/elements.md, the `icon` element). Written under the
+    // name the generated stylesheet asks for, in the full face's place.
+    try cwd.writeFile(io, .{
+        .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "assets/fonts", "lucide.ttf" }),
+        .data = nok.render.icon_face.bytes,
+    });
 
     var script_bytes: usize = 0;
     for (driver_sources) |src| {
@@ -560,7 +583,7 @@ const external_mark_css = std.fmt.comptimePrint(
     \\  vertical-align: -0.05em;
     \\}}
     \\
-, .{@intFromEnum(nok.element.IconName.arrow_up_right)});
+, .{@intFromEnum(nok.element.IconName.lucide_arrow_up_right)});
 
 fn stylesheet(gpa: std.mem.Allocator) ![]const u8 {
     var out: std.ArrayList(u8) = .empty;
@@ -631,7 +654,7 @@ fn writeExtras(
 
 test "the external-link mark is nokre's codepoint, spelled as the sheet spells it" {
     try std.testing.expect(std.mem.indexOf(u8, external_mark_css, "content: \"\\e04d\";") != null);
-    try std.testing.expectEqual(@as(u21, 0xe04d), @intFromEnum(nok.element.IconName.arrow_up_right));
+    try std.testing.expectEqual(@as(u21, 0xe04d), @intFromEnum(nok.element.IconName.lucide_arrow_up_right));
 }
 
 test "every custom property the shell spends is one the document root carries" {

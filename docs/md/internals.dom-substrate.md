@@ -122,7 +122,7 @@ What it writes:
 | the app's module, under `web_wasm` | the consumer's own compile |
 | `live.js`, `live-boot.js`, `live-worker.js`, `services.js`, `locale-stub.js`, `sw.js` | `src/render/dom`, copied by the build graph; the set is also exported as data for a generator that publishes the driver itself — `dom.driver_files` for the names, `dom.driver_sources` for the names *and* the embedded bytes, so such a generator writes files it never had to locate |
 | `style.css` | *generated*, by running `emit_css.zig` on the host |
-| `fonts/*.ttf` | `src/assets/fonts` |
+| `fonts/*.ttf` | `src/assets/fonts` — except `fonts/lucide.ttf`, which is *generated*: the icon face subset to what this app's sources spell, served in the full face's place and never beside it ([../elements.md](../elements.md#icon)) |
 | `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png`, `favicon.ico` | the packaging tree's `web/` corner (packaging.zig) |
 | `site.manifest` | *generated*: every row above as data — one path per line, sorted |
 

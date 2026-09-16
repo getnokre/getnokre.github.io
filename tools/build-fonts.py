@@ -17,11 +17,10 @@ and the coverage, not the outlines:
     and Arabic samples the localization docs quote. Everything outside
     those ranges is coverage nobody here will ever request.
 
-The icon face is subset by *codepoint*, from the list below — the site
-draws exactly these glyphs, and the 843 KB Lucide ships is a library,
-not a page's worth of marks. Names and values are nokre's
-`src/core/icon_names.zig`; a value that disagrees with it is a bug in
-this file.
+The icon face is not here. nokre's own build derives it — lucide.ttf
+subset to the glyphs an artifact's sources spell — and the generator
+writes what it is handed (`../nokre/docs/elements.md`, the `icon`
+element), so there is nothing about it for this script to keep in step.
 
 Output is deterministic: fontTools writes no timestamps here (see
 `--no-recalc-timestamp` equivalents below), so re-running produces
@@ -48,52 +47,6 @@ MONO = "U+0000-00FF,U+2000-206F,U+2190-21FF,U+2500-257F,U+25A0-25FF,U+2713-2718"
 # forms, and the zero-width non-joiner Persian needs.
 ARABIC = "U+0600-06FF,U+200C-200D,U+FB50-FDFF,U+FE70-FEFF,U+0020,U+002C,U+002E"
 
-# The marks this site draws, by nokre's own name for each. The hourglass is
-# nokre's own rather than this site's: it draws on any busy control, and the
-# stylesheet the library emits names it whether a page here draws one or not.
-ICONS = {
-    "hourglass": 0xE296,
-    "house": 0xE0F5,
-    "book_open": 0xE05F,
-    "wrench": 0xE1B1,
-    "file_text": 0xE0CC,
-    "chevron_right": 0xE06F,
-    "chevron_down": 0xE06D,
-    "chevron_left": 0xE06E,
-    "chevron_up": 0xE070,
-    "check": 0xE06C,
-    "copy": 0xE09E,
-    "feather": 0xE0BE,
-    "milestone": 0xE298,
-    "shapes": 0xE4B3,
-    "signpost": 0xE540,
-    "pilcrow": 0xE3A3,
-    "accessibility": 0xE297,
-    "languages": 0xE0FE,
-    "flask_conical": 0xE0D5,
-    "package": 0xE129,
-    "map": 0xE110,
-    "layers": 0xE529,
-    "git_branch": 0xE0E2,
-    "zap": 0xE1B4,
-    "globe": 0xE0E8,
-    "credit_card": 0xE0AA,
-    "key": 0xE0FD,
-    "ruler": 0xE14B,
-    "monitor": 0xE11D,
-    "component": 0xE2AD,
-    "code": 0xE093,
-    "lock": 0xE10B,
-    "hammer": 0xE0EC,
-    "cpu": 0xE0A9,
-    "palette": 0xE1DD,
-    "type": 0xE198,
-    "ban": 0xE051,
-    "external_link": 0xE0B9,
-    "arrow_up_right": 0xE04D,
-    "square_asterisk": 0xE168,
-}
-
 # The vendor sign-in marks (nokre's LICENSE-Brand.txt): Apple's logo and
 # the Google G's four arcs. No site page draws one today, but the
 # stylesheet nokre emits declares the face, and a site that declares a
@@ -111,7 +64,6 @@ FACES = [
     ("mono-bolditalic.ttf", "mono-bolditalic.woff2", MONO, None),
     ("arabic.ttf", "arabic.woff2", ARABIC, None),
     ("arabic-bold.ttf", "arabic-bold.woff2", ARABIC, None),
-    ("lucide.ttf", "icons.woff2", None, sorted(ICONS.values())),
     ("brand.ttf", "brand.woff2", None, BRAND),
 ]
 

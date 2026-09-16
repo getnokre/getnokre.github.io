@@ -161,7 +161,9 @@ the shim ignores anything else by design.
 
 - Bundled fonts only ([src/assets/fonts](../../src/assets/fonts)):
   twelve faces — mono and prose each in regular, bold, italic,
-  and bold-italic, the icon face, the Arabic-script companion
+  and bold-italic, the icon face (the one that is not embedded whole:
+  it is subset at build time to the glyphs the artifact's sources
+  spell, [../elements.md](../elements.md#icon)), the Arabic-script companion
   (Vazirmatn regular and bold; the script has no italic tradition, so
   italic requests resolve to the upright weight), and the brand face
   (five glyphs — Apple's logo and the Google G's four arcs;

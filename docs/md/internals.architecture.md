@@ -34,7 +34,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
 | [src/core/bidi_tables.zig](../../src/core/bidi_tables.zig) | its generated UCD bidi-class tables (`tools/gen-bidi-tables.py`) — regenerated, never edited |
-| [src/core/icon_names.zig](../../src/core/icon_names.zig) | the generated icon-name table from lucide-static (`tools/gen-icon-names.py`), regenerated only with the face itself |
+| [src/core/icon_names.zig](../../src/core/icon_names.zig) | the generated icon-name table from lucide-static (`tools/gen-icon-names.py`), every field `lucide_`-prefixed so a source scan for a name is exact, regenerated only with the face itself |
 | [src/core/element.zig](../../src/core/element.zig) | the closed element set (`Element` union) |
 | [src/core/bind.zig](../../src/core/bind.zig) | the one trampoline generator: `bindAs` fills any `{ ctx, call }` pair from a typed handler, and the four action `bind` methods are its callers |
 | [src/core/tree.zig](../../src/core/tree.zig) | retained tree, generational `NodeId`s |
@@ -80,6 +80,9 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/render/renderer.zig](../../src/render/renderer.zig) | tree → canvas draw calls |
 | [src/render/damage.zig](../../src/render/damage.zig) | which pixels a frame may leave standing: the rects a scroll earns, and whole for everything else ([pixel-model.md](pixel-model.md#partial-frames)) |
 | [src/render/skia/canvas_skia.zig](../../src/render/skia/canvas_skia.zig) | Skia-backed `Canvas` + `Measurer` |
+| [src/render/icon_face.zig](../../src/render/icon_face.zig) | the face this artifact ships — the build-injected subset and what it maps, read by the Skia face list and by the audit's `unshipped_icon` rule |
+| [src/render/icon_font.zig](../../src/render/icon_font.zig) | the subsetter behind it: a deterministic glyf-only TrueType reducer, `std` only so a build tool and a test can both reach it without the library |
+| [src/emit_icon_face.zig](../../src/emit_icon_face.zig) | its host tool, build-time only and in no app: scans the sources an artifact is built from for `IconName` spellings and writes the subset plus the module that embeds it. It imports no nokre, unlike the l10n checker — what it emits is a module every nokre module imports |
 | [src/render/measure_memo.zig](../../src/render/measure_memo.zig) | the width memo that measurer answers through — a run shaped once per process, not once per frame |
 | [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-substrate.md](dom-substrate.md)) |
 | [src/render/dom/stylesheet.zig](../../src/render/dom/stylesheet.zig) | that substrate's stylesheet, generated from color/text/layout |

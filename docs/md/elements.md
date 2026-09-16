@@ -619,12 +619,32 @@ One named Lucide glyph, laid out as a square line-height box so it
 aligns with same-scale text beside it. Options: `name` (the `IconName`
 enum — its value is the icon-font codepoint), `scale` (the six text
 scales), `ink` (the thirteen grays), `label`. `IconName` holds every
-glyph in the bundled font, under Lucide's current name for it — the
-retired aliases are absent (`square_activity`, never `activity_square`),
-and so are the brand marks Lucide dropped from the font. An empty label means
-decorative: hidden from assistive tech, any ink allowed. A non-empty
-label makes it a meaningful image: it is announced by name and its ink
-must clear the same contrast gate as text.
+glyph in the bundled font, under Lucide's current name for it carrying a
+`lucide_` prefix (`lucide_house`) — a spelling nothing else in a Zig
+tree collides with; the argument is the enum's own doc comment. The
+retired aliases are absent (`lucide_square_activity`, never
+`lucide_activity_square`), and so are the brand marks Lucide dropped
+from the font. An empty label means decorative: hidden from assistive
+tech, any ink allowed. A non-empty label makes it a meaningful image:
+it is announced by name and its ink must clear the same contrast gate as
+text.
+
+**The face an app ships is the glyphs its sources spell**, in every
+edition — the full font is some 1,600 outlines and 843 KB, and a screen
+draws a dozen. The build scans the app's own sources and nokre's, takes
+every `IconName` the bytes name, and subsets the font to those before
+anything embeds or serves it. Nothing is declared: the way to add a
+glyph is to draw one, and the way to drop one is to stop.
+
+That scan reads literals, so an icon chosen from *data* — a name read
+out of a catalog, an `@enumFromInt` — has to be spelled somewhere all
+the same, in a table or a switch the scan can see. An icon whose glyph
+the shipped face does not carry is refused by the audit
+([accessibility.md](accessibility.md), `unshipped_icon`), not drawn as a
+blank box. The face states what it maps as data —
+`nok.render.icon_face.codepoints`, ascending — for an edition that
+renders outside the process and has to make that check itself
+([static-sites.md](static-sites.md)).
 
 ### `divider`
 A 1px horizontal rule across the parent width.
@@ -1384,18 +1404,18 @@ btn.progress_percent = null;
 ```
 
 The pill forms carry an optional Lucide glyph as their payload —
-`.form = .{ .filled = .alarm_clock_plus }` or
-`.{ .secondary = .refresh }` — drawn inside the pill, leading the label;
-both stay visible. An icon never hides the words by itself; the pill
-just grows by one glyph advance. A pill with no icon says so with
+`.form = .{ .filled = .lucide_alarm_clock_plus }` or
+`.{ .secondary = .lucide_refresh_cw }` — drawn inside the pill, leading
+the label; both stay visible. An icon never hides the words by itself;
+the pill just grows by one glyph advance. A pill with no icon says so with
 `null`: `.{ .secondary = null }`.
 
 `.glyph` drops the pill: only its glyph renders, quiet on the ambient
 surface, centered on the standard 44px touch target — the exact
 control framework chrome already uses for Back and the sheet close,
 opened to consumers. The glyph *is* the payload
-(`.form = .{ .glyph = .chevron_right }`), so a glyph form without one
-cannot be written, and there is no pill for an emphasis to vary.
+(`.form = .{ .glyph = .lucide_chevron_right }`), so a glyph form without
+one cannot be written, and there is no pill for an emphasis to vary.
 Nothing else changes — the label stays mandatory, is what assistive
 tech announces, and is how tests reach it (`tapLabel("Next cycle")`);
 disabled dims the glyph as the pill dims its text. Reach for it where
@@ -2461,8 +2481,8 @@ one call and never placed in route builders:
 
 ```zig
 try app.setNav(&.{
-    .{ .route = "library", .icon = .library },
-    .{ .route = "settings", .icon = .settings },
+    .{ .route = "library", .icon = .lucide_library },
+    .{ .route = "settings", .icon = .lucide_settings },
 });
 try app.navigate("library");
 
@@ -2795,7 +2815,7 @@ own — a Refresh, a Filter — stated the way the title is:
 
 ```zig
 try app.setHeaderActions(&.{
-    .{ .icon = .refresh_cw, .label = tr(.refresh), .on_press = .bind(State.reload, state) },
+    .{ .icon = .lucide_refresh_cw, .label = tr(.refresh), .on_press = .bind(State.reload, state) },
 });
 ```
 
@@ -2999,7 +3019,7 @@ app.notify(.{
     .title = "Sync failed",
     .description = "Changes are kept locally.",
     .route = "sync",
-    .icon = .cloud_off,
+    .icon = .lucide_cloud_off,
     .important = true,
 });
 ```

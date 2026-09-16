@@ -1051,6 +1051,14 @@ it cannot honor, harder than `unresolvable_route` would, so the rule is
 skipped — and skipping a rule nothing else checks is turning the
 guarantee off ([accessibility.md](accessibility.md)).
 
+A generator's own icon check is the same shape from the other side. It
+writes glyphs into markup rather than appending them to a tree, so the
+`unshipped_icon` rule never sees them — and the face a site serves is a
+subset, derived from sources the generator's pages are not in
+([elements.md](elements.md#icon)). `render.icon_face.codepoints` is that
+face's coverage as data: check the glyphs you emitted against it and a
+tofu box is a failed build rather than a blank square somebody notices.
+
 The mirror case is an app mounted in a page it did not write. There the
 live driver stamps `data-direction` and deliberately never `dir`, because
 the page around an embedded app is not this substrate's to turn around. A

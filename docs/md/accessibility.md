@@ -491,6 +491,13 @@ fails on:
   show when it folds. `append` cannot catch it: a builder states its
   roster before its main, so the set is only whole here — exactly
   `empty_list`'s argument
+- `unshipped_icon` — an icon whose glyph the artifact's own face does
+  not carry, which draws as a blank box. The face is the glyphs the
+  sources spell, derived by scanning them
+  ([elements.md](elements.md#icon)), and that scan reads literals — so
+  this is the backstop for its one blind spot, an icon chosen from data
+  the sources never name. The fix is to spell the name somewhere, which
+  also makes the choice greppable
 - `cleanly_clipped_scroll_region` — an overflowing fixed-height scroll
   region whose offset-0 edge cuts nothing visible. At rest the bar is
   quiet or not drawn at all, so the mid-element cut is what makes the

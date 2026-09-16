@@ -72,10 +72,12 @@ The build fails, rather than publishing something wrong, when:
   not in the repository;
 - an element has no case in the substrate's writer — the set is closed
   there too, and the switch has no `else`;
-- an icon reaches the output whose codepoint is not in
-  `tools/build-fonts.py`'s ICONS, and so is not in the served woff2
-  subset: it would draw as tofu on every reader's screen, and nothing
-  that reads the tree can see it, because the tree only knows names;
+- an icon reaches the output whose codepoint the face this build wrote
+  has no outline for: it would draw as tofu on every reader's screen,
+  and nothing that reads the tree can see it, because the tree only
+  knows names. The face is subset from the glyphs these sources spell,
+  so a page cannot trip it by naming an icon — only one chosen from
+  data can (`../nokre/docs/elements.md`, the `icon` element);
 - the shell's own CSS spends a custom property nothing declares at
   `:root`: those rules apply to the document, outside `.nokre`, and a
   `var()` that resolves to nothing takes its whole declaration with it
@@ -138,13 +140,13 @@ actually become wrong.
 | `src/web.zig` | The live one: the same app, as a wasm module, with the three decls nokre's live driver looks for. |
 | `src/css.zig` | The stylesheet guard: which custom properties the document root carries, and which the shell's own rules spend. |
 | `src/shell.zig` | The one C hook every non-test build links. This generator is a platform shell; the wasm module is not. |
-| `tools/build-fonts.py` | Subsets nokre's bundled faces into the woff2 files in `assets/fonts/`. |
+| `tools/build-fonts.py` | Subsets nokre's bundled text faces into the woff2 files in `assets/fonts/`. |
 | `tools/l10n-purge.sh` | nokre's `l10n-purge` over this repository's catalog, behind the clean-tree precondition the library leaves to its caller (`../nokre/docs/localization.md`, "Purging unused keys"). |
 
 ## Fonts
 
-`assets/fonts/*.woff2` are nokre's own bundled binaries — IBM Plex Sans,
-JetBrains Mono, Lucide, Vazirmatn — subset to what this site draws and
+`assets/fonts/*.woff2` are nokre's own bundled text binaries — IBM Plex
+Sans, JetBrains Mono, Vazirmatn — subset to what this site draws and
 repackaged as woff2. Their upstream licenses are beside them.
 Regenerate after a font change in nokre:
 
@@ -152,6 +154,15 @@ Regenerate after a font change in nokre:
 python3 -m venv .venv && .venv/bin/pip install fonttools brotli
 .venv/bin/python tools/build-fonts.py ../nokre
 ```
+
+The icon face is not among them and is not in this repository. nokre's
+build derives one per artifact — Lucide subset to the glyphs that
+artifact's sources spell — and the generator writes the bytes it is
+handed to `docs/assets/fonts/lucide.ttf`, under the name the generated
+stylesheet asks for (`../nokre/docs/elements.md`, the `icon` element).
+Nothing here declares which glyphs those are; drawing one is what adds
+it. `LICENSE-Lucide.txt` stays beside the text faces all the same: the
+outlines are still published from this tree.
 
 ## Publishing
 
