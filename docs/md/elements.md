@@ -1725,6 +1725,17 @@ the leading side, one per slot, and a column of equal 44px swap
 buttons on the trailing side. The slots are every option plus the
 divider, top to bottom, so a five-item ranking has six of them.
 
+**Every item plate is one height and the divider plate is its own.**
+The items share the tallest item's height, because a plate as tall as
+its own words would move the rows under it the moment it swapped with a
+shorter one. The divider is the one plate no item ever swaps with — the
+item it crosses rises by exactly what the divider falls by, and the
+device's total height is the same whichever slot it stands in — and it
+is also the one plate whose words are a sentence rather than a name, so
+it is the row that wraps in a language that spends more of them. Tying
+the items to it made every plate as tall as the longest sentence the
+app writes.
+
 **Swap is the only verb.** The buttons are empty at rest — the
 unchecked box's look, a `.g11` plate outlined `.g6`, which a reader
 already knows takes a press; a glyph at rest was tried and read as
@@ -2397,11 +2408,28 @@ read out, not navigated line by line.
 rejects anything else at construction. A row refuses more than 32 cells
 at `append` (`error.TooManyColumns` on the cell that would open a 33rd
 column) — the construction refusal every other malformed structure
-gets. Column widths are per-column
-intrinsic maxima; the grid is
-drawn with 1px lines, and a table's rect reports its true width: one
-wider than its parent overflows honestly rather than clamping silently.
-Mark header rows with `.header = true`.
+gets. The grid is drawn with 1px lines. Mark header rows with
+`.header = true`.
+
+**Column widths are per-column intrinsic maxima while they fit, and are
+shrunk to fit when they do not.** A table narrower than the span it is
+given is laid out exactly as it always was. One wider than that span
+has a cap put on every column and the cap lowered until it fits: a
+column narrower than the cap keeps its natural width, a wider one wraps
+its words into the cap, and the columns that give up space are the
+widest ones. No column is shrunk under the longest word it holds while
+any wider column still has slack — CSS calls that floor min-content,
+and this is CSS auto table layout, which is what the browser is already
+doing to the same table in a web build.
+
+A table whose longest words *alone* do not fit the span is the one
+place a table cell breaks a word: the cap goes below the floors and the
+widest columns break rather than any column standing off the side of
+the frame. Five columns of word headers do not fit a 360px phone
+whatever is done with them; a table meant for one is a table with fewer
+columns. The rect always reports the width the columns came to, fitted
+or not, because hit testing, focus reveal and the a11y snapshot all
+read it.
 
 ### `document`
 Markdown source in, ordinary elements out — `append` expands it into

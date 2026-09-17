@@ -784,11 +784,13 @@ li > ul.list, li > ol.list { margin-top: var(--list-gap); }
 /* shadcn tables: the grid is horizontal separators only — no outer
    border and no vertical rules, one hairline above every row but
    the first, spanning the table's whole width. Column widths are
-   per-column intrinsic maxima, which is what `auto` layout already
-   computes. */
+   `auto` layout's: the per-column intrinsic maxima while they fit,
+   shrunk toward the min-content floor when they do not, which is
+   what `fitTableColumns` does for the other substrate. */
 /* No bleed: `layoutTable` never takes the advised margin. A table
-   is an intrinsic-width block on the leading edge, and one too wide
-   for its column scrolls where it stands. */
+   is an intrinsic-width block on the leading edge, and the one no
+   shrinking can fit — every column already down to its longest
+   word — scrolls where it stands. */
 .table-wrap {
   overflow-x: auto;
   overflow-y: hidden;
@@ -1416,9 +1418,12 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    `rankingButtonRect`). Block flow under the legend for the
    fieldset reason in the reset. `1fr` rows in an auto-height grid
    all take the tallest row's size, which is how this substrate gives
-   every plate the height `rankingRowHeight` measures once for the
-   whole device — so a plate keeps its row's height whichever slot
-   it is swapped into. */
+   every item plate the one height `rankingRows` measures for them —
+   so a plate keeps its row's height whichever slot it is swapped
+   into. The divider's row is the `auto` track the serializer writes
+   into `grid-template-rows`: it sizes to its own sentence, which is
+   what keeps a locale that spends more words on it from making every
+   plate that tall. */
 .ranking > .ranking-rows {
   margin-top: var(--input-label-gap);
   display: grid;
