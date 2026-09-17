@@ -2175,7 +2175,7 @@ before any OS call, so each error means one thing on all six platforms:
 | id | 1–64 bytes of `[a-z0-9._-]` | secure_store's charset for secure_store's reason: the id survives verbatim as a `UNNotificationRequest` identifier, an Android tag, a toast's launch argument and a D-Bus lookup key — one namespace rule, zero escaping |
 | title | 1–128 bytes | every platform truncates in display long before this; past it the payload is a document, and a document belongs behind the tap |
 | body | ≤ 512 bytes | the same rule, one line down |
-| route | ≤ 256 bytes | a route reference is a screen name plus identifier arguments, short by construction |
+| route | ≤ `router.max_ref_bytes` (256 unless the app declared otherwise) | a route reference is a screen name plus identifier arguments, short by construction — derived from the router's own cap, so a reference `navigate` honors is never one a scheduled notification truncates ([routing.md](routing.md#the-cap-is-declared)) |
 
 | Error | On | Meaning |
 | --- | --- | --- |

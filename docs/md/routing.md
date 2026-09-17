@@ -404,9 +404,10 @@ Everything resolution would refuse is refused here, at the site that
 unknown name, the wrong arity, an argument outside the charset — a `~`
 inside an argument included, so content can never read as a second
 separator — or a result past `max_ref_bytes`. A failed call writes
-nothing. `[h.router.max_ref_bytes]u8` always fits, so there is no
-buffer size to guess and no separator literal to hold; a reference this
-returns is one `navigate` will take.
+nothing. `[h.router.max_ref_bytes]u8` always fits — it is this app's own
+declared cap ([The cap is declared](#the-cap-is-declared)) — so there is
+no buffer size to guess and no separator literal to hold; a reference
+this returns is one `navigate` will take.
 
 ### A literal is refused at the build
 
@@ -448,6 +449,46 @@ none. A reference carrying the wrong number is refused rather than
 building a screen with nothing to show, so `#note` and `#note~1~2` both
 fail where a missing id would otherwise render as a blank.
 
+#### An optional trailing argument is refused
+
+Asked for by the first consumer, for a screen that opens as `ballot~<id>`
+when the server holds a ballot's words and as `ballot~<id>~<content>`
+when the link carries them. Refused, on three grounds that are all
+already on this page:
+
+- **One screen, one reference.** An optional argument gives one route
+  two spellings, and the address bar's contract is one screen, one URL.
+- **Nothing about a reference is truncatable.** A link cut back at a
+  `~` — by a messenger, by a paste — is a missing argument and is
+  refused. With the argument optional the cut-back link *resolves*, and
+  opens the one screen that has nothing to show: a sealed ballot without
+  its words. That is the blank the arity rule exists to prevent, moved
+  to the one link long enough to be cut.
+- **Dropping an argument is already a verb, at one door, and it
+  reports.** `switchToNearest` answers `.trimmed` when it lands on fewer
+  arguments than it was handed
+  ([Handing off from the other app](#handing-off-from-the-other-app)).
+  An optional argument makes the same bytes `.exact` at every door.
+
+What the consumer wanted is already expressible, and says more: **a
+screen that comes in two arities is two routes over one builder.**
+
+```zig
+.{ .name = "ballot", .title = title, .args = 1, .build = buildBallot },
+.{ .name = "sealed_ballot", .title = title, .args = 2, .build = buildBallot },
+
+// in buildBallot — null on the route that declares one:
+const content = app.routeArg(1);
+```
+
+The name now states which kind of link it is, `sealed_ballot~<id>` is
+refused at every door including the compiler's, and packing two values
+into one argument behind a private separator — the workaround this
+replaces — is no longer needed to stay inside a fixed arity.
+`router_test.zig`'s "a screen that comes in two arities is two routes
+over one builder, and the cut-back reference is refused" is the claim
+against a real router.
+
 ### The separator is `~`
 
 Not `/`. A path puts the way you got here into the name of the screen. A
@@ -483,6 +524,51 @@ about; free text and structure are a URL's business, which is
 command: `#sum~10~5` is fine, `#delete~42` is not. Anything in an address
 bar gets opened by link previewers, history restores, and people pasting,
 none of which intended to act.
+
+### The cap is declared
+
+A reference is bounded — `router.max_ref_bytes`, 256 by default — because
+one can arrive from outside the app and an enormous argument would pass
+the arity check with nothing else to stop it. The bound is on the *copy*:
+each stack entry owns the reference it was entered with, and so do the
+refusal record, an owed refresh, a held nav focus, every stored notice's
+route and every scheduled notification's.
+
+**256 is a fact about the shape of a reference, not a budget for your
+links**, so it is stated per app rather than fixed by the library:
+
+```zig
+const app = nokre.addApp(nokre_dep, .{
+    .name = "votes",
+    .route_reference_max_bytes = 8192,
+    // ...
+});
+```
+
+A dev-store driver states it too. `addDevStoreDriver` mints its own
+nokre module rather than being handed `app.nokre`, so the app's number
+does not reach it, and a driver that says nothing compiles the app's
+screens against 256 — its journey then meets `error.RouteRefTooLong` on
+a link the shipped app opens. `DevStoreDriverOptions` carries the field
+under the same name for that reason; hoist the number into a const the
+way `pkg` is hoisted and hand the one const to both calls
+([getting-started.md](getting-started.md#the-fourth-artifact-a-driver)).
+A driver built by `addDriver` is handed `app.nokre` and has nothing to
+state.
+
+Within one module everything above derives from that one number, so
+nothing can disagree with it — there is no second cap to move, and no door that admits a
+reference another one would truncate. What it costs is the copies:
+raising it raises the inline storage of every notice slot and every
+scheduled notification too, which is why it is a declaration and not a
+default. The ceiling is 65535, where the length beside those copies stops
+fitting in a `u16`, and 0 is refused.
+
+**The charset does not move with it.** An argument stays
+`[a-zA-Z0-9_.-]` at any size, so what a larger cap admits is a longer
+*identifier* — base64url is inside that set, which is what lets a link
+carry a sealed document's own bytes — and never free text. The rule above
+this one still holds: a reference identifies, it never commands.
 
 ### Which argument pushes
 
@@ -542,7 +628,7 @@ reference (bounded to `max_ref_bytes`) and a reason —
 | `unknown_route` | no route by that name |
 | `arg_count` | not the number of arguments the route declares |
 | `arg_charset` | an argument outside the charset, or empty (a trailing `~` is a *missing* argument, not an empty one) |
-| `ref_too_long` | past 256 bytes — a reference can arrive from outside the app, and one enormous argument would pass the arity check |
+| `ref_too_long` | past `max_ref_bytes` — 256 unless this app declared otherwise (above) — because a reference can arrive from outside the app, and one enormous argument would pass the arity check |
 | `reload_in_build` | a `reload` issued while the screen's builder was already running — honoring it would rebuild the screen over its own half-built output, duplicating it. The record carries the reference of the screen being built. (`refresh` never trips this: the polite verb declines the same call quietly.) |
 
 Every one of these is a programmer error, and nothing at an

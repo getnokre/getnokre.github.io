@@ -2015,7 +2015,11 @@ keyring daemon), so `secure_store` is swapped for a plaintext file the
 driver owns ([services.md](services.md) has the gates that keep that out
 of a shipping build). Hoist the `.pkg` declaration into a const and pass
 the same one to both: the store's namespace is the id, so a driver
-declaring a second identity would read an empty store. It answers
+declaring a second identity would read an empty store. An app that
+declares `.route_reference_max_bytes` hoists that too, for the same
+reason one step removed: the minted module does not inherit the app's
+cap, and a driver left at 256 refuses a link the app opens
+([routing.md](routing.md#the-cap-is-declared)). It answers
 `?Driver` rather than `Driver` because off a host where that store
 cannot exist the honest answer is no step at all — an optional the
 plain case would otherwise unwrap for nothing — and it takes no

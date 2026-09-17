@@ -1746,6 +1746,17 @@ arithmetic; it is the same arithmetic the element has already run on
 the tree's copy, so the two cannot disagree, and a stale pair from a
 screen that has since rebuilt is a no-op rather than a corrupted order.
 
+`applySwap` takes the item type first, because the app's copy is
+rarely words. The tree's copy is words — a plate draws them — but what
+an app sends is an option's id or the row it came from, and an order
+kept as words has to be read back into identities by matching strings,
+which two options with the same words defeat. Keep the order as what
+you will send and draw the words from it:
+
+```zig
+nokre.element.Ranking.applySwap(u16, order.ids[0..order.len], &order.viable, band.min, band.max, a, b);
+```
+
 **The band.** The divider may only land where `viable_min <= viable <=
 viable_max`. At rest nothing marks it — the divider's own words are
 where an app says it. While the divider is armed the buttons of the
@@ -1821,7 +1832,7 @@ const Order = struct {
 };
 
 fn reorder(order: *Order, a: usize, b: usize) void {
-    nokre.element.Ranking.applySwap(&order.items, &order.viable, 0, 3, a, b);
+    nokre.element.Ranking.applySwap([]const u8, &order.items, &order.viable, 0, 3, a, b);
 }
 
 try b.ranking(.{
@@ -3123,11 +3134,20 @@ it is**.
 
 Both put the datum on the element, so it is exactly as fresh as the
 tree it rides in — rebuilt with the screen, never baked into code.
-(`ToggleAction` has the indexed form only, and adds the index *before*
-the checked state: `fn (self, index, checked)`. It has no keyed twin
-until a real toggle row needs one; see `element.zig`.) An action names
-one function: setting more than one of `call`, `call_indexed` and
-`call_keyed` is refused at `append`.
+(`ToggleAction` and `ChangeAction` have the indexed form only, and add
+the index *before* the payload: `fn (self, index, checked)` and
+`fn (self, index, value)`. Neither has a keyed twin until a real row
+needs one; see `element.zig`.) An action names one function: setting
+more than one of `call`, `call_indexed` and `call_keyed` is refused at
+`append`, on a field's `on_change` as on a button's `on_press`.
+
+```zig
+.on_change = .bindAt(Draft.changeOption, draft, slot) // fn (self, index: usize, value: []const u8)
+```
+
+That is the form for a column of fields over one list — a ballot's
+options, a recipe's steps — where the alternative is one context struct
+per row, kept alive beside the list only to remember a number.
 
 Neither form is a claim about the present. A press is delivered against
 the tree the user *saw*, and the list that tree was built from may have

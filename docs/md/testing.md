@@ -993,6 +993,20 @@ refused outright. Its gate is a test root of its own,
 `tests/declared_medium.zig`, because the library's own unit binary
 declares the widest honest thing and so has nothing to refuse.
 
+`AppOptions.route_reference_max_bytes` has a second root for the same
+reason and a sharper one: every module in the unit binary reads nokre's
+own 256, so a cap that was threaded from the build and one that was
+hard-coded answer identically there — forever, and silently.
+`tests/declared_reference_cap.zig` stands on a `nokre` that declares
+4096, asserts the number arrived at comptime, and then round-trips a
+reference of exactly that size through `routeRef`, `navigate` and back
+off the stack, refusing the one a byte longer at the writer, at
+`navigate` and at the handoff ([routing.md](routing.md#the-cap-is-declared)).
+The dev-store driver's copy of the declaration has its own gate, because
+it is a second path from a build file to the same number:
+`tests/dev_store.zig` is built with 4096 on `DevStoreDriverOptions` and
+opens a reference of exactly that size before it touches a store.
+
 **What `tests/example_screens.zig` walks**: every screen of the app's
 own route table, once per declared medium, at two viewports — the
 example's own and one past `metrics.sheet_max_w`, which is the only
