@@ -498,6 +498,65 @@ the delivered bundle — and assembling the macOS `.app` around what
 An app with a mark but no Icon Composer bundle states that in the
 option beside it. That is the next section.
 
+### The privacy manifest is half declared and half nokre's
+
+`pkg/ios/PrivacyInfo.xcprivacy` is written on every build, like the
+entitlements and for the same reason: an Xcode project carries it
+unconditionally, and an app that grows its first collected data type
+must not also need a project edit. It is a **resource**, not a signing
+input — Apple reads it out of the bundle root — so it rides the app
+target's Resources phase, not `CODE_SIGN_ENTITLEMENTS`
+([getting-started.md](getting-started.md)).
+
+The file has two halves and only one of them is a declaration:
+
+**The required-reason API half is nokre's.** The library links the
+binaries whose API use Apple asks about, so what is reached is a fact
+about nokre, stated once in `Privacy.accessed_api_types` and identical
+in every app it builds. One category:
+`NSPrivacyAccessedAPICategoryFileTimestamp` with the reason `C617.1` —
+metadata of files inside the app container. The evidence is the symbol
+tables: Apple's file-timestamp list names `fstat`, and `fstat` is what
+the iOS Skia archive and HarfBuzz's `hb_blob_create_from_file`
+reference, for the fonts and bundled assets they read. Apple's other
+four categories are absent because their symbols are: no
+`statfs`/`statvfs`/`getattrlist` (disk space), no `mach_absolute_time`
+(system boot time), no `NSUserDefaults`, no `UITextInputMode` (active
+keyboards). The accessibility backend would reach further and is
+desktop-only, never linked into an iOS build; the secure and roaming
+stores are Keychain, which is no required-reason category at all. The
+category and reason spellings are Apple's *Describing use of required
+reason API*.
+
+**The collected-data half is the app's**, because nokre sees an app's
+screens and never its backend:
+
+```zig
+    .privacy = .{ .collected = &.{
+        .{ .data_type = .email_address, .linked = true, .purposes = &.{.app_functionality} },
+        .{ .data_type = .purchase_history, .linked = true, .purposes = &.{.app_functionality} },
+    } },   // requires .pkg
+```
+
+The identifiers are Apple's *Describing data use in privacy
+manifests*, as closed enums rather than strings: a typo in a string
+reaches App Store Connect, a typo here does not compile, and the enums
+are on the build surface, so adding one is a recorded contract change.
+The order is the declaration's and survives into the file. An empty
+declaration is the default and a real answer — the key is written with
+an empty array, because "declared none" and "declared nothing" read
+differently at review. A repeated data type, a repeated purpose and an
+empty purpose list are each refused where they are declared.
+
+**Tracking is a refusal, not a field.** `NSPrivacyTracking` is false and
+`NSPrivacyTrackingDomains` empty in every app nokre builds, and the
+per-entry `NSPrivacyCollectedDataTypeTracking` is false with them:
+nokre links no advertising identifier, no analytics leg and no
+third-party network call, so there is nothing an app built on it can
+track *through*, and a knob whose only correct setting is its default is
+one that can only ever be wrong. An app that genuinely tracks needs
+nokre to grow the field, with the argument on the record.
+
 ### The mark is declared
 
 One option, and the tag says which form the author drew:

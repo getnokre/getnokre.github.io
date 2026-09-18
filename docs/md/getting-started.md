@@ -2226,7 +2226,15 @@ duplication belongs to Apple's signing machinery. Xcode alone only
 *warns* when the two disagree (and an unsigned build succeeds), so the
 app target's own first phase reads the generated `Info.plist` back and
 fails with both ids: `error: PRODUCT_BUNDLE_IDENTIFIER is 'x' but
-build.zig declares 'y'`. If you declared an `.apple_icon`, one addition: drag
+build.zig declares 'y'`. The privacy manifest is the one generated file
+that is a *resource* rather than a build setting — Apple reads
+`PrivacyInfo.xcprivacy` out of the bundle root — so the template
+carries `ios/build/pkg/PrivacyInfo.xcprivacy` in the app target's
+Resources phase, and `ZigLibraries` mirrors it to that
+`$(PLATFORM_NAME)`-independent path the way it mirrors the asset
+catalog. It needs no edit either; what it *says* is your
+`.privacy` declaration ([services.md](services.md)). If you declared an
+`.apple_icon`, one addition: drag
 `ios/build/pkg/AppIcon.icon` into the project so it joins the target's
 Resources phase. `ZigLibraries` already mirrors it there on every
 build (the template's script does this whether or not an icon is
