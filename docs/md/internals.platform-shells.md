@@ -1361,10 +1361,10 @@ native binary (nokre's own `tests/dev_store.zig` and
 `tests/http_stress.zig`, a consumer's system-test or e2e runner) that
 links the library and therefore owes the same free functions. nokre
 ships that shell as
-[src/testing/shell.zig](../../src/testing/shell.zig), and its doc
+[src/headless_shell.zig](../../src/headless_shell.zig), and its doc
 comment is the contract: which hooks it defines, why three of them
 record instead of staying silent, and why naming the module
-(`comptime { _ = nokre.testing.shell; }`) is the whole install. Two
+(`comptime { _ = nokre.headless_shell; }`) is the whole install. Two
 shell-side facts belong here rather than there. It is `export`s only —
 linking it into a windowed build collides with the real shell's
 definitions, and that loud duplicate-symbol error is the intended

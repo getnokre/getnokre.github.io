@@ -1067,3 +1067,50 @@ stamps both. One rule, read from two sides: **the library writes what it
 owns and stops where the surrounding authority is someone else's.** It is
 the same reason your driver states the ids, and the same reason it will
 go on stating them.
+
+## A generator has no window, and the linker is right to notice
+
+A generator links this library and builds real `App`s to serialize, so
+it is a program with a shell's obligations and no shell: the services
+name C hooks the shells export, and a binary that resolves none of them
+does not link. Two generators hand-wrote no-op `nokre_locale_install`,
+`nokre_open_url_open`, `nokre_shell_write_clipboard` and
+`nokre_shell_request_paste` blocks to get past it — the clipboard pair
+because the edit row a field raises carries Copy and Paste, so every
+program that can hold a caret reaches them, and no page a generator
+writes has anybody standing in a field.
+
+The block is not the answer, and neither is making the requirement go
+away. **`nokre.headless_shell` is the answer, and it is one line:**
+
+```zig
+comptime {
+    _ = nokre.headless_shell;
+}
+```
+
+It answers every hook the way a process with nothing to report answers
+one — never an invented device — and records the three where a screen
+would otherwise end unobservably ([testing.md](testing.md#the-process-a-driver-is)).
+nokre's own `emit-css` and l10n tools have named it all along; it sits
+at the root rather than under `testing` because a generator is not a
+test, and the name a consumer writes should say which it is.
+
+### Weak symbols were refused
+
+The obvious way to spare a generator the line is to ship weak
+definitions of the hooks, so a binary that defines none of them still
+links. That inverts the one guarantee the arrangement has. Today a
+windowed build that named the headless shell by mistake is a **loud
+duplicate symbol**, and a build that named nothing is a link failure:
+the mistake is never two shells quietly wired to one app, and never a
+shipped app whose clipboard silently does nothing. With weak
+definitions both mistakes link and run. The linker is the guard, the
+line is what says which side of it this binary is on, and neither is
+overhead.
+
+Gating the hooks on the target instead of on the binary was the other
+candidate and fails on the same fact: `services.every_shell_hooks` asks
+what platform this is, and a generator and an app are the same platform.
+Nothing in the target can tell them apart. What can is the program
+saying so, which is the line above.

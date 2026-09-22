@@ -97,7 +97,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/testing/audit.zig](../../src/testing/audit.zig) | the accessibility audit: the whole-tree content rules construction-time validation cannot cover |
 | [src/testing/rubber_band_integrator.zig](../../src/testing/rubber_band_integrator.zig) | shell.h's band integrator over a live `App`, the one copy the canonical flick (`driver.scrollFling`) and the carry tests share |
 | [src/testing/trace.zig](../../src/testing/trace.zig) / [golden.zig](../../src/testing/golden.zig) / [diag.zig](../../src/testing/diag.zig) | per-step tracing (`TreeSink`, and `Tee` for fanning one step at both instruments), byte-exact PPM goldens, and the harness's one stderr gate |
-| [src/testing/shell.zig](../../src/testing/shell.zig) | the headless shell a driver binary names instead of hand-exporting the C hooks a shell owes ([internals/platform-shells.md](platform-shells.md)) |
+| [src/headless_shell.zig](../../src/headless_shell.zig) | the shell a binary with no window names instead of hand-exporting the C hooks a shell owes — a driver, nokre's own generators, a consumer's static-site generator ([internals/platform-shells.md](platform-shells.md), [static-sites.md](../static-sites.md)) |
 | [src/core/test_app.zig](../../src/core/test_app.zig) | the mocked App nokre's *own* unit tests build on — internal, not the consumer fixture above |
 | [src/platform/platform.zig](../../src/platform/platform.zig) | comptime backend selection |
 | [src/platform/c_shell.zig](../../src/platform/c_shell.zig) | shared Zig side of the C shell contract ([shell.h](../../src/platform/shell.h)); names no rendering backend |

@@ -136,6 +136,31 @@ not control must never be able to raise:
 - **List nesting past three levels.** The fourth level's items join the
   third level's item rather than opening a list `append` would refuse.
 
+## A table's header line is read for what it says, blanks included
+
+GFM has no syntax for a table without a header, so the line is there
+whatever the author has to put in it, and two spellings of *nothing* are
+conventions rather than accidents:
+
+- **Every cell blank** (`| | |`) is the only way to say there are no
+  column names. The row is built as a body row: it still draws — the
+  author drew one, and it costs the same pixels either way — but it
+  claims to name nothing, so the audit's `unnamed_table_column` leaves
+  the table alone instead of complaining about every cell in it
+  ([accessibility.md](accessibility.md)).
+- **A blank corner over named columns** (`| | A | B |`) is the stub
+  column: the first cell of each body row holds that row's *name*
+  rather than an entry. Those cells are built with `Cell.header`, which
+  a browser gets as `<th scope="row">` and a reader's table navigation
+  uses to say which row it is in ([elements.md](elements.md)). Nothing
+  else marks a row header — the corner is the whole signal.
+
+A header cell may be styled: `` | `Arrival` | `` names its column the
+way a plain word does, because naming reads a cell's words and moves
+nothing. A header cell that holds no words at all, in a column that is
+not the corner, names nothing — and the audit says so about the cells
+under it.
+
 ## A list's ordinals are rendering, and the source is ASCII
 
 The marker is derived from the list and the item's position — a source

@@ -136,10 +136,9 @@ actually become wrong.
 | `src/l10n.zig` | The catalog and the locale axis: one ARB source, so one locale — and the only place the set of published locales is named. |
 | `src/content.zig` | Every screen this site adds, as nokre trees. No templates and no HTML. |
 | `src/links.zig` | The site's `dom.RefResolver`: what a document's `[label](dest)` points at, recorded for the link check. |
-| `src/main.zig` | The static driver: the app, the audit, the page shell, and the files it writes. |
+| `src/main.zig` | The static driver: the app, the audit, the page shell, the files it writes, and the C hooks a windowless build owes, named rather than written (`nokre.headless_shell`). This generator is a platform shell; the wasm module is not. |
 | `src/web.zig` | The live one: the same app, as a wasm module, with the three decls nokre's live driver looks for. |
 | `src/css.zig` | The stylesheet guard: which custom properties the document root carries, and which the shell's own rules spend. |
-| `src/shell.zig` | The one C hook every non-test build links. This generator is a platform shell; the wasm module is not. |
 | `tools/build-fonts.py` | Subsets nokre's bundled text faces into the woff2 files in `assets/fonts/`. |
 | `tools/l10n-purge.sh` | nokre's `l10n-purge` over this repository's catalog, behind the clean-tree precondition the library leaves to its caller (`../nokre/docs/localization.md`, "Purging unused keys"). |
 

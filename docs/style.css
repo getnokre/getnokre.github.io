@@ -301,6 +301,25 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   direction: rtl;
 }
 
+/* The one place text *is* this question: a table cell. A cell is a
+   grid entry rather than a paragraph, and a column whose words and
+   whose figures stand on opposite edges is a column no eye reads
+   down — which is what a mirrored result table drew, because a run
+   of digits has no strong character and UAX #9 P3 answers
+   left-to-right on its behalf. The reference anchors a cell's run
+   to the chrome (`renderer.RunAnchor`), and this is the same
+   sentence.
+
+   Spelled `left`/`right` rather than `start`, alone in this sheet:
+   `start` is resolved against the *line box's* base direction, and
+   a cell carries `unicode-bidi: plaintext` above, so `start` would
+   be the content's answer again under another name. The rule above
+   is untouched — the order inside the cell is still the content's,
+   and only the block moves. */
+:root[data-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td) {
+  text-align: right;
+}
+
 /* No transition and no animation, anywhere, ever. Motion is a
    vestibular hazard (WCAG 2.3.3), an untestable intermediate state,
    and a tax on determinism; nokre has none to configure or to
@@ -798,7 +817,7 @@ li > ul.list, li > ol.list { margin-top: var(--list-gap); }
   scrollbar-color: var(--g9) transparent;
 }
 table { border-collapse: collapse; }
-th, td { border: 0; padding: var(--cell-pad); text-align: start; vertical-align: top; }
+th, td { border: 0; padding: var(--cell-pad); text-align: left; vertical-align: top; }
 tr + tr > th, tr + tr > td { border-top: var(--border) solid var(--g10); }
 /* A cell is a flow of its own, with the tighter gap layout gives it
    (`layoutTable` flows cell children at 4px). A table cell cannot
@@ -806,8 +825,12 @@ tr + tr > th, tr + tr > td { border-top: var(--border) solid var(--g10); }
    so the gap is spent as a margin between siblings instead. */
 th > * + *, td > * + * { margin-top: 4px; }
 /* A header row is marked by tone, not by weight: the reference
-   swaps the row's text ink to `mid` and changes nothing else. */
-th { font-weight: 400; color: var(--mid); }
+   swaps the row's text ink to `mid` and changes nothing else. The
+   tone is the *row*'s, so a `<th scope="row">` in a body row —
+   the cell that names its row to a screen reader — draws as the
+   body text the reference draws there. */
+th { font-weight: 400; }
+tr.header > th { color: var(--mid); }
 
 hr { border: 0; border-top: var(--border) solid var(--g10); }
 

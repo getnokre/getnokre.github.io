@@ -49,10 +49,10 @@ const L = l10n.L;
 const AlternateSet = dom.Alternates(L).Set;
 
 comptime {
-    _ = @import("shell.zig");
+    _ = nok.headless_shell;
 }
 
-const nokre_revision = 137;
+const nokre_revision = 138;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",

@@ -883,6 +883,25 @@ numbers are what it holds; here the number *is* the thing and the
 caption says what it is. The DOM substrate puts both in real text and lets
 the browser compute the same name.
 
+**A quantity is a reading, and nokre grows no stepper.** The shape an
+app reaches for when the number is the user's to set is this element
+between a Fewer and a More button, and pressing More changes a number
+**nobody hears**: the quantity is static text and no focus stop, the
+reader's cursor is standing on a button whose name did not change, and
+the figure that moved is a sibling node. The platforms' own answer is a
+`spinbutton` — one control, one stop, the number as its value, two
+adjusters inside it — and it is **refused**. A bounded count is a
+*choice*: it is a `select` or a `radio_group`, where every value the
+user may pick is named, reachable, announced and pressable by the one
+mechanism every backend already carries, and where the range is on
+screen rather than discovered by pressing into it. A stepper is the
+opposite bargain — two of the smallest hit targets in an interface,
+each moving the answer by one, and each an accidental press away from
+an answer nobody stated. `A11yRole.spin_button` is not coming, and
+neither is the increment/decrement pair four shells would have to grow
+to keep its promise: the a11y bridge carries click and focus, which is
+every action a `select` and a `radio_group` need.
+
 Reach for `quantity` over `meter` when there is no whole to be a
 fraction of, over `badge` when the number is the point of the screen
 rather than a mark on something else, and over a `heading` when what is
@@ -1821,6 +1840,32 @@ app cannot build a screen that opens mid-swap. A `reload` inside
 caret ([routing.md](routing.md)), vetted against the rebuilt device's
 slot count.
 
+**What assistive tech gets is the device and every slot in it.** The
+element is one node — a group named by the label, valued by the slot
+the cursor stands on and described by that slot's rank, which is what a
+keyboard reader hears change under ↑/↓ — and each slot is a child
+control of its own: a button named by the plate's words, carrying the
+plate's rank as its value, announced armed while it is the armed one
+and off where the band rules it out. A slot is pressable and is never a
+focus stop, because the device is the stop and the cursor is what moves
+inside it; a pinned divider's slot is a caption rather than a control,
+since there is no button to press. The keyboard contract above is the
+whole of what is announced: there is no "move up" action, because the
+device has no such verb — a move is two presses, arm and release.
+Counted-ness reaches a reader as the rank's presence and nothing else,
+and the divider's own sentence is read where it sits
+([accessibility.md](accessibility.md#derivation)).
+
+**A ranking carries no `problem`, and that is a refusal.** A field
+declares one because it accepts bytes nobody vetted; a ranking cannot
+be invalid. Every order the device can reach is one it permits — a slot
+the band rules out is disabled and takes no press, and the audit's
+`malformed_ranking` holds the band and the cursor in range — so there
+is nothing left for a reason to describe. A rule the device cannot
+express structurally is the *consumer's* refusal, not the device's
+state: announce it as a [notice](#notice) where the consumer refused,
+and leave the plates saying what they say, which is an order.
+
 `disabled` turns the whole device off — one flag for one tab stop,
 like `radio_group`'s. It draws in the [shared off
 vocabulary](#turning-a-control-off-disabled): the label, the ranks and
@@ -1830,6 +1875,9 @@ and the divider's grouping edge do not move: an order is a value, and
 it stays legible after it stops being changeable.
 
 The construction errors, by name: `error.RankingNeedsTwoOptions`,
+`error.RankingTooManyOptions` (past `Ranking.max_options`, which is
+what bounds the ranks and the slot ids assistive tech is given — a
+device past it would be drawn whole and read short),
 `error.RankingEmptyOption`, `error.RankingNeedsDivider`,
 `error.RankingMaxNotBelowCount`, `error.RankingBandInverted`
 (`viable_min` above `viable_max`), `error.RankingViableOutsideBand`,
@@ -2035,6 +2083,9 @@ A field with a problem is **not disabled and not busy**. It takes every
 keystroke it took before — a control the user cannot edit is a control
 that traps them in the value that was just refused. That is the whole
 difference from `Button.in_progress`, which really is both.
+
+No other element declares it. A [`ranking`](#ranking) composes a value
+too and still carries none: it cannot be invalid.
 
 Two things that are not this field. A failure that belongs to the
 *form* rather than to one of its values — a rate limit, a server that
@@ -2409,7 +2460,53 @@ rejects anything else at construction. A row refuses more than 32 cells
 at `append` (`error.TooManyColumns` on the cell that would open a 33rd
 column) — the construction refusal every other malformed structure
 gets. The grid is drawn with 1px lines. Mark header rows with
-`.header = true`.
+`.header = true`; mark the cell that names its *row* with
+`.header = true` on the **cell**, which is what the next paragraph is
+about and changes no pixel.
+
+**Every cell is heard with its column's name, and nokre puts it
+there.** A column header is drawn once, at the top, and a reader
+walking a results table under it used to hear "Alpha, 3, 1, 1" with
+nothing saying which figure was which. So a cell's accessible **name**
+is its column's words — the header row's cell at the same index — and
+its **value** is its own, the name/value split `nav_here` makes. Two
+slices and no sentence: a joined name would hand both runs the
+direction of whichever came first, and every backend announces a name
+and a value as separate utterances anyway. The words are never the
+consumer's to compose.
+
+A cell that holds **exactly one run of words** — a single `text` with
+no spans — *is* that node: the text is not announced again beside it.
+Any other cell is a container, so its children stay nodes of their own
+and the column's name lands on the cell above them: a cell holding a
+button reads as the column and then the button, because folding a link
+or a control away would take its press with it. A table with no header
+row, or one whose header stops short of a column, leaves the cell named
+by its own words — and, where the header row exists, the audit's
+`unnamed_table_column` says so.
+
+**Naming a column and folding a cell are different questions, and only
+folding refuses spans.** A header cell written as `` `Arrival` `` or in
+two styled runs names its column like a plain one: nothing is moved, so
+nothing can be taken away, and the words are already one slice — a
+spanned run's `content` is the concatenation its spans are ranges over.
+A header cell holding something that is not words at all — a badge, a
+control — has no name to lend, which is what the audit reports. A cell
+marked `.header` is exempt from that rule: it names its own row, and
+the column it stands in is the one a table with row headers leaves
+unnamed on purpose.
+
+**The browser is told the structure instead.** A header row's cells
+emit `<th scope="col">`, a cell marked `.header` in a body row emits
+`<th scope="row">`, and the browser associates them itself — nothing
+repeats the words there. The other three bridges flatten the tree into
+a list with no table in it, which is why the snapshot carries the words
+rather than a role: `A11yRole` has no `column_header`, and appending
+one would buy nothing, because the AccessKit C binding nokre vendors
+states no cell-to-header association to hang it on. A **row** header is
+carried by nobody and needs to be: it is announced immediately before
+its own row's cells in document order on every bridge, which is the
+whole reason the column is the half that has to travel.
 
 **Column widths are per-column intrinsic maxima while they fit, and are
 shrunk to fit when they do not.** A table narrower than the span it is
@@ -2430,6 +2527,24 @@ whatever is done with them; a table meant for one is a table with fewer
 columns. The rect always reports the width the columns came to, fitted
 or not, because hit testing, focus reveal and the a11y snapshot all
 read it.
+
+**A cell's words stand on its column's leading edge, and that is the
+one place text follows the chrome.** Everywhere else a paragraph aligns
+by its own first strong character, so an English caption stays on the
+left inside a mirrored screen ([localization.md](localization.md)).
+A cell is a grid entry rather than a paragraph: its column already
+mirrors with the chrome, and a column whose headings and whose figures
+stand on opposite edges is a column no eye reads down — which is
+exactly what a mirrored result table drew, because a run of digits has
+no strong character and UAX #9's fallback is left-to-right. Only the
+block moves: the order inside the run, the shaping, and the brackets
+that turn round with the text are all still the content's. Both
+substrates say it — the reference anchors the run, and the DOM's `th`
+and `td` carry an absolute `text-align` rather than `start`, which
+under `unicode-bidi: plaintext` would be the content's answer again.
+Aligning numeric columns to the end in both directions, as a
+spreadsheet does, was refused: it needs the library to decide what a
+number is, and nokre formats none.
 
 ### `document`
 Markdown source in, ordinary elements out — `append` expands it into
@@ -3074,7 +3189,7 @@ last thing to go.
 A notice is a title, an optional description, the route its open
 control deep-links to (optional, and usually absent — a notice that
 reports without sending anyone anywhere grows no open control at all),
-an optional leading icon (decorative — the title stays the accessible
+an optional leading icon (decorative — the words stay the accessible
 name), and an importance. The importance is
 behavioral, not visual: an **important** notice interrupts as the
 banner and re-surfaces minimized ones; a **quiet** one (the default)
@@ -3122,7 +3237,20 @@ the last important one collapses to the indicator rather than promoting
 a quiet notice that never asked to interrupt. An open sheet takes the
 bottom pane, parking notices behind the indicator until it closes.
 Notices survive navigation. Screen readers announce the banner politely
-as a status live region.
+as a status live region, and what they announce is the **whole
+message** — the title and the description joined into the notice's
+accessible name (`Notice.reading`), because a live region is announced
+by its name and the slot a description would otherwise ride in reaches
+two of the five bridges ([accessibility.md](accessibility.md#derivation)).
+
+**A long title costs no words.** The title slot the pending ring
+reserves bounds the headline, never the message: `notify` keeps what
+fits, cut where a word ends, and rolls the rest into the description —
+drawn as the row's prose and read on as part of the name. An app states
+what happened in whole sentences and never splits one against a number
+of nokre's, which is why that number is not published. Bytes are lost
+only when the *message* outruns both slots, which is a paragraph rather
+than a sentence.
 
 ## Actions
 

@@ -112,6 +112,28 @@ have already told you so.
   answers under its own role — `expectPresent(.stand_in, "Loading…")`,
   never `expectPresent(.text, "Loading…")`. A query reports the tree,
   and a screen that is standing in has no text element there to find.
+- **A ladder resolves inside the layer that is open; a query reads the
+  whole screen.** With a sheet, a picker or the notices pane presented,
+  `press`, `reveal`, `typeInto`, `clearField`, `replaceField`,
+  `submit`, `select`, `dragSelect` and `longPress` look for the control
+  inside that layer and nowhere else — the same boundary `App.focusScope`
+  names and the audit's `duplicate_interactive_label` judges within,
+  because it is the same fact: everything under the scrim is inert to
+  tap, to the keyboard and to voice alike. So a sheet's confirm wins the
+  accessible name it shares with a page control under it, and a covered
+  control is `error.NoSuchElement` with the listing saying where it went
+  — a driver that could act where a person cannot proves nothing about
+  the app. It is the topmost layer outright, never the topmost first
+  with a fall back to the page: a fallback is the same wrong press with
+  a longer path to it.
+
+  The **reads are not confined**, and the split is the point.
+  `queryByLabel`, `expectPresent`, `expectValue`, `expectSelectedText`
+  and the rest ask what the screen shows, and a page under a scrim is
+  still drawn — the edit row a long press raises is a layer standing
+  *over* the very range a test then reads back. The primitives keep the
+  whole screen too: `tap(id)` is a finger at a point, and its
+  `error.Obscured` is the geometry's own answer.
 - `focusedLabel()` names the focused node — or, when an inline link
   holds focus, the link's own words.
 - `queryLink(words)` finds an inline link (a span with a destination,
@@ -229,6 +251,19 @@ ladder itself is written once.
   entry instead of one per character. The field is re-read by label
   afterwards, so a screen that rebuilds on every edit does not strand
   the verb on a stale node.
+- `replaceField(label, bytes)` leaves that field holding exactly
+  `bytes`, the way a person overwrites one: the caret goes in, ⌘A takes
+  what is there, and the typed bytes land **over the selection** — the
+  first codepoint through the same replace arm a shell's paste delivers
+  on. The third shape beside the other two, and the one a pre-filled
+  field wants: with only `typeInto` a rename had to spell the
+  concatenation the append produces (`"Thursday RunnersTuesday
+  Runners"`), which asserts the old value and the new one in one string
+  and reads as a bug. Undo granularity is typing's — `clearField`'s
+  single Backspace is the verb that promises one entry — and there is
+  no readback: empty is empty, but what a field holds after a
+  replacement is the app's, and a value normalized by `on_change` is
+  not this verb failing.
 - `select(label, start, end)` names a byte range in a field, `start`
   the anchor and `end` the live end, so a Shift+arrow after one extends
   from where it left the caret; equal offsets place a caret. An offset
@@ -869,6 +904,18 @@ expectation can't be met there, a screen reader user can't meet it either.
 - `expectRoute(route)` — the screen on top ([routing.md](routing.md));
   pair it with `app.router.depth()` when the depth is the point, since
   a push and a `switchTo` land on the same route
+- `expectNavigationRefused(ref, reason)` names a navigation this test
+  meant to see refused and **takes the record with it**. A reference
+  the router could not honor is written down and the audit fails on it
+  after every action — deliberately, and the grounds are
+  [routing.md](routing.md)'s: a place for the reader to land is not an
+  excuse for the program. That left the not-found destination every app
+  must declare as the one screen no test could stand on. A refusal the
+  test names is not a mistake left behind, so it is consumed and the
+  screen it landed on audits like any other; every refusal nobody names
+  goes on failing. The navigation itself stays the app's own verb —
+  `harness.app.navigate`, `switchTo`, a delivered deep link — because
+  it is the app being asked for a screen it cannot give.
 - `expectAbsent(label)`
 - `expectPresent(role, name)` — absence's positive twin, by semantic
   identity: presence claimed by role plus accessible name, and a miss
@@ -1763,7 +1810,8 @@ screen it could not land on.
 `HarnessApp`: a `*App`, a `Pacer`, and **the harness's own verb names
 running the harness's own ladders**, each with a wait in front. It is
 not a copy of the harness and not a parallel vocabulary — `press`,
-`reveal`, `back`, `typeInto`, `clearField`, `select`, `dragSelect`,
+`reveal`, `back`, `typeInto`, `clearField`, `replaceField`, `select`,
+`dragSelect`,
 `longPress`, `selectOption`, `swapSlots`,
 `goTab`, `expectPresent`, `expectAbsent`, `expectDestination`, `expectRoute`,
 `expectValue`, `expectProblem`, `expectSelection`, `expectSelectedText`,
@@ -1880,8 +1928,9 @@ The rules the set follows, each of them a decision:
   which the driver's wait pumps on and the harness's assertion asks
   once.
 - **Every other verb waits for the thing it acts on or asserts
-  against**, not for something weaker nearby. `typeInto` and
-  `clearField` wait for a `text_input` or `text_area` with that label,
+  against**, not for something weaker nearby. `typeInto`,
+  `clearField` and `replaceField` wait for a `text_input` or
+  `text_area` with that label,
   never for the label — prose carrying the same words would end the
   wait and strand the verb. Both then refuse a field that is
   `disabled` by name rather than letting the tab walk time out: a field
@@ -1994,12 +2043,12 @@ to write.
 Two things a driver owes that a test does not. It owes the hooks a
 shell owes — the free C functions the services name, which a binary
 with no shell must still resolve. nokre ships that shell:
-`testing.shell` defines all of them, and naming it in the driver is the
+`nokre.headless_shell` defines all of them, and naming it in the driver is the
 whole install —
 
 ```zig
 comptime {
-    _ = nokre.testing.shell;
+    _ = nokre.headless_shell;
 }
 ```
 
@@ -2012,7 +2061,7 @@ Each hook answers the way a shell with nothing to report does, except
 the three where a screen's outcome would otherwise vanish: what was
 last written to the clipboard, handed to a share sheet, or opened as an
 outbound URL is recorded, and the driver reads it back with
-`testing.shell.lastCopied()`, `lastShared()`, and `lastOpened()` —
+`nokre.headless_shell.lastCopied()`, `lastShared()`, and `lastOpened()` —
 empty when the hook never fired, last write wins, matching the platform
 mocks' recordings under `zig test`. Never name it in a windowed build —
 nor `testing.entry`, which installs it for you: those definitions and

@@ -676,6 +676,26 @@ reference into a passing run. A place for the *reader* to land is not an
 excuse for the program. The not-found screen reads that same record for
 what was asked for.
 
+**Asked for, and declined: stop failing on a refusal that landed on the
+declared destination.** It would read as the app's own answer rather
+than a mistake, and it is not one the record can tell apart — a dead
+reference an action computed lands there by exactly the same road as a
+stale link. Declaring a destination is mandatory, so the exemption would
+be every app's, and the whole control would be gone: the per-node route
+rules hold the references *in the tree*, and nothing else watches an
+imperative `navigate`.
+
+What was true is that the one screen every app must have was the one
+screen no test could stand on. `HarnessApp.expectNavigationRefused(ref,
+reason)` is the door — it names the refusal, asserts both halves and
+takes the record with it, so the not-found screen audits and
+photographs like any other and **every refusal nobody names goes on
+failing**. The navigation stays the app's own verb (`harness.app.navigate`,
+a deep link), because it is the app being asked for something it cannot
+give. A not-found screen that reads nothing off the record has a second
+route in with no refusal at all: its own name resolves, since
+`for_unresolved` forces `args = 0`.
+
 #### The declaration is required
 
 `App.init` refuses a table with routes and no not-found screen among

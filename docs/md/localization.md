@@ -294,6 +294,21 @@ scan — and a code block's lines, bar included, never mirror
 vertical axis is direction-blind throughout, so `↑`/`↓` in a radio group
 mean the same thing in both, while `←`/`→` swap with the layout.
 
+**A table cell is the one exception to the first of those.** A cell is
+a grid entry rather than a paragraph: its column already mirrors with
+the chrome, and a column whose headings and whose figures stand on
+opposite edges is a column no eye reads down. That is what a mirrored
+result table drew — a run of digits carries no strong character at all,
+so P3 answers left-to-right on its behalf, and every number in a
+Persian table stood against the left of its column while every heading
+stood against the right. A cell's run is anchored to the chrome's
+leading edge instead, on both substrates, and only the block moves: the
+order inside the run, the shaping and the mirrored brackets are still
+the content's ([elements.md](elements.md), `table`). The alternative —
+aligning *numeric* columns to the end in both directions, as a
+spreadsheet does — was refused here: it needs the library to decide
+what a number is, and nokre formats none.
+
 ### A value that opens in the other direction
 
 One place needs both answers at once, and it is the catalog: a value

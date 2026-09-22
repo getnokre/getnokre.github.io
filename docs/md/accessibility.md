@@ -50,7 +50,8 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `region` (folded) | — | absent, subtree included: a narrow desk is not showing it and the switcher speaks for it |
 | `segmented` | `radio_group` | selected option as value, focused, `disabled` |
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
-| `ranking` | `group` | the cursor slot's words as value and its rank as description — a rank only a counted slot has, so an item below the divider is heard with none; selected while the cursor slot is the armed one; focused; `disabled`; a pinned divider's words as a `static_text` child at its plate. The DOM substrate, owning real markup, gives every slot a button of its own named by rank and words, `aria-pressed` on the armed one and `aria-disabled` on what the band rules out |
+| `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
+| `ranking` slot | `button` | the plate's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop. A pinned divider's slot is `static_text` at its plate instead: it is a caption, and there is no button to press |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
 | `nav` | `navigation` | — |
@@ -58,7 +59,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `nav_current` (framework) | `combo_box` | named by the framework ("Section" in English — [localization.md](localization.md#the-frameworks-own-words)), current section as value, focused |
 | `nav_here` (framework) | `static_text` | named by the framework ("Current screen"), the route's title as value; no focus stop — it names where you are, it does not go there |
 | `sheet` | `dialog` | modal |
-| `notice` | `status` | title as label |
+| `notice` | `status` | title **and description** as the label, joined (`Notice.reading`) — a live region is announced by its name, so prose in any other slot is drawn and not heard (below) |
 | `notices_pane` | `dialog` | modal |
 
 Each node carries its layout rect, so screen readers get correct hit
@@ -158,6 +159,10 @@ tighter-fitting attribute and the one screen readers support least
 evenly — and that relation computes to the same accessible description
 the native snapshot carries. One property, two spellings.
 
+**A ranking carries no `problem`, and that is a refusal**
+([elements.md](elements.md#ranking)). The description slot on a ranking
+holds the cursor slot's rank and nothing else.
+
 A field the reader is **standing in** carries where their selection is:
 byte offsets into the value, on cluster boundaries, the caret being the
 case where the two ends meet. Standing in is the field holding focus,
@@ -202,7 +207,85 @@ own snapshot tests, read by the harness's `expectSelection` and
 `expectSelectedText` ([testing.md](testing.md#assertions)), and held to
 cluster boundaries by the audit's `malformed_selection`.
 
-One node is derived rather than mirrored from an element: an
+**A `ranking` is one element and many controls, so its slots are
+derived nodes.** The device is a single focus stop whose value is the
+slot the cursor stands on ([elements](elements.md#ranking)); that is
+what a keyboard reader hears change under ↑/↓, and on its own it was
+the whole of what any reader got — not the other plates, not the ranks
+they draw, not the divider's words while it can move, and no control
+that moves anything. Each slot is now a child node: a **button** named
+by its plate's words, valued by its rank, `selected` while it is the
+armed one, `disabled` where the band rules it out, sitting on the swap
+button's own rect so a bridge that activates a node by pressing its
+rect presses *that* slot. This is the shape the DOM substrate already
+shipped — real buttons carrying the same two facts in a visually
+hidden run — so the two substrates say one thing.
+
+Three things it deliberately is not:
+
+- **Not a focus stop.** The device is one tab stop and the cursor walks
+  it; a slot that took focus would put every plate in the tab order and
+  leave the ↑/↓ contract with nothing to move. A slot is activatable
+  instead, which is the press a finger makes.
+- **Not a custom action.** "Move this up" is not a verb this device
+  has — swap is, and it is a pair of presses, so an action named for a
+  direction would be a second arithmetic beside `applySwap` and words
+  in every language the library would have to own. The one verb is
+  already a control; announcing that control is the whole fix.
+- **Not a position announcement.** A rank is the app's digits, from the
+  same `layout.rankingOrdinal` the plate draws with, and only a counted
+  slot has one — which is the fact a reader is told about counted-ness.
+  "3 of 9" would be a sentence nokre does not own, and the two bridges
+  that flatten their trees (iOS, Android) announce no structural
+  position anyway.
+
+What a rank can be is bounded, because a borrowing snapshot points at
+comptime strings and the bridge keys each slot's id off its element's:
+`Ranking.max_options` is a construction rule
+(`error.RankingTooManyOptions`), and a device mutated past it fails the
+audit's `unannounced_ranking_slot` rather than being drawn whole and
+read short.
+
+**A cell is announced with the name of its column.** A table's header
+row is drawn once, at the top; three of the five bridges flatten the
+tree into a list with no table in it, so a reader below that row used
+to meet figures with nothing attached to them. The snapshot spends the
+name/value pair on it — the column's words are the cell's *name*, its
+own words its *value* — and a cell holding one run of words is that
+one node, its text folded in rather than read again beside it
+([elements.md](elements.md#table--row--cell) has the shape and what a
+cell holding a control does instead). Two slices rather than a joined
+sentence: a join would hand both runs the direction of whichever came
+first, and a name and a value are two utterances on every backend
+regardless. The browser is told the structure instead — `<th scope>` —
+and repeats nothing. `unnamed_table_column` states the property over
+the derivation.
+
+**A notice is announced by its name, so its name is the whole message.**
+The element draws a title and a description ([elements.md](elements.md#notice));
+the snapshot joins them into one label (`Notice.reading`, built at
+append from the copies the tree just made — `DivergingMeter.reading`'s
+mechanism and its reason). The obvious alternative — title as the name,
+description in the description slot — was measured against the bridges
+and fails on two of five: **Android carries a node's description only
+where `invalid` is set** (it is `setError`, the refused field's slot),
+and iOS puts it in the hint, which VoiceOver reads late and a reader may
+have switched off. What a live region announces on every platform is its
+accessible name. On the web nothing changes: the description is a real
+`<p>` inside the `role="status"` element, so the browser already
+announced both — and because the join is the name and not a second copy,
+the message is heard **once** on every substrate. The audit's
+`unannounced_notice_description` states the property over the snapshot.
+
+The title's cap stops being a consumer's problem with it. A title
+longer than the notice ring's slot is not dropped and not refused:
+`notify` keeps the headline that fits — cut where a word ends — and
+**rolls the rest into the description**, which is drawn as prose and
+read on as part of the name. An app hands `notify` whole sentences and
+never splits one against a number of nokre's, which is why that number
+is not published.
+
+One further node is derived rather than mirrored from an element: an
 acknowledged `copyable` (see [elements](elements.md#copyable)) gains a
 `status` child labeled `Copied`, the same polite live region a notice
 gets, arriving and leaving with the check in the field. A mark with no
@@ -428,6 +511,32 @@ fails on:
   options or selection mutated into an invalid state
 - `malformed_ranking` — a ranking mutated out of shape: the defects
   append refuses, or a cursor or armed slot past the last slot
+- `unannounced_notice_description` — a notice whose description is not
+  inside the name the snapshot carries. A live region is announced by
+  its name, and the slot beside it reaches two bridges of five, so
+  prose that is not in the name is drawn and never heard. Stated over
+  the snapshot for the rule below's reason: the join is a derivation,
+  and a rule reading the element's two fields would agree with itself
+  while the reader got one of them
+- `unnamed_table_column` — a cell in a table that declares a header row
+  which the snapshot announces without its column's name. A column
+  header is drawn once, at the top, and every row under it then reads
+  as bare figures; what produces it is a header row that stops short of
+  a body row's columns, or a header cell holding something that is not
+  words — a badge, a control — and so has no name to lend. A table with
+  no header row is not this rule's business, and neither is a cell that
+  names its own row (`Cell.header`): the stub column it stands in is
+  the one column a table with row headers leaves unnamed on purpose.
+  Asked of `semantics.columnWords`, the one derivation that decides
+  what a reader hears, rather than of the header row a second time
+- `unannounced_ranking_slot` — a ranking slot the snapshot does not
+  carry, does not name, or leaves nothing to press. One of the two rules
+  that read the a11y snapshot instead of the tree, and that is the point:
+  the derivation is what regressed, and a rule stated over the tree
+  would have agreed with itself while the snapshot said nothing. A
+  counted slot's value must also be the rank its plate draws, so a
+  device that outgrew `Ranking.max_options` fails here rather than
+  announcing short
 - `insufficient_text_contrast` / `excessive_text_contrast` — an ink or box
   fill mutated after append into a pair that is illegible in either
   appearance, or harsh enough to glare
@@ -549,3 +658,14 @@ backend is a shell property: the [README](../README.md) support matrix
 lists each platform's, and
 [internals/platform-shells.md](internals/platform-shells.md) shows how
 the bridges are built.
+
+**Where "polite live region" stops being literal.** A `status` node —
+a notice, a stand-in, the copy acknowledgement — is announced on
+arrival by the two backends that have the concept: the browser's
+`role="status"` and AccessKit's. On iOS and Android it is a node a
+reader reaches and reads, and nothing announces it: the iOS shell posts
+`UIAccessibilityLayoutChangedNotification` with no string, and the
+Android one a bare `TYPE_WINDOW_CONTENT_CHANGED`. That is why what
+those nodes *carry* is the whole message rather than a headline —
+being read is the guarantee that holds everywhere — and closing the
+gap is [roadmap.md](roadmap.md), §3.
