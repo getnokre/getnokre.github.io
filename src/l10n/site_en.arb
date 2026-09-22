@@ -31,6 +31,8 @@
   "chromeCopy": "Copy",
   "chromePaste": "Paste",
   "chromeSelectAll": "Select all",
+  "chromeDialIncrease": "Increase",
+  "chromeDialDecrease": "Decrease",
   "titleHome": "Home",
   "titleDocs": "Docs",
   "titleInternals": "Internals",

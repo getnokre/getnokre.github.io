@@ -78,6 +78,18 @@ Android one a bare `TYPE_WINDOW_CONTENT_CHANGED` with no
 content-change type and no live region set. So words that arrive on
 their own are *read* on five platforms and *announced* on two.
 
+**The second case is a `dial`'s value**, and it is the same gap
+approached from the other side. The number lives on the device's own
+node, the reader's cursor is standing on that node or on one of its two
+step buttons, and a value that moves under a stationary cursor is
+announced by the browser (the reading is an `<output>`, a polite live
+region) and by AccessKit, and by neither of the flattening bridges. So
+the figure a sighted user watches turn is, on iOS and Android, a figure
+a reader has to go back and re-read. The two calls below are what close
+that too — and the adjustable role the dial is waiting on is a
+different errand, held by the increment and decrement actions the
+bridges do not carry ([elements.md](elements.md#dial)).
+
 The two calls that close it are
 `UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, …)`
 in the iOS shell and `setAccessibilityLiveRegion` on the host view in

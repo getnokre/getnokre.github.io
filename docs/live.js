@@ -688,6 +688,120 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     frame();
   });
 
+  // ---- the dial's turning stream -----------------------------------
+  //
+  // The rule is docs/elements.md's, `dial`: **a gesture belongs to
+  // whatever it started on**, and a wheel, which starts on nothing,
+  // belongs to a dial only while that dial is focused. It is written
+  // here a second time because a browser's wheel and pointer events
+  // are not core's scroll stream and never reach it — the page is the
+  // browser's to scroll, so nothing crosses into wasm that core could
+  // have routed. What core does keep is the quantum: raw travel goes
+  // over, detents come back, and this file never learns how tall a
+  // plate is.
+  //
+  // The two streams are separate because their ends are: a pointer
+  // says when it let go, and a wheel has to be waited out.
+  const DIAL_IDLE_MS = 150;
+  // `{ node }` once the first tick of a wheel stream has decided whose
+  // it is, where `node` is null for the page's. Null between streams.
+  let wheelStream = null;
+  let wheelIdle = 0;
+  let dragDial = null; // { node, at } while a finger holds the column
+
+  function dialUnder(target) {
+    const device = target instanceof Element ? target.closest("[data-dial]") : null;
+    return device ? Number(device.dataset.dial) : null;
+  }
+
+  function turnDial(node, travel) {
+    nk.nokre_dom_dial(node, Math.round(travel), 0);
+    frame();
+  }
+
+  function endDial(node) {
+    // The close spends whatever travel never made up a detent, so the
+    // next stream starts from zero rather than inheriting a push the
+    // reader has forgotten making.
+    nk.nokre_dom_dial(node, 0, 1);
+  }
+
+  function endWheelStream() {
+    if (wheelStream && wheelStream.node !== null) endDial(wheelStream.node);
+    wheelStream = null;
+  }
+
+  // On the **document**, not on the mount roots, and not passive. A
+  // stream that opens on a part of the page this driver did not write —
+  // the host's own header, the margin beside the column — is still a
+  // stream, and one that never reached a listener would leave the next
+  // tick free to open a dial's mid-scroll. Engines make a wheel
+  // listener passive by default at this level and only at this level,
+  // so `preventDefault` has to be asked for.
+  doc.addEventListener("wheel", (e) => {
+    // **Resolved once**, on the tick that opens the stream, and kept
+    // until the gap closes it — the page's ticks marked as the page's
+    // exactly as a dial's are marked as the dial's. Both halves
+    // matter, because the pointer does not travel under a wheel: the
+    // content travels under a stationary pointer. Without the first, a
+    // dial scrolling up into that pointer takes over a scroll already
+    // under way; without the second, a reader standing on a dial can
+    // never scroll the page past it.
+    if (!wheelStream) {
+      const node = dialUnder(e.target);
+      // A wheel belongs to no gesture, so focus is what names the
+      // owner — the fix browsers themselves landed on for
+      // `<input type=number>`, and the rule core holds for a free tick.
+      const focused = node !== null && nk.nokre_dom_focused_node() === node;
+      wheelStream = { node: focused ? node : null };
+    }
+    // The gap is the browser's, not core's: core has no clock, and a
+    // wheel is the one stream whose end nothing announces. Restarted on
+    // every tick, the page's included, so a long page scroll does not
+    // fall out of its own stream halfway down a dial.
+    clearTimeout(wheelIdle);
+    wheelIdle = setTimeout(endWheelStream, DIAL_IDLE_MS);
+    if (wheelStream.node === null) return;
+    e.preventDefault();
+    turnDial(wheelStream.node, e.deltaY);
+  }, { passive: false });
+
+  doc.addEventListener("pointerdown", (e) => {
+    // The column only. A drag that begins on a step button is that
+    // button's press — the browser will deliver its click — and a
+    // device that turned under the finger *and* stepped on release
+    // would move twice for one gesture.
+    if (!e.target.closest?.(".dial-plates")) return;
+    const node = dialUnder(e.target);
+    if (node === null) return;
+    dragDial = { node, at: e.clientY };
+    // The pointer is captured so a finger that leaves the column keeps
+    // turning it, which is the same sentence as the lock core holds
+    // across a bracket's moves.
+    e.target.setPointerCapture?.(e.pointerId);
+  });
+
+  doc.addEventListener("pointermove", (e) => {
+    if (!dragDial) return;
+    // Content follows the finger: a finger moving up raises the
+    // travel, and a positive travel turns the value down, because what
+    // is below the current plate is one less (the shells' own sign).
+    const travel = dragDial.at - e.clientY;
+    dragDial.at = e.clientY;
+    turnDial(dragDial.node, travel);
+  });
+
+  // Both endings, for the reason the editable drag above states: a
+  // pointer released outside the window still ends this drag, and a
+  // recognizer that loses it sends `pointercancel` and nothing else.
+  for (const ending of ["pointerup", "pointercancel"]) {
+    doc.addEventListener(ending, () => {
+      if (!dragDial) return;
+      endDial(dragDial.node);
+      dragDial = null;
+    });
+  }
+
   // Tabbing is the browser's: the markup is the tree, so document
   // order already *is* focus order. What crosses back into wasm is
   // where it landed.

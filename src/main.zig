@@ -52,7 +52,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 138;
+const nokre_revision = 139;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",

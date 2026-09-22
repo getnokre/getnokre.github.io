@@ -52,6 +52,8 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
 | `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
 | `ranking` slot | `button` | the plate's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop. A pinned divider's slot is `static_text` at its plate instead: it is a caption, and there is no button to press |
+| `dial` | `group` | the reading its plate draws as value — the number in the app's own digits, written by layout; focused; `disabled`. Both step buttons are children of their own (below). Deliberately **not** an adjustable role: that is a wire contract with four shells behind it and buys nothing without the increment and decrement actions none of them carries |
+| `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
 | `nav` | `navigation` | — |
@@ -246,6 +248,28 @@ comptime strings and the bridge keys each slot's id off its element's:
 audit's `unannounced_ranking_slot` rather than being drawn whole and
 read short.
 
+**A `dial` says where it stands, and its two buttons are what move
+it.** The device is one focus stop named by its label and valued by the
+reading on its plate ([elements](elements.md#dial)); the step buttons
+are derived children named by the framework's own words, activatable
+and not focus stops, each on the rect a press lands on — the `ranking`
+shape above, with two controls instead of a column of them. A button at
+the end of the range is `disabled` and not activatable, which is the
+empty plate beside it said to the reader who cannot see it.
+
+The value it carries is the reading layout wrote, so what is announced
+is the number that was drawn, and the audit's `unannounced_dial`
+compares the two by shaping the number a third time rather than by
+trusting either.
+
+**Where a dial's value goes when it moves** is the second named case of
+the gap below. On the web the reading is an `<output>`, whose implicit
+`status` role is a polite live region, so a value that changes is
+announced wherever browser focus is standing — which is what a
+`quantity` between two buttons could never promise, and the reason that
+shape stays refused. On iOS and Android nothing announces it:
+[roadmap.md](roadmap.md), §3.
+
 **A cell is announced with the name of its column.** A table's header
 row is drawn once, at the top; three of the five bridges flatten the
 tree into a list with no table in it, so a reader below that row used
@@ -385,6 +409,10 @@ after the fact would mean the bad state existed:
   divider words, a band reaching the option count, an inverted band, a
   count outside the band, or an input-owned field (`cursor`, `armed`)
   set by hand — a screen cannot open mid-swap
+- a malformed dial: a floor below zero, an inverted range, a range
+  holding one value — that is a reading, not a device — a value outside
+  it, a range past `Dial.max_digits`, or a `reading_buf` set by hand,
+  which is layout's to write
 - empty badges, valueless copyables, wordless or out-of-range meters of
   either kind — a diverging meter needs all three sets of words —
   unlabeled/valueless/unencodable QR codes
@@ -537,6 +565,19 @@ fails on:
   counted slot's value must also be the rank its plate draws, so a
   device that outgrew `Ranking.max_options` fails here rather than
   announcing short
+- `malformed_dial` — a dial mutated out of shape: a floor below zero,
+  an inverted or singular range, a value outside it, or a range past
+  `Dial.max_digits`. Its label is not this rule's business — a dial is
+  one focus stop with a name, so it stands with the controls
+  `unlabeled_interactive` and `duplicate_interactive_label` hold
+- `unannounced_dial` — a dial the snapshot does not carry, whose value
+  is not the reading its plate draws, or whose step buttons are
+  missing, unnamed, or wrong about what a press can still do. Stated
+  over the snapshot for the rule above's reason, and the number is
+  shaped again here rather than read off the element: the snapshot
+  borrows that reading, so the two agree by construction and a layout
+  pass that stopped settling would leave one stale figure standing in
+  for both
 - `insufficient_text_contrast` / `excessive_text_contrast` — an ink or box
   fill mutated after append into a pair that is illegible in either
   appearance, or harsh enough to glare
@@ -669,3 +710,10 @@ Android one a bare `TYPE_WINDOW_CONTENT_CHANGED`. That is why what
 those nodes *carry* is the whole message rather than a headline —
 being read is the guarantee that holds everywhere — and closing the
 gap is [roadmap.md](roadmap.md), §3.
+
+A [`dial`](elements.md#dial)'s value is the second thing that gap
+reaches, and it arrives from the other side: the number is on the node
+the reader is standing in rather than in a `status` of its own, and on
+iOS and Android a value that changes under a stationary cursor is
+re-read only if the reader asks. The device is still named, valued and
+walkable everywhere; what it is not, on those two, is announced.

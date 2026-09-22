@@ -54,6 +54,7 @@
   --list-gap: 4px;
   --list-marker-gap: 8px;
   --ranking-gap: 6px;
+  --dial-gap: 6px;
   --quote-indent: 16px;
   --icon-gap: 8px;
   --icon-glyph: 24px;
@@ -391,6 +392,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
 .field-label,
 .field-box.select,
 .ranking,
+.dial,
 .nav,
 .icon-button,
 .picker-item,
@@ -1519,6 +1521,73 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .ranking[disabled] .plate.lit, .ranking.off .plate.lit,
 .ranking[disabled] .swap:not(.gone), .ranking.off .swap:not(.gone) { border-color: var(--g10); }
 .ranking[disabled] .swap[aria-pressed="true"], .ranking.off .swap[aria-pressed="true"] { background: var(--g6); border-color: var(--g6); color: var(--g11); }
+
+/* The dial: one vertical column at the leading edge, a step button
+   above and below it (`dialButtonRect`, `dialPlateRect`). Block
+   flow under the legend for the fieldset reason in the reset, and
+   `width` on the device rather than on each piece — `--dial-col` is
+   the measured column the serializer wrote (`layout.dialRows`),
+   floored at a touch target there, so the buttons need no minimum
+   of their own. Nothing here mirrors: up is more in both
+   directions, and the device moves with the chrome because the
+   block it sits in does. */
+.dial > .dial-device {
+  margin-top: var(--input-label-gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dial-gap);
+  width: var(--dial-col);
+  /* The device takes the touch, so the page must not. Without
+     this a finger dragging the column scrolls the page instead,
+     and a browser that has already begun a scroll cannot be
+     talked out of it from a listener. This is the web's spelling
+     of gesture-start ownership (elements.md, `dial`), which core
+     spells as an exclusive lock on the bracket. */
+  touch-action: none;
+}
+.dial-plates { display: flex; flex-direction: column; background: var(--g11); border-radius: var(--radius); }
+/* The figure scale in the mono family, centred: a column of values
+   lines up digit under digit, which is the one thing a proportional
+   face cannot do (elements.md, `quantity`). An empty plate is the
+   end of the range and keeps its height, so the column does not
+   shorten as the device reaches a bound. */
+.dial-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--lh-h3) + 2 * var(--tile-pad-v));
+  padding: var(--tile-pad-v) var(--tile-pad-h);
+  border: var(--border) solid transparent;
+  border-radius: var(--radius);
+  font-family: mono;
+  font-size: var(--px-h3);
+  line-height: var(--lh-h3);
+  color: var(--dark);
+}
+/* The counted plate's pair, as a ranking spends it: paper inside a
+   state edge is the value the device stands on. */
+.dial-plate.now { background: var(--paper); border-color: var(--g6); color: var(--ink); }
+.dial-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--touch);
+  padding: 0;
+  background: var(--g11);
+  border: var(--border) solid var(--g6);
+  border-radius: var(--radius);
+  color: var(--ink);
+}
+.dial-step .icon { font-size: var(--icon-glyph); width: var(--icon-glyph); height: var(--icon-glyph); }
+/* A button at the end of the range, and the whole device off: the
+   shared vocabulary (`renderer.disabled_ink`) — the glyph and the
+   words to `--g6`, state edges to `--g10`. The plate fills stay, so
+   the column is still a column. */
+.dial-step[aria-disabled="true"] { border-color: var(--g10); color: var(--g6); }
+.dial[disabled] .field-label, .dial.off .field-label,
+.dial[disabled] .dial-plate, .dial.off .dial-plate { color: var(--g6); -webkit-text-fill-color: var(--g6); }
+.dial[disabled] .dial-plate.now, .dial.off .dial-plate.now,
+.dial[disabled] .dial-step, .dial.off .dial-step { border-color: var(--g10); color: var(--g6); }
 
 /* A column of tile rows under a label, in the tile group's shape.
    Block flow, not flex: the legend is the label and no engine puts

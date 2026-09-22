@@ -883,24 +883,34 @@ numbers are what it holds; here the number *is* the thing and the
 caption says what it is. The DOM substrate puts both in real text and lets
 the browser compute the same name.
 
-**A quantity is a reading, and nokre grows no stepper.** The shape an
-app reaches for when the number is the user's to set is this element
-between a Fewer and a More button, and pressing More changes a number
-**nobody hears**: the quantity is static text and no focus stop, the
-reader's cursor is standing on a button whose name did not change, and
-the figure that moved is a sibling node. The platforms' own answer is a
-`spinbutton` — one control, one stop, the number as its value, two
-adjusters inside it — and it is **refused**. A bounded count is a
-*choice*: it is a `select` or a `radio_group`, where every value the
-user may pick is named, reachable, announced and pressable by the one
-mechanism every backend already carries, and where the range is on
-screen rather than discovered by pressing into it. A stepper is the
-opposite bargain — two of the smallest hit targets in an interface,
-each moving the answer by one, and each an accidental press away from
-an answer nobody stated. `A11yRole.spin_button` is not coming, and
-neither is the increment/decrement pair four shells would have to grow
-to keep its promise: the a11y bridge carries click and focus, which is
-every action a `select` and a `radio_group` need.
+**A quantity is a reading, and the refused shape is still refused.**
+What an app reaches for when the number is the user's to set is this
+element between a Fewer and a More button, and pressing More changes a
+number **nobody hears**: the quantity is static text and no focus stop,
+the reader's cursor is standing on a button whose name did not change,
+and the figure that moved is a sibling node. That shape has no home
+here and never will.
+
+Where the number is the user's, the element is one of three, by how
+many answers there are. A handful is a [`select`](#select) or a
+[`radio_group`](#radio_group), where every value is named, reachable,
+announced and pressable by the mechanism every backend already carries,
+and where the range is on screen rather than discovered by pressing
+into it. A range too wide to enumerate is a [`dial`](#dial) — one node,
+one focus stop, whose own value moves, so the figure that changes is
+the thing the reader is standing on. Neither is a stepper: two of the
+smallest hit targets in an interface, each moving the answer by one and
+each an accidental press away from an answer nobody stated.
+
+The a11y bridge carries click and focus, which is every action a
+`select` and a `radio_group` need — and is why those two were the whole
+answer for as long as they were. The `dial` is what asks the bridges for
+more: an adjustable node wants an increment and a decrement the four
+native shells do not carry yet, so what a reader gets there is the
+device's two step buttons and the click every bridge already delivers.
+The value that moves under them is announced by the browser and by
+AccessKit and is silent on iOS and Android. That is the cost of the
+third answer, stated rather than discovered.
 
 Reach for `quantity` over `meter` when there is no whole to be a
 fraction of, over `badge` when the number is the point of the screen
@@ -1912,6 +1922,14 @@ costs a pointer stream the input model does not carry, and on touch it
 competes with the scroll the page is already listening for. A swap
 reaches every order a drag reaches, two rows at a time.
 
+Neither half of that is a rule about gestures in general, and
+[`dial`](#dial) is where the difference shows: a dial takes a one-axis
+scroll stream, which the input model does carry, and the competition
+with the page's scroll is answered by gesture-start ownership — the
+gesture belongs to whatever it started on. What a ranking wanted and
+could not have is a *pointer* stream with a row held under the finger
+across the column, which is a different thing to ask for.
+
 ### `text_input`
 Single-line. `label` is mandatory and rendered above the field (small
 scale). `value`, `placeholder`, `cursor` (byte offset), `on_change`,
@@ -2225,6 +2243,170 @@ value; the picker is a modal dialog of option rows with selection
 state, its filter a plain labeled text field. There is no multi-select;
 if a choice needs more than one answer, the screen wants rethinking
 more than the widget wants features.
+
+### `dial`
+A count the user sets over a range too wide to lay bare as options,
+turned on one device. Fields: `label`; `min` (default 0) and `max`, the
+range; `value`, where the device stands; `on_change(value)`, which
+carries the whole new number and never a delta; and `disabled`. The
+whole state is the app's — there is no input-owned field here, unlike
+`ranking`, so a dial can be built at any value the range holds.
+
+Reach for it when the answer is a number over a range nobody would
+enumerate. A handful of values is a `radio_group` or a `select`, where
+every answer is named and on screen; two or three is `segmented`. And it
+is never a licence for the shape [`quantity`](#quantity) refuses — a
+reading between two of the app's own buttons. The difference is the
+whole argument for this element: one node, one focus stop, and the
+figure that moves is its own.
+
+**The drawing is a column of digits.** The device is as wide as `max`
+spells — the digit count times the widest of the app's own ten shaped
+digits, measured rather than assumed, since the mono family is a
+request a font set may answer with a proportional face
+([`quantity`](#quantity)) — and every value stands in that column. Three
+are on screen: the current one on a plate of its own, and one neighbour
+above and one below, so the direction of travel is there before anything
+is turned. The numbers are nokre's to shape, from the app's locale, the
+same table an ordered list's ordinals come from (`lang.digitsOfTag`): a
+Persian app's dial reads in the digits beside its lists.
+
+**Up is more, and the chevron points at the plate it fetches.** The
+plate above the current value holds `value + 1` and the one below holds
+`value - 1`; the step buttons stand above and below the column, the
+upper one carrying a chevron up and the lower a chevron down, so each
+one points at the neighbour its press brings to the centre. It is not a
+free choice: ↑ is the increment key on every platform with a stepper on
+it and the keyboard contract below says the same, so a column that put
+the larger number underneath would draw one thing and honour another.
+The column is not a list of options, where the reading order ascends
+(`select`, `radio_group`) — it is a number against an axis, and an axis
+grows upward. One detent per press; at a bound the button that can go no
+further draws off. **Their words are the framework's** — they come from
+`Chrome` like the back and close controls, so an app states no words for
+them and a localized app says them with the rest of its chrome:
+`chromeDialIncrease` and `chromeDialDecrease`.
+
+**The device is vertical, so nothing inside it mirrors.** It stands at
+the leading edge under its label and moves to the other one with the
+chrome, as every element does; the plates, the buttons and the chevrons
+keep their places, because up and down are not reading order. The digits
+themselves stay left to right inside a right-to-left line, which is the
+shim's `resolveFace` doing its job — `dial-rtl.ppm` and `dial-fa.ppm`
+are the pictures that say so.
+
+**Negative is refused for now** (`error.DialNegativeMinimum`). The
+column is as wide as `max` spells, and a sign that came and went as the
+value crossed zero would rewrap the device under the finger turning it.
+A floor below zero is a range to argue in later; `DialAction` already
+carries the signed type, because a refusal can be relaxed without
+touching a consumer's source and a widened integer cannot.
+
+**One tab stop, and ↑/↓ are the step buttons' keyboard.** Nothing tabs
+to a step button — two stops inside one control would leave the arrows
+nothing to act on — so the device takes every key: ↑/↓ one detent,
+PageUp/PageDown ten, **Home the minimum and End the maximum**. That
+last pair is the spinbutton pattern's and deliberately not the scroll
+region's, where Home goes to the top of the content and the top of this
+column is the way the number grows: a range's ends are named low to
+high in every keyboard contract a reader arrives with. ←/→ are
+**unbound** — the device is vertical, and a row that puts a dial beside
+something else keeps whatever those keys already meant there. Each key
+fires `on_change` with the value the device now stands on, and a press
+at a bound fires nothing at all.
+
+A tap on a step button is the same one detent; the button at the end of
+the range is drawn off and takes no press. **A tap on a plate does
+nothing**: a plate is the value one press away, not a value the user
+named, and jumping to whichever neighbour a finger grazed is the
+accidental answer the [`quantity`](#quantity) refusal is about.
+
+On touch and trackpad the device takes a one-axis scroll stream, and
+the competition with the page's own scroll is answered by
+**gesture-start ownership**: a gesture belongs to whatever it started
+on, so a drag begun on the dial's device turns the dial to its end and
+a drag begun on the page scrolls the page past it, whatever it passes
+over on the way. The label above the device is not the device; a drag
+there is the page's, like a drag on any other words.
+
+**One detent per plate crossed, and the remainder is carried.** The
+quantum is the height of the very figure the finger is dragging, so a
+value travels as far as its own number does and one stream turns a
+two-digit device and a six-digit one at the same rate. There is no
+easing and no velocity of nokre's own — a shell's momentum arrives as
+deltas like every other input, and what it buys is more detents rather
+than a curve ([introduction.md](introduction.md), "No transitions or
+animation") — and **one haptic per detent**, which is the second knock
+in a framework that had exactly one
+([internals/haptics.md](internals/haptics.md)). The knock is the
+stream's alone: a key and a step button *land* the device rather than
+turning it through anything, and the figure that changed is their
+feedback.
+
+**A wheel turns a dial only while that dial is focused.** A wheel tick
+belongs to no gesture — there is no start for it to belong to — and the
+pointer does not travel under one: the content travels under a
+stationary pointer. So a rule that asked only what a tick landed on
+would let a dial scrolling up into that pointer start eating the page's
+scroll, and would leave a reader standing on one unable to scroll past
+it. That is the browsers' own `<input type=number>` defect and
+requiring focus is the fix they landed on. A desktop shell is not asked
+to bracket its wheel into a gesture so the pointer rule could hold
+instead: that would turn every wheel scroll on macOS, Windows and Linux
+from the pointer-routed, outward-chaining one those platforms have into
+an iOS-style lock, which is a change to all scrolling bought for one
+element.
+
+Semantics: one node, named by the label and **valued by the reading the
+plate draws**, with the two step buttons as nodes of their own beneath
+it — derived like a [`ranking`](#ranking)'s slots, named by the
+framework's words, activatable and off at a bound. The device is the one
+focus stop and the buttons are not; what a reader browsing the group
+meets is the value and two controls that move it.
+
+The role is a named **group** until the adjustable one lands. An
+`A11yRole` member for it is a wire contract with four shells behind it,
+and it is worth nothing without the increment and decrement actions the
+bridges do not carry — announcing "adjustable" over a node no gesture
+can adjust is a promise, not a semantic. What will carry the change
+once the keys land is the browser: the DOM substrate draws the reading
+in an `<output>`, which is a polite live region, so a value that moves
+is announced wherever focus is standing. On iOS and Android nothing
+announces it — the second named case of the gap in
+[roadmap.md](roadmap.md), §3.
+
+The construction errors, by name: `error.DialNegativeMinimum`,
+`error.DialRangeInverted` (`max` below `min`), `error.DialRangeSingular`
+(a range holding one value is a reading, not a device — the app meant a
+`quantity`), `error.DialValueOutsideRange`, and
+`error.DialRangeTooWide` past `Dial.max_digits`, which is what bounds
+the column and the bytes a borrowing snapshot is handed. `reading_buf`
+is layout's to write, like `scroll_region`'s content height, and a
+consumer that sets it is refused (`error.LayoutOwnedField`).
+
+The two step buttons carry **the value their press would produce**
+rather than a step, on the way in and on the way out: `DialAction`
+carries whole numbers, the DOM substrate writes the value into the
+press door a ranking's slot already uses (`nokre_dom_select`), and a
+button at a bound carries none. So the two sides never disagree about
+what one press means, and a value that arrived from outside the range
+is clamped rather than honoured.
+
+**On the web the same rule is written a second time**, in `live.js`,
+because a browser's wheel and pointer events are not core's scroll
+stream and never reach it — the page is the browser's to scroll. A
+pointer drag on the column is a stream and carries the device past
+whatever it leaves; a drag begun anywhere else never reaches it; a
+wheel stream's owner is settled on its first tick and keeps every tick
+until 150 ms of quiet, the page's included. What the browser owns there
+is only *which device and when a stream ended* — the travel crosses raw
+and core turns it into detents, so both substrates turn at one rate.
+
+**Announced but silent on two platforms.** A value that moves under a
+stationary reader's cursor is spoken by the browser and by AccessKit
+and by neither flattening bridge, and the adjustable role the device is
+waiting on needs increment and decrement actions no shell carries yet —
+both are named cases in [roadmap.md](roadmap.md), §3.
 
 ### `copyable`
 A verbatim value the user carries away — a recovery code, an invite
@@ -3243,14 +3425,22 @@ accessible name (`Notice.reading`), because a live region is announced
 by its name and the slot a description would otherwise ride in reaches
 two of the five bridges ([accessibility.md](accessibility.md#derivation)).
 
-**A long title costs no words.** The title slot the pending ring
-reserves bounds the headline, never the message: `notify` keeps what
-fits, cut where a word ends, and rolls the rest into the description —
-drawn as the row's prose and read on as part of the name. An app states
-what happened in whole sentences and never splits one against a number
-of nokre's, which is why that number is not published. Bytes are lost
-only when the *message* outruns both slots, which is a paragraph rather
-than a sentence.
+**A long title costs no words, and a headline is whole sentences.** The
+title slot the pending ring reserves bounds the headline, never the
+message: `notify` cuts at the **last sentence end that fits** and rolls
+the rest into the description — drawn as the row's prose and read on as
+part of the name. A message of two sentences splits between them
+however long the first one is, so a headline never stops mid-thought. A
+sentence end is `.`, `!`, `?`, `…`, `؟` or `۔` followed by a space or
+by the end of the message — the space is what tells one from a decimal
+point or an abbreviation's dot — or `。`, `！`, `？`, which set no space
+after themselves. Only a first sentence longer than the slot has no
+sentence end to take: that one is cut where a word ends, and one long
+token holding no word end at a character boundary. An app states what
+happened in whole sentences and never splits one against a number of
+nokre's, which is why that number is not published. Bytes are lost only
+when the *message* outruns both slots, which is a paragraph rather than
+a sentence.
 
 ## Actions
 
