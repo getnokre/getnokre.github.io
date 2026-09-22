@@ -1432,6 +1432,16 @@ adapter:
   straight from the same flattened node array (roles → traits, the
   topmost modal's subtree only, activate/VoiceOver-focus dispatching
   back like clicks). Same fill/action callbacks, no extra library.
+  **The element objects survive the rebuild**, keyed by node id: UIKit
+  resolves an assistive-tech reference by identity against the
+  container's current elements, so an array of fresh objects every
+  frame invalidates whatever the reader is holding — and an invalidated
+  element takes no action and reports no value, silently. It is fatal
+  on the adjustable node, whose gesture is repeated: the second swipe
+  moved nothing. No gate here can see it; the Simulator can, and did
+  (2026-09-22). Each reused element has every slot it can carry cleared
+  before the new node's facts are written, so a stale hint or value
+  cannot ride along.
 - **Android:** no AccessKit either — `NokreView`'s
   `AccessibilityNodeProvider` serves virtual `AccessibilityNodeInfo`s
   from the same flattened array (shell.c walks it and hands each node
@@ -1439,7 +1449,15 @@ adapter:
   flat under the host view like iOS). TalkBack's click and
   accessibility-focus dispatch back through the same fill/action
   callbacks, and a content-changed event fires after frames while
-  assistive tech listens.
+  assistive tech listens. An adjustable node
+  ([accessibility.md](../accessibility.md)) carries a `RangeInfo` and
+  the two scroll actions TalkBack's swipe up and down land on, and its
+  reading rides in the state description on API 30+ — without one
+  TalkBack computes a percentage of the range and says that instead, in
+  digits the screen is not drawing. A `status` arriving is spoken with
+  `announceForAccessibility`: a live region mode is read off the node
+  an event is sourced at, and this shell's content-changed events are
+  sourced at the host view, which has no words of its own.
 - **Web:** nothing to bridge — the DOM substrate renders the semantic
   tree as the document, so the browser's accessibility tree is the
   output, not a mirror ([dom-substrate.md](dom-substrate.md)).

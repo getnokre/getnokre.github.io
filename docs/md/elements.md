@@ -904,13 +904,10 @@ each an accidental press away from an answer nobody stated.
 
 The a11y bridge carries click and focus, which is every action a
 `select` and a `radio_group` need — and is why those two were the whole
-answer for as long as they were. The `dial` is what asks the bridges for
-more: an adjustable node wants an increment and a decrement the four
-native shells do not carry yet, so what a reader gets there is the
-device's two step buttons and the click every bridge already delivers.
-The value that moves under them is announced by the browser and by
-AccessKit and is silent on iOS and Android. That is the cost of the
-third answer, stated rather than discovered.
+answer for as long as they were. The `dial` is what asked the bridges
+for more, and they now carry it: an increment and a decrement on every
+backend, landing on the same door ↑ and ↓ use, with the device's two
+step buttons still there for the press a finger makes.
 
 Reach for `quantity` over `meter` when there is no whole to be a
 fraction of, over `badge` when the number is the point of the screen
@@ -2364,16 +2361,19 @@ framework's words, activatable and off at a bound. The device is the one
 focus stop and the buttons are not; what a reader browsing the group
 meets is the value and two controls that move it.
 
-The role is a named **group** until the adjustable one lands. An
-`A11yRole` member for it is a wire contract with four shells behind it,
-and it is worth nothing without the increment and decrement actions the
-bridges do not carry — announcing "adjustable" over a node no gesture
-can adjust is a promise, not a semantic. What will carry the change
-once the keys land is the browser: the DOM substrate draws the reading
-in an `<output>`, which is a polite live region, so a value that moves
-is announced wherever focus is standing. On iOS and Android nothing
-announces it — the second named case of the gap in
-[roadmap.md](roadmap.md), §3.
+The role is **`spin_button`**, the adjustable one, and it arrived with
+the two actions that make it worth having (2026-09-22): increment and
+decrement, carried by every backend and landing on the same door the
+keys use. Not `slider` — a slider is a thumb on a track and this device
+draws a column of figures — and the reasoning is
+[accessibility.md](accessibility.md)'s. The node carries the range as
+numbers beside the reading, because a reading is in the app's own
+digits and no backend can compare those. On the web the device is the
+`spinbutton` and the column's one tab stop, valued by `aria-valuenow`
+and read out by `aria-valuetext`; the two buttons stay real and
+pressable at `tabindex="-1"`, and all three plates are `aria-hidden`,
+so the figure a reader hears is the one on the element they are
+standing on, said once.
 
 The construction errors, by name: `error.DialNegativeMinimum`,
 `error.DialRangeInverted` (`max` below `min`), `error.DialRangeSingular`
@@ -2402,11 +2402,12 @@ until 150 ms of quiet, the page's included. What the browser owns there
 is only *which device and when a stream ended* — the travel crosses raw
 and core turns it into detents, so both substrates turn at one rate.
 
-**Announced but silent on two platforms.** A value that moves under a
-stationary reader's cursor is spoken by the browser and by AccessKit
-and by neither flattening bridge, and the adjustable role the device is
-waiting on needs increment and decrement actions no shell carries yet —
-both are named cases in [roadmap.md](roadmap.md), §3.
+**A value that moves is spoken on every platform now.** The browser
+announces the focused spin button's own value; AccessKit carries the
+numeric one; and the two flattening bridges re-read an adjustable
+node's value after their own increment gesture — on iOS from a fresh
+snapshot taken as the step is performed, because the element VoiceOver
+is holding was built before it.
 
 ### `copyable`
 A verbatim value the user carries away — a recovery code, an invite

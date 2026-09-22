@@ -160,11 +160,32 @@ touch against the hidden `UIScrollView` that feeds scrolling, and
 reaches recognizer arbitration — it is verified in the Simulator or not
 at all ([shell test tier](platform-shells.md)).
 
-**As of 2026-09-22 two things below the boundary are unproven on a
-device.** `Knock.detent` has never been felt: the iOS selection
-generator and Android's `performHapticFeedback` are written against the
-platform APIs and compile-checked, and `check-targets` is the whole of
-what has run over them. Android's is also **the first
-`nokre_shell_haptic` that shell has ever exported**, so the JNI method
-lookup itself — `haptic(I)V` on `NokreView` — has only been read, never
-called. Both are verified on a phone or not at all.
+**Android's hook is reached; nothing has been felt.** On 2026-09-22 a
+touch drag down the dial's column in the API 35 emulator fired
+`nokre_shell_haptic` twice as the value crossed two detents, so
+`haptic(I)V` on `NokreView` resolves and `performHapticFeedback` is
+called — the JNI lookup and the call site are no longer read-only. What
+an emulator cannot do is vibrate: the feel is still owed to a phone,
+and the iOS selection generator is owed both — the Simulator is its
+only gate and the Simulator has no Taptic Engine. `check-targets` now
+*parses* that shell (`zig build check-targets` runs clang over
+`shell.m` at the example projects' deployment target, proven by putting
+a syntax error in it), which is a compile and not a call: nothing here
+runs a line of it.
+
+**And the drag that proved it only turned the dial with animations
+off.** With the platform's animator scale at its default the same drag
+moved nothing and scrolled nothing: the gesture was claimed by the
+device and then swallowed by the shell's own elastic band, which asks
+`nokre_core_scroll_pull` what room the anchor has, was told none — a
+dial is not a scroll region — and integrated the whole delta into
+stretch. The iOS feeder had the same shape from the other end: a room
+of zeros gives the hidden scroll view no extent to travel through, so
+no `scrollViewDidScroll` follows the first one. Found in the API 35
+emulator 2026-09-22 and fixed the same day, in core, where the answer
+belongs: a dial-owned bracket answers a `DEVICE` owner whose walls
+stand out of reach either side of where the stream started and move
+with it (`scrolling.zig`'s `dial_reach`). No band engages, because no
+edge ever reads zero, and a device at the end of its range simply
+stops. The regression is in `rubber_band_integrator_test.zig`, which
+runs a finger over a dial through shell.h's own integrator.

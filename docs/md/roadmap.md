@@ -67,44 +67,37 @@ renderer.
 - Semantic-tree dump (debug print of any screen from a test)
 - Golden diff visualizer (side-by-side PPM compare)
 
-## 3. A status nobody hears on three platforms of five
+## 3. What a screen reader is told without asking, and what is still owed on a device
 
-A `status` node — a notice, a stand-in, the copy acknowledgement — is a
-polite live region on the two backends that have the concept: the
-browser's `role="status"` and AccessKit's. On iOS and Android it is
-only a node a reader can walk onto. The iOS shell posts
-`UIAccessibilityLayoutChangedNotification` with no string, and the
-Android one a bare `TYPE_WINDOW_CONTENT_CHANGED` with no
-content-change type and no live region set. So words that arrive on
-their own are *read* on five platforms and *announced* on two.
+**Closed 2026-09-22.** A `status` node — a notice, a stand-in, the copy
+acknowledgement — is announced on arrival by all five backends now: the
+browser's `role="status"` and AccessKit's live region, and on the two
+flattening shells an announcement of the node's own name
+(`UIAccessibilityAnnouncementNotification`, `announceForAccessibility`),
+raised when the set of standing status names gains one.
 
-**The second case is a `dial`'s value**, and it is the same gap
-approached from the other side. The number lives on the device's own
-node, the reader's cursor is standing on that node or on one of its two
-step buttons, and a value that moves under a stationary cursor is
-announced by the browser (the reading is an `<output>`, a polite live
-region) and by AccessKit, and by neither of the flattening bridges. So
-the figure a sighted user watches turn is, on iOS and Android, a figure
-a reader has to go back and re-read. The two calls below are what close
-that too — and the adjustable role the dial is waiting on is a
-different errand, held by the increment and decrement actions the
-bridges do not carry ([elements.md](elements.md#dial)).
+The entry named `setAccessibilityLiveRegion` on the Android host view
+and **that was wrong about this bridge**: a live region is read off the
+node an event is sourced at, and every content-changed event that shell
+sends is sourced at the host view, which carries no words of its own. A
+mode set on a virtual node nobody sources an event at is a property no
+service reads. The announcement is the utterance, stated once.
 
-The two calls that close it are
-`UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, …)`
-in the iOS shell and `setAccessibilityLiveRegion` on the host view in
-`NokreView`. Both are a shell's own, neither touches core, and the
-snapshot already carries the words they would speak.
+The second case, a `dial`'s value, closed with the adjustable role and
+its two actions ([accessibility.md](accessibility.md)): the figure is
+on the node the reader is standing on, and every platform re-reads it
+after its own increment.
 
-**What holds it here is that no gate in this repository can see an
-utterance.** A VoiceOver or TalkBack announcement is not a tree, a
-frame or a snapshot: no `zig test`, no golden and no driver observes
-one, so a lane that shipped both calls would be shipping the claim and
-not the behavior. The gate is a device with a screen reader on it.
-Until then, being read is the guarantee that holds everywhere, which
-is why a notice's whole message rides in its name
-(`Notice.reading`) and why a `status` node is never handed a headline
-with the rest somewhere else.
+**What no gate in this repository can still see is an utterance.** A
+VoiceOver or TalkBack announcement is not a tree, a frame or a
+snapshot. What the Simulator and the emulator proved on 2026-09-22 is
+everything up to the speech: the adjustable node's role, value, range
+and the two actions; that a held element takes repeated increments and
+reports the value each time; that the arrival rule adopts the standing
+set in silence and does not repeat it; that the Android range crosses
+JNI intact and a bound takes the press off the spent button. The
+utterance itself, and how it feels, are owed to a device with a screen
+reader on it.
 
 ## 4. Skia, smaller and published
 

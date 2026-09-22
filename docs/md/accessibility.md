@@ -52,7 +52,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
 | `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
 | `ranking` slot | `button` | the plate's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop. A pinned divider's slot is `static_text` at its plate instead: it is a caption, and there is no button to press |
-| `dial` | `group` | the reading its plate draws as value — the number in the app's own digits, written by layout; focused; `disabled`. Both step buttons are children of their own (below). Deliberately **not** an adjustable role: that is a wire contract with four shells behind it and buys nothing without the increment and decrement actions none of them carries |
+| `dial` | `spin_button` | the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
@@ -248,27 +248,52 @@ comptime strings and the bridge keys each slot's id off its element's:
 audit's `unannounced_ranking_slot` rather than being drawn whole and
 read short.
 
-**A `dial` says where it stands, and its two buttons are what move
-it.** The device is one focus stop named by its label and valued by the
-reading on its plate ([elements](elements.md#dial)); the step buttons
-are derived children named by the framework's own words, activatable
-and not focus stops, each on the rect a press lands on — the `ranking`
-shape above, with two controls instead of a column of them. A button at
-the end of the range is `disabled` and not activatable, which is the
-empty plate beside it said to the reader who cannot see it.
+**A `dial` is the one adjustable node, and it says where it stands in
+two languages.** The device is one focus stop named by its label and
+valued by the reading on its plate ([elements](elements.md#dial)),
+carrying that same figure — with the range it moves in and the step one
+increment takes — as numbers beside it. The words are what a backend
+announces and the numbers are what it compares, and no backend can
+derive either from the other: a reading is in the app's own digits.
+
+The role is `spin_button` and **not `slider`**, which every backend
+would also have taken. A slider is a thumb on a track; what this device
+draws is a column of figures moved one detent at a time by two named
+controls, which is the stepper ARIA calls a spin button and the widget
+iOS and Android both name after a picker. The pixels decide the role,
+because a reader told "slider" and finding no track has been told the
+wrong thing about the screen.
+
+Behind the role are the two actions that make it worth having —
+increment and decrement — and every backend that takes the role takes
+them: AccessKit's `Increment`/`Decrement`, VoiceOver's swipe up and
+down on the adjustable trait, TalkBack's on a node carrying a
+`RangeInfo`, the browser's arrow keys on a `spinbutton`. All four land
+on `App.Semantic.dial_step`, which is the door ↑ and ↓ already use, so
+the bound and the clamp are answered once.
+
+**The step buttons stay.** A reader on an adjustable node does not need
+them, and two extra stops beside a device that can be swiped is noise —
+but they are *drawn*, and the DOM substrate cannot hide a real button
+from assistive tech without lying about what is on the screen. One
+thing said on every substrate is worth more than the two stops it
+costs. A button at the end of the range is `disabled` and not
+activatable, which is the empty plate beside it said to the reader who
+cannot see it.
 
 The value it carries is the reading layout wrote, so what is announced
 is the number that was drawn, and the audit's `unannounced_dial`
 compares the two by shaping the number a third time rather than by
-trusting either.
+trusting either; the range is compared against the device the same way.
 
-**Where a dial's value goes when it moves** is the second named case of
-the gap below. On the web the reading is an `<output>`, whose implicit
-`status` role is a polite live region, so a value that changes is
-announced wherever browser focus is standing — which is what a
-`quantity` between two buttons could never promise, and the reason that
-shape stays refused. On iOS and Android nothing announces it:
-[roadmap.md](roadmap.md), §3.
+**Where a dial's value goes when it moves.** On the web the figure is
+on the focused element itself — `aria-valuenow` with an
+`aria-valuetext` carrying the app's digits — so a browser announces it
+as it moves; the reading was an `<output>` while focus stood on a
+button beside it, and a live region there would now be the same number
+said twice. On iOS and Android the platform re-reads an adjustable
+node's value after its own increment gesture, which is what closes the
+second case of the gap below.
 
 **A cell is announced with the name of its column.** A table's header
 row is drawn once, at the top; three of the five bridges flatten the
@@ -701,19 +726,31 @@ lists each platform's, and
 the bridges are built.
 
 **Where "polite live region" stops being literal.** A `status` node —
-a notice, a stand-in, the copy acknowledgement — is announced on
-arrival by the two backends that have the concept: the browser's
-`role="status"` and AccessKit's. On iOS and Android it is a node a
-reader reaches and reads, and nothing announces it: the iOS shell posts
-`UIAccessibilityLayoutChangedNotification` with no string, and the
-Android one a bare `TYPE_WINDOW_CONTENT_CHANGED`. That is why what
-those nodes *carry* is the whole message rather than a headline —
-being read is the guarantee that holds everywhere — and closing the
-gap is [roadmap.md](roadmap.md), §3.
+a notice, a stand-in, the copy acknowledgement — is a live region to
+the two backends that have the concept: the browser's `role="status"`
+and AccessKit's. UIKit has neither, and on Android a live region mode
+is read off the node an event is *sourced at* — every content-changed
+event that shell sends is sourced at the host view, which carries no
+words. So both flattening shells say the arrival themselves:
+`UIAccessibilityAnnouncementNotification` on iOS,
+`announceForAccessibility` on Android.
 
-A [`dial`](elements.md#dial)'s value is the second thing that gap
-reaches, and it arrives from the other side: the number is on the node
-the reader is standing in rather than in a `status` of its own, and on
-iOS and Android a value that changes under a stationary cursor is
-re-read only if the reader asks. The device is still named, valued and
-walkable everywhere; what it is not, on those two, is announced.
+What is announced is the node's **name**, which is the whole message by
+construction (`Notice.reading`), and what makes it an arrival is the
+set of names standing at the last update: a status that was already
+there is not said again, so a screen rebuilt under a reader does not
+repeat itself. The first set seen after a reader starts is adopted in
+silence — a notice raised while nothing was listening is on the screen
+to be read, not shouted.
+
+That is *why* what those nodes carry is the whole message rather than a
+headline: being read is the guarantee that holds everywhere, and being
+announced now rides on the same words.
+
+A [`dial`](elements.md#dial)'s value is the other half of what
+[roadmap.md](roadmap.md) §3 named, and it arrives from the other side:
+the number is on the node the reader is standing on, and both
+flattening platforms re-read an adjustable node's value after their own
+increment. On iOS the shell restates that value from a fresh snapshot
+as it performs the step, because the element VoiceOver is holding was
+built before it.

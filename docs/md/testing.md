@@ -1376,7 +1376,11 @@ oauth's `ASWebAuthenticationSession` and its Android and loopback legs,
 all four notification systems, StoreKit and Play Billing, and every
 shell's event translation. `zig build check-targets` compiles them and the
 examples link two of them — a link is not a call, and what a shell does
-when the OS hands it an event is still reached by nothing here.
+when the OS hands it an event is still reached by nothing here. That
+step also runs clang over `src/platform/ios/shell.m`, the one shell
+source no object and no link here touches, at the deployment target the
+example projects carry: a syntax error in it used to be found by opening
+Xcode.
 
 What the examples' link no longer covers alone is their own code. A route
 builder is called by nothing until a window opens, so one that raises
