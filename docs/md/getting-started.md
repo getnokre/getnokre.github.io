@@ -1515,6 +1515,38 @@ test "settings commit immediately: order flips the list" {
 }
 ```
 
+### A theme
+
+Appearance is light or dark; the *theme* is the look both are drawn in,
+and nokre owns the whole set: `eink`, the default, and `depth`. You
+choose one and cannot define another
+([introduction.md](introduction.md#what-nokre-refuses-to-do)). An app
+starts in the theme its build.zig declares:
+
+```zig
+const app = nokre.addApp(nokre_dep, .{
+    .name = "notes",
+    // …
+    .theme = .depth,
+});
+```
+
+That is its only home, because packaging draws it before any of your
+code runs — the launch screen and window background, the web page's
+`theme-color`, the share card and the store shots.
+`state.app.setTheme(.eink)` switches it at run time, a control in
+Settings like the scheme above, and a switch only repaints: layout,
+focus and scroll stand where they were.
+
+What `depth` paints differently: its own ramps, a page that is a
+dithered gradient, raised cards (a shadow in light; a lighter fill in
+dark), tonal fills where eink outlines a control, a field or a track,
+softer rules, pill buttons, tile wells, raised plates on selection
+controls and on a toggle's knob, and an even veil for a scrim. Every screen keeps eink's geometry to the pixel, and every text
+and focus contrast proof holds in both; `depth` does not guarantee WCAG
+1.4.11 non-text contrast for its controls' boundaries and tracks, so an
+app that must meet it chooses `eink`.
+
 ## Part 11 — A second language (l10n)
 
 Notes speaks English out of string literals. This part moves the notes
@@ -2288,7 +2320,12 @@ cp -R ../nokre/examples/kitchen_sink/android android
 Repoint the copy the same way — the Zig invocation, the consumed static
 library, and the applicationId, which Gradle reads from the generated
 identity properties so it tracks your declaration; `NOKRE_ZIG_FLAGS`
-reaches both of its `zig build` calls as above. Open the project in
+reaches both of its `zig build` calls as above. The copied
+`res/values*/styles.xml` set `android:windowBackground` to
+`@color/nokre_window_background`, which the generated res tree carries
+as the top of your declared theme's page per appearance; a style of
+your own keeps that line, or the window shows the platform's gray until
+the first frame. Open the project in
 Android Studio and Run, or `./gradlew installDebug` headlessly. Keep
 the template's `-DCMAKE_BUILD_TYPE=RelWithDebInfo`: a debug APK differs
 in signing and debuggability, not in how the frame path is compiled,

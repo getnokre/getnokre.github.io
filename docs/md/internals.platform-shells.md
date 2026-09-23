@@ -644,6 +644,15 @@ same contract with twists of its own:
   banner, the notices pane) reaches the true bottom instead of floating
   above a letterbox, and the nav, which paints no surface at all, still
   anchors its items above the band while the page scrolls through it.
+- **Before the first frame.** Launch shows the declared theme's page
+  top: nothing for eink (an empty `UILaunchScreen` is already white or
+  black), and for depth a colour set the plist names
+  (`packaging.iosLaunchColorsetJson`). The controller's own view then
+  shows the app's page top from `nokre_core_page_top` — behind the
+  view until its first frame, and for good in the top and side
+  safe-area bands it is laid out of. Every presented frame re-reads it
+  and sets the colour only when the byte moved, so the bands follow
+  `setTheme` as well as the appearance.
 - **Software keyboard.** Two responders share the screen: the view is
   first responder exactly while `wants_text_input` says the focused
   element accepts text — which is what shows and hides the keyboard —
@@ -958,6 +967,15 @@ shell.m. Its twists:
   30+: the gesture-nav band's height is `safe_bottom`, the IME inset
   shrinks the view, and pre-30 devices run inside system windows with
   `adjustResize`.
+- **Before the first frame.** The window background is
+  `@color/nokre_window_background`, generated per appearance by `pkg`
+  (`packaging.androidColorsXml`) and named by the consumer's
+  `NokreTheme`: it shows before the surface posts and, on API 30+, in
+  the status-bar and side bands the view keeps out of. A resource at
+  launch, because the window draws before any native code loads; from
+  the first frame on, `NokreView.render` re-reads the byte through
+  `nokre_android_page_top` and replaces the window's drawable only when
+  it moved, so the bands follow `setTheme`.
 - **Touch.** A `GestureDetector` tap sends `on_pointer` DOWN then UP at
   the recognized point. `onTouchEvent` asks `wants_pointer_stream` on
   `ACTION_DOWN` first: a claimed gesture is forwarded raw for its whole

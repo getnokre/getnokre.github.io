@@ -64,8 +64,24 @@ fn footer(app: *App) !void {
         .{ .text = loc.tr(.footerDocsDir), .external = links.docs_dir_url },
         .{ .text = "." },
     });
+    try f.segmented(.{
+        .label = loc.tr(.footerTheme),
+        .options = &.{ loc.tr(.footerThemeEink), loc.tr(.footerThemeDepth) },
+        .selected = switch (app.theme) {
+            .eink => 0,
+            .depth => 1,
+        },
+        .on_select = .bind(selectTheme, app),
+    });
     try f.link(.{ .label = loc.tr(.footerSource), .external = links.repo_url });
     try f.link(.{ .label = loc.tr(.footerColophon), .route = "colophon" });
+}
+
+fn selectTheme(app: *App, selected: usize) void {
+    app.setTheme(switch (selected) {
+        0 => .eink,
+        else => .depth,
+    });
 }
 
 /// The one place this site quotes a nokre document word for word, and so
@@ -321,11 +337,12 @@ fn palette(site: *Site, app: *App) !void {
     const b = app.root();
     const Gray = nok.Gray;
 
-    try b.text("Thirteen steps, two ramps, six type scales. A step is a semantic " ++
-        "position rather than a byte: each appearance supplies its own ramp, " ++
-        "and the dark one is deliberately not the light one reversed. " ++
-        "Everything on this page is read out of nokre's source at build " ++
-        "time, so it cannot drift from the library.");
+    try b.text("Thirteen steps, a ramp for each theme in each appearance, six " ++
+        "type scales. A step is a semantic position rather than a byte: " ++
+        "each ramp supplies its own bytes, and a dark one is deliberately " ++
+        "not its light one reversed. Everything on this page is read out " ++
+        "of nokre's source at build time, so it cannot drift from the " ++
+        "library.");
 
     try b.heading(.h2, "The ramps");
     const strip = try b.stack(.{ .axis = .horizontal, .gap = 4 });
@@ -333,36 +350,40 @@ fn palette(site: *Site, app: *App) !void {
         const g: Gray = @enumFromInt(f.value);
         _ = try strip.box(.{ .fill = g, .border = false, .padding = 18 });
     }
-    try b.styled("g0 on the left through g12 on the right, in whichever appearance you are reading this in. The dark ramp descends where the light one climbs — that descent is the inversion, which is why no draw site inverts anything. There is no theme switch here because there is none in nokre: both follow the system.", .{
+    try b.styled("g0 on the left through g12 on the right, in whichever theme and appearance you are reading this in — the switch at the foot of every page changes the one. A dark ramp descends where its light one climbs — that descent is the inversion, which is why no draw site inverts anything.", .{
         .scale = .small,
         .ink = .mid,
     });
 
-    var rows: std.ArrayList([]const []const u8) = .empty;
-    try rows.append(gpa, &.{ "Step", "Light", "Dark", "On paper (light)", "On paper (dark)" });
-    inline for (@typeInfo(Gray).@"enum".fields) |f| {
-        const g: Gray = @enumFromInt(f.value);
-        try rows.append(gpa, try gpa.dupe([]const u8, &.{
-            f.name,
-            try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(.light)}),
-            try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(.dark)}),
-            try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, .light)}),
-            try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, .dark)}),
-        }));
-    }
-    const ramp_table = try b.table();
-    for (rows.items, 0..) |cells, r| {
-        const row = try ramp_table.row(.{ .header = r == 0 });
-        for (cells) |cell| try (try row.cell()).text(cell);
+    inline for (.{ .{ nok.color.Theme.eink, "E-ink" }, .{ nok.color.Theme.depth, "Depth" } }) |t| {
+        const theme = t[0];
+        try b.heading(.h3, t[1]);
+        var rows: std.ArrayList([]const []const u8) = .empty;
+        try rows.append(gpa, &.{ "Step", "Light", "Dark", "On paper (light)", "On paper (dark)" });
+        inline for (@typeInfo(Gray).@"enum".fields) |f| {
+            const g: Gray = @enumFromInt(f.value);
+            try rows.append(gpa, try gpa.dupe([]const u8, &.{
+                f.name,
+                try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(theme, .light)}),
+                try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(theme, .dark)}),
+                try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, theme, .light)}),
+                try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, theme, .dark)}),
+            }));
+        }
+        const ramp_table = try b.table();
+        for (rows.items, 0..) |cells, r| {
+            const row = try ramp_table.row(.{ .header = r == 0 });
+            for (cells) |cell| try (try row.cell()).text(cell);
+        }
     }
 
     try b.heading(.h2, "The five aliases");
     try b.text("You will mostly use these. They sit where WCAG compliance holds by " ++
-        "construction, in both appearances.");
+        "construction, in every theme and both appearances.");
     const alias_table = try b.table();
     for ([_][3][]const u8{
         .{ "Alias", "Step", "Use" },
-        .{ "ink", "g2", "Body text. 14.2:1 on paper in light, 10.6:1 in dark — not the 21:1 true black would give, because past a point contrast stops buying legibility and starts costing comfort." },
+        .{ "ink", "g2", "Body text. In e-ink, 14.2:1 on paper in light and 10.6:1 in dark — not the 21:1 true black would give, because past a point contrast stops buying legibility and starts costing comfort." },
         .{ "dark", "g3", "Secondary text that still has to read as text (AAA)." },
         .{ "mid", "g5", "Dimmed text: labels, details, captions (AA body)." },
         .{ "light", "g9", "Boundaries and separators that carry no state." },
@@ -391,7 +412,7 @@ fn palette(site: *Site, app: *App) !void {
         .{ .text = "the pixel model", .route = "internals.pixel-model" },
         .{ .text = ". The palette itself is " },
         .{ .text = "src/core/color.zig", .route = "../src/core/color.zig" },
-        .{ .text = ", where a ramp byte that breaks compliance — in either direction, in either appearance — fails the build." },
+        .{ .text = ", where a ramp byte that breaks compliance — in either direction, in any theme or appearance — fails the build." },
     });
 }
 
@@ -772,7 +793,7 @@ fn colophon(app: *App) !void {
         },
         &.{
             .{ .text = "The design system, to the byte. ", .strong = true },
-            .{ .text = "The stylesheet is generated: thirteen grays in two ramps out of core/color.zig, six type scales out of core/text.zig, and every padding, radius, target and stroke out of core/layout.zig. Nothing is transcribed, so nothing can drift." },
+            .{ .text = "The stylesheet is generated: thirteen grays per ramp, a ramp for each theme and appearance, out of core/color.zig, six type scales out of core/text.zig, and every padding, radius, target and stroke out of core/layout.zig. Nothing is transcribed, so nothing can drift." },
         },
         &.{
             .{ .text = "The faces. ", .strong = true },
@@ -780,7 +801,7 @@ fn colophon(app: *App) !void {
         },
         &.{
             .{ .text = "The refusals. ", .strong = true },
-            .{ .text = "No animation, no transition, no hover rule anywhere in the stylesheet, no color, and no theme switch — the appearance follows the system, which is the whole of nokre's appearance API." },
+            .{ .text = "No animation, no transition, no hover rule anywhere in the stylesheet, and no color. The appearance follows the system, and the theme is one nokre owns — this site declares depth, and the switch at the foot of every page is the app's own call to change it, not a stylesheet of this site's." },
         },
     }) |item| {
         try (try kept.listItem()).spanned(item);
@@ -833,7 +854,7 @@ fn colophon(app: *App) !void {
         .{ "With it off", "The same page, wrapped for a 1280-pixel window." },
         .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the boot module the page names, the live driver that module imports, the services module the driver imports, the service worker it registers, one wasm module, and — on a documentation page — its Markdown." },
         .{ "Trackers, cookies, consent", "None, so no banner asking about any." },
-        .{ "Appearance", "Follows the system, both ramps generated." },
+        .{ "Appearance", "Follows the system, both ramps generated for every theme. The page is written in depth; the theme switch at its foot is the app's, so it answers once the script runs and not before." },
         .{ "Print", "Chrome drops out; the content is the page." },
     }) |cells| {
         const row = try costs.row(.{});
@@ -942,4 +963,32 @@ test "the footer is a stack, not a landmark this substrate has no element for" {
     const html = try renderPage(arena.allocator(), "home");
     try testing.expect(std.mem.indexOf(u8, html, "<footer") == null);
     try testing.expect(std.mem.indexOf(u8, html, "contentinfo") == null);
+}
+
+test "the footer's theme switch is the app's setTheme, and shows the theme it is in" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    var sources: [pages.all.len][]const u8 = @splat("");
+    var site: Site = .{ .gpa = arena.allocator(), .sources = &sources };
+    var app = try nok.App.init(testing.allocator, .{
+        .viewport = .{ .w = 900, .h = 600 },
+        .routes = &routes,
+        .ctx = &site,
+        .services = .mocks(),
+    });
+    defer app.deinit();
+    try app.switchTo("gallery");
+
+    const q = nok.testing.queries;
+    const drive = nok.testing.driver;
+    const theme = L.tr(L.default_locale, .footerTheme);
+    for ([_]struct { []const u8, nok.color.Theme }{
+        .{ L.tr(L.default_locale, .footerThemeDepth), .depth },
+        .{ L.tr(L.default_locale, .footerThemeEink), .eink },
+    }) |step| {
+        try drive.selectOption(&app, q.queryByLabel(&app.tree, theme).?, step[0]);
+        try testing.expectEqual(step[1], app.theme);
+        const switch_el = app.tree.getConst(q.queryByLabel(&app.tree, theme).?).?;
+        try testing.expectEqual(@as(usize, @intFromEnum(step[1])), switch_el.segmented.selected);
+    }
 }

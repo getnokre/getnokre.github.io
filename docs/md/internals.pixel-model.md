@@ -20,41 +20,50 @@ normative contract that makes it true.
   logical size is the ceiling, and the sub-scale remainder is cropped
   at the window's edge.
 
-## Grayscale, thirteen steps, two ramps
+## Grayscale, thirteen steps, four ramps
 
 The full palette, from [src/core/color.zig](../../src/core/color.zig): thirteen
-steps `g0`–`g12`. A step is a *semantic* position, not a byte — each appearance
-supplies its own ramp, and the dark one is deliberately not the light one
-reversed.
+steps `g0`–`g12`. A step is a *semantic* position, not a byte — each (theme,
+appearance) pair supplies its own ramp, and a dark one is deliberately not its
+light one reversed. The theme is the look (`eink`, the default, or `depth`;
+choosing one is [getting-started.md](../getting-started.md), "A theme"); it
+changes paint and never a rect.
 
-| Name | Light | Dark |
-| --- | --- | --- |
-| `g0` | `0x00` | `0xDE` |
-| `g1` | `0x15` | `0xCD` |
-| `g2` | `0x2B` | `0xB8` |
-| `g3` | `0x40` | `0xA5` |
-| `g4` | `0x55` | `0x91` |
-| `g5` | `0x6A` | `0x80` |
-| `g6` | `0x80` | `0x6B` |
-| `g7` | `0x94` | `0x5A` |
-| `g8` | `0xAA` | `0x49` |
-| `g9` | `0xBF` | `0x3B` |
-| `g10` | `0xD4` | `0x2C` |
-| `g11` | `0xEA` | `0x15` |
-| `g12` | `0xFF` | `0x00` |
+| Name | Eink light | Eink dark | Depth light | Depth dark |
+| --- | --- | --- | --- | --- |
+| `g0` | `0x00` | `0xDE` | `0x00` | `0xDE` |
+| `g1` | `0x15` | `0xCD` | `0x15` | `0xCD` |
+| `g2` | `0x2B` | `0xB8` | `0x2B` | `0xBD` |
+| `g3` | `0x40` | `0xA5` | `0x40` | `0xA6` |
+| `g4` | `0x55` | `0x91` | `0x55` | `0x91` |
+| `g5` | `0x6A` | `0x80` | `0x6A` | `0x84` |
+| `g6` | `0x80` | `0x6B` | `0x80` | `0x6E` |
+| `g7` | `0x94` | `0x5A` | `0x8A` | `0x67` |
+| `g8` | `0xAA` | `0x49` | `0xAA` | `0x49` |
+| `g9` | `0xBF` | `0x3B` | `0xBF` | `0x3B` |
+| `g10` | `0xD4` | `0x2C` | `0xD4` | `0x2D` |
+| `g11` | `0xEA` | `0x15` | `0xEB` | `0x25` |
+| `g12` | `0xFF` | `0x00` | `0xFF` | `0x1C` |
 
-The light ramp is thirteen evenly spaced bytes across the full range, `g6` (the
+Depth's ramps are eink's except where its page ground (below) forced a step
+to move; why each moved is the ramp's own doc in color.zig. The ratios quoted
+in the rest of this section are eink's. Every text and focus gate they
+illustrate is asserted in all four ramps by color.zig's tests, and text on
+`paper` against both ends of depth's page ground too; the non-text gate on
+control boundaries is asserted in eink alone ("The one waived gate", below).
+
+Eink's light ramp is thirteen evenly spaced bytes across the full range, `g6` (the
 middle) being the 50-50 gray. `g7` is the one exception: even spacing puts it at
 `0x95`, which is 2.995:1 against paper and so misses the non-text-contrast floor
-it exists to satisfy, and it is pulled one byte to `0x94` (3.03:1) instead. The
+it exists to satisfy, and it is pulled one byte to `0x94` (3.03:1) instead. A
 dark ramp descends — that descent *is* the inversion, which is why no draw site
 inverts anything.
 
 Semantic aliases: `ink` = `g2`, `dark` = `g3`, `mid` = `g5`, `light` = `g9`,
 `paper` = `g12`.
 
-The aliases sit where WCAG compliance holds by construction, in both
-appearances: `mid` on `paper` is 5.4:1 light / 5.3:1 dark (AA body text), `dark`
+The aliases sit where WCAG compliance holds by construction, in every
+ramp — in eink: `mid` on `paper` is 5.4:1 light / 5.3:1 dark (AA body text), `dark`
 is 10.4:1 / 8.5:1 (AAA), and `g7` — the lightest step permitted for an
 interactive border — is 3.0:1 / 3.0:1 (non-text contrast).
 
@@ -99,14 +108,14 @@ not. Past roughly this point more contrast stops buying legibility and starts
 costing comfort — halation at the extremes is worst for astigmatic readers, and
 worse light-on-dark than dark-on-light.
 
-That asymmetry is the whole reason for two ramps. Light-on-dark stems read
+That asymmetry is the whole reason a dark ramp is its own ramp. Light-on-dark stems read
 heavier (irradiation), so dark should be *gentler* than light at equal authored
 intent — and a mirror cannot do that, because it moves every ratio together. The
 dark ramp eases the body-text pair by a quarter while holding the secondary-text
 and boundary ratios within a percent of their light values, and keeps enough
 elevation spacing that a raised surface still reads as raised.
 
-The dark page is true black, which is a choice rather than a leftover. The ramp
+Eink's dark page is true black, which is a choice rather than a leftover. The ramp
 is solved as ratios *against the page*, so the page byte sets the whole ramp's
 altitude and the easing holds either way — pinning it at `0x00` is paid for at
 the text end, where `ink` comes down from `0xC6` to `0xB8` to keep the same
@@ -116,37 +125,92 @@ halation is the luminance step at the glyph edge, and that is set by the *text*
 byte, not the page — which is why `ink` is nowhere near `0xFF`.
 
 `g0` and `g12` survive as the two steps the design system itself never draws.
-They are reachable only through a light-pinned canvas (`Canvas.light`), for the
-two surfaces that want maximum modulation whatever the appearance: the QR tile,
+They are reachable only through a canvas pinned to eink light (`Canvas.light`), for the
+two surfaces that want maximum modulation whatever the look: the QR tile,
 because a scanner wants it and a photo-negative code is a different code, and
 the vendor sign-in marks, because Apple's HIG sanctions black / white /
 white-outlined and nothing between. `Tree.append` rejects text at that contrast
 (`error.ExcessiveTextContrast`), so an app cannot reach it by hand.
 
 Tests in `color.zig` prove all of this; a ramp byte that breaks compliance —
-in either direction, in either appearance — fails the build.
+in either direction, in any ramp it is gated in — fails the build.
+
+### The one waived gate
+
+Depth does not hold WCAG 1.4.11 for control boundaries and graphic tracks
+(meters, progress). The owner decided it: depth is the expressive look, drawn
+in tonal fills and soft shadows rather than outlines, and eink is the fully
+gated one. The cost is plain — a depth app's controls are not guaranteed to
+meet 1.4.11, and nokre does not claim they do.
+
+What is not waived: text contrast (1.4.3, floor and ceiling) in every ramp,
+the focus indicator's 3:1 in every ramp — in depth against every fill a target
+sits on, both ends of the page ground included — and every gate in eink. An
+app that needs 1.4.11 conformance chooses eink. `color.zig`'s proofs assert
+the waived gates for eink only, and each skip points here. Like the G below,
+this is a recorded reversal of a guarantee rather than a gap; it spends
+nothing an app can author.
 
 ### The one colored artwork
 
 One thing on any nokre screen is not gray: the multicolour G on the
 Google sign-in button, drawn because Google's branding rules refuse a
 gray variant of their trademark. This is an *infrastructure* fact, not
-an API one — the four colour values live in the renderer's `google_g`
-table, reach pixels through the canvas's single rgb operation
-(`drawTextRgb`), and are not reachable from any element: no element
+an API one — the four colour values live in `element.google_g_rgb`,
+reach pixels through the renderer's `google_g` table and the canvas's
+single rgb operation (`drawTextRgb`), and are not reachable from any element: no element
 carries a colour, no consumer call accepts one, and the palette an app
 authors in remains the thirteen grays above. The colours resolve
 through no ramp and follow no appearance — a trademark has no dark
 mode. The decision record (this was a refusal for a long time, and the
 reversal was the owner's) is in [oauth.md](oauth.md).
 
-Surfaces are `kRGB_888x` — rgb with no alpha channel, because nokre
-composites nothing. Every canvas operation except `drawTextRgb` paints
-r=g=b, so the frame is grayscale by construction everywhere that one
-mark is not. `on_frame` hands shells tightly packed RGBX (4 bytes per
-pixel; the padding byte is outside the promise and readers ignore it).
-Anti-aliased text and rounded corners produce intermediate bytes;
-square-cornered geometry never does.
+Surfaces are `kRGB_888x` — rgb with no alpha channel: the frame is
+opaque, and the only blending in it is nokre's own (below). No canvas
+operation except `drawTextRgb` can make r, g and b differ — every other
+op paints a gray, or composites a gray over a pixel at one coverage
+for all three channels alike — so the frame is grayscale by
+construction everywhere that one mark is not. `on_frame` hands shells
+tightly packed RGBX (4 bytes per pixel; the padding byte is outside the
+promise and readers ignore it). Anti-aliased text and rounded corners
+produce intermediate bytes; square-cornered geometry never does.
+
+### What depth paints that is not a step
+
+Three canvas ops carry no `Gray`, because no element may author what
+they paint; each resolves its bytes from color.zig, and each draws
+nothing — or, for the ground, the flat `paper` a clear would — under eink.
+
+- **The page ground** (`fillPageGround`, `color.pageGround`). Depth's
+  page is a vertical gradient a few bytes deep, lit from above and
+  anchored to the *window*, not to the scrolled content. A gradient that
+  shallow bands visibly, so it is dithered — by nokre, not the
+  rasterizer, whose dither would be its pixels: an ordered 4x4 Bayer
+  pattern, each 4-column block reading the matrix one row further down so
+  every 16-pixel row holds all sixteen thresholds and its mean is the
+  row's level exactly (`canvas.pageGroundByte`). The byte at a device
+  pixel is integer math over the window's height and the pixel's
+  position; the shim samples a tile of those bytes nearest-neighbour in
+  device space. Eink's page is still a `clear(.paper)`, so every eink
+  frame is the bytes it was before depth existed.
+- **The drop shadow** (`dropShadow`, `color.dropShadow`), which depth
+  light casts under a card and, smaller, under a control's lit plate,
+  knob or field plate. Its coverage is nokre's too (`canvas.ShadowMask`): a smoothstep
+  of each device pixel's distance to the rounded box, integer throughout,
+  shipped to the shim as a nine-patch of coverage tiles. Black
+  composited at that coverage, so it can only darken.
+- **The scrim veil** (`scrimVeil`, `color.scrimVeil`): an end of the
+  ramp composited at one coverage over every pixel beneath a modal
+  layer, by the shadow's route in the shim — white in depth light, so
+  the page recedes toward the sheet's paper without turning into a
+  grayer paper of its own, black in depth dark. Eink's scrim stays the 1px `paper`
+  checkerboard (`dither`), which writes only ramp bytes.
+
+These are the only ops that composite, and they are why depth frames
+hold grays on no ramp as *surfaces* — the ground's in-between bytes, a
+shadow's falloff, everything under a veil — where an eink frame's only
+off-ramp bytes are anti-aliased edges. Every one of them is still
+r=g=b: a gray composited over a gray by one coverage stays gray.
 
 ## Geometry: anti-aliased only at rounded corners
 
@@ -242,7 +306,8 @@ the shim ignores anything else by design.
   the bands section): draw calls are recorded and replayed when the
   pixels are asked for, each band an `SkSurface` over its own rows of
   the one frame, so each pixel is one band's and every band sees every
-  op in order. Rects, lines, the dither and glyph masks are per pixel —
+  op in order. Rects, lines, the dither, depth's three ops and glyph
+  masks are per pixel —
   a clip only decides which pixels are written — so a band draws them.
   An anti-aliased path is not: Skia chops a path at the clip's bounds
   when the path exceeds them and subdivides the chopped piece
@@ -357,7 +422,7 @@ overshoot, since the root is unclipped and the page shows between the
 nav's plates and through the safe band; any frame asked for through
 `needs_frame`, and any relayout `layout_dirty` asked for —
 `damage_inputs.unbounded_changes` counts both, so a frame another caller
-drew in between still counts; a change of viewport, safe band,
+drew in between still counts; a change of viewport, safe band, theme,
 appearance, presentation, direction, shape or focus; an owner set that
 changed, or a geometry change no found rect covers; the first frame, a
 new surface, and a frame drawn into a shell's own buffer
@@ -369,7 +434,13 @@ setter that forgot to say so is still seen, and a writer that sets
 **Rasterising inside a rect** replays the frame's whole op list under a
 clip to it (`hsk_surface_pixels_within`), so chrome drawn after the
 content is drawn again inside the rect too. Rects, lines, the dither,
-the clear and glyph masks are per pixel. An anti-aliased path is not,
+the clear, the page ground, the drop shadow, the scrim veil and glyph
+masks are per pixel. The three depth ops are per pixel by construction
+rather than by luck: each is a nokre-computed tile sampled nearest in
+device space, the ground's bytes are a function of the pixel's place in
+the window rather than in the rect it was asked for, and a shadow
+records its reach rather than its casting box, so a rect that only
+touches the fringe still replays it. An anti-aliased path is not,
 for the raster bands' reason above, and clipping every op to the rect
 alike moved bytes at tile edges across the golden suite. What moves
 is where a corner's curve crosses a scanline, so a rect is refused — and

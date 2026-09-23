@@ -297,8 +297,8 @@ exactly what the reversal paid, and a record that vanished when the
 answer changed would make the next argument start from nothing.
 
 Two facts about the pipeline set the price of everything below.
-The vocabulary is [nine operations](../../src/render/canvas.zig) — eight
-speaking `Gray` plus the one rgb text op the reversal added — none of
+The vocabulary is [twelve operations](../../src/render/canvas.zig) — eleven
+colorless plus the one rgb text op the reversal added — none of
 which draws an image; the only path-rendering ops are the text ones,
 which is why the icon set is a font ([lucide.ttf](../../src/assets/fonts/lucide.ttf),
 `IconName` in [element.zig](../../src/core/element.zig)) rather than
@@ -323,7 +323,7 @@ One wrinkle since the palette gained a ceiling: `ink` and `paper` are no
 longer the true endpoints (they are `g2` and `g12`, 14.2:1 rather than
 21:1 — see the [pixel model](pixel-model.md)), and `g12` is the *page* in
 light and a near-black in dark. So the filled brand pill does not ride
-the aliases. It draws through `Canvas.light`, a canvas pinned to the
+the aliases. It draws through `Canvas.light`, a canvas pinned to eink's
 light ramp, at `g0`/`g12` explicitly — the two steps the design system
 itself never draws. It still flips with the appearance, so the dark
 screen *is* Apple's white button, with no second style and no palette
@@ -444,9 +444,9 @@ The owner reversed D. Not by finding the cost had come down — it had not
 
 What shipped is option **A**'s frame with "the part that looked cheap"'s
 canvas — and deliberately not A's moral: the surface is
-`kRGB_888x` (rgb, no alpha — nokre still composites nothing), `on_frame`
+`kRGB_888x` (rgb, no alpha — the frame is opaque), `on_frame`
 hands shells RGBX they blit without interpreting, goldens are PPM, and
-every op but one still writes r=g=b, so the frame is gray by
+no op but one can make r, g and b differ, so the frame is gray by
 construction everywhere the mark is not. The canvas gained exactly one
 operation (`drawTextRgb`), the brand face gained the four arc glyphs on
 one shared advance, and `element.zig`'s `google_g_rgb` is the only

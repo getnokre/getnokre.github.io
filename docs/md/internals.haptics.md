@@ -160,18 +160,27 @@ touch against the hidden `UIScrollView` that feeds scrolling, and
 reaches recognizer arbitration — it is verified in the Simulator or not
 at all ([shell test tier](platform-shells.md)).
 
-**Android's hook is reached; nothing has been felt.** On 2026-09-22 a
-touch drag down the dial's column in the API 35 emulator fired
-`nokre_shell_haptic` twice as the value crossed two detents, so
-`haptic(I)V` on `NokreView` resolves and `performHapticFeedback` is
-called — the JNI lookup and the call site are no longer read-only. What
-an emulator cannot do is vibrate: the feel is still owed to a phone,
-and the iOS selection generator is owed both — the Simulator is its
-only gate and the Simulator has no Taptic Engine. `check-targets` now
-*parses* that shell (`zig build check-targets` runs clang over
-`shell.m` at the example projects' deployment target, proven by putting
-a syntax error in it), which is a compile and not a call: nothing here
-runs a line of it.
+**iOS's detent has been felt; Android's is played and not noticed.** On
+2026-09-23 the kitchen-sink example, built at revision 140 and run on a
+physical iPhone 12 Pro Max, fired the `UISelectionFeedbackGenerator`
+behind `NOKRE_HAPTIC_DETENT` once per detent as a finger dragged the
+dial's column, felt in the hand. The same day, at the same revision, on
+a physical Lenovo TB336FU tablet (API 36, a vibrator with no amplitude
+control, haptic feedback enabled), about twenty detents dragged through
+the dial's column each reached `nokre_shell_haptic` → `NokreView.haptic`
+→ `performHapticFeedback(CLOCK_TICK)`, and `VibratorManagerService`
+logged every one as played — the constant mapped to the prebaked
+`TEXTURE_TICK` at medium strength, finished, none suppressed — yet the
+tick went unnoticed in the hand on that motor. The shipped path logs
+nothing; the count came from the system's own vibrator log. Open: if a
+device with amplitude control also reports nothing felt, the lever is a
+stronger constant (`KEYBOARD_TAP` or `VIRTUAL_KEY`) or a direct
+`Vibrator.vibrate(VibrationEffect.createPredefined(EFFECT_TICK))`.
+The dial drag was first reached in the API 35 emulator on 2026-09-22,
+which cannot vibrate. `check-targets` also *parses* the
+iOS shell (`zig build check-targets` runs clang over `shell.m` at the
+example projects' deployment target, proven by putting a syntax error
+in it), which is a compile and not a call.
 
 **And the drag that proved it only turned the dial with animations
 off.** With the platform's animator scale at its default the same drag

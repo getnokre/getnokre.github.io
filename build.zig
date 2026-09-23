@@ -34,7 +34,14 @@ pub fn build(b: *std.Build) void {
     const nokre_git = gitState(b, repo);
     const site_git = gitState(b, ".");
 
+    // The site's look, stated once: `addApp` hands it to the live half
+    // and to everything packaging draws, and the generator reads it back
+    // out of `site_options`, because the `nokre` module it imports is
+    // the dependency's and was never told what this app declared.
+    const theme = .depth;
+
     const options = b.addOptions();
+    options.addOption([]const u8, "theme", @tagName(theme));
     options.addOption([]const u8, "repo_dir", repo);
     options.addOption([]const u8, "docs_dir", b.pathJoin(&.{ repo, "docs" }));
     options.addOption([]const u8, "out_dir", out);
@@ -87,6 +94,7 @@ pub fn build(b: *std.Build) void {
         // the set derives from.
         .pkg = .{ .name = "nokre", .id = "io.github.getnokre", .version = "0.1.0", .build = 1 },
         .mark = .{ .silhouette = b.path("assets/mark.svg") },
+        .theme = theme,
         // The key rule only. This site's catalog gives nokre's chrome
         // its words; its prose is English by decision, written in the
         // route builders and in docs/ (AppOptions.L10n).

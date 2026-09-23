@@ -47,7 +47,7 @@ internals doc.
 | `locale` | Device locale at boot + change events — the tag that feeds `l10n.Bundle`'s `resolve` ([localization.md](localization.md)). | **Working** — every shell and the web; nothing links; the Linux tag is boot-only |
 | `oauth` | The sign-in browser session: open an authorize URL where the user can trust it, get the callback URL back. | **Working** — all six platforms; no vendor SDK |
 | `iap` | The platform stores: catalog, payment sheet, purchase-update stream, finish, restore. | **Working** — StoreKit and Play Billing; no store on Windows, Linux, or the web |
-| `haptic` | The back gesture's threshold knock. **Framework-internal: no app can call it.** | **Working** — iOS only, the one platform that runs a threshold of nokre's own ([internals/haptics.md](internals/haptics.md)) |
+| `haptic` | The back gesture's threshold knock and a dial's per-detent tick. **Framework-internal: no app can call it.** | **Working** — iOS: the knock and the detent, the detent felt on an iPhone 2026-09-23; Android: the detent through `nokre_shell_haptic` → `performHapticFeedback(CLOCK_TICK)`, played by the system as `TEXTURE_TICK` on a physical tablet 2026-09-23 and unnoticed on that motor, which has no amplitude control; nothing elsewhere ([internals/haptics.md](internals/haptics.md)) |
 | `scroll_activity` | Tells the shell a scroll the reader made moved something, so a fading scroll bar restarts its fade. **Framework-internal: no app can call it.** | **Working** — every native shell; only a shell presenting the fading bar acts on it ([elements.md](elements.md#scroll_region)) |
 | `open_url` | One verb: hand a URL (https/http/mailto — a closed set) to the system browser. Fire-and-forget. | **Working** — every shell and the web; nothing links |
 | `share` | One verb: put the OS share sheet up with UTF-8 text on it; the user picks the destination. Fire-and-forget. | **Working** — four native sheets and the web's `navigator.share`; no sheet on the Linux desktop, and `available` says so |
@@ -822,9 +822,13 @@ library cannot assert about a value nobody handed it.
 Every number the frame check uses is derived rather than typed. Ink is
 any pixel far enough from the frame's own page tone, and that threshold
 is the midpoint between paper and the first tone that is *content* —
-computed per ramp from `color.Gray` and asserted equal across the two,
-since they run 21/43 and 21/44 and the fact that one threshold serves
-both is a coincidence a ramp edit could break. The safe area is
+computed per ramp from `color.Gray` and asserted equal across eink's
+two, since they run 21/43 and 21/44 and the fact that one threshold
+serves both is a coincidence a ramp edit could break. Under
+[`depth`](getting-started.md#a-theme) the page is a dithered gradient,
+so each pixel is compared with its own ground byte and the threshold is
+read per ground byte, and a comptime guard proves every theme,
+appearance and byte separable. The safe area is
 `tree.root_stack.padding`, the page's own margin, so content laid out
 correctly already keeps it. The exemption is `metrics.scroll_bar` times
 the family's scale — the bar is the one thing a frame draws hard against
@@ -884,7 +888,11 @@ What the card takes from the declaration is only those two. Everything
 else is this library's: the field is read off the master's own corner,
 exactly as the Android adaptive background reads it, so an inverted mark
 gives an inverted card and nokre never picks a polarity. The name takes
-whichever pole the field is not. The frame is grayscale because
+whichever pole the field is not. The declared theme decides only what
+nokre's paper is: under [`depth`](getting-started.md#a-theme), wherever
+the card would be paper — no mark, or a silhouette's — it lays depth
+light's page ground instead and composites the silhouette onto it by
+coverage, while an opaque mark keeps its own field in every theme. The frame is grayscale because
 [png.zig](../src/image/png.zig) writes `gray8` and there is no other
 kind of byte for it to write.
 
@@ -1020,8 +1028,13 @@ The `.ico` link's `sizes` attribute is `packaging.favicon_sizes_attr`,
 rendered once from `icon.favicon_sizes` — the sizes-ranking lore stated
 once, and spent by every writer of the link: the shell page and
 `headIconLinks` compose from the same line constants, so the attribute
-cannot disagree with the container it ranks. The theme-color pair is a
-packaging constant pair held equal to `Gray.paper`'s two bytes by test.
+cannot disagree with the container it ranks. The theme-color pair is
+the top of the declared theme's page (`AppOptions.theme`), written by
+the same function as a generated document's (`render/dom/theme_color.zig`);
+the manifest's `background_color` stays the icon's field, and its
+`theme_color` takes depth's light ground when the theme is depth. A
+running page's metas follow `App.setTheme`, so the browser's chrome
+meets whichever theme is drawn.
 
 ## The derived set is one module
 

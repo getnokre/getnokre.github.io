@@ -29,7 +29,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | Path | Responsibility |
 | --- | --- |
 | [src/core/geometry.zig](../../src/core/geometry.zig) | `Point`, `Size`, `Rect` — integers only |
-| [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted shades |
+| [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted steps, and the four ramps (`Theme` × `Appearance`) that give them bytes; depth's page ground, drop shadow and scrim veil, which no element authors ([pixel-model.md](pixel-model.md)) |
 | [src/core/text.zig](../../src/core/text.zig) | families, type scale, `Measurer` interface |
 | [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
@@ -71,13 +71,15 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/l10n/check/layout.zig](../../src/l10n/check/layout.zig) | the sixth of those rules, and the one that restates nothing: it runs the same encode `l10n-fmt` does, in memory, and compares bytes — so the gate and the formatter cannot disagree about what formatted means |
 | [src/l10n/translate/](../../src/l10n/translate/main.zig) | the two drafting tools (`translate-arb`, `translate-md`) and the readers they share — host-only, opt-in, in no app |
 | [src/dwell.zig](../../src/dwell.zig) | how long a reader is with the device an app is for — the axis read *before* an app exists. A leaf, so `build.zig` names it without importing core |
-| [src/declared.zig](../../src/declared.zig) | what this app's own `addApp` call declared about where it runs (`dwell`, `mediums`), read back out of the compiled app. It installs nothing ([../testing.md](../testing.md), "The audit matrix") |
+| [src/declared.zig](../../src/declared.zig) | what this app's own `addApp` call declared about where it runs (`dwell`, `mediums`) and which look it starts in (`theme`), read back out of the compiled app. It installs nothing ([../testing.md](../testing.md), "The audit matrix") |
+| [tests/declared_theme.zig](../../tests/declared_theme.zig) | the gate on that `theme` reaching a running `App`: its own test root over a module declared `.depth`, since every module in the library's binary reads the default |
 | [src/package_apps.zig](../../src/package_apps.zig) | whether two `addApp` declarations naming one package id can both stand — the rule alone, so `build.zig` holds only the roster and the sentences |
 | [src/workers/workers.zig](../../src/workers/workers.zig) | compute actors: registry, framing, UI-thread delivery ([workers.md](workers.md)) |
 | [src/workers/codec.zig](../../src/workers/codec.zig) | comptime-checked message codec |
 | [src/workers/thread.zig](../../src/workers/thread.zig) / [post.zig](../../src/workers/post.zig) | native / web worker transports |
 | [src/render/canvas.zig](../../src/render/canvas.zig) | `Canvas` vtable + `Recording` canvas |
 | [src/render/renderer.zig](../../src/render/renderer.zig) | tree → canvas draw calls |
+| [src/render/paint_only_test.zig](../../src/render/paint_only_test.zig) | the one statement of what a theme may change: every element kind stood under all four looks, and everything but paint held equal |
 | [src/render/damage.zig](../../src/render/damage.zig) | which pixels a frame may leave standing: the rects a scroll earns, and whole for everything else ([pixel-model.md](pixel-model.md#partial-frames)) |
 | [src/render/skia/canvas_skia.zig](../../src/render/skia/canvas_skia.zig) | Skia-backed `Canvas` + `Measurer` |
 | [src/render/icon_face.zig](../../src/render/icon_face.zig) | the face this artifact ships — the build-injected subset and what it maps, read by the Skia face list and by the audit's `unshipped_icon` rule |
@@ -86,6 +88,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/render/measure_memo.zig](../../src/render/measure_memo.zig) | the width memo that measurer answers through — a run shaped once per process, not once per frame |
 | [src/render/dom/serialize.zig](../../src/render/dom/serialize.zig) | `node`, `drawNode`'s counterpart: tree → markup ([dom-substrate.md](dom-substrate.md)) |
 | [src/render/dom/stylesheet.zig](../../src/render/dom/stylesheet.zig) | that substrate's stylesheet, generated from color/text/layout |
+| [src/render/dom/theme_color.zig](../../src/render/dom/theme_color.zig) | the browser chrome's `theme-color`: the top of a theme's page, one writer for a generated document, the packaged shell page and the web manifest |
 | [src/render/dom/live.zig](../../src/render/dom/live.zig) / [live.js](../../src/render/dom/live.js) | that substrate's live driver: the app in a browser, wasm32-freestanding, no Skia |
 | [src/render/dom/emit_css.zig](../../src/render/dom/emit_css.zig) / [serve.zig](../../src/render/dom/serve.zig) | its two host tools, build-time only and in no app: the stylesheet writer, and the server a site is looked at over ([dom-substrate.md](dom-substrate.md)) |
 | [shim/freestanding](../../shim/freestanding/README.md) | the three headers vendored qrcodegen wants where there is no libc |
@@ -140,6 +143,15 @@ One loop, everywhere:
    the source's business, never the shell's.
 4. The shell blits the RGBX buffer. That's the entire frame story — there
    is no ticker; a nokre app at rest costs zero CPU.
+
+The look rides the same loop. `addApp`'s `theme` lands as
+`nokre.declared.theme`, which is where `App.theme` starts; `renderer`
+stamps it onto the canvas beside the appearance each frame, and backends
+resolve every `Gray` through that pair's ramp. The DOM substrate stamps
+it on the document root instead (`data-nokre-theme`), and packaging
+reads the declaration directly, for the launch colours, `theme-color`
+and store art it writes at build time.
+`App.setTheme` only sets `needs_frame`: a theme never reaches layout.
 
 The testing harness drives step 1 and reads state after step 2, and can run
 step 3 against either the `Recording` canvas (pure) or a Skia surface

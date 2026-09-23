@@ -52,7 +52,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 140;
+const nokre_revision = 142;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -105,6 +105,7 @@ pub fn main(init: std.process.Init) !void {
         .ctx = &site,
     });
     defer app.deinit();
+    app.setTheme(@field(nok.color.Theme, opts.theme));
 
     var destinations: [pages.destinations.len]nok.Destination = undefined;
     for (pages.destinations, 0..) |name, i| {
@@ -608,8 +609,10 @@ const shell_css =
     \\/* The driver's own guard: the substrate clips its screen, and this
     \\   keeps the document around it from growing either — a page that
     \\   scrolls sideways leaves every fixed layer covering the wrong
-    \\   part of it. */
-    \\html { background: var(--paper); overflow-x: clip; }
+    \\   part of it. No background: the root's would stop the body's
+    \\   propagating to the canvas, and the body's is the theme's page —
+    \\   depth's ground gradient, not `paper`. */
+    \\html { overflow-x: clip; }
 ++ external_mark_css;
 
 fn writeExtras(

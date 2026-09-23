@@ -117,7 +117,7 @@
 :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #808080; color: #eaeaea; }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-appearance]) {
+  :root:not([data-nokre-appearance]) {
     --g0: #dedede;
     --g1: #cdcdcd;
     --g2: #b8b8b8;
@@ -134,11 +134,11 @@
     --auth-fill: #ffffff;
     --auth-ink: #000000;
   }
-  :root:not([data-appearance]) :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
+  :root:not([data-nokre-appearance]) :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
 }
 
-:root[data-appearance="light"] { color-scheme: light; }
-:root[data-appearance="dark"] {
+:root[data-nokre-appearance="light"] { color-scheme: light; }
+:root[data-nokre-appearance="dark"] {
   color-scheme: dark;
   --g0: #dedede;
   --g1: #cdcdcd;
@@ -156,7 +156,160 @@
   --auth-fill: #ffffff;
   --auth-ink: #000000;
 }
-:root[data-appearance="dark"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
+:root[data-nokre-appearance="dark"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6b6b6b; color: #151515; }
+
+:root[data-nokre-theme="depth"] {
+  --g0: #000000;
+  --g1: #151515;
+  --g2: #2b2b2b;
+  --g3: #404040;
+  --g4: #555555;
+  --g5: #6a6a6a;
+  --g6: #808080;
+  --g7: #8a8a8a;
+  --g8: #aaaaaa;
+  --g9: #bfbfbf;
+  --g10: #d4d4d4;
+  --g11: #ebebeb;
+  --g12: #ffffff;
+  --ground-top: #f3f3f3;
+  --ground-bottom: #efefef;
+  --card-shadow: 0 4px 16px #00000017;
+  --control-shadow: 0 1px 3px #0000000e;
+  --modal-shadow: 0 0px 28px #00000018;
+  --scrim-veil: #ffffff99;
+  --card-edge: transparent;
+  --lit-fill: var(--g12);
+  --lit-edge: transparent;
+  --banner: var(--g11);
+  --control-well: var(--g10);
+  --control-well-off: var(--g11);
+  --chosen-fill: var(--g10);
+  --rule: var(--g11);
+  --field-plate: var(--g12);
+  --field-plate-off: var(--g11);
+  --field-well: var(--g11);
+  --field-well-off: var(--g10);
+  --field-well-placeholder: var(--g5);
+  --knob: var(--g12);
+  --knob-off: var(--g12);
+}
+:root[data-nokre-theme="depth"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #808080; color: #ebebeb; }
+
+@media (prefers-color-scheme: dark) {
+  :root[data-nokre-theme="depth"]:not([data-nokre-appearance]) {
+    --g0: #dedede;
+    --g1: #cdcdcd;
+    --g2: #bdbdbd;
+    --g3: #a6a6a6;
+    --g4: #919191;
+    --g5: #848484;
+    --g6: #6e6e6e;
+    --g7: #676767;
+    --g8: #494949;
+    --g9: #3b3b3b;
+    --g10: #2d2d2d;
+    --g11: #252525;
+    --g12: #1c1c1c;
+    --ground-top: #080808;
+    --ground-bottom: #000000;
+    --card-shadow: none;
+    --control-shadow: none;
+    --modal-shadow: none;
+    --scrim-veil: #00000080;
+    --card-edge: transparent;
+    --lit-fill: var(--g9);
+    --lit-edge: transparent;
+    --banner: var(--g12);
+    --control-well: var(--g10);
+    --control-well-off: var(--g11);
+    --chosen-fill: var(--g9);
+    --rule: var(--g11);
+    --field-plate: var(--g12);
+    --field-plate-off: var(--g11);
+    --field-well: var(--g11);
+    --field-well-off: var(--g10);
+    --field-well-placeholder: var(--g3);
+    --knob: var(--g6);
+    --knob-off: var(--g9);
+  }
+  :root[data-nokre-theme="depth"]:not([data-nokre-appearance]) :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6e6e6e; color: #252525; }
+}
+:root[data-nokre-theme="depth"][data-nokre-appearance="dark"] {
+  --g0: #dedede;
+  --g1: #cdcdcd;
+  --g2: #bdbdbd;
+  --g3: #a6a6a6;
+  --g4: #919191;
+  --g5: #848484;
+  --g6: #6e6e6e;
+  --g7: #676767;
+  --g8: #494949;
+  --g9: #3b3b3b;
+  --g10: #2d2d2d;
+  --g11: #252525;
+  --g12: #1c1c1c;
+  --ground-top: #080808;
+  --ground-bottom: #000000;
+  --card-shadow: none;
+  --control-shadow: none;
+  --modal-shadow: none;
+  --scrim-veil: #00000080;
+  --card-edge: transparent;
+  --lit-fill: var(--g9);
+  --lit-edge: transparent;
+  --banner: var(--g12);
+  --control-well: var(--g10);
+  --control-well-off: var(--g11);
+  --chosen-fill: var(--g9);
+  --rule: var(--g11);
+  --field-plate: var(--g12);
+  --field-plate-off: var(--g11);
+  --field-well: var(--g11);
+  --field-well-off: var(--g10);
+  --field-well-placeholder: var(--g3);
+  --knob: var(--g6);
+  --knob-off: var(--g9);
+}
+:root[data-nokre-theme="depth"][data-nokre-appearance="dark"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #6e6e6e; color: #252525; }
+
+:root[data-nokre="document"][data-nokre-theme="depth"] body, :root[data-nokre-theme="depth"] .nokre { background: linear-gradient(var(--ground-top), var(--ground-bottom)) fixed; }
+
+:root[data-nokre-theme="depth"] .box:not(.bare), :root[data-nokre-theme="depth"] .tiles { background: var(--paper); border-color: var(--card-edge); box-shadow: var(--card-shadow); }
+:root[data-nokre-theme="depth"] .notice:not(.notices-pane .notice) { background: var(--banner); }
+:root[data-nokre-theme="depth"] .scrim { background: var(--scrim-veil); }
+:root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { box-shadow: var(--modal-shadow); }
+:root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notice { border-color: transparent; }
+:root[data-nokre-theme="depth"] .btn:not(.auth, .icon-only) { border-radius: 18px; }
+:root[data-nokre-theme="depth"] .tile > .icon { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
+:root[data-nokre-theme="depth"] hr, :root[data-nokre-theme="depth"] tr + tr > th, :root[data-nokre-theme="depth"] tr + tr > td, :root[data-nokre-theme="depth"] .tiles > .tile { border-top-color: var(--rule); }
+:root[data-nokre-theme="depth"]:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
+:root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
+:root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); height: var(--border); background: var(--rule); }
+:root[data-nokre-theme="depth"] .tiles > .tile:has(> .icon) + .tile:not(.radio)::before { inset-inline-start: 44px; }
+:root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit, :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
+:root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit, :root[data-nokre-theme="depth"] .ranking.off .plate.lit, :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle::after { box-shadow: var(--control-shadow); }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .swap:not([aria-pressed="true"], .gone), :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .swap:not([aria-pressed="true"], .gone), :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked)::after { background: var(--knob); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked):is(:disabled, [aria-disabled="true"])::after { background: var(--knob-off); }
+:root[data-nokre-theme="depth"] .meter-track, :root[data-nokre-theme="depth"] .diverging-track, :root[data-nokre-theme="depth"] .btn.secondary .btn-track { background: var(--g10); border-color: transparent; }
+:root[data-nokre-theme="depth"] .btn.secondary:not(.auth) .btn-track { background: var(--g11); }
+:root[data-nokre-theme="depth"] .badge { background: var(--g11); border-color: transparent; }
+:root[data-nokre-theme="depth"] .plate.cut { border-color: transparent; }
+:root[data-nokre-theme="depth"] .picker-item[aria-selected="true"] { background: var(--chosen-fill); border-color: transparent; }
+:root[data-nokre-theme="depth"] .picker-item { box-shadow: none; }
+
+:root[data-nokre-theme="depth"], :root[data-nokre-theme="depth"] .box[style*="background:"]:not([style*="background:var(--g12)"]) { --field-fill: var(--field-plate); --field-fill-off: var(--field-plate-off); --field-shadow: var(--control-shadow); --field-placeholder: var(--mid); }
+:root[data-nokre-theme="depth"] .box:not(.bare):not([style*="background:"]), :root[data-nokre-theme="depth"] .box[style*="background:var(--g12)"], :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notices-pane { --field-fill: var(--field-well); --field-fill-off: var(--field-well-off); --field-shadow: none; --field-placeholder: var(--field-well-placeholder); }
+:root[data-nokre-theme="depth"] .field-box { background: var(--field-fill); border-color: transparent; box-shadow: var(--field-shadow); }
+:root[data-nokre-theme="depth"] .field-box:has(:disabled), :root[data-nokre-theme="depth"] .field-box:has([aria-disabled="true"]), :root[data-nokre-theme="depth"] .field-box[disabled], :root[data-nokre-theme="depth"] .field-box.select[aria-disabled="true"] { background: var(--field-fill-off); box-shadow: none; }
+:root[data-nokre-theme="depth"] .field-box :is(input, textarea):not(:disabled, [aria-disabled="true"])::placeholder { color: var(--field-placeholder); }
+@media (max-width: 560px) {
+  :root[data-nokre-theme="depth"] .picker.above-nav { box-shadow: var(--card-shadow); }
+  :root[data-nokre-theme="depth"] .chip.current { background: var(--chosen-fill); border-color: transparent; }
+}
 
 /* ---- reset ------------------------------------------------------ */
 
@@ -298,7 +451,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    surfaces rather than set on the document: the attribute is the
    driver's to stamp, but the page around an embedded app is not
    this substrate's to turn around. */
-:root[data-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) {
+:root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) {
   direction: rtl;
 }
 
@@ -317,7 +470,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    be the content's answer again under another name. The rule above
    is untouched — the order inside the cell is still the content's,
    and only the block moves. */
-:root[data-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td) {
+:root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td) {
   text-align: right;
 }
 
@@ -611,7 +764,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    no rule of its own: `grid-column: 1` is the reader's leading
    column and the roster mirrors with the chrome, matching core's
    mirrored band cursor. */
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre {
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre {
   --pad: 0px;
   padding-inline: 0;
   display: grid;
@@ -636,22 +789,22 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    which is exactly what `layoutDesk` insets them by. The back
    control and the header actions are positioned against the root
    and are already right. */
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > :not(.region) { margin: var(--page-pad); }
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > h1 { grid-row: 1; grid-column: 1 / -1; }
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > .region-masthead { grid-row: 2; grid-column: 1 / -1; }
-:root[data-shape="desk-narrow"] .nokre > .segmented { grid-row: 3; grid-column: 1 / -1; }
-:root[data-shape="desk"] .nokre > .region-roster { grid-row: 4; grid-column: 1; inline-size: var(--desk-col); }
-:root[data-shape="desk"] .nokre > .region-main { grid-row: 4; grid-column: 2; }
-:root[data-shape="desk"] .nokre > .region-aside { grid-row: 4; grid-column: 3; inline-size: var(--desk-col); }
-:root[data-shape="desk-narrow"] .nokre > .region:not(.region-masthead):not(.region-composer) { grid-row: 4; grid-column: 1 / -1; }
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > .region-composer { grid-row: 5; grid-column: 1 / -1; }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :not(.region) { margin: var(--page-pad); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > h1 { grid-row: 1; grid-column: 1 / -1; }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > .region-masthead { grid-row: 2; grid-column: 1 / -1; }
+:root[data-nokre-shape="desk-narrow"] .nokre > .segmented { grid-row: 3; grid-column: 1 / -1; }
+:root[data-nokre-shape="desk"] .nokre > .region-roster { grid-row: 4; grid-column: 1; inline-size: var(--desk-col); }
+:root[data-nokre-shape="desk"] .nokre > .region-main { grid-row: 4; grid-column: 2; }
+:root[data-nokre-shape="desk"] .nokre > .region-aside { grid-row: 4; grid-column: 3; inline-size: var(--desk-col); }
+:root[data-nokre-shape="desk-narrow"] .nokre > .region:not(.region-masthead):not(.region-composer) { grid-row: 4; grid-column: 1 / -1; }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > .region-composer { grid-row: 5; grid-column: 1 / -1; }
 
 /* The hairline each region owns — `renderer.drawRegionEdge`, in
    CSS. */
-:root[data-shape="desk"] .nokre > .region-roster { border-inline-end: var(--border) solid var(--g10); }
-:root[data-shape="desk"] .nokre > .region-aside { border-inline-start: var(--border) solid var(--g10); }
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > .region-masthead { border-block-end: var(--border) solid var(--g10); }
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nokre > .region-composer { border-block-start: var(--border) solid var(--g10); }
+:root[data-nokre-shape="desk"] .nokre > .region-roster { border-inline-end: var(--border) solid var(--g10); }
+:root[data-nokre-shape="desk"] .nokre > .region-aside { border-inline-start: var(--border) solid var(--g10); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > .region-masthead { border-block-end: var(--border) solid var(--g10); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > .region-composer { border-block-start: var(--border) solid var(--g10); }
 
 /* The wide-window header's inline inset is the *page column's*, and
    a desk has none — left alone it would inset the chrome to a 760
@@ -659,7 +812,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    reason the shape rides an attribute on the document root:
    `.nav-row` lives in the chrome mount, outside the content mount,
    where a class on the mount cannot reach it. */
-:root:is([data-shape="desk"], [data-shape="desk-narrow"]) .nav-row { padding-inline: var(--nav-bar-pad-h); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nav-row { padding-inline: var(--nav-bar-pad-h); }
 
 /* ---- type -------------------------------------------------------- */
 
@@ -2528,8 +2681,10 @@ input.check::after { content: "\e06c"; }
 /* The driver's own guard: the substrate clips its screen, and this
    keeps the document around it from growing either — a page that
    scrolls sideways leaves every fixed layer covering the wrong
-   part of it. */
-html { background: var(--paper); overflow-x: clip; }
+   part of it. No background: the root's would stop the body's
+   propagating to the canvas, and the body's is the theme's page —
+   depth's ground gradient, not `paper`. */
+html { overflow-x: clip; }
 a.link[href^="https://"]::after {
   content: "\e04d";
   font-family: icons;

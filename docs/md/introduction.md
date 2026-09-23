@@ -30,7 +30,10 @@ boxes, grayscale only, rasterized on the CPU by Skia, and about as
 expressive as Markdown — literally: a `document` element takes a
 Markdown source and expands it into ordinary elements
 ([markdown.md](markdown.md)) — plus actions and navigation. Think: apps
-for a grayscale Kindle.
+for a grayscale Kindle. That Kindle is the default look, `eink`; the
+one alternative, `depth`, is still gray and still the same screens,
+painted with a graded page, shadows and raised controls
+([getting-started.md](getting-started.md#a-theme)).
 
 ## Three promises
 
@@ -201,14 +204,15 @@ framework cannot express them.
 - **No color.** Thirteen fixed steps of gray, five semantic aliases
   (`ink`, `dark`, `mid`, `light`, `paper`). Color as information excludes
   color-blind users, so information must survive grayscale anyway —
-  nokre makes that the only mode, and proves the whole palette against
-  WCAG contrast in unit tests, floor *and* ceiling: body text is 14.2:1,
-  not the 21:1 of true black on true paper, because past a point more
-  contrast stops buying legibility and starts costing comfort. Dark mode
-  is a second ramp rather than an inversion of the first, so it can be
-  gentler than light where light-on-dark reads heavier — a mirror moves
-  every ratio together and cannot. A palette you can enumerate is a
-  palette you can prove.
+  nokre makes that the only mode, and proves every palette against
+  WCAG contrast in unit tests, floor *and* ceiling: eink's body text is
+  14.2:1, not the 21:1 of true black on true paper, because past a point
+  more contrast stops buying legibility and starts costing comfort. Each
+  theme's dark mode is a ramp of its own rather than an inversion of its
+  light one, so it can be gentler than light where light-on-dark reads
+  heavier — a mirror moves every ratio together and cannot. Four ramps
+  (two themes, two appearances) and no others: a palette you can
+  enumerate is a palette you can prove.
 
   One honest asterisk, framework-drawn: the Google sign-in button's
   multicolour G — a trademark whose owner refuses a gray variant. The
@@ -246,7 +250,15 @@ framework cannot express them.
   knows, and contrast, target size, and labeling can only be enforced on
   elements the framework owns. A styling hook is an accessibility
   loophole. New capability means arguing a new *semantic* element into
-  the set — see [elements.md](elements.md).
+  the set — see [elements.md](elements.md). The themes are not that
+  hook. The set is closed too: an app chooses `eink` or `depth` and can
+  define nothing, every theme is held to the same text and focus contrast
+  proofs — `depth` alone waives WCAG 1.4.11 for its control boundaries, and
+  `eink` keeps it ([getting-started.md](getting-started.md#a-theme)) — and a
+  theme changes paint alone — geometry, text positions, the
+  accessibility tree, focus order and scroll extents are one across
+  themes, and a test fails the build where they are not
+  ([testing.md](testing.md#golden-screenshot-tests)).
 - **No paths.** A reference names a screen: `note~42`. It does not say
   where the screen sits, because screens do not sit anywhere. A note is
   reached from the list, from a search, from a tag, from what you

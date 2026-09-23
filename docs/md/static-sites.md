@@ -50,7 +50,7 @@ because those are what a hand-written head gets wrong:
 
 And what the library writes without asking is what it already holds:
 `lang` and both direction attributes from `App.locale()` and
-`App.direction`, `data-appearance` when the app pinned a scheme, the
+`App.direction`, `data-nokre-appearance` when the app pinned a scheme, the
 locale the boot script pins, the route from `Router.current`, the class
 list from `rootClass`, the names of the two scripts a page loads from
 `driver_files`, and the charset in the first bytes of the head. A driver restating any of those
@@ -1060,7 +1060,7 @@ face's coverage as data: check the glyphs you emitted against it and a
 tofu box is a failed build rather than a blank square somebody notices.
 
 The mirror case is an app mounted in a page it did not write. There the
-live driver stamps `data-direction` and deliberately never `dir`, because
+live driver stamps `data-nokre-direction` and deliberately never `dir`, because
 the page around an embedded app is not this substrate's to turn around. A
 generated document has no page around it — nokre wrote the file — so it
 stamps both. One rule, read from two sides: **the library writes what it

@@ -121,8 +121,8 @@ test "root declarations are collected wherever the root block is written" {
     const gpa = testing.allocator;
     const sheet =
         \\:root { --a: 1px; }
-        \\@media (prefers-color-scheme: dark) { :root:not([data-appearance]) { --b: 2px; } }
-        \\:root[data-appearance="dark"] { --c: 3px; }
+        \\@media (prefers-color-scheme: dark) { :root:not([data-nokre-appearance]) { --b: 2px; } }
+        \\:root[data-nokre-appearance="dark"] { --c: 3px; }
         \\@media (min-width: 900px) { :root { --d: 4px; } }
         \\.nokre { --e: 5px; }
     ;

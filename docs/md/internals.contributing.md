@@ -115,7 +115,13 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    them is a scroll no partial frame rasterises
    ([pixel-model.md](pixel-model.md#partial-frames)). Its strip is a
    function in [scroll_bar.zig](../../src/core/scroll_bar.zig), and its
-   layout reserves that strip under `Ctx.scroll_bar_layout`.
+   layout reserves that strip under `Ctx.scroll_bar_layout`. A depth
+   decoration, if the element earns one, switches on the canvas's theme
+   inside its own draw, as `drawGroupCard`, `buttonCornerRadius` and
+   `litPlate` do, and is paint only. Give the kind a sample in
+   [paint_only_test.zig](../../src/render/paint_only_test.zig), which
+   holds everything but paint equal across the four looks: `sceneOf`
+   has no `else`, so this is a compile error until it is done.
 4. Markup in [render/dom/serialize.zig](../../src/render/dom/serialize.zig)
    — the second substrate's draw, and the recurring tax
    [substrates.md](substrates.md) named: the switch there has no `else`,
@@ -127,7 +133,10 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    ([stylesheet.zig](../../src/render/dom/stylesheet.zig), "selection").
    That one is a compile error too, in `fenceOf` beside the contract row
    in step 8, because selection is the browser's by default and a kind
-   nobody asked would quietly become selectable chrome.
+   nobody asked would quietly become selectable chrome. A depth
+   decoration from step 3 is a rule in `writeDepth` too, spending the
+   tokens `writeDepthTokens` sets and moving no box — nothing forces
+   this one.
 5. A11y mapping in [semantics.zig](../../src/a11y/semantics.zig), and its
    row in the table in [accessibility.md](../accessibility.md). A new
    `A11yRole` **appends** — the enum's ordinals are a wire contract that
@@ -146,7 +155,8 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    (activation, keys; [editing.zig](../../src/core/editing.zig) if it
    edits text).
 8. Unit tests for each of the above (in the module's sibling
-   `*_test.zig`), a kitchen-sink entry, a golden, and the element's row
+   `*_test.zig`), a kitchen-sink entry, a golden — and its depth pair
+   through `renderDepthGoldens` if step 3 gave it a decoration — and the element's row
    of the renderer contract in
    [render/dom/serialize_test.zig](../../src/render/dom/serialize_test.zig)
    — what the second substrate must convey, which a pixel golden cannot

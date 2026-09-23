@@ -1208,6 +1208,14 @@ Workflow:
    its roster fits. Why nokre's own corpus varies on no medium at all is
    [The audit matrix](#the-audit-matrix).
 
+nokre's own corpus names the look the way it names the appearance:
+`-dark`, and `-depth` / `-depth-dark` for the
+[`depth` theme](getting-started.md#a-theme); eink light carries no
+suffix. What a theme may not change is not left to pictures:
+`src/render/paint_only_test.zig` stands every element kind under all
+four looks and fails where geometry, text positions, the accessibility
+tree, focus order or scroll extents differ.
+
 ## The revision's own gate
 
 `nokre.revision` is what every consumer's comptime pin asserts, and it is

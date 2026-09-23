@@ -451,9 +451,11 @@ after the fact would mean the bad state existed:
   line the origin rule draws ([static-sites.md](static-sites.md))
 - text that would be illegible where it sits: any element drawing text on
   the ambient background (text, headings, links, toggles, inputs) must
-  clear WCAG AA contrast (4.5:1) against the nearest box fill, **in both
-  appearances** — the two ramps are independent, so a pair can clear the
-  floor in light and fall under it in dark — `error.InsufficientTextContrast`
+  clear WCAG AA contrast (4.5:1) against the nearest box fill, **in every
+  theme and appearance** — the four ramps are independent, so a pair can
+  clear the floor in one and fall under it in another, and text on
+  `.paper` is also held against both ends of depth's graded page —
+  `error.InsufficientTextContrast`
 - text that would be a glare source: the same pair must also stay at or
   below 16:1. True ink on true paper is 21:1, which is past the point
   where contrast buys legibility — `error.ExcessiveTextContrast`
@@ -514,9 +516,11 @@ than drawn.
 The design system itself is proven, not reviewed: unit tests in
 [src/core/color.zig](../src/core/color.zig) assert that every text alias
 sits inside the readable band — at or above WCAG AA and at or below 16:1
-— on paper in both appearances, that component boundaries clear non-text
-contrast (3:1), and that the dark ramp *eases* text rather than mirroring
-it (an inversion would leave dark exactly as harsh as light, which is the
+— on paper in every theme and appearance, that component boundaries
+clear non-text contrast (3:1) in `eink` (`depth` waives WCAG 1.4.11 for
+control boundaries and graphic tracks, keeping text and focus contrast;
+choose `eink` where 1.4.11 must hold), and that each dark ramp *eases* text
+rather than mirroring it (an inversion would leave dark exactly as harsh as light, which is the
 wrong answer for the appearance where halation is worse); a test in
 [src/core/layout_test.zig](../src/core/layout_test.zig) asserts that no
 interactive element can lay out below the 24×24 minimum target size

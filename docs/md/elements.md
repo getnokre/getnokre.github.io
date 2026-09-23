@@ -240,7 +240,7 @@ core's, at the runtime; a page carrying any of them has one by
 construction ([internals/dom-substrate.md](internals/dom-substrate.md)).
 
 A button drawn muted — an outline in the pending tone with the block
-inside and no fill — is the one whose **own label** is pending. Every
+inside and no fill, or under [`depth`](getting-started.md#a-theme) the off well's `.g11` fill — is the one whose **own label** is pending. Every
 other button under the scope keeps its real form. A filled pill with a
 block in it paints `paper` on `ink` and reads as a live primary act with
 a hole punched in it, which is the frame that started this.
@@ -654,7 +654,8 @@ A static inline status label: small-scale text inside a rounded 1px
 `.g10` border, sized to its content. Where color-coded chips carry state
 by hue elsewhere, here the words carry it — "Active", "Owner",
 "3 pending". The border is grouping, not state, so it draws `.g10` like
-`box`, not the `.g6` state carrier of selected chips. Never interactive
+`box`, not the `.g6` state carrier of selected chips; under
+[`depth`](getting-started.md#a-theme) the chip is a `.g11` fill instead. Never interactive
 (an actionable chip is a `button`), and the label must be non-empty —
 an empty badge is a floating border saying nothing. For status inside a
 `tile` row, use the tile's `detail` line instead of nesting a badge.
@@ -726,7 +727,8 @@ state — `label` ("12 of 30 days") is mandatory, rendered above the bar,
 and is what assistive tech hears; the `value`/`max` fill only restates
 it visually. `append` rejects an empty label or a value outside
 0...max. The track is the `segmented` pattern: dimmed `.g11` with a 1px
-`.g6` border carrying WCAG 1.4.11, an `.ink` fill inside. Never
+`.g6` border carrying WCAG 1.4.11, an `.ink` fill inside; under
+[`depth`](getting-started.md#a-theme) it is a `.g10` fill with no border. Never
 interactive, never animated — for indeterminate waiting, write
 "Loading…" as `text`; a spinner is animation, which nokre refuses.
 Semantics: plain static text, the words.
@@ -752,8 +754,8 @@ reason the field is yours to state and not derived per row. `append`
 rejects an empty label of any of the three, a `max` of zero or less, and
 a magnitude outside 0…max.
 
-The track is `meter`'s — dimmed `.g11`, a 1px `.g6` border carrying WCAG
-1.4.11, `.ink` arms inside it — plus one thing `meter` has no need of: a
+The track is `meter`'s in either theme — dimmed `.g11`, a 1px `.g6`
+border carrying WCAG 1.4.11, `.ink` arms inside it — plus one thing `meter` has no need of: a
 1px `.ink` **centre tick**, standing 2px proud of the track top and
 bottom. That overhang is not decoration. Two full arms fill the track
 with ink and would swallow a tick drawn only inside it, and a centre you
@@ -1001,7 +1003,9 @@ nothing about the app did.
 Grouping container: vertical flow, optional 1px border (default on),
 `padding` (default 12), optional `fill` gray. Boxes group; they do not
 decorate. A box's edge is a wall: the margin advice stops at it, so
-nothing ever bleeds across a border.
+nothing ever bleeds across a border. Under [`depth`](getting-started.md#a-theme) a bordered box is
+a raised card: paper that casts a shadow in place of its border in
+light, and a lighter fill alone in dark.
 
 In vertical flow a box takes the full width. Unstretched — as a child of
 a horizontal `stack`, or inside a table cell — it hugs its widest child
@@ -1221,7 +1225,9 @@ Off is four statements together, and no kind keeps only some of them:
 - **It draws off**, in one vocabulary. There is no color to spend, so it
   is three steps: words and any ink a control fills with drop to `.g6`,
   whatever stands *on* that fill rises to `.g11`, and a state carrier
-  gives up its `.g6` edge for the `.g10` grouping tone. Nothing else
+  gives up its `.g6` edge for the `.g10` grouping tone (under
+  [`depth`](getting-started.md#a-theme), where a carrier is a `.g10` well, the well recedes
+  to `.g11`). Nothing else
   moves — same shape, same glyph, same size, nothing animated — so an off
   control is the same control, receded. WCAG 1.4.11 exempts an inactive
   component, which is what buys the last two steps.
@@ -1274,7 +1280,11 @@ so the pair aligns; identical semantics, so assistive tech hears no
 difference. Because its text draws on the ambient, it passes the same
 contrast gate as `text` — a secondary button on a dark box fill is
 rejected at `append`. There is no tertiary and no danger variant: one
-filled, one outlined, and the words carry the rest.
+filled, one outlined, and the words carry the rest. Under
+[`depth`](getting-started.md#a-theme) both round fully at the ends (capped at a one-line button's
+half-height, so a wrapped label keeps its corners), and the focus ring
+follows; the secondary is a `.g10` well with no border rather than an
+outline; the glyph and provider faces keep eink's corner.
 
 **The label wraps inside the pill, and the pill grows to hold it.** A
 button asks for the width its words want and takes what it is offered;
@@ -1401,7 +1411,9 @@ pill the track is `.g7` with a `.paper` fill, because `g7` is the only
 step clearing WCAG 1.4.11 (3:1) against the `ink` ground *and* against
 the fill inside it in both appearances; the outlined pill sits on the
 ambient ground and so reuses a standalone `meter`'s proven `.g11` track,
-`.g6` boundary, `.ink` fill. A **disabled** button keeps its hourglass even
+`.g6` boundary, `.ink` fill (under [`depth`](getting-started.md#a-theme) the meter's
+borderless `.g10` track, or `.g11` inside the secondary pill's own
+`.g10` well). A **disabled** button keeps its hourglass even
 with a number set: 1.4.11 exempts inactive components, which is the only
 reason the pill may dim at all, and a dim pill is not a ground a meter
 can be read on.
@@ -1484,8 +1496,8 @@ an emphasis flag. Apple sanctions three — black, white, and white with
 a black outline: `.apple` is the filled pair (the black button in
 light appearance and, because the endpoints flip, the white one in
 dark) and `.apple_outlined` is the outlined third. Google sanctions
-*themes* rather than emphases — a light button (white, hairline
-border) and a dark one — so the appearance picks the theme and the
+two styles rather than emphases — a light button (white, hairline
+border) and a dark one — so the appearance picks the style and the
 outlined Google button no guideline describes is simply not a member
 the type has.
 
@@ -1623,7 +1635,10 @@ whose change has to reach a server before it is true says so with
 `in_progress` rather than borrowing one. On: `.ink` track, `.paper` knob
 at the trailing edge. Off: dimmed `.g11` track, knob at the leading
 edge, both outlined `.g6` — as in `segmented`, the border is what
-carries the WCAG 1.4.11 state. Semantics: a switch (announced on/off),
+carries the WCAG 1.4.11 state; under [`depth`](getting-started.md#a-theme) nothing is
+outlined: the off track is a `.g10` well, and the knob stands off it by
+the same small shadow as `segmented`'s chip in light and by a `.g6`
+fill in dark. Semantics: a switch (announced on/off),
 not a checkbox — a choice that waits for a submit control is a
 `checkbox`. The row is `metrics.touch_target` (44px) deep — the switch
 and its words centered in it — because the 20px track is the whole
@@ -1695,7 +1710,8 @@ for a nearby control to gather it (consent-then-submit, picking members
 from a list). If flipping it takes effect immediately, it should have
 been a `toggle`. Checked: `.ink` box with a `.paper` check glyph.
 Unchecked: dimmed `.g11` box outlined `.g6` — the toggle/segmented
-WCAG 1.4.11 pattern. There is no indeterminate state; a "some of these"
+WCAG 1.4.11 pattern; under [`depth`](getting-started.md#a-theme), a `.g10` well with no
+outline. There is no indeterminate state; a "some of these"
 summary is a screen problem, not a control problem. Semantics: a
 checkbox (announced checked/unchecked). Its row is 44px deep for the
 same reason `toggle`'s is.
@@ -1723,7 +1739,9 @@ should stay visible at once — a choice made once and submitted — where
 `segmented`'s scrolling track would hide some. The
 group border is grouping, not state: the selected row's filled circle
 with a paper dot (unselected rows show a `.g6` ring) carries the
-selection.
+selection. Under [`depth`](getting-started.md#a-theme) the group is a raised card, as a
+bordered [`box`](#box) is, its hairlines soften to `.g11`, and an
+unselected row shows a `.g10` disc in place of the ring.
 
 `disabled` turns the whole group off — one flag, because the group is
 one tab stop and one choice. The card's border and its hairlines stay
@@ -1763,7 +1781,8 @@ the items to it made every plate as tall as the longest sentence the
 app writes.
 
 **Swap is the only verb.** The buttons are empty at rest — the
-unchecked box's look, a `.g11` plate outlined `.g6`, which a reader
+unchecked box's look, a `.g11` plate outlined `.g6` (depth's `.g10`
+well), which a reader
 already knows takes a press; a glyph at rest was tried and read as
 noise, or as a radio button. Pressing a slot's button arms it — the
 button inverts under the swap glyph, and that is the whole of the
@@ -1823,7 +1842,9 @@ the selected chip's pair — and uncounted plates are unpowered: the
 `.g11` track fill under `.dark` words, the pair `segmented` already
 proves legible. The divider plate is neither, `.paper` under `.dark`
 words inside the `.g10` *grouping* edge, because it is the device's
-own caption and not a state. Dimming is not the only carrier of
+own caption and not a state. Under [`depth`](getting-started.md#a-theme) neither a lit
+plate nor the divider is outlined, as `segmented`'s chip is not.
+Dimming is not the only carrier of
 counted-ness: counted plates lead with their ordinal, in the app's
 digits, and an uncounted item carries none — an item below the divider
 has no rank, and that absence is the fact assistive tech hears, so no
@@ -2141,7 +2162,8 @@ nothing will ever act on.
 
 It draws in the [shared off vocabulary](#turning-a-control-off-disabled),
 which for a field is two of its three steps: the label at `.g6` and the
-outline at `.g10`, applied to the two parts that are affordance — the box
+outline at `.g10` (under [`depth`](getting-started.md#a-theme), which outlines no field,
+its fill a step apart instead), applied to the two parts that are affordance — the box
 that says "type here" and the label naming what would be typed. The
 placeholder goes with them. The **value does not**: it stays at full ink,
 because this state exists precisely while that text is on the wire, and
@@ -2212,11 +2234,13 @@ promises a picker that no longer opens
 
 Activation (tap/Enter/Space) opens the framework's picker: a modal
 bottom panel with the select's label as its title and one 44px tile row
-per option — hairline-separated, like `radio_group`'s rows — scrolling
+per option — hairline-separated, like `radio_group`'s rows, in eink —
+scrolling
 when they overflow. It uses the sheet's geometry and
 scrim and may stack above an open sheet. The current option is
 focused on open and rendered as a dimmed `.g11` chip with a 1px `.g6`
-border (the `segmented` pattern); ↑/↓ move between rows without
+border (the `segmented` pattern) — under [`depth`](getting-started.md#a-theme) a flat
+chip with no border, `.g10` in light and `.g9` in dark; ↑/↓ move between rows without
 wrapping, Enter/Space or a tap commits — closing the picker, updating
 the field, and firing `on_select`. Esc or a tap on the scrim closes
 without committing. Focus always returns to the field. Nothing is
@@ -2452,6 +2476,10 @@ A bordered vertical group of tappable rows — the list-row form of
 anywhere else is rejected at `append`. The group draws `radio_group`'s
 geometry — a rounded 1px `.g10` border, 44px rows, one hairline between
 them — but here the border is pure grouping: no selection, no state.
+Under [`depth`](getting-started.md#a-theme) the group is a raised card, as a bordered
+[`box`](#box) is, a leading icon sits on a `.g11` well, and each
+hairline softens to `.g11` and starts at its row's padding — under a
+row with an icon, where its label does.
 An optional `description` hangs below the border in dimmed small print,
 wrapped at the group width: the group-level counterpart of a tile's
 `detail`, for a caption that belongs to the set of rows rather than any
@@ -2804,7 +2832,10 @@ Visually, segmented is a track/chip pair: the track fills `.g11`
 text and a 1px `.g6` border. The border is what carries WCAG non-text
 contrast (1.4.11) — paper on the track alone is ~1.3:1, but `.g6`
 clears 3:1 against both the chip and the track in both appearances.
-`nav` reuses the exact same pattern — see below.
+`nav` reuses the exact same pattern — see below. Under [`depth`](getting-started.md#a-theme) the
+chip is a raised plate with no border, as are `dial`'s current plate and
+`ranking`'s counted ones: a small shadow in light, and in dark `.g9`,
+two steps lighter than the track.
 
 ## Navigation chrome
 
@@ -2935,7 +2966,8 @@ tone every other control uses), and the current route one step above
 them on `.g10`, outlined in `mid` and lettered in `.ink` — `mid` rather
 than the `.g6` other chips use, because `.g6` is 2.7:1 against `.g10`,
 under the 1.4.11 floor, and `mid` is the lightest tone that clears it
-on both of the chip's sides. The current item is exposed as
+on both of the chip's sides. Under [`depth`](getting-started.md#a-theme) the current
+plate has no edge and climbs to `.g9` in dark. The current item is exposed as
 `aria-current`; consumers never manage selected state. Activating an
 item **pushes** its destination, so crossing the nav leaves a way back
 to the screen you crossed from ([routing.md](routing.md)); activating
@@ -3329,7 +3361,9 @@ Inside the builder, `presentSheet` is the verb that makes the node: it
 returns the sheet to fill with content. A confirmation fills it with
 [the confirm-sheet idiom](#the-confirm-sheet).
 
-A bottom-anchored panel (top corners rounded, `.g6` outline), at most
+A bottom-anchored panel (top corners rounded, `.g6` outline — none
+under [`depth`](getting-started.md#a-theme), whose paper stands off the veil by a glow
+in light and by its fill in dark), at most
 `metrics.sheet_max_w` (560px) wide and never closer than
 `metrics.sheet_min_top` (48px) to the top edge. The framework pins a
 close control — a quiet Lucide square-x glyph with the accessible name "Close",
@@ -3337,7 +3371,8 @@ occupying the full 44px touch target — in the header corner and moves
 focus to it; everything
 behind the sheet is inert — unreachable by Tab, tap, and scroll — and is
 dimmed by a 1px `.paper` checkerboard scrim, which keeps the pixels
-inside the thirteen-gray palette. The close control, Esc and a tap on
+inside the thirteen-gray palette; under [`depth`](getting-started.md#a-theme) the scrim is an even
+veil instead — toward white in light, toward black in dark — for the picker and the notices pane too. The close control, Esc and a tap on
 the scrim all take the `App.closeSheet` road — one user gesture, one
 outcome, the sheet underneath standing again or the screen behind
 rebuilt — and focus returns to the element that had it. One sheet

@@ -62,8 +62,8 @@ rather than quietly dropped:
 Everything else survives intact. There is not one `:hover` rule in the
 generated stylesheet, no transition and no animation. The appearance is
 `App.appearance()` here as everywhere else — the app's own `scheme`
-resolved against what the OS reports — so the sheet carries both ramps
-and a driver stamps the resolved one; `prefers-color-scheme` is the
+resolved against what the OS reports — so the sheet carries every ramp
+and a driver stamps the resolved appearance, beside the theme; `prefers-color-scheme` is the
 fallback for a page with no app behind it, not the answer.
 
 ## Two drivers, one walk
@@ -462,11 +462,11 @@ half sits where it does.
   close control are actually in, since `""` is not something a browser,
   a screen reader or a hyphenation table can act on. The direction is
   `App.direction`, and it is **two** attributes. `dir` is what browsers
-  and assistive tech read; `data-direction` is the only thing the
+  and assistive tech read; `data-nokre-direction` is the only thing the
   sheet's one mirroring rule matches, so a page stamping one of them is
   announced correctly and laid out backwards, or the reverse.
 
-  The live driver stamps `data-direction` and deliberately never `dir`
+  The live driver stamps `data-nokre-direction` and deliberately never `dir`
   (live.js's `syncRoot`, which also does the appearance): an app mounted
   in someone else's document may claim nokre's own surfaces and not the
   page around them. Here there is no page around them — nokre wrote the
@@ -526,10 +526,10 @@ half sits where it does.
   page that was following the device and never a page that pinned, since
   one URL that shows two languages is what per-locale pages exist to
   prevent.
-- **`data-appearance`, and only when the app pinned one.** The other
+- **`data-nokre-appearance`, and only when the app pinned one.** The other
   page-level fact core owns. The sheet's dark ramp is written under a
   media query *and* under this attribute, and the query already stands
-  down when the attribute appears (`:root:not([data-appearance])`) — so
+  down when the attribute appears (`:root:not([data-nokre-appearance])`) — so
   a `Scheme.auto` app stamps nothing and keeps the fallback
   stylesheet.zig's `write` describes, where the query and the app would
   answer alike anyway. An app that *pinned* light or dark is the case
@@ -551,9 +551,10 @@ half sits where it does.
   (`class_names.zig`). What the block covers and where it stops is
   [static-sites.md](../static-sites.md), "A generated document has no
   host".
-- **The class list, the paper and the module.** `rootClass` on the
-  content mount ("The seams" below), `Gray.paper` in the two
-  `theme-color` metas, and `driver_files.entry` in the boot script's
+- **The class list, the ground and the module.** `rootClass` on the
+  content mount ("The seams" below), the top of the theme's
+  page in the two `theme-color` metas (`theme_color.zig`, shared with
+  the packaged shell page; live.js rewrites them on `setTheme`), and `driver_files.entry` in the boot script's
   import — so the one file name that ever leaves the driver set is not
   re-typed either.
 - **The charset first, the seam last.** A browser stops looking for the
@@ -815,7 +816,7 @@ try dom.localeStub(&em, L, .{
 - **The stub is in no locale**, so its root element takes the
   template's — the language the script falls back to, which is where a
   reader it cannot place is going anyway. It stamps no
-  `data-appearance` either: no app boots here, so the media query is
+  `data-nokre-appearance` either: no app boots here, so the media query is
   all the page has to go on and is exactly right.
 - **The query and the fragment are carried across.** A shared
   `/docs/#the-seams` arrives at `/en/docs/#the-seams`; a stub that
@@ -1044,17 +1045,21 @@ Four things follow from the browser owning the page:
   selected run to the clipboard on a cut and core, knowing only a caret,
   deletes one character of it.
 
-### The three facts no markup carries
+### The four facts no markup carries
 
-The appearance, the chrome direction and the screen's shape belong to
-the app, not to any element in it, so they arrive as attributes on the
-document root — `data-appearance`, `data-direction` and `data-shape` —
+The appearance, the theme, the chrome direction and the screen's shape
+belong to the app, not to any element in it, so they arrive as
+attributes on the document root — `data-nokre-appearance`,
+`data-nokre-theme`, `data-nokre-direction` and `data-nokre-shape` —
 and the generated sheet spends them **on nokre's own surfaces only**. A
-page around an embedded app is not this substrate's to restyle. The
-third stands down rather than being written for the common case: a page
-writes no `data-shape` at all, which is the next section.
+page around an embedded app is not this substrate's to restyle. Two
+stand down rather than being written for the common case: a page
+writes no `data-nokre-shape` at all, which is the next section, and an
+eink app no `data-nokre-theme` (`class_names.theme_attr`), so the
+sheet's unkeyed rules are eink's and depth's (`writeDepth`) carry one
+attribute test more.
 
-Both are read back out of core rather than decided here. The OS
+Each is read back out of core rather than decided here. The OS
 appearance goes *in* through `nokre_dom_system_appearance`, the same
 report `on_appearance` makes on every native shell, and what comes back
 is `App.appearance()` — which already contains the system's answer,
@@ -1071,7 +1076,7 @@ otherwise left-to-right screen and an app never has to call
 
 ### A screen's shape is on the document root
 
-`data-shape` carries the screen's arrangement, and it has three states
+`data-nokre-shape` carries the screen's arrangement, and it has three states
 where the shapes have two: `desk`, `desk-narrow`, and **absent**, which
 is a page. What the shapes *mean* is
 [elements.md](../elements.md) and [routing.md](../routing.md); what
@@ -1456,12 +1461,15 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   ([class_names.zig](../../src/render/dom/class_names.zig) says what
   each way of getting it wrong costs).
 - **The stylesheet** ([stylesheet.zig](../../src/render/dom/stylesheet.zig))
-  is generated: thirteen grays in two ramps out of `core/color.zig`, six
+  is generated: thirteen grays in four ramps, depth's page ground and
+  the numbers behind its decorations out of `core/color.zig`, six
   type scales out of `core/text.zig`, every padding, radius, target and
   stroke out of `core/layout.zig`, each container's own default gap and
   padding off the structs in `core/element.zig`, the brand mark's four
   arc colours off `element.zig`'s `google_g_rgb`, and the page margin
-  off `tree.root_stack`. Nothing is transcribed, so nothing can drift.
+  off `tree.root_stack`. Nothing is transcribed but depth's per-appearance
+  tokens, which restate renderer.zig's decisions and which its own test
+  reads back out of the sheet, so nothing can drift.
   It is
   not a styling API and no app may add to it — it is this substrate's
   `renderer.zig`.

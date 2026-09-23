@@ -344,12 +344,12 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     syncRoot();
   }
 
-  // The three page-level facts core owns and no markup carries: which
-  // ramp the page paints in, which way its chrome is mirrored, and how
-  // the screen is arranged. The arrangement is the route's *and* the
-  // window's, so it is the only one of the three that can change
-  // without the reader touching anything — a navigation is enough, and
-  // so is a drag of the window's edge.
+  // The page-level facts core owns and no markup carries: which ramp
+  // the page paints in (appearance and theme), which way its chrome is
+  // mirrored, and how the screen is arranged. The arrangement is the
+  // route's *and* the window's, so it is the only one of them that can
+  // change without the reader touching anything — a navigation is
+  // enough, and so is a drag of the window's edge.
   //
   // Neither is a media query's to answer. `App.scheme` may pin light or
   // dark and only `auto` defers to the desktop — so the OS preference
@@ -366,12 +366,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const root = doc.documentElement;
   const dark = matchMedia("(prefers-color-scheme: dark)");
   const SHAPE = ["", "desk", "desk-narrow"];
+  const THEME = ["", "depth"];
+  let chromePair = null;
 
   function syncRoot() {
     const appearance = nk.nokre_dom_appearance() ? "dark" : "light";
-    if (root.dataset.appearance !== appearance) root.dataset.appearance = appearance;
+    if (root.getAttribute("data-nokre-appearance") !== appearance) root.setAttribute("data-nokre-appearance", appearance);
     const direction = nk.nokre_dom_direction() ? "rtl" : "ltr";
-    if (root.dataset.direction !== direction) root.dataset.direction = direction;
+    if (root.getAttribute("data-nokre-direction") !== direction) root.setAttribute("data-nokre-direction", direction);
     // The third fact, written by taking the attribute *away* for the
     // default, which is what absence means in the sheet's unkeyed rules
     // and in a generated file alike. `setAttribute`/`removeAttribute`
@@ -379,8 +381,29 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // and because the name is then one literal the build reads
     // (class_names.zig).
     const shape = SHAPE[nk.nokre_dom_shape()];
-    if (shape === "") root.removeAttribute("data-shape");
-    else if (root.getAttribute("data-shape") !== shape) root.setAttribute("data-shape", shape);
+    if (shape === "") root.removeAttribute("data-nokre-shape");
+    else if (root.getAttribute("data-nokre-shape") !== shape) root.setAttribute("data-nokre-shape", shape);
+    // The fourth, the look, by the same absence: no attribute is eink.
+    const theme = THEME[nk.nokre_dom_theme()];
+    if (theme === "") root.removeAttribute("data-nokre-theme");
+    else if (root.getAttribute("data-nokre-theme") !== theme) root.setAttribute("data-nokre-theme", theme);
+    syncThemeColor();
+  }
+
+  // The browser's chrome meets the page: each `theme-color` meta the
+  // page carries gets the byte core answers for its `media` scheme
+  // (live.zig's `themeColor`), which moves with the theme and with a
+  // pinned or released scheme alike. Keyed on the answer rather than on
+  // either input, so a new input cannot be missed; written only when it
+  // changes.
+  function syncThemeColor() {
+    const hex = (dark) => "#" + nk.nokre_dom_theme_color(dark).toString(16).padStart(2, "0").repeat(3);
+    const pair = [hex(0), hex(1)];
+    if (pair.join() === chromePair) return;
+    chromePair = pair.join();
+    for (const meta of doc.querySelectorAll('meta[name="theme-color"]')) {
+      meta.setAttribute("content", pair[/dark/.test(meta.getAttribute("media") ?? "") ? 1 : 0]);
+    }
   }
 
   dark.addEventListener("change", () => {
