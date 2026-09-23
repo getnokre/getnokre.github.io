@@ -1533,7 +1533,8 @@ const app = nokre.addApp(nokre_dep, .{
 
 That is its only home, because packaging draws it before any of your
 code runs — the launch screen and window background, the web page's
-`theme-color`, the share card and the store shots.
+`theme-color`, the share card and the store shots. A dev-store driver
+is told it a second time ([a driver](#the-fourth-artifact-a-driver)).
 `state.app.setTheme(.eink)` switches it at run time, a control in
 Settings like the scheme above, and a switch only repaints: layout,
 focus and scroll stand where they were.
@@ -2051,7 +2052,10 @@ declaring a second identity would read an empty store. An app that
 declares `.route_reference_max_bytes` hoists that too, for the same
 reason one step removed: the minted module does not inherit the app's
 cap, and a driver left at 256 refuses a link the app opens
-([routing.md](routing.md#the-cap-is-declared)). It answers
+([routing.md](routing.md#the-cap-is-declared)). `.theme` is the same:
+a driver that does not state the app's theme starts in eink, and its
+e2e frames and store shots are then of a look the app never ships
+([A theme](#a-theme)). It answers
 `?Driver` rather than `Driver` because off a host where that store
 cannot exist the honest answer is no step at all — an optional the
 plain case would otherwise unwrap for nothing — and it takes no

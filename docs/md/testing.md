@@ -1052,7 +1052,10 @@ off the stack, refusing the one a byte longer at the writer, at
 The dev-store driver's copy of the declaration has its own gate, because
 it is a second path from a build file to the same number:
 `tests/dev_store.zig` is built with 4096 on `DevStoreDriverOptions` and
-opens a reference of exactly that size before it touches a store.
+opens a reference of exactly that size before it touches a store. It
+is built with `.theme = .depth` for the same reason, and an `App` it
+stands up starts in depth, the second path to `tests/declared_theme.zig`'s
+fact.
 
 **What `tests/example_screens.zig` walks**: every screen of the app's
 own route table, once per declared medium, at two viewports — the
