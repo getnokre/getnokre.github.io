@@ -202,7 +202,7 @@ fn home(app: *App) !void {
         },
         &.{
             .{ .text = "No color. ", .strong = true },
-            .{ .text = "Thirteen fixed grays, five semantic aliases, two independent ramps. The whole palette is proven against WCAG contrast in unit tests — floor " },
+            .{ .text = "Thirteen fixed grays, five semantic aliases, a ramp for each theme and appearance. The whole palette is proven against WCAG contrast in unit tests — floor " },
             .{ .text = "and", .emphasis = true },
             .{ .text = " ceiling, because past a point more contrast stops buying legibility and starts costing comfort. One honest asterisk, framework-drawn: the Google sign-in button's multicolour G, a trademark whose owner refuses a gray variant. Nothing an app can reach paints in color." },
         },

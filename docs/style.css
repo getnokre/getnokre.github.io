@@ -281,12 +281,12 @@
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { box-shadow: var(--modal-shadow); }
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notice { border-color: transparent; }
 :root[data-nokre-theme="depth"] .btn:not(.auth, .icon-only) { border-radius: 18px; }
-:root[data-nokre-theme="depth"] .tile > .icon { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
+:root[data-nokre-theme="depth"] .tile > .icon.square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
 :root[data-nokre-theme="depth"] hr, :root[data-nokre-theme="depth"] tr + tr > th, :root[data-nokre-theme="depth"] tr + tr > td, :root[data-nokre-theme="depth"] .tiles > .tile { border-top-color: var(--rule); }
 :root[data-nokre-theme="depth"]:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
 :root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 :root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); height: var(--border); background: var(--rule); }
-:root[data-nokre-theme="depth"] .tiles > .tile:has(> .icon) + .tile:not(.radio)::before { inset-inline-start: 44px; }
+:root[data-nokre-theme="depth"] .tiles > .tile:has(> .icon.square) + .tile:not(.radio)::before { inset-inline-start: 44px; }
 :root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit, :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
 :root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit, :root[data-nokre-theme="depth"] .ranking.off .plate.lit, :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle::after { box-shadow: var(--control-shadow); }
