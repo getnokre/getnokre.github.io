@@ -614,6 +614,12 @@ document stays the library's: a stated address that collides fails the
 build rather than being renamed around. The argument is
 [static-sites.md](static-sites.md), "A heading id is a destination".
 
+A heading asks 24px of air above itself — every level the same — and
+nothing after, and a heading first in its flow asks nothing. The page
+title is a heading first in its flow, so the first heading under a
+title gets the air. The rule, and how it meets a flow's gap, is
+[`group`](#group)'s.
+
 ### `icon`
 One named Lucide glyph, laid out as a square line-height box so it
 aligns with same-scale text beside it. Options: `name` (the `IconName`
@@ -920,7 +926,9 @@ large is a figure rather than a title.
 
 ### `stack`
 Vertical (default) or horizontal flow. `gap` (default 8), `padding`
-(default 0). The tree root is a vertical stack with padding 16.
+(default 0). The gap is what two blocks in a vertical stack get unless
+one of them asks for more — a heading or a [`group`](#group) does. The
+tree root is a vertical stack with padding 16.
 
 **The page has a maximum, and it is not yours to set.** Content flows in
 a column capped at `metrics.page_max_w` (760) and centred in whatever is
@@ -999,10 +1007,58 @@ accessibility snapshot of a row that wrapped is identical to the same
 row's on a wider screen. A reader is never told a line broke — because
 nothing about the app did.
 
+### `group`
+A vertical flow whose children belong together, and nothing else: it
+has no fields and draws nothing. `b.group()` is the cursor form.
+
+**Air is spent where a flow changes subject.** Between two blocks
+adjacent in a vertical flow, the air is the larger of what each of them
+asks. A `group` asks `metrics.boundary_gap` (24) before and after
+itself; a `heading` asks 24 before itself and nothing after, because it
+belongs to what follows; every other block asks the flow's own gap; the
+first block in a flow asks nothing. So:
+
+- two groups side by side are one boundary, 24 — not 48;
+- a heading first inside a group adds nothing to the group's 24;
+- a heading after a heading, or after the page title, gets 24 — the
+  title is not special-cased: it is a heading first in its flow;
+- two stacked `toggle`s or `checkbox`es lose the gap between them
+  ([`toggle`](#toggle)) only where neither side asks 24, so a toggle
+  followed by a group holding another gets the full 24;
+- a flow whose own gap is past 24 keeps it, since that is the larger
+  ask;
+- rows never spend it: a horizontal stack's children keep its gap.
+
+Every heading level asks the same one number. A per-level table was
+proposed and rejected: the air marks a change of subject, and how deep
+the new subject sits is the heading's size to say, not its margin's.
+Both substrates spend the rule from the same constant.
+
+**Reach for a group when a run of blocks is one subject.** A
+[`stack`](#stack) is geometry — an axis, a gap, a padding — and says
+nothing about what its children are to each other. A group is a
+statement and has no knobs: a title, a label, a gap or a padding on it
+would be the styling hook the element set refuses, and a heading inside
+a group is just a heading. A [`box`](#box) is a drawn surface — a card
+under depth; a group draws nothing.
+
+**A group of one is a statement too**: a lone control declaring its
+independence from the flow around it. A toggle between two cards is
+the case — without the group it sits 8 from each card and reads as a
+caption of one of them.
+
+A group is a unit of presentation, not of meaning for a reader, so it
+reaches assistive tech as exactly what a `stack` does — a nameless
+group — and nothing more; it is also the unit a future glance dwell
+could page by instead of scrolling. A Markdown [`document`](#document)
+defines no groups and nokre derives none from its headings, but its
+headings are headings and carry their air.
+
 ### `box`
-Grouping container: vertical flow, optional 1px border (default on),
-`padding` (default 12), optional `fill` gray. Boxes group; they do not
-decorate. A box's edge is a wall: the margin advice stops at it, so
+A drawn surface: vertical flow, optional 1px border (default on),
+`padding` (default 12), optional `fill` gray. A box is for content that
+stands on something — a card under depth; children that merely belong
+together are a [`group`](#group). A box's edge is a wall: the margin advice stops at it, so
 nothing ever bleeds across a border. Under [`depth`](getting-started.md#a-theme) a bordered box is
 a raised card: paper that casts a shadow in place of its border in
 light, and a lighter fill alone in dark.
@@ -1647,7 +1703,9 @@ matches the tile rows in `radio_group` and the select picker. Stack two
 of these (or a toggle and a checkbox) and the flow gap between them
 collapses: each already carries its own padding, and counting the
 stack's gap on top would hold them three gaps apart. Anything else
-beside one — a pill, a field — keeps the full gap.
+beside one — a pill, a field — keeps the full gap. So does a pair a
+group boundary stands between: the boundary spends its
+[air](#group) instead.
 
 `in_progress` is `button`'s state on a switch, and it differs from the
 button's in exactly one place: what stands down is not the words but the

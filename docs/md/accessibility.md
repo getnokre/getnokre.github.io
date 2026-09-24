@@ -21,7 +21,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets |
 | `qr` | `image` | label as name, encoded value carried |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
-| `stack`, `box` | `group` | — |
+| `stack`, `box`, `group` | `group` | — |
 | `diverging_group` | `group` | nameless: it decides a track width, not a reading |
 | `tile_group` | `group` | description as value |
 | `divider` | `separator` | — |

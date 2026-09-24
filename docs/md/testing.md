@@ -1695,6 +1695,67 @@ Practically, for your app: an integration bug in nokre's shell or in a
 native service backend will not fail your test suite. Everything above
 `App.dispatchInput` will.
 
+### Seeing the web beside the reference
+
+The DOM substrate promises that the browser lays out what core measured,
+and `zig build test` holds that promise by string: the stylesheet prints
+its numbers from `metrics`, the serializer asks `layout.rowOverflow` and
+`layout.handsDownBack` rather than guessing, and the contract tests read
+those strings back ([internals/dom-substrate.md](internals/dom-substrate.md)).
+None of that is a picture. When a screen looks wrong in a browser and
+right in its golden, the instrument is the two renders side by side, and
+it is a hand procedure, not a gate — Chrome is not a build dependency,
+and node stays the only external tool.
+
+1. **The reference.** A `HarnessApp` over the tree and `expectGolden`
+   with `.update = true` writes the PPM, as a golden test does.
+2. **The page.** The same tree through `document.document` over an
+   `Emitter`, in the shape of `src/render/dom/document_test.zig`'s
+   `write`. A pushed screen needs `doc.boot`, because a back control is
+   a runtime need — the markup is still the bytes a live app mounts
+   over, which is "one markup" in that file. The sheet is
+   `stylesheet.write` with `.fonts` pointing at the files the web build
+   ships under `zig-out/web/fonts` and `.font_suffix = ".ttf"`, and the
+   appearance is pinned on the document root
+   (`data-nokre-appearance="light"`) so Chrome does not follow the
+   desktop's scheme.
+3. **The raster.** Headless Chrome, at a scale of one so the raster is
+   on the reference's pixel grid — and inside a wrapper page holding
+   an `iframe` of the viewport's size, because headless Chrome floors
+   its window at 500 CSS pixels whatever `--window-size` says, and a
+   page laid out at 500 and cropped to 400 is a different page: a
+   sentence that wraps at 400 fits at 500, and everything under it
+   stands a line higher. The wrapper is one line of HTML; the
+   screenshot is then cropped to the frame:
+
+   ```
+   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+     --headless=new --disable-gpu --hide-scrollbars \
+     --force-device-scale-factor=1 --window-size=800,600 \
+     --screenshot=web.png file:///…/frame.html
+   ```
+
+   The same wrapper with `--dump-dom` in place of `--screenshot` prints
+   the document after its scripts ran, so a script in the page that
+   writes every block's `getBoundingClientRect` into the DOM (and posts
+   it up to the wrapper) reads the browser's boxes out as numbers,
+   which is the sharper instrument when a picture says "different"
+   and not what.
+
+4. **Compare rows and edges, never bytes.** Both sides shape with
+   HarfBuzz on the same unhinted faces, so a run's width agrees to the
+   rounding — core ceils to whole pixels, the browser keeps the
+   fraction — and line breaks agree except for a line within that
+   fraction of the margin; but glyph rendering, and a list marker's
+   column, differ by a pixel or two. What the substrate promises
+   is where each block's box stands, so the comparison is the ink-row
+   profile of the two images — the runs of rows carrying ink, and each
+   run's left edge. A gap core spends and the browser does not shows as
+   one distance off by exactly that gap; a pairing the browser misses
+   shows as a left edge off by the chevron's band. The two defects this
+   procedure has found were of exactly those shapes, and each left a
+   test in `serialize_test.zig`, which is the record.
+
 ## Driving an app outside `zig test`
 
 That own tier is a *driver*: an ordinary executable that constructs a

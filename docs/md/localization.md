@@ -899,7 +899,9 @@ the edit in front of you belongs on the build that edit runs.
   (`private key = Privatschlüssel`), the same way *Terms of Service*
   already is. Four things are normalized first, each because one
   language writes one word two ways
-  — Turkish dotted and dotless i, the Arabic and Persian letter forms
+  — Turkish dotted and dotless i (in a Turkish or Azerbaijani
+  translation only: the English is folded by the English rule, so
+  *Increase* is *increase*), the Arabic and Persian letter forms
   of a single letter, Persian harakat (optional orthography), and the
   zero-width non-joiner and tatweel, which are spacing rather than
   spelling. Turkish stem-final *k*, *p*, *t* and *ç* voice before a

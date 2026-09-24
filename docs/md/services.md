@@ -840,8 +840,10 @@ mark, and its own PNG decoder refuses a non-grayscale image — so a scan
 built on the written file would fail every sign-in screenshot for a
 reason that has nothing to do with margins.
 
-Two things it refuses rather than reports: a frame whose commonest tone
-covers under half of it, which has no page to measure against, and a
+Two things it refuses rather than reports: an eink frame whose
+commonest tone covers under half of it, which has no page to measure
+against (depth knows its page per pixel, so only a depth frame with no
+pixel on its ground is refused, however much of it is card), and a
 frame that is page tone and nothing else, because an empty capture has
 perfect margins.
 

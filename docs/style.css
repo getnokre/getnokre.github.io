@@ -41,6 +41,7 @@
   --page-pad: 16px;
   --page-gap: 8px;
   --control-gap: 8px;
+  --boundary: 24px;
   --border: 1px;
   --radius: 8px;
   --radius-card: 12px;
@@ -648,7 +649,13 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   flex-direction: column;
   gap: var(--gap);
   padding: var(--pad);
-  padding-inline: max(var(--page-pad), calc((100% - var(--page-cap)) / 2 + var(--page-pad)));
+  /* Named, because the header's two ends stand in it: an absolute
+     control set at the plain page margin lands at the window's edge
+     on a wide screen while the title it shares a line with sits on
+     the centred column — the one place a browser showed the
+     trailing pair a screen's width away from its heading. */
+  --column-inset: max(var(--page-pad), calc((100% - var(--page-cap)) / 2 + var(--page-pad)));
+  padding-inline: var(--column-inset);
 }
 
 .nokre { position: relative; background: var(--paper); }
@@ -668,7 +675,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    is told it may, and a code block's min-content is its longest
    line — which is the thing that is supposed to scroll rather than
    push the pane wider. */
-.nokre > *, .region > *, .stack > *, .box > *, blockquote > *, li > *, .scroll > * { min-width: 0; }
+.nokre > *, .region > *, .stack > *, .group > *, .box > *, blockquote > *, li > *, .scroll > * { min-width: 0; }
 
 /* Every surface that scrolls sideways, told the same thing
    directly. A segmented track's min-content is all of its chips
@@ -697,7 +704,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    page's margin instead. An inline style carrying the field
    outranks the declaration, which is exactly the precedence
    wanted. */
-.stack {
+.stack, .group {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
@@ -726,11 +733,13 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    margin advice stops at it, so nothing bleeds across a border.
    Its inner flow gap is the library's, not a field: `layoutBlock`
    flows a box's children at `control_gap` and a box carries no gap
-   to override it with. */
+   to override it with. Declared as `--gap` all the same, like
+   every flow's, because the boundary air reads it. */
 .box {
+  --gap: var(--control-gap);
   display: flex;
   flex-direction: column;
-  gap: var(--control-gap);
+  gap: var(--gap);
   border: var(--border) solid var(--g10);
   border-radius: var(--radius-card);
   padding: calc(var(--pad) - var(--border));
@@ -738,8 +747,8 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
 /* Borderless, the padding is the whole inset again. */
 .box.bare { border: 0; padding: var(--pad); }
 
-.document { --pad: 0px; display: flex; flex-direction: column; gap: var(--control-gap); }
-.scroll { --pad: 0px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--control-gap); }
+.document { --pad: 0px; --gap: var(--control-gap); display: flex; flex-direction: column; gap: var(--gap); }
+.scroll { --pad: 0px; --gap: var(--control-gap); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--gap); }
 
 /* ---- the desk ---------------------------------------------------- */
 
@@ -924,9 +933,10 @@ pre.code::-webkit-scrollbar-thumb, .table-wrap::-webkit-scrollbar-thumb, .seg-tr
    the rule is drawn *inside* that band, so the padding is the
    indent less the rule. */
 blockquote {
+  --gap: var(--control-gap);
   display: flex;
   flex-direction: column;
-  gap: var(--control-gap);
+  gap: var(--gap);
   border-inline-start: var(--border) solid var(--g10);
   padding-inline-start: calc(var(--quote-indent) - var(--border));
 }
@@ -953,7 +963,11 @@ ol.list:lang(fa) { list-style-type: persian; }
 ol.list:lang(ar) { list-style-type: arabic-indic; }
 li { display: list-item; }
 li::marker { color: var(--ink); }
-li > ul.list, li > ol.list { margin-top: var(--list-gap); }
+/* An item is a flow of its own at the list's gap (`layoutBlock`'s
+   `list_item` arm), and block flow, so the gap is a margin between
+   siblings — never before the first, which shares the marker's
+   line. The boundary air outweighs it where a block asks more. */
+li > * + * { margin-top: var(--list-gap); }
 
 /* shadcn tables: the grid is horizontal separators only — no outer
    border and no vertical rules, one hairline above every row but
@@ -2008,10 +2022,16 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 /* Offsets are measured from the containing block's *padding box*,
    which is inside the border and outside the padding — so the page
    margin is still ahead of them and every inset here spends it
-   before the bleed comes off. */
+   before the bleed comes off. The margin spent is the column's
+   (`--column-inset`), not the bare page pad: above the cap the two
+   differ by half the window's excess, and that is the distance a
+   control set at the bare pad stands from the title's edge. Its
+   `100%` resolves here against the root's own padding box, which
+   is the width the root's padding resolved it against one level
+   up, because the root fills its mount edge to edge. */
 .nokre > .icon-button.back {
   position: absolute;
-  inset-inline-start: calc(var(--page-pad) - var(--back-bleed));
+  inset-inline-start: calc(var(--column-inset) - var(--back-bleed));
   /* Nothing to centre on: `layoutRow` takes no offset when the
      block it pairs with holds no words of its own, and the control
      opens the row where it stands. */
@@ -2027,10 +2047,10 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    thumb lands on neither (`layout.placeHeader`). */
 .nokre > .icon-button.header-action {
   position: absolute;
-  inset-inline-end: calc(var(--page-pad) - var(--back-bleed));
+  inset-inline-end: calc(var(--column-inset) - var(--back-bleed));
   top: var(--page-pad);
 }
-.nokre > .icon-button.header-action:has(+ .icon-button.header-action) { inset-inline-end: calc(var(--page-pad) - var(--back-bleed) + var(--touch)); }
+.nokre > .icon-button.header-action:has(+ .icon-button.header-action) { inset-inline-end: calc(var(--column-inset) - var(--back-bleed) + var(--touch)); }
 /* The title gives up the band they stand in, exactly as it gives
    up the back control's at the other end. They follow it, so this
    reads forward from the title rather than back from them — and
@@ -2042,8 +2062,8 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    first line — the block inside it does, so the indent lands there
    (`handsDownBack`). Indenting the container instead pushes its
    every paragraph into the chevron's band. */
-.nokre > .icon-button.back + :is(.document, .stack.hands-back) { padding-inline-start: 0; }
-.nokre > .icon-button.back + :is(.document, .stack.hands-back) > :first-child {
+.nokre > .icon-button.back + :is(.document, .stack.hands-back, .group) { padding-inline-start: 0; }
+.nokre > .icon-button.back + :is(.document, .stack.hands-back, .group) > :first-child {
   padding-inline-start: calc(var(--touch) + var(--icon-gap) - var(--back-bleed));
 }
 
@@ -2337,13 +2357,14 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    plain paper. */
 .sheet, .notices-pane, .picker {
   --pad: 0px;
+  --gap: var(--control-gap);
   position: fixed;
   /* The scrims' own z, not one above it — the note on `.scrim`
      says why document order is the stacking here. */
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: var(--control-gap);
+  gap: var(--gap);
   background: var(--paper);
   border: var(--border) solid var(--g6);
   overflow-y: auto;
@@ -2424,7 +2445,7 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 /* Picker rows are tiles: flush but for the hairline separator, not
    gapped like free-flowing content — `layoutBlock` flows them at
    `border` where a free region uses the control gap. */
-.picker > .scroll { gap: var(--border); }
+.picker > .scroll { --gap: var(--border); }
 /* The row is 44px tall with its outline drawn *inside* that box —
    the chip is a state, not an extra pixel of height — so the pad
    is the tile's less the border it is drawn beside. */
@@ -2509,8 +2530,18 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
   .nav, .skip { display: none; }
 }
 
-.stack { --pad: 0px; --gap: 8px; }
+.stack, .group { --pad: 0px; --gap: 8px; }
 .box { --pad: 12px; }
+
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > * { --in-gap: initial; }
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet), :where(.stack.row) { --in-gap: 8px; }
+
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(:not(.icon-button, .pane-title)) ~ :where(.group, h1, h2, h3, h4, h5, h6),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(:not(.icon-button, .pane-title)),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(.icon-button, .pane-title) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)) { margin-block-start: max(0px, var(--boundary) - var(--in-gap, var(--gap))); }
+:is(li, th, td) > :is(.group, h1, h2, h3, h4, h5, h6):not(:first-child),
+:is(li, th, td) > .group + :not(.group) { margin-block-start: var(--boundary); }
 
 input.check::after { content: "\e06c"; }
 
@@ -2652,18 +2683,18 @@ input.check::after { content: "\e06c"; }
 }
 
 /* The route header, centred on the cap region of the line it marks. */
-.nokre > .icon-button.back:has(+ :is(h1, .s-h1)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h1, .s-h1)) { top: calc(var(--page-pad) + -4px); }
-.nokre > :is(h1, .s-h1) + .icon-button.header-action, .nokre > :is(h1, .s-h1) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h1, .s-h1)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h1, .s-h1)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -4px); }
-.nokre > .icon-button.back:has(+ :is(h2, .s-h2)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h2, .s-h2)) { top: calc(var(--page-pad) + -7px); }
-.nokre > :is(h2, .s-h2) + .icon-button.header-action, .nokre > :is(h2, .s-h2) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h2, .s-h2)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h2, .s-h2)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -7px); }
-.nokre > .icon-button.back:has(+ :is(h3, .s-h3)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h3, .s-h3)) { top: calc(var(--page-pad) + -9px); }
-.nokre > :is(h3, .s-h3) + .icon-button.header-action, .nokre > :is(h3, .s-h3) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h3, .s-h3)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h3, .s-h3)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -9px); }
-.nokre > .icon-button.back:has(+ :is(h4, .s-h4)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h4, .s-h4)) { top: calc(var(--page-pad) + -9px); }
-.nokre > :is(h4, .s-h4) + .icon-button.header-action, .nokre > :is(h4, .s-h4) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h4, .s-h4)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h4, .s-h4)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -9px); }
-.nokre > .icon-button.back:has(+ :is(h5, p, .s-body)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h5, p, .s-body)) { top: calc(var(--page-pad) + -11px); }
-.nokre > :is(h5, p, .s-body) + .icon-button.header-action, .nokre > :is(h5, p, .s-body) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h5, p, .s-body)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h5, p, .s-body)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -11px); }
-.nokre > .icon-button.back:has(+ :is(h6, .s-small)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back) > :first-child:is(h6, .s-small)) { top: calc(var(--page-pad) + -14px); }
-.nokre > :is(h6, .s-small) + .icon-button.header-action, .nokre > :is(h6, .s-small) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -14px); }
+.nokre > .icon-button.back:has(+ :is(h1, .s-h1)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h1, .s-h1)) { top: calc(var(--page-pad) + -4px); }
+.nokre > :is(h1, .s-h1) + .icon-button.header-action, .nokre > :is(h1, .s-h1) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h1, .s-h1)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h1, .s-h1)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -4px); }
+.nokre > .icon-button.back:has(+ :is(h2, .s-h2)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h2, .s-h2)) { top: calc(var(--page-pad) + -7px); }
+.nokre > :is(h2, .s-h2) + .icon-button.header-action, .nokre > :is(h2, .s-h2) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h2, .s-h2)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h2, .s-h2)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -7px); }
+.nokre > .icon-button.back:has(+ :is(h3, .s-h3)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h3, .s-h3)) { top: calc(var(--page-pad) + -9px); }
+.nokre > :is(h3, .s-h3) + .icon-button.header-action, .nokre > :is(h3, .s-h3) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h3, .s-h3)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h3, .s-h3)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -9px); }
+.nokre > .icon-button.back:has(+ :is(h4, .s-h4)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h4, .s-h4)) { top: calc(var(--page-pad) + -9px); }
+.nokre > :is(h4, .s-h4) + .icon-button.header-action, .nokre > :is(h4, .s-h4) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h4, .s-h4)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h4, .s-h4)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -9px); }
+.nokre > .icon-button.back:has(+ :is(h5, p, .s-body)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h5, p, .s-body)) { top: calc(var(--page-pad) + -11px); }
+.nokre > :is(h5, p, .s-body) + .icon-button.header-action, .nokre > :is(h5, p, .s-body) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h5, p, .s-body)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h5, p, .s-body)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -11px); }
+.nokre > .icon-button.back:has(+ :is(h6, .s-small)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h6, .s-small)) { top: calc(var(--page-pad) + -14px); }
+.nokre > :is(h6, .s-small) + .icon-button.header-action, .nokre > :is(h6, .s-small) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -14px); }
 
 /* The clear space bottom chrome owes the page, at the four widths it is asked. */
 :root .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }

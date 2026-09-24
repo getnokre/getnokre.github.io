@@ -1107,7 +1107,10 @@ with nothing failing anywhere.
 the screen and a `.region` share — the one statement of how a reading
 column sits inside a surface, whose other language is core's
 `screenColumn` and the region arm's own cap — and once on the wide
-window's nav row. A desk takes the column off the root and gives it to
+window's nav row. The first is named, `--column-inset`, because the
+back control and the header actions stand in that margin absolutely:
+set at the bare page pad they sit on the window's edge above the cap,
+a screen's width from the title they share a line with. A desk takes the column off the root and gives it to
 the regions, which is why these rules must reach the roster in the
 chrome mount as well as the screen in the content mount.
 
@@ -1488,6 +1491,12 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   so a border here is the same pixel the reference paints, and a
   padding written beside one is the reference's inset **less** that
   border. Nearly every off-by-one this substrate had was one of those two.
+  The boundary air (`Ctx.airBefore`) is the first fact at work: the
+  flex gap is already spent between two blocks, so the one that asks
+  `--boundary` takes the difference against the gap of the flow it
+  stands in as a margin, and since a flow's own `--gap` hides its
+  parent's, that gap arrives as `--in-gap` — written inline on a flow
+  child only when the enclosing stack's gap is not the default.
 
 - **One breakpoint, and the two things that turn on it.** This substrate
   is the only one whose window resizes under a reader, so it is the only
@@ -1618,7 +1627,10 @@ an oauth flow, the seed that beat the first `build`. It asserts nothing
 about how the page looks, which is the one thing this substrate traded
 away; [../testing.md](../testing.md#the-webs-own-gate) has the whole
 list, including what it still does not reach (the compute worker, the
-service worker, `fetch`, and the hydration handover).
+service worker, `fetch`, and the hydration handover). Looking is a hand
+procedure — the same tree through the harness and through headless
+Chrome, compared by ink rows rather than bytes
+([../testing.md](../testing.md#seeing-the-web-beside-the-reference)).
 
 The closed set is enforced by the language: the switch in `node` has no
 `else`. An element added to `Element` without a case here fails to
