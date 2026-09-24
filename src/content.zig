@@ -617,7 +617,7 @@ fn gallery(app: *App) !void {
         .viable_max = 3,
         .divider = "Below this line, no notice is sent",
     });
-    try b.styled("An order the reader sets, plus a plate that divides what counts from what does not. Two buttons per slot rather than a drag: a drag has no keyboard, no screen reader and no press-and-release, and this device has all three.", .{ .ink = .mid, .scale = .small });
+    try b.styled("An order the reader sets, plus a line that divides what counts from what does not. The row is the button: press one row, then another, and two items swap places, or, when one of the two is the line, the item crosses it. Presses rather than a drag: a drag has no keyboard, no screen reader and no press-and-release, and this device has all three.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "select");
     try b.select(.{

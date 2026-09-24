@@ -326,21 +326,32 @@ control, `error.NotAChoiceControl` if it has no options to choose among
 the options that *are* there, so a renamed option reads as a rename.
 
 `swapSlots` is the same idea for a `ranking`
-([elements.md](elements.md#ranking)): one tap-tap swap, the control
+([elements.md](elements.md#ranking)): one pair of presses, the control
 named by its label and the two slots by the words on their rows —
-the divider by its own words — never by index, because a slot's index
-is exactly what a swap changes:
+the line by its own words — never by index, because a slot's index
+is exactly what a pair changes. The pair is ordered as the app
+receives it, first armed and second pressed, so the line named first
+moves the line and named second moves the item:
 
 ```zig
-try t.swapSlots("Ballot", "Bravo", "Alpha");   // two items change places
-try t.swapSlots("Ballot", "Up to three count. Items below this do not.", "Charlie");
+// Alpha, Bravo | line | Charlie, Delta — two count, the band 0 to 3.
+try t.swapSlots("Ballot", "Bravo", "Alpha");   // two items trade places
+try t.swapSlots("Ballot", "Up to three count. Items below this do not.", "Charlie");   // the line rests past Charlie: three count
+try t.swapSlots("Ballot", "Alpha", "Up to three count. Items below this do not.");   // Alpha crosses to just below the line: two count
 ```
 
 It takes the keyboard route too: focus the ranking, ↑/↓ to the first
-slot, Space to arm it, ↑/↓ to the second, Space to release — every step
-through real dispatch, so an `on_swap` handler sees exactly the pair it
-would in the app. It refuses a label that is not a ranking's
-(`error.NotARanking`) and words no row carries (`error.NoSuchSlot`).
+slot, Space to arm it, ↑/↓ to the second, Space to press it — every
+step through real dispatch, so an `on_swap` handler sees exactly the
+pair it would in the app, and the trace records the step as `pair`
+with both names in order. It refuses a label that is not a ranking's
+(`error.NotARanking`), words no row carries (`error.NoSuchSlot`, whose
+diagnostic lists the rows top to bottom — a hidden line is not among
+them), the same words twice (`error.SameSlot`), and a press the device
+did not take (`error.NotInteractive`): a pinned line armed first, or a
+pair whose new count the band refuses, which the diagnostic names —
+the count the pair would have made and the band that holds it — before
+Esc disarms the device again.
 
 **Two verbs go back, and they are two different acts.** `back()` presses
 the back *control* — the one the router installs on every pushed screen,

@@ -51,7 +51,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `segmented` | `radio_group` | selected option as value, focused, `disabled` |
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
 | `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
-| `ranking` slot | `button` | the row's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop; at the row's rect. A pinned divider's slot is `static_text` at its row instead: it is a caption, and there is nothing to press |
+| `ranking` slot | `button` | the row's words as name, its rank as value — a rank only a counted slot has, so an item below the line is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop; at the row's rect. A pinned divider's slot is `static_text` at its row instead: it is a caption, and there is nothing to press. A hidden line has no slot: no row is drawn, so every slot is an item and every item carries its rank |
 | `dial` | `spin_button` | the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
@@ -223,7 +223,11 @@ node by pressing its rect presses *that* slot. This is the shape the
 DOM substrate ships — each row a real button whose text is the same
 two facts — so the two substrates say one thing. The verb a row draws
 is not in the name: it is what `selected` and the keyboard contract already
-say, and in the name it would relabel every row on every arm.
+say, and in the name it would relabel every row on every arm. Every
+verb reaches a reader the same way — Swap, In, Out and Here alike are a
+slot that is not `disabled` — because the rest of each is audible
+already: which side of the line an item is on is its rank, and a press
+on the other side is what moves it across.
 
 Three things it deliberately is not:
 
@@ -232,10 +236,11 @@ Three things it deliberately is not:
   leave the ↑/↓ contract with nothing to move. A slot is activatable
   instead, which is the press a finger makes.
 - **Not a custom action.** "Move this up" is not a verb this device
-  has — swap is, and it is a pair of presses, so an action named for a
-  direction would be a second arithmetic beside `applySwap` and words
-  in every language the library would have to own. The one verb is
-  already a control; announcing that control is the whole fix.
+  has — its verbs are pairs of presses, two items swapping or a row
+  crossing the line, so an action named for a direction would be a
+  second arithmetic beside `applySwap` and words in every language the
+  library would have to own. Every verb is already a slot; announcing
+  the slots is the whole fix.
 - **Not a position announcement.** A rank is the app's digits, from the
   same `layout.rankingOrdinal` the row draws with, and only a counted
   slot has one — which is the fact a reader is told about counted-ness.
@@ -433,9 +438,9 @@ after the fact would mean the bad state existed:
 - choice controls (segmented, radio group, select) with fewer than two
   options, empty option labels, or a selection out of range
 - a malformed ranking: fewer than two options, an empty option, no
-  divider words, a band reaching the option count, an inverted band, a
-  count outside the band, or an input-owned field (`cursor`, `armed`)
-  set by hand — a screen cannot open mid-swap
+  divider words, a band maximum of zero or past the option count, an
+  inverted band, a count outside the band, or an input-owned field
+  (`cursor`, `armed`) set by hand — a screen cannot open mid-swap
 - a malformed dial: a floor below zero, an inverted range, a range
   holding one value — that is a reading, not a device — a value outside
   it, a range past `Dial.max_digits`, or a `reading_buf` set by hand,

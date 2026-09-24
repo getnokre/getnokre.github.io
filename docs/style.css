@@ -1667,7 +1667,7 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 }
 .ranking-words { flex: 1; min-width: 0; overflow-wrap: break-word; }
 /* `--verb-band` is the measured width the serializer wrote
-   (`rankingVerbBand`): the widest of the three words, the glyph, and
+   (`rankingVerbBand`): the widest of the six words, the glyph, and
    a marker gap on each side of the word — one width for every row
    and every state, so the words never rewrap when the verb changes.
 

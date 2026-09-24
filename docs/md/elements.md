@@ -1808,69 +1808,102 @@ words and the rings
 ([`disabled`](#turning-a-control-off-disabled)).
 
 ### `ranking`
-An order the user sets over a fixed set, with a divider row above
-which items count, inside a band the app sets. Fields: `label`;
-`options` (2+), given *in their current order* — the app owns the order
-the way it owns a `radio_group`'s `selected`; `viable`, how many of
-them count, which is also where the divider row sits: after that
-many items; `viable_min` (default 0) and `viable_max`, the band the
-divider may land in; `divider`, the divider row's words; and `on_swap(a, b)`,
-called with two slots. `viable_max` must be strictly below the option
-count — passing the count or more is a construction error, by design:
-a divider nothing can fall below is no divider, and an app that wants
-one meant a plain ordered list. The divider's words are the app's
-because the number they carry and the language they are in are both
-the app's ("Up to 5 count. Items below this do not.").
+An order the user sets over a fixed set, with a line above which items
+count, inside a band the app sets. Fields: `label`; `options` (2+),
+given *in their current order* — the app owns the order the way it owns
+a `radio_group`'s `selected`; `viable`, how many of them count, which is
+also where the divider row — the line — sits: after that many items;
+`viable_min` (default 0) and `viable_max`, the band the count may take;
+`divider`, the divider row's words; and `on_swap(a, b)`, called with
+the ordered pair a press completed: `a` the slot that was armed, `b`
+the one pressed after it. The divider's words are the app's because
+the number they carry and the language they are in are both the app's
+("Up to 5 count. Items below this do not.").
+
+The band is `viable_min <= viable <= viable_max`, with `viable_max` at
+least 1 and at most the option count. A band reaching the count is
+legal and says everything may count: the line may then rest last,
+with every item above it. A maximum of zero lets nothing count, so it
+is not a ranking.
 
 The device is one column under a small label: a full-width row per
 slot, and **the row is the button**. The slots are every option plus
-the divider, top to bottom, so a five-item ranking has six of them.
-Each row leads with its ordinal, carries its words, and ends in a
-verb band on its trailing edge, where it says what a press on it does
-now.
+the line, top to bottom, so a five-item ranking has six of them. Each
+row leads with its ordinal, carries its words, and ends in a verb band
+on its trailing edge, where it says what a press on it does now.
+
+**The hidden line.** When the band is pinned at the count —
+`viable_min == viable_max ==` the option count — every item counts and
+nothing can move the line, so there is nothing to divide: no divider
+row is drawn, the slots are the options alone, every one carries its
+rank, and the only pair left is two items swapping
+(`Ranking.hasDivider`). `divider` is still required and is never shown.
+Any other one-wide band pins the line where it stands, as a caption
+(below).
 
 **Every item row is one height and the divider row is its own.** The
 items share the tallest item's height, because a row as tall as its
-own words would move the rows under it the moment it swapped with a
-shorter one. The divider is the one row no item ever swaps with — the
-item it crosses rises by exactly what the divider falls by, and the
-device's total height is the same whichever slot it stands in — and it
-is also the one row whose words are a sentence rather than a name, so
-it is the row that wraps in a language that spends more of them. Tying
-the items to it made every row as tall as the longest sentence the app
-writes. The ordinal band and the verb band are reserved on every row,
-the divider's included, for the same reason: a band that came and went
-would rewrap the words.
+own words would move the rows under it the moment it traded places
+with a shorter one. The line is the one row whose words are a sentence
+rather than a name, so it is the row that wraps in a language that
+spends more of them; tying the items to it made every row as tall as
+the longest sentence the app writes. Keeping it apart costs nothing:
+wherever the line rests the device is the same items and one line, so
+its total height is the same. The ordinal band and the verb band are
+reserved on every row, the divider's included, for the same reason: a
+band that came and went would rewrap the words.
 
-**Swap is the only verb.** Pressing a slot's row arms it — the row
-inverts; pressing another slot's row swaps the two and fires
-`on_swap`; pressing the armed one again disarms. The row says which of
-those a press will do, as a word beside a glyph: **Move** on every live
-row at rest, **Cancel** on the armed row, **Swap** on every slot it may
-trade with. The words are the framework's chrome — `ranking_move`,
-`ranking_swap`, `ranking_cancel` ([localization.md](localization.md#the-frameworks-own-words)) —
-and the verb band is as wide as the widest of the three, so the words
-never rewrap when Move becomes Swap. The row is the button and says
-a word because a separate button beside each row failed a tester
-three ways: its empty square read as a checkbox, the outlined row
-beside it read as the button, and a swap glyph on the square still
-told nothing — and a stack of full-width rows under bare glyphs reads
-as a menu. "Swap" and never "Here": a swap is not an insert, and a
-word that promised one would drop a ballot's former first place to
-last.
+**A pair of presses, and the line is a cut.** Pressing a slot's row
+arms it — the row inverts; pressing another's acts on the pair and
+fires `on_swap`; pressing the armed one again disarms. What a pair
+does is one rule: two items swap in place, and a row paired with the
+line moves to the other side of it.
 
-The divider is a slot like any other, so moving it is swapping it with
-an item. Rows never move: the picture after a swap differs from the
-picture before in exactly two rows, and nothing slides. That is why
-the app receives two slots and not a new order, and why
-`Ranking.applySwap` exists — two items swap, but an item and the
-divider *rotate*: the divider is not in `options`, so the items between
-the two shift by one to make the picture where only two rows changed.
-The app applies the pair to its own copy of the state with `applySwap`
-rather than by its own arithmetic; it is the same arithmetic the
-element has already run on the tree's copy, so the two cannot
-disagree, and a stale pair from a screen that has since rebuilt is a
-no-op rather than a corrupted order.
+- **Line armed first.** Every item row says **In** if it stands below
+  the line and **Out** if above — the side it will be on after the
+  press. The press brings the line to rest just past that row, so it
+  and every row between it and the line change side, and the order is
+  untouched.
+- **Item armed first.** The line says **Here**. The press moves the
+  armed item across the line to sit beside it; the rows it passes
+  shift by one, and nothing else changes side.
+- **Two items.** Every other item row says **Swap**, and the two trade
+  places. Nothing else moves.
+
+At rest every live row says **Move**, and the armed row says
+**Cancel**. Each is a word beside a glyph. The words are the
+framework's chrome — `ranking_move`, `ranking_swap`, `ranking_cancel`,
+`ranking_in`, `ranking_out`, `ranking_here`
+([localization.md](localization.md#the-frameworks-own-words)) — and
+the verb band is as wide as the widest of the six, so the words never
+rewrap when one becomes another. Move and Swap keep a glyph each; In,
+Out and Here point, an arrow up to a line or down to a line, chosen by
+the way the crossing item travels, so a press that brings an item up
+into the count points up on whichever of the two rows says it. The row
+is the button and says a word because a separate button beside each
+row failed a tester three ways: its empty square read as a checkbox,
+the outlined row beside it read as the button, and a swap glyph on the
+square still told nothing — and a stack of full-width rows under bare
+glyphs reads as a menu.
+
+**Here lives on the line, and only there.** The line is a between, so
+an insert at it is honest: the item goes to that place and only the
+rows it passes shift. On an item row it would lie — a swap is not an
+insert, and a word that promised one would drop a ballot's former
+first place to last — so two items always say Swap.
+
+**Rows slide when the line is in the pair, and only then.** A swap of
+two items changes exactly two rows. A pair with the line changes every
+row between: armed first, the line passes them; pressed second, the
+item does. The app receives the ordered pair of slots and not a new
+order, and `Ranking.applySwap` is the one place the arithmetic lives:
+line armed, the count becomes the pressed slot; item armed then line,
+the rows between rotate and the count moves one notch toward the item;
+two items swap. The app applies the pair to its own copy of the state
+with `applySwap` rather than by its own arithmetic; it is the same
+arithmetic the element has already run on the tree's copy, so the two
+cannot disagree, and a stale pair from a screen that has since rebuilt
+is a no-op rather than a corrupted order.
 
 `applySwap` takes the item type first, because the app's copy is
 rarely words. The tree's copy is words — a row draws them — but what
@@ -1883,19 +1916,19 @@ you will send and draw the words from it:
 nokre.element.Ranking.applySwap(u16, order.ids[0..order.len], &order.viable, band.min, band.max, a, b);
 ```
 
-**The band.** The divider may only land where `viable_min <= viable <=
-viable_max`. At rest nothing marks it — the divider's own words are
-where an app says it. While the divider is armed the verb is **gone**
-from the rows of the slots it may not take — nothing drawn in the
-band — which is the cap made visible at the moment it applies; and
-while an item is armed whose slot the divider may not take, it is the
-divider's verb that is gone, the same rule read from the other end. A
-verb that cannot be carried out is honest as absence where a dimmed
-one read as a smudge, and a screen should not lie about state to keep
-a resemblance. The row stays: a press on it moves the keyboard cursor
-there and nothing else. `viable_min == viable_max` is legal — a fixed
-count — and pins the divider's row: it has no verb and takes no press,
-so the items still reorder around a line that stays put.
+**The band on screen.** At rest nothing marks it — the divider's own
+words are where an app says it. While the line is armed the verb is
+**gone** from every item row the line may not rest just past — nothing
+drawn in the band — which is the cap made visible at the moment it
+applies; and while an item is armed whose crossing would take the
+count outside the band, it is the line's Here that is gone, the same
+rule read from the other end. A verb that cannot be carried out is
+honest as absence where a dimmed one read as a smudge, and a screen
+should not lie about state to keep a resemblance. The row stays: a
+press on it moves the keyboard cursor there and nothing else.
+`viable_min == viable_max` below the count is legal — a fixed count —
+and pins the line: its row has no verb and takes no press, so the
+items still swap around a line that stays put.
 
 Counted rows are lit — `.paper` under `.ink` words, outlined `.g6`,
 the selected chip's pair. Uncounted rows are the unchecked box's well,
@@ -1941,18 +1974,19 @@ verb is not in the name: it is what the armed state and the keyboard
 contract already say. A slot is pressable and is never a focus stop,
 because the device is the stop and the cursor is what moves inside it;
 a pinned divider's slot is a caption rather than a control, since
-there is nothing to press. The keyboard contract above is the whole of
-what is announced: there is no "move up" action, because the device
-has no such verb — a move is two presses, arm and release.
+there is nothing to press, and a hidden line has no slot at all. The
+keyboard contract above is the whole of what is announced: there is
+no "move up" action, because the device has no such verb — a move is
+two presses, arm and release.
 Counted-ness reaches a reader as the rank's presence and nothing else,
 and the divider's own sentence is read where it sits
 ([accessibility.md](accessibility.md#derivation)).
 
 **A ranking carries no `problem`, and that is a refusal.** A field
 declares one because it accepts bytes nobody vetted; a ranking cannot
-be invalid. Every order the device can reach is one it permits — a slot
-the band rules out is disabled and takes no press, and the audit's
-`malformed_ranking` holds the band and the cursor in range — so there
+be invalid. Every order the device can reach is one it permits — a row
+the band rules out has no verb and its press only moves the cursor,
+and the audit's `malformed_ranking` holds the band and the cursor in range — so there
 is nothing left for a reason to describe. A rule the device cannot
 express structurally is the *consumer's* refusal, not the device's
 state: announce it as a [notice](#notice) where the consumer refused,
@@ -1971,7 +2005,7 @@ The construction errors, by name: `error.RankingNeedsTwoOptions`,
 what bounds the ranks and the slot ids assistive tech is given — a
 device past it would be drawn whole and read short),
 `error.RankingEmptyOption`, `error.RankingNeedsDivider`,
-`error.RankingMaxNotBelowCount`, `error.RankingBandInverted`
+`error.RankingMaxOutsideCount`, `error.RankingBandInverted`
 (`viable_min` above `viable_max`), `error.RankingViableOutsideBand`,
 and `error.InputOwnedField` above.
 

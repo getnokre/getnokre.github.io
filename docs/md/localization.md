@@ -466,6 +466,11 @@ English until an app says otherwise:
 | `copied` | "Copied" | the live region an acknowledged `copyable` grows |
 | `more` | "More" | the control an overflowing row of actions folds into |
 | `regions` | "Regions" | the region switcher's *name* on a desk too narrow to stand its regions side by side; the chips are the regions' own labels |
+| `ranking_move` | "Move" | a ranking row's verb at rest, on every row that takes a press |
+| `ranking_swap` | "Swap" | a ranking's other item rows while an item is armed |
+| `ranking_cancel` | "Cancel" | a ranking's armed row, which a second press disarms |
+| `ranking_in` / `ranking_out` | "In" / "Out" | a ranking's item rows while its line is armed: In below the line, Out above it, the side the row will be on after a press |
+| `ranking_here` | "Here" | a ranking's line while an item is armed and the band lets it cross |
 
 ```zig
 app.setChrome(L.chrome(loc)); // every word, from the catalog, or no build
@@ -498,6 +503,7 @@ plus the field camel-cased at its underscores:
 | `regions` | `chromeRegions` |
 | `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` |
 | `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` |
+| `ranking_in` / `ranking_out` / `ranking_here` | `chromeRankingIn` / `chromeRankingOut` / `chromeRankingHere` |
 
 A catalog missing one of them does not compile — the posture the rest
 of this document already holds, a catalog mistake is a build error,
