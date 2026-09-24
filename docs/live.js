@@ -557,9 +557,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       ? `[data-n="${node}"]:not([data-s])`
       : `[data-n="${node}"][data-s="${span}"]`;
     // One stop can be many buttons — a ranking is one focus stop over a
-    // column of swap buttons — and the one its cursor stands on says so
-    // with `data-cursor` (serialize.zig). Asked first, because the first
-    // button under the id is slot 0, which ↑/↓ may long since have left.
+    // column of rows, each a button — and the one its cursor stands on
+    // says so with `data-cursor` (serialize.zig). Asked first, because
+    // the first button under the id is slot 0, which ↑/↓ may long since
+    // have left.
     const el =
       find(`${selector}[data-cursor]`) ??
       find(`${selector}:is(a,button,input,select,textarea,[tabindex])`) ??

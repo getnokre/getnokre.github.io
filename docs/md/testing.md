@@ -327,7 +327,7 @@ the options that *are* there, so a renamed option reads as a rename.
 
 `swapSlots` is the same idea for a `ranking`
 ([elements.md](elements.md#ranking)): one tap-tap swap, the control
-named by its label and the two slots by the words on their plates —
+named by its label and the two slots by the words on their rows —
 the divider by its own words — never by index, because a slot's index
 is exactly what a swap changes:
 
@@ -340,7 +340,7 @@ It takes the keyboard route too: focus the ranking, ↑/↓ to the first
 slot, Space to arm it, ↑/↓ to the second, Space to release — every step
 through real dispatch, so an `on_swap` handler sees exactly the pair it
 would in the app. It refuses a label that is not a ranking's
-(`error.NotARanking`) and words no plate carries (`error.NoSuchSlot`).
+(`error.NotARanking`) and words no row carries (`error.NoSuchSlot`).
 
 **Two verbs go back, and they are two different acts.** `back()` presses
 the back *control* — the one the router installs on every pushed screen,

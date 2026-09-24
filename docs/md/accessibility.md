@@ -51,7 +51,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `segmented` | `radio_group` | selected option as value, focused, `disabled` |
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
 | `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
-| `ranking` slot | `button` | the plate's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop. A pinned divider's slot is `static_text` at its plate instead: it is a caption, and there is no button to press |
+| `ranking` slot | `button` | the row's words as name, its rank as value — a rank only a counted slot has, so an item below the divider is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop; at the row's rect. A pinned divider's slot is `static_text` at its row instead: it is a caption, and there is nothing to press |
 | `dial` | `spin_button` | the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
@@ -213,20 +213,22 @@ cluster boundaries by the audit's `malformed_selection`.
 derived nodes.** The device is a single focus stop whose value is the
 slot the cursor stands on ([elements](elements.md#ranking)); that is
 what a keyboard reader hears change under ↑/↓, and on its own it was
-the whole of what any reader got — not the other plates, not the ranks
+the whole of what any reader got — not the other rows, not the ranks
 they draw, not the divider's words while it can move, and no control
 that moves anything. Each slot is now a child node: a **button** named
-by its plate's words, valued by its rank, `selected` while it is the
-armed one, `disabled` where the band rules it out, sitting on the swap
-button's own rect so a bridge that activates a node by pressing its
-rect presses *that* slot. This is the shape the DOM substrate already
-shipped — real buttons carrying the same two facts in a visually
-hidden run — so the two substrates say one thing.
+by its row's words, valued by its rank, `selected` while it is the
+armed one, `disabled` where the band rules it out, sitting on the
+row's own rect — the row is the button — so a bridge that activates a
+node by pressing its rect presses *that* slot. This is the shape the
+DOM substrate ships — each row a real button whose text is the same
+two facts — so the two substrates say one thing. The verb a row draws
+is not in the name: it is what `selected` and the keyboard contract already
+say, and in the name it would relabel every row on every arm.
 
 Three things it deliberately is not:
 
 - **Not a focus stop.** The device is one tab stop and the cursor walks
-  it; a slot that took focus would put every plate in the tab order and
+  it; a slot that took focus would put every row in the tab order and
   leave the ↑/↓ contract with nothing to move. A slot is activatable
   instead, which is the press a finger makes.
 - **Not a custom action.** "Move this up" is not a verb this device
@@ -235,7 +237,7 @@ Three things it deliberately is not:
   in every language the library would have to own. The one verb is
   already a control; announcing that control is the whole fix.
 - **Not a position announcement.** A rank is the app's digits, from the
-  same `layout.rankingOrdinal` the plate draws with, and only a counted
+  same `layout.rankingOrdinal` the row draws with, and only a counted
   slot has one — which is the fact a reader is told about counted-ness.
   "3 of 9" would be a sentence nokre does not own, and the two bridges
   that flatten their trees (iOS, Android) announce no structural
@@ -591,7 +593,7 @@ fails on:
   that read the a11y snapshot instead of the tree, and that is the point:
   the derivation is what regressed, and a rule stated over the tree
   would have agreed with itself while the snapshot said nothing. A
-  counted slot's value must also be the rank its plate draws, so a
+  counted slot's value must also be the rank its row draws, so a
   device that outgrew `Ranking.max_options` fails here rather than
   announcing short
 - `malformed_dial` — a dial mutated out of shape: a floor below zero,

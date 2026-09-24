@@ -1808,13 +1808,13 @@ words and the rings
 ([`disabled`](#turning-a-control-off-disabled)).
 
 ### `ranking`
-An order the user sets over a fixed set, with a divider plate above
+An order the user sets over a fixed set, with a divider row above
 which items count, inside a band the app sets. Fields: `label`;
 `options` (2+), given *in their current order* — the app owns the order
 the way it owns a `radio_group`'s `selected`; `viable`, how many of
-them count, which is also where the divider plate sits: after that
+them count, which is also where the divider row sits: after that
 many items; `viable_min` (default 0) and `viable_max`, the band the
-divider may land in; `divider`, the plate's words; and `on_swap(a, b)`,
+divider may land in; `divider`, the divider row's words; and `on_swap(a, b)`,
 called with two slots. `viable_max` must be strictly below the option
 count — passing the count or more is a construction error, by design:
 a divider nothing can fall below is no divider, and an app that wants
@@ -1822,46 +1822,58 @@ one meant a plain ordered list. The divider's words are the app's
 because the number they carry and the language they are in are both
 the app's ("Up to 5 count. Items below this do not.").
 
-The device is two columns under a small label: a column of plates on
-the leading side, one per slot, and a column of equal 44px swap
-buttons on the trailing side. The slots are every option plus the
-divider, top to bottom, so a five-item ranking has six of them.
+The device is one column under a small label: a full-width row per
+slot, and **the row is the button**. The slots are every option plus
+the divider, top to bottom, so a five-item ranking has six of them.
+Each row leads with its ordinal, carries its words, and ends in a
+verb band on its trailing edge, where it says what a press on it does
+now.
 
-**Every item plate is one height and the divider plate is its own.**
-The items share the tallest item's height, because a plate as tall as
-its own words would move the rows under it the moment it swapped with a
-shorter one. The divider is the one plate no item ever swaps with — the
+**Every item row is one height and the divider row is its own.** The
+items share the tallest item's height, because a row as tall as its
+own words would move the rows under it the moment it swapped with a
+shorter one. The divider is the one row no item ever swaps with — the
 item it crosses rises by exactly what the divider falls by, and the
 device's total height is the same whichever slot it stands in — and it
-is also the one plate whose words are a sentence rather than a name, so
+is also the one row whose words are a sentence rather than a name, so
 it is the row that wraps in a language that spends more of them. Tying
-the items to it made every plate as tall as the longest sentence the
-app writes.
+the items to it made every row as tall as the longest sentence the app
+writes. The ordinal band and the verb band are reserved on every row,
+the divider's included, for the same reason: a band that came and went
+would rewrap the words.
 
-**Swap is the only verb.** The buttons are empty at rest — the
-unchecked box's look, a `.g11` plate outlined `.g6` (depth's `.g10`
-well), which a reader
-already knows takes a press; a glyph at rest was tried and read as
-noise, or as a radio button. Pressing a slot's button arms it — the
-button inverts under the swap glyph, and that is the whole of the
-mark: a sign on the plate as well was tried and read as the same state
-said twice; pressing
-another slot's button swaps the two and fires
-`on_swap`; pressing the armed one again disarms. The divider is a slot
-like any other, so moving it is swapping it with an item. Rows never
-move: the picture after a swap differs from the picture before in
-exactly two rows, and nothing slides. That is why the app receives two
-slots and not a new order, and why `Ranking.applySwap` exists — two
-items swap, but an item and the divider *rotate*: the divider is not in
-`options`, so the items between the two shift by one to make the
-picture where only two rows changed. The app applies the pair to its
-own copy of the state with `applySwap` rather than by its own
-arithmetic; it is the same arithmetic the element has already run on
-the tree's copy, so the two cannot disagree, and a stale pair from a
-screen that has since rebuilt is a no-op rather than a corrupted order.
+**Swap is the only verb.** Pressing a slot's row arms it — the row
+inverts; pressing another slot's row swaps the two and fires
+`on_swap`; pressing the armed one again disarms. The row says which of
+those a press will do, as a word beside a glyph: **Move** on every live
+row at rest, **Cancel** on the armed row, **Swap** on every slot it may
+trade with. The words are the framework's chrome — `ranking_move`,
+`ranking_swap`, `ranking_cancel` ([localization.md](localization.md#the-frameworks-own-words)) —
+and the verb band is as wide as the widest of the three, so the words
+never rewrap when Move becomes Swap. The row is the button and says
+a word because a separate button beside each row failed a tester
+three ways: its empty square read as a checkbox, the outlined row
+beside it read as the button, and a swap glyph on the square still
+told nothing — and a stack of full-width rows under bare glyphs reads
+as a menu. "Swap" and never "Here": a swap is not an insert, and a
+word that promised one would drop a ballot's former first place to
+last.
+
+The divider is a slot like any other, so moving it is swapping it with
+an item. Rows never move: the picture after a swap differs from the
+picture before in exactly two rows, and nothing slides. That is why
+the app receives two slots and not a new order, and why
+`Ranking.applySwap` exists — two items swap, but an item and the
+divider *rotate*: the divider is not in `options`, so the items between
+the two shift by one to make the picture where only two rows changed.
+The app applies the pair to its own copy of the state with `applySwap`
+rather than by its own arithmetic; it is the same arithmetic the
+element has already run on the tree's copy, so the two cannot
+disagree, and a stale pair from a screen that has since rebuilt is a
+no-op rather than a corrupted order.
 
 `applySwap` takes the item type first, because the app's copy is
-rarely words. The tree's copy is words — a plate draws them — but what
+rarely words. The tree's copy is words — a row draws them — but what
 an app sends is an option's id or the row it came from, and an order
 kept as words has to be read back into identities by matching strings,
 which two options with the same words defeat. Keep the order as what
@@ -1873,71 +1885,65 @@ nokre.element.Ranking.applySwap(u16, order.ids[0..order.len], &order.viable, ban
 
 **The band.** The divider may only land where `viable_min <= viable <=
 viable_max`. At rest nothing marks it — the divider's own words are
-where an app says it. While the divider is armed the buttons of the
-slots it may not take are **gone** — nothing drawn, the page showing
-through — which is the cap made visible at the moment it applies; and
+where an app says it. While the divider is armed the verb is **gone**
+from the rows of the slots it may not take — nothing drawn in the
+band — which is the cap made visible at the moment it applies; and
 while an item is armed whose slot the divider may not take, it is the
-divider's button that is gone, the same rule read from the other end.
-A button that cannot be pressed is honest as absence where a dimmed
-one read as a smudge, and this is where the device stops imitating
-hardware: a real panel cannot lose a button, and a screen should not
-lie about state to keep the resemblance. The rect stays: pressing
-where the button was moves the keyboard cursor there and nothing
-else.
-`viable_min == viable_max` is legal — a fixed count — and pins the
-divider's button disabled, so the items still reorder around a line
-that stays put.
+divider's verb that is gone, the same rule read from the other end. A
+verb that cannot be carried out is honest as absence where a dimmed
+one read as a smudge, and a screen should not lie about state to keep
+a resemblance. The row stays: a press on it moves the keyboard cursor
+there and nothing else. `viable_min == viable_max` is legal — a fixed
+count — and pins the divider's row: it has no verb and takes no press,
+so the items still reorder around a line that stays put.
 
-**Every plate is the height of the tallest.** The divider's sentence
-wraps where an option's name does not, and a row that changed height
-when swapped would move every row under it, so layout measures all the
-plates and gives each the maximum. The band a plate reserves for its
-ordinal is reserved on every plate for the same reason: a band that
-came and went with the rank would rewrap the words.
-
-Counted plates are lit — `.paper` under `.ink` words, outlined `.g6`,
-the selected chip's pair — and uncounted plates are unpowered: the
-`.g11` track fill under `.dark` words, the pair `segmented` already
-proves legible. The divider plate is neither, `.paper` under `.dark`
+Counted rows are lit — `.paper` under `.ink` words, outlined `.g6`,
+the selected chip's pair. Uncounted rows are the unchecked box's well,
+`.g11` outlined `.g6`, which a reader already knows takes a press, and
+their words stay `.ink`: dim words on a button say off, and every one
+of these rows is a button. The divider row is `.paper` under `.dark`
 words inside the `.g10` *grouping* edge, because it is the device's
-own caption and not a state. Under [`depth`](getting-started.md#a-theme) neither a lit
-plate nor the divider is outlined, as `segmented`'s chip is not.
-Dimming is not the only carrier of
-counted-ness: counted plates lead with their ordinal, in the app's
-digits, and an uncounted item carries none — an item below the divider
-has no rank, and that absence is the fact assistive tech hears, so no
-plate ever spells "not counted" in words the library would have to own
-in every language ([accessibility.md](accessibility.md#derivation)).
+own caption and not a state — and it is pressable all the same: Move
+on the divider moves the line. Under [`depth`](getting-started.md#a-theme)
+no row is outlined: a counted row is a lit plate, as `segmented`'s chip
+is, an uncounted one a control well, and the divider bare paper.
+Counted-ness is carried by the ordinal and the position, not by ink:
+counted rows lead with their ordinal, in the app's digits, and an
+uncounted item carries none — an item below the divider has no rank,
+and that absence is the fact assistive tech hears, so no row ever
+spells "not counted" in words the library would have to own in every
+language ([accessibility.md](accessibility.md#derivation)).
 
 One tab stop. ↑/↓ move a cursor between slots without committing
-anything; Space and Enter press the cursor's button; Esc disarms;
-leaving by Tab disarms — an armed button whose partner press can no
+anything; Space and Enter press the cursor's row; Esc disarms;
+leaving by Tab disarms — an armed row whose partner press can no
 longer come from the keyboard is a promise nothing on screen can keep.
-Tapping a plate only moves the cursor there. A pinned divider is no
-stop at all: the cursor steps over it, a tap on its empty button lands
-on the slot above, and its words reach assistive tech as a caption
-inside the group instead — the cut it marks is audible from the ranks
-anyway, since the first item read without one is the first below the
-line. `cursor` and `armed` are
-the device's own state, written by input and read by both substrates,
-and `append` refuses them set by hand (`error.InputOwnedField`), so an
-app cannot build a screen that opens mid-swap. A `reload` inside
-`on_swap` carries the cursor slot the way it carries a text field's
-caret ([routing.md](routing.md)), vetted against the rebuilt device's
-slot count.
+A tap anywhere on a row presses it. A pinned divider is no stop at
+all: the cursor steps over it, a tap on its row lands on the slot
+above, and its words reach assistive tech as a caption inside the
+group instead — the cut it marks is audible from the ranks anyway,
+since the first item read without one is the first below the line.
+`cursor` and `armed` are the device's own state, written by input and
+read by both substrates, and `append` refuses them set by hand
+(`error.InputOwnedField`), so an app cannot build a screen that opens
+mid-swap. A `reload` inside `on_swap` carries the cursor slot the way
+it carries a text field's caret ([routing.md](routing.md)), vetted
+against the rebuilt device's slot count.
 
 **What assistive tech gets is the device and every slot in it.** The
 element is one node — a group named by the label, valued by the slot
 the cursor stands on and described by that slot's rank, which is what a
 keyboard reader hears change under ↑/↓ — and each slot is a child
-control of its own: a button named by the plate's words, carrying the
-plate's rank as its value, announced armed while it is the armed one
-and off where the band rules it out. A slot is pressable and is never a
-focus stop, because the device is the stop and the cursor is what moves
-inside it; a pinned divider's slot is a caption rather than a control,
-since there is no button to press. The keyboard contract above is the
-whole of what is announced: there is no "move up" action, because the
-device has no such verb — a move is two presses, arm and release.
+control of its own, sitting on its row's rect: a button named by the
+row's words, carrying the row's rank as its value, announced armed
+while it is the armed one and off where the band rules it out. The
+verb is not in the name: it is what the armed state and the keyboard
+contract already say. A slot is pressable and is never a focus stop,
+because the device is the stop and the cursor is what moves inside it;
+a pinned divider's slot is a caption rather than a control, since
+there is nothing to press. The keyboard contract above is the whole of
+what is announced: there is no "move up" action, because the device
+has no such verb — a move is two presses, arm and release.
 Counted-ness reaches a reader as the rank's presence and nothing else,
 and the divider's own sentence is read where it sits
 ([accessibility.md](accessibility.md#derivation)).
@@ -1950,14 +1956,14 @@ the band rules out is disabled and takes no press, and the audit's
 is nothing left for a reason to describe. A rule the device cannot
 express structurally is the *consumer's* refusal, not the device's
 state: announce it as a [notice](#notice) where the consumer refused,
-and leave the plates saying what they say, which is an order.
+and leave the rows saying what they say, which is an order.
 
 `disabled` turns the whole device off — one flag for one tab stop,
 like `radio_group`'s. It draws in the [shared off
 vocabulary](#turning-a-control-off-disabled): the label, the ranks and
-the words recede, the lit plates and the buttons give up their state
-edge, an armed button stays armed under the muted pair. Plate fills
-and the divider's grouping edge do not move: an order is a value, and
+the words and the verbs recede, the rows give up their state edge,
+an armed row stays armed under the muted pair. Row fills and the
+divider's grouping edge do not move: an order is a value, and
 it stays legible after it stops being changeable.
 
 The construction errors, by name: `error.RankingNeedsTwoOptions`,
@@ -3025,7 +3031,11 @@ them on `.g10`, outlined in `mid` and lettered in `.ink` — `mid` rather
 than the `.g6` other chips use, because `.g6` is 2.7:1 against `.g10`,
 under the 1.4.11 floor, and `mid` is the lightest tone that clears it
 on both of the chip's sides. Under [`depth`](getting-started.md#a-theme) the current
-plate has no edge and climbs to `.g9` in dark. The current item is exposed as
+plate has no edge and climbs to `.g9` in dark, and in light every plate
+in the row — each destination, current or not, the `nav_here`, the
+collapsed chip and the notices indicator — casts a card's shadow rather
+than a control's: with no track under it, a plate is a small card over
+the page. The current item is exposed as
 `aria-current`; consumers never manage selected state. Activating an
 item **pushes** its destination, so crossing the nav leaves a way back
 to the screen you crossed from ([routing.md](routing.md)); activating

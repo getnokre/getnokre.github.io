@@ -288,11 +288,11 @@
 :root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 :root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); height: var(--border); background: var(--rule); }
 :root[data-nokre-theme="depth"] .tiles > .tile:has(> .icon.square) + .tile:not(.radio)::before { inset-inline-start: 44px; }
-:root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit, :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
-:root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit, :root[data-nokre-theme="depth"] .ranking.off .plate.lit, :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
+:root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
+:root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .ranking.off .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle::after { box-shadow: var(--control-shadow); }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .swap:not([aria-pressed="true"], .gone), :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .swap:not([aria-pressed="true"], .gone), :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked)::after { background: var(--knob); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked):is(:disabled, [aria-disabled="true"])::after { background: var(--knob-off); }
 :root[data-nokre-theme="depth"] .meter-track, :root[data-nokre-theme="depth"] .diverging-track, :root[data-nokre-theme="depth"] .btn.secondary .btn-track { background: var(--g10); border-color: transparent; }
@@ -310,7 +310,14 @@
 @media (max-width: 560px) {
   :root[data-nokre-theme="depth"] .picker.above-nav { box-shadow: var(--card-shadow); }
   :root[data-nokre-theme="depth"] .chip.current { background: var(--chosen-fill); border-color: transparent; }
+  :root[data-nokre-theme="depth"] .chip { position: relative; }
+  :root[data-nokre-theme="depth"] .chip::before { content: ""; position: absolute; inset: calc(-1 * var(--border)); border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
+  :root[data-nokre-theme="depth"] .nav-row { padding-block: 20px; margin-block: -20px; pointer-events: none; }
+  :root[data-nokre-theme="depth"] .nav-row > * { pointer-events: auto; }
 }
+:root[data-nokre-theme="depth"] .nav-row { isolation: isolate; }
+:root[data-nokre-theme="depth"] .nav-indicator .icon-button, :root[data-nokre-theme="depth"] .nav-row > .icon-button { position: relative; }
+:root[data-nokre-theme="depth"] .nav-indicator .icon-button::before, :root[data-nokre-theme="depth"] .nav-row > .icon-button::before { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
 
 /* ---- reset ------------------------------------------------------ */
 
@@ -1605,44 +1612,48 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .ctl:not(.busy) input.toggle:checked:disabled::after,
 .ctl:not(.busy) input.toggle:checked[aria-disabled="true"]::after { background: var(--g11); }
 
-/* The ranking device: plates on the leading side, swap buttons on
-   the trailing side, one row per slot (`rankingPlateRect`,
-   `rankingButtonRect`). Block flow under the legend for the
+/* The ranking device: one column, one row per slot, and the row is
+   the button (`rankingRowRect`). Block flow under the legend for the
    fieldset reason in the reset. `1fr` rows in an auto-height grid
    all take the tallest row's size, which is how this substrate gives
-   every item plate the one height `rankingRows` measures for them —
-   so a plate keeps its row's height whichever slot it is swapped
-   into. The divider's row is the `auto` track the serializer writes
-   into `grid-template-rows`: it sizes to its own sentence, which is
-   what keeps a locale that spends more words on it from making every
-   plate that tall. */
+   every item row the one height `rankingRows` measures for them —
+   so a row keeps its height whichever slot it is swapped into. The
+   divider's row is the `auto` track the serializer writes into
+   `grid-template-rows`: it sizes to its own sentence, which is what
+   keeps a locale that spends more words on it from making every
+   row that tall. */
 .ranking > .ranking-rows {
   margin-top: var(--input-label-gap);
   display: grid;
   grid-auto-rows: 1fr;
   gap: var(--ranking-gap);
 }
-.ranking-row { display: flex; gap: var(--ranking-gap); align-items: stretch; }
 /* Padded like a tile row, with the border drawn *on* that box the
    way the reference strokes a rect from the inside — transparent
-   where a plate has no edge, so the words stand on one column
-   whichever look the plate wears. */
+   where a row has no edge, so the words stand on one column
+   whichever look the row wears. A button stripped to that box: the
+   reset already hands it the page's type and ink. */
 .plate {
-  flex: 1;
+  appearance: none;
+  margin: 0;
+  width: 100%;
   min-width: 0;
   min-height: var(--touch);
   display: flex;
   align-items: flex-start;
+  text-align: start;
   padding: calc(var(--tile-pad-v) - var(--border)) calc(var(--tile-pad-h) - var(--border));
   border: var(--border) solid transparent;
   border-radius: var(--radius);
 }
-/* Lit is the selected chip's pair, off is the track's, and the
-   divider is a caption inside a grouping edge (renderer.zig,
-   `drawRanking`). */
+/* Lit is the selected chip's pair, off is the unchecked box's —
+   ink words, because the row is the button and dim words on a
+   button say "off" — and the divider is a caption inside a grouping
+   edge (renderer.zig, `drawRanking`). Armed is ink to its edge. */
 .plate.lit { background: var(--paper); border-color: var(--g6); color: var(--ink); }
-.plate.off { background: var(--g11); color: var(--dark); }
+.plate.off { background: var(--g11); border-color: var(--g6); color: var(--ink); }
 .plate.cut { background: var(--paper); border-color: var(--g10); color: var(--dark); }
+.plate[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 /* `--ord-band` is the measured width the serializer wrote
    (`rankingOrdinalBand`), gap included: the rank ends a marker gap
    short of the words, as a list marker does, so a two-digit rank
@@ -1655,39 +1666,39 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
   text-align: end;
 }
 .ranking-words { flex: 1; min-width: 0; overflow-wrap: break-word; }
-/* A bare glyph on the track fill, as tall as its plate and as wide
-   as a touch target; the glyph is the 24px one `drawGlyph` draws,
-   sized as the icon button's is. */
-.swap {
+/* `--verb-band` is the measured width the serializer wrote
+   (`rankingVerbBand`): the widest of the three words, the glyph, and
+   a marker gap on each side of the word — one width for every row
+   and every state, so the words never rewrap when the verb changes.
+
+   A line of the body scale, not a small-scale flex box: the small
+   word stands on the body line's baseline, level with the rank and
+   the words' first line, and the glyph fills that line and is
+   centred in it, as the reference draws them (`drawRanking`). Inline
+   rather than flex for the baseline, which is also why the order is
+   `isolate`d to the app's direction rather than left to the word's
+   own script: the glyph is an atomic inline, a neutral, so it falls
+   on the trailing side in either direction — `plaintext` would put
+   it on the right of a Latin word in a right-to-left app. */
+.plate > .verb {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch);
-  padding: 0;
-  background: var(--g11);
-  border: var(--border) solid var(--g6);
-  border-radius: var(--radius);
-  color: var(--ink);
+  width: var(--verb-band);
+  text-align: end;
+  white-space: nowrap;
+  unicode-bidi: isolate;
 }
-.swap .icon { font-size: var(--icon-glyph); width: var(--icon-glyph); height: var(--icon-glyph); }
-/* Armed is ink to its edge. A slot the band rules out is gone the
-   way the reference leaves it: nothing painted, the page showing
-   through — but the element stays, still a focusable stop with
-   `aria-disabled` on it (serialize.zig), which `visibility` or
-   `display` would take away. */
-.swap[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.swap.gone { background: transparent; border-color: transparent; color: transparent; }
-/* Off: the shared vocabulary (`renderer.disabled_ink`) — words and
-   the armed fill to `--g6`, the glyph on it to `--g11`, state edges
-   to `--g10`. Plate fills and the divider's grouping edge stay.
-   `.off` is a stand-in's scope, spelled as a class because the
-   band already spends `aria-disabled` on a gone slot. */
+.verb-word { font-size: var(--px-small); line-height: var(--lh-small); }
+.verb .icon { font-size: var(--icon-glyph); width: var(--icon-glyph); margin-inline-start: var(--list-marker-gap); }
+/* Off: the shared vocabulary (`renderer.disabled_ink`) — words,
+   ordinal and verb to `--g6`, the armed fill to `--g6` with its
+   words to `--g11`, state edges to `--g10`. Plate fills and the
+   divider's grouping edge stay. `.off` is a stand-in's scope,
+   spelled as a class because the band already spends
+   `aria-disabled` on a ruled-out slot. */
 .ranking[disabled] .field-label, .ranking.off .field-label,
 .ranking[disabled] .plate, .ranking.off .plate { color: var(--g6); -webkit-text-fill-color: var(--g6); }
-.ranking[disabled] .plate.lit, .ranking.off .plate.lit,
-.ranking[disabled] .swap:not(.gone), .ranking.off .swap:not(.gone) { border-color: var(--g10); }
-.ranking[disabled] .swap[aria-pressed="true"], .ranking.off .swap[aria-pressed="true"] { background: var(--g6); border-color: var(--g6); color: var(--g11); }
+.ranking[disabled] :is(.plate.lit, .plate.off), .ranking.off :is(.plate.lit, .plate.off) { border-color: var(--g10); }
+.ranking[disabled] .plate[aria-pressed="true"], .ranking.off .plate[aria-pressed="true"] { background: var(--g6); border-color: var(--g6); color: var(--g11); -webkit-text-fill-color: var(--g11); }
 
 /* The dial: one vertical column at the leading edge, a step button
    above and below it (`dialButtonRect`, `dialPlateRect`). Block
@@ -2144,15 +2155,15 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .field-box:has(:focus-visible),
 .tile:focus-visible,
 .picker-item:focus-visible,
-.swap:focus-visible,
+.plate:focus-visible,
 .btn.secondary:focus-visible {
   outline: var(--focus) solid var(--ink);
   outline-offset: calc(-1 * var(--focus));
 }
 .field-box:has(:focus-visible) { border-color: var(--ink); }
-/* An armed button is already ink to its edge, so the indicator on
+/* An armed row is already ink to its edge, so the indicator on
    its edge would vanish: it steps outside, the default clear. */
-.swap[aria-pressed="true"]:focus-visible { outline-offset: var(--focus-clear); }
+.plate[aria-pressed="true"]:focus-visible { outline-offset: var(--focus-clear); }
 .btn.secondary:focus-visible { border-color: transparent; }
 
 /* Where the row is the control, the row is what carries the

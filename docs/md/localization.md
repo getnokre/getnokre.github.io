@@ -497,6 +497,7 @@ plus the field camel-cased at its underscores:
 | `paste` / `select_all` | `chromePaste` / `chromeSelectAll` |
 | `regions` | `chromeRegions` |
 | `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` |
+| `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` |
 
 A catalog missing one of them does not compile — the posture the rest
 of this document already holds, a catalog mistake is a build error,

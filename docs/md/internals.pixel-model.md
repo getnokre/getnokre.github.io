@@ -194,8 +194,8 @@ nothing — or, for the ground, the flat `paper` a clear would — under eink.
   device space. Eink's page is still a `clear(.paper)`, so every eink
   frame is the bytes it was before depth existed.
 - **The drop shadow** (`dropShadow`, `color.dropShadow`), which depth
-  light casts under a card and, smaller, under a control's lit plate,
-  knob or field plate. Its coverage is nokre's too (`canvas.ShadowMask`): a smoothstep
+  light casts under a card and every plate in the nav's row and, smaller,
+  under a control's lit plate, knob or field plate. Its coverage is nokre's too (`canvas.ShadowMask`): a smoothstep
   of each device pixel's distance to the rounded box, integer throughout,
   shipped to the shim as a nine-patch of coverage tiles. Black
   composited at that coverage, so it can only darken.
