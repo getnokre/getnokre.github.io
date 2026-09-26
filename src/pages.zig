@@ -206,6 +206,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.gpu",
+        .title = .titleInternalsGpu,
+        .blurb = .blurbInternalsGpu,
+        .icon = .lucide_cpu,
+        .md = "internals/gpu.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.skia-build",
         .title = .titleInternalsSkiaBuild,
         .blurb = .blurbInternalsSkiaBuild,

@@ -57,8 +57,9 @@ platform's edge on purpose (the section below). On the web the tree is
 rendered as markup and the browser draws it, which trades these bytes for
 an accessibility tree that is the page rather than a copy of it
 ([internals/dom-substrate.md](internals/dom-substrate.md)).
-Layout is integer math; rendering has no GPU, no hinting, no subpixel
-tricks. Screenshots are therefore *tests* — byte-exact, no tolerance, no
+Layout is integer math; rendering has no hinting and no subpixel
+tricks, and the promised bytes are the CPU raster's (a GPU-drawn `lamp`
+frame is the driver's — the refusal below). Screenshots are therefore *tests* — byte-exact, no tolerance, no
 perceptual diffing. The normative rules are
 [internals/pixel-model.md](internals/pixel-model.md).
 
@@ -239,9 +240,18 @@ framework cannot express them.
   across machines is gone. Shaping and bidirectional layout are built
   in the same spirit: HarfBuzz pinned in the shim, UAX #9 in core,
   direction derived from the text itself — never a knob.
-- **No GPU.** CPU rasterization only. No driver variance, no flicker,
-  no capability matrix — the same bytes everywhere is only promisable
-  when no driver is involved.
+- **No GPU — reversed for `lamp`, and for nothing else.** The refusal
+  was CPU rasterization only: no driver variance, no flicker, no
+  capability matrix, because the same bytes everywhere is only
+  promisable when no driver is involved. On 2026-09-26 the owner
+  reversed it for the `lamp` theme, whose per-pixel light over a
+  full-Retina window outruns the CPU — 6 ms a scroll frame at
+  1440×900@2, and not smooth at full screen where depth is — and whose
+  effects are not to be reduced to fit. What stays: the CPU raster path
+  remains in every build, eink and depth stay CPU-exact, the CPU path
+  stays the golden oracle, and a GPU frame is compared only base-vs-head
+  on its own driver. [internals/gpu.md](internals/gpu.md) records the
+  decision and the proof it waits on.
 - **No fractional scaling.** Layout is integer logical pixels; hidpi is
   an integer scale factor, so a 2× frame is exactly the 1× frame at
   double density. Fractional coordinates are where "looks slightly

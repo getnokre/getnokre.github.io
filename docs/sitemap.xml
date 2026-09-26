@@ -88,6 +88,10 @@
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.dom-substrate/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.dom-substrate/"/>
 </url>
+<url><loc>https://getnokre.github.io/en/internals.gpu/</loc>
+<xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.gpu/"/>
+<xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.gpu/"/>
+</url>
 <url><loc>https://getnokre.github.io/en/internals.skia-build/</loc>
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.skia-build/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.skia-build/"/>

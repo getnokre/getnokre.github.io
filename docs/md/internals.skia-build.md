@@ -1,9 +1,12 @@
 # Skia: dependency strategy
 
-nokre uses Skia strictly as a CPU rasterizer behind a ~15-function C shim
-([shim/nokre_skia.h](../../shim/nokre_skia.h)). No GPU backends, no SkSL,
-no PDF, no animation modules — the shim is the entire contract, which is
-what makes swapping or shrinking Skia later a contained problem.
+nokre uses Skia as a rasterizer behind a ~15-function C shim
+([shim/nokre_skia.h](../../shim/nokre_skia.h)). No PDF, no animation
+modules — the shim is the entire contract, which is what makes swapping
+or shrinking Skia later a contained problem. Every default build is CPU
+raster only; the one GPU backend, Ganesh on Metal for the `lamp` theme,
+is a separate archive built below and linked only under `-Dgpu`
+([gpu.md](gpu.md) records why).
 
 ## Today: prebuilts
 
@@ -47,6 +50,32 @@ satisfies it (shared with Android's build);
 [shim/nokre_skia_ios_stub.cpp](../../shim/nokre_skia_ios_stub.cpp)
 adds the one other symbol Apple's static linker demands. Both are
 definitions that must never run; the rationale for each is in the file.
+
+## macOS with Metal: the GPU build
+
+The reversed GPU refusal ([gpu.md](gpu.md)) needs a macOS archive with
+Metal in it, and the aseprite prebuilt has Ganesh on OpenGL only.
+`tools/build-skia-macos.sh` compiles the same pinned tag from the same
+source checkout (`deps/skia-ios-src`, cloned at the tag if absent) into
+`deps/skia-macos-gpu/lib/libskia.a`, with that checkout's `include/`
+beside it in `deps/skia-macos-gpu/include/` — its own directory, so the
+CPU prebuilt in `deps/skia` is untouched and every default build keeps
+linking it. The gn args are the iOS profile with one backend switched
+on: `target_os="mac"`, `target_cpu="arm64"`, `is_official_build=true`,
+`skia_enable_ganesh=true` and `skia_use_metal=true`; Graphite, OpenGL,
+Vulkan, ANGLE and Dawn off; no ICU, no expat, no codecs, no zlib, no
+FreeType, no HarfBuzz or shaping modules, no PDF, SVG or Skottie.
+CoreText supplies fonts, as it does for the prebuilt. Metal is a system
+framework, so the build still needs no third-party checkouts; it takes
+a few minutes on Apple Silicon and refuses an Intel Mac, whose shell
+could not link an arm64 archive.
+
+`tools/fetch-deps.sh` does not run it, the same as the iOS and Android
+builds: fetch-deps fetches published archives, and this one is built
+locally until the release artifacts below exist. What will link it is
+`-Dgpu` in build.zig — the shim's GPU half, the GPU archive, Metal and
+QuartzCore — which is the next step of the proof plan and **not built
+yet**; today nothing links `deps/skia-macos-gpu`.
 
 ## The web builds no Skia at all
 

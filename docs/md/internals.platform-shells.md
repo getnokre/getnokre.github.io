@@ -584,7 +584,24 @@ and a shell at rest runs none.
 ## macOS specifics
 
 [macos/shell.m](../../src/platform/macos/shell.m)'s text-system half is
-above, beside the other shells'. Its scrolling:
+above, beside the other shells'. Its presenter and its scrolling:
+
+- **The presenter.** The view hosts its own layer and never draws in
+  `drawRect:`. A frame is `on_frame`'s buffer copied into one of three
+  `IOSurface`s (swizzled to BGRA on the way) and handed to the layer as
+  its contents, which CA composites at nearest-neighbour; the surface on
+  screen is never written. It copies rather than rasterising into the
+  surface through `render_into`, because `on_frame`'s buffer is the one
+  that persists and so the one a partial frame can be rasterised into
+  ([pixel-model.md](pixel-model.md), "Partial frames"). Frames are paced
+  by the **frame clock**, a display link on the window's display: an
+  event or a request only owes a frame, and the next tick draws at most
+  one and commits it at once. The clock runs while frames are owed or a
+  band comes home, and stops `kNokreFrameClockLinger` idle ticks
+  later; a resize draws synchronously instead, in
+  the transaction that resizes the window. Raster is still on the main
+  thread, inside the tick. `NOKRE_FRAME_LOG=1` prints each frame's
+  raster, present (copy and commit) and interval to stderr.
 
 - **The scroll bar.** The presentation is AppKit's preferred scroller
   style — overlay is `indicator`, legacy is `interactive` — stated at
@@ -597,8 +614,8 @@ above, beside the other shells'. Its scrolling:
   answer changes (read from the macOS 26.6 AppKit binary). The setting's
   path was observed firing on macOS 26.6; a mouse plugged in under
   "Automatically" was not. The bit follows shell.h's rule beside
-  `on_scroll_indicator`: a push only owes it, and the top of `drawRect:`
-  states it before `on_frame`. The clock's length is AppKit's own,
+  `on_scroll_indicator`: a push only owes it, and the top of
+  `drawFrameFlushing:` states it before `on_frame`. The clock's length is AppKit's own,
   measured (`kNokreScrollBarHold`). The pointer stream is always sent, so
   a thumb drag needs nothing of its own: AppKit delivers a press's drags
   and release to the view that took it, outside the window included.
@@ -616,8 +633,8 @@ above, beside the other shells'. Its scrolling:
   the fling, pulled until its impact and swallowed from there to its
   own `Ended`. A lift with no band showing waits for momentum to begin
   before END (why, and how long, is beside `releaseAt:`). The recall
-  ticks on a display link that exists only while a recall runs (which
-  one is beside `startRecallClock`). A click or a secondary click that
+  ticks on the frame clock, its step taken before that tick's frame is
+  drawn (the fallback without a display is beside `startRecallClock`). A click or a secondary click that
   lands on the band, or on momentum still running, is refused down to
   its release. Two events AppKit can fail to send are covered: fingers
   unheard for `kNokreFingerSilence` are taken as lifted, and a momentum

@@ -512,11 +512,12 @@ and 6.3): the per-pixel loops are lamp_pixels.zig, compiled at
 ReleaseFast into every build as the Skia shim is (build.zig's
 `addLampPixels`). Before that, a Debug scroll frame took 98 ms.
 
-**The CPU is measured on a real phone before a GPU substrate is
-discussed.** That is the owner's position: the counts above are
-arithmetic and the timings a desktop's, not a phone's, and the GPU is
-one of nokre's refusals
-([introduction.md](../introduction.md#what-nokre-refuses-to-do)).
+**The CPU did not keep up, so lamp moves to the GPU.** The window
+scroll's 6 ms at 1440×900@2 is the measurement that decided it: at full
+screen, where depth scrolls smoothly, lamp visibly does not, and the
+effects are not to be reduced to fit. The owner reversed the GPU
+refusal for this theme on 2026-09-26; the decision, what stays on the
+CPU, and the proof it waits on are [gpu.md](gpu.md).
 
 ## What the end user sees
 
