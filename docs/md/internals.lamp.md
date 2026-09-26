@@ -318,17 +318,36 @@ blurred, instead of an opaque fill — and so are the notices indicator,
 a notice banner, the notices pane and a picker. A banner and the
 indicator frost as nav plates do, the panes as a sheet does.
 
-- **Blur.** The frame beneath the plate, read out to three radii
-  around it, blurred by three passes of a separable integer box blur —
-  close to a Gaussian, deterministic, and nokre's own arithmetic rather
-  than Skia's, whose blur would be its pixels. Each pass sums the
-  `(2r+1)²` box around a pixel, its indices clamped into the frame (so
-  the frame's edges are replicated, pass by pass), and divides once,
-  rounding; the values between passes are bytes in 8.8 fixed point.
-  Radius 9 logical px for nav plates and 12 for a sheet, times the
-  scale. Two scales are mixed, 65% of the wide blur and 35% of one at a
-  third of the radius, so the shapes passing beneath keep structure
-  instead of turning to fog.
+- **Blur.** The frame beneath the plate blurred by three passes of a
+  separable integer box blur — close to a Gaussian, deterministic, and
+  nokre's own arithmetic rather than Skia's, whose blur would be its
+  pixels — at half resolution. The frame is first averaged 2×2 into a
+  half frame, each value the four bytes' mean in 8.8 fixed point
+  exactly. Each pass sums the `(2r+1)²` box around a half pixel, its
+  indices clamped into the half frame (so its edges are replicated,
+  pass by pass), and divides once, rounding; the values between passes
+  stay 8.8. The result is sampled back to every device pixel
+  bilinearly — a device pixel's centre lies a quarter of a half pixel
+  from the nearest one's, so the weights are ¼ and ¾ — with the half
+  plate's edge samples replicated and one rounding. Radius 9 logical px
+  for nav plates and 12 for a sheet, times the scale, halved at half
+  resolution; two scales are mixed, 65% of the wide blur and 35% of one
+  at a third of the radius (halved, at least 1), so the shapes passing
+  beneath keep structure instead of turning to fog. The read reaches
+  twice the three half radii, plus two device pixels, past the plate
+  (`Glass.reach`).
+
+  The full-resolution blur is the reference, and stays in the code as
+  `lamp.frostBlur`: at 2× and 3× the half-resolution frost is within two
+  bytes of it — over a kitchen sink frame about one byte in ten moves by
+  one and one in ten thousand by two — and at 1×, where the fine radius
+  halves to a single pixel, within four (lamp_test holds both on a
+  deliberately harsh frame). Away from the frame's edge, that is: there
+  the half frame replicates the mean of the edge pixel and its
+  neighbour, where the full one replicated the edge pixel alone, and a
+  hairline on the window's very edge moves the frost beside it further.
+  The half resolution halves the frost's time; its bytes are the
+  goldens'.
 - **Gain and tint.** The mix is lifted by a gain of 1.35 (capped at
   255), so what shows through reads as light, and shown through a paper
   tint at 58% coverage — `g9` for the chosen nav plate.
@@ -442,31 +461,61 @@ At 3× on a phone, per scroll frame unless stated:
 
 | Op | Cost | Note |
 | --- | --- | --- |
-| Rim | ≈7 KB per plate | four edge strips, four corner tiles |
-| Face | ≈12 KB per plate | two strips, each a row or a column and four corner tiles |
-| Shadow | ≈9 KB per caster | the nine-patch depth light uses today |
+| Rim | ≈7 KB per page plate | four edge strips, four corner tiles |
+| Face | ≈12 KB per page plate | two strips, each a row or a column and four corner tiles |
+| Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
+| Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
 | Ground pool | one ≈3 MB tile per viewport change | kept by the surface across frames, then the same blit as today |
 | Edge lights | none of their own | a term in the rim's one mask |
-| Frost, nav | ≈6 M adds | two blurs over one 390×48 bar, or three plates across it; per scroll frame |
-| Frost, sheet | ≈49 M adds once per open | two blurs over a full-width 560-tall sheet; kept while the sheet is up |
+| Frost, nav | ≈1.5 M adds | two half-resolution blurs under one 390×48 bar; per scroll frame |
+| Frost, sheet | ≈12 M adds once per open | two half-resolution blurs under a full-width 560-tall sheet; kept while the sheet is up |
 
 Everything but the frost is a tile nokre computes and the shim samples
-nearest in device space, the path depth's three ops already take. The
-frost is the one op whose cost scales with what it covers and recurs
-per scroll frame. Its counts are derived, at 3× in a 390×844 window:
-a pass is a running sum across then down, two adds a value plus `2r+1`
-to start each row and column, computed only where the next pass reads
-(the plate out to `2r`, then `r`, then the plate). A 1170×144 bar at
-`r = 27` is 3.4 M adds for the wide blur and 2.5 M for the fine one at
-`r = 9`; three 390-wide plates across it, 6.4 M. A 1170×1680 sheet at
-`r = 36`, clamped by the window's sides and bottom, is 25.0 M and 24.0
-M at `r = 12`. The earlier ≈28 M counted one blur. On top of the blurs,
-each plate pixel is hashed once and mixed — 0.17 M pixels for the bar,
-2.0 M for the sheet — and the scratch is ≈2.6 MB and ≈19 MB.
+nearest in device space, the path depth's three ops already take. A
+plate on the page moves with every scroll frame, so its tiles are
+filled again each frame it shows — and only then: a mask the frame or
+its clips cannot show is never given tiles. Chrome stands where the
+window puts it, so the shim keeps its masks (the last 32) under a key
+of every input its bytes are a function of — the rect, radius,
+material, finish, window, scale, look and edge lights — and a frame
+that asks for the same key fills nothing (canvas_skia.zig's
+`ChromeKey`; skia_test flips each input and holds the kept bytes to a
+fresh fill's).
+
+The frost is the one op whose cost scales with what it covers and
+recurs per scroll frame. Its counts are derived, at 3× in a 390×844
+window: a pass is a running sum across then down, two adds a value
+plus `2r+1` to start each row and column, computed only where the next
+pass reads (the plate out to `2r`, then `r`, then the plate). At full
+resolution a 1170×144 bar at `r = 27` was 3.4 M adds for the wide blur
+and 2.5 M for the fine one at `r = 9`, and a 1170×1680 sheet at
+`r = 36`, clamped by the window's sides and bottom, 25.0 M and 24.0 M
+at `r = 12`. At half resolution the same bar is 0.85 M and 0.62 M at
+`r = 13` and `4`, the sheet 6.2 M and 6.0 M at `18` and `6`, plus
+four reads a half pixel for the 2×2 mean (0.36 M, 2.1 M). On top of
+the blurs, each plate pixel is still sampled, hashed once and mixed at
+full resolution — 0.17 M pixels for the bar, 2.0 M for the sheet.
+
+Measured on an M4 Mac with `zig build bench-lamp -Dskia`, the kitchen
+sink in lamp dark, mean ms per frame (every one a whole frame):
+
+| Scene | 1440×900@2 | 390×844@3 |
+| --- | --- | --- |
+| Window scroll | 6.3 | 3.7 |
+| Sheet open | 12.7 | 13.4 |
+| Scroll inside the sheet | 8.9 | 8.1 |
+| Focus move | 10.5 | 9.8 |
+| The sheet's frost alone | 7.5 | 11.2 |
+
+A Debug build is within a few milliseconds of those (window scroll 8.2
+and 6.3): the per-pixel loops are lamp_pixels.zig, compiled at
+ReleaseFast into every build as the Skia shim is (build.zig's
+`addLampPixels`). Before that, a Debug scroll frame took 98 ms.
 
 **The CPU is measured on a real phone before a GPU substrate is
-discussed.** That is the owner's position: the numbers above are
-arithmetic, not timings, and the GPU is one of nokre's refusals
+discussed.** That is the owner's position: the counts above are
+arithmetic and the timings a desktop's, not a phone's, and the GPU is
+one of nokre's refusals
 ([introduction.md](../introduction.md#what-nokre-refuses-to-do)).
 
 ## What the end user sees
