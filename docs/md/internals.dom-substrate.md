@@ -1059,6 +1059,17 @@ eink app no `data-nokre-theme` (`class_names.theme_attr`), so the
 sheet's unkeyed rules are eink's and depth's (`writeDepth`) carry one
 attribute test more.
 
+A third theme resolves before it reaches the attribute: `lamp` is drawn
+by nokre's own arithmetic over a frame only the Skia substrate owns
+([lamp.md](lamp.md#skia-only)), so here it is depth, explicitly —
+`class_names.themeValue(.lamp)` spells `depth`, and the sheet has no
+lamp block for the attribute to select. For the same reason this
+substrate emits no Reduce Transparency row in
+[`accessibility_toggles`](../elements.md#accessibility_toggles): its
+only effect is lamp to depth, which has already happened. Whether the
+browser could draw lamp its own way is
+[../explorations/frosted-dom.md](../explorations/frosted-dom.md).
+
 Each is read back out of core rather than decided here. The OS
 appearance goes *in* through `nokre_dom_system_appearance`, the same
 report `on_appearance` makes on every native shell, and what comes back

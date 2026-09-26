@@ -29,7 +29,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | Path | Responsibility |
 | --- | --- |
 | [src/core/geometry.zig](../../src/core/geometry.zig) | `Point`, `Size`, `Rect` — integers only |
-| [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted steps, and the four ramps (`Theme` × `Appearance`) that give them bytes; depth's page ground, drop shadow and scrim veil, which no element authors ([pixel-model.md](pixel-model.md)) |
+| [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted steps, and the four ramps (`Theme` × `Appearance`, lamp reading depth's) that give them bytes; depth's page ground, drop shadow and scrim veil, which no element authors ([pixel-model.md](pixel-model.md)) |
 | [src/core/text.zig](../../src/core/text.zig) | families, type scale, `Measurer` interface |
 | [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
@@ -56,6 +56,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/nav.zig](../../src/core/nav.zig) | the nav roster (plus the current screen when it is off it) and its two shapes: row of items → collapsed chip |
 | [src/core/desk.zig](../../src/core/desk.zig) | a desk's own chrome: the region switcher a window too narrow to stand the band offers instead ([../elements.md](../elements.md)) |
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
+| [src/core/accessibility_toggles.zig](../../src/core/accessibility_toggles.zig) | the rows of `accessibility_toggles`: the reader's Increase Contrast and Reduce Transparency as `toggle`s nokre installs, keeps in step with the look, the medium and the words, and answers the press of ([../accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
 | [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control and its sheet |
 | [src/core/qr.zig](../../src/core/qr.zig) | QR encoding over vendored qrcodegen |
 | [src/core/markdown.zig](../../src/core/markdown.zig) | the `document` element's parser: the Markdown subset, literal degradation of the rest ([../markdown.md](../markdown.md)) |

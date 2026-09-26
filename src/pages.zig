@@ -190,6 +190,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.lamp",
+        .title = .titleInternalsLamp,
+        .blurb = .blurbInternalsLamp,
+        .icon = .lucide_lamp,
+        .md = "internals/lamp.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.dom-substrate",
         .title = .titleInternalsDomSubstrate,
         .blurb = .blurbInternalsDomSubstrate,

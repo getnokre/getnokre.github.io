@@ -67,9 +67,12 @@ fn footer(app: *App) !void {
     try f.segmented(.{
         .label = loc.tr(.footerTheme),
         .options = &.{ loc.tr(.footerThemeEink), loc.tr(.footerThemeDepth) },
-        .selected = switch (app.theme) {
+        // The look the site declared and this switch sets, not the one
+        // drawn: on the DOM substrate lamp is drawn as depth, and it is
+        // not offered here (nokre's docs/internals/lamp.md, "Skia only").
+        .selected = switch (app.look) {
             .eink => 0,
-            .depth => 1,
+            .depth, .lamp => 1,
         },
         .on_select = .bind(selectTheme, app),
     });

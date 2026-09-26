@@ -101,6 +101,13 @@ pub fn resolve(gpa: std.mem.Allocator, dest: []const u8, base: []const u8) Error
 
     const joined = try normalize(gpa, base, path);
     if (routeFor(joined)) |i| return .{ .page = .{ .index = i, .frag = frag } };
+    // An exploration is a question parked with its evidence, not a
+    // decision (nokre's docs/explorations/README.md), and the site
+    // publishes decisions: a link to one goes to the file in the
+    // repository, where its history is part of what it records.
+    if (std.mem.startsWith(u8, joined, "docs/explorations/") and std.mem.endsWith(u8, joined, ".md")) {
+        return .{ .source = .{ .path = joined, .dir = false, .frag = frag } };
+    }
     if (std.mem.startsWith(u8, joined, "docs/") and std.mem.endsWith(u8, joined, ".md")) {
         return error.UnknownRoute;
     }
@@ -243,6 +250,14 @@ test "doc-relative destinations resolve to flat routes" {
         try std.testing.expectEqualStrings(c[2], pages.all[t.page.index].name);
         try std.testing.expectEqualStrings("", t.page.frag);
     }
+}
+
+test "an exploration is a source file, never a page" {
+    var arena = testArena();
+    defer arena.deinit();
+    const t = try resolve(arena.allocator(), "../explorations/frosted-dom.md", "docs/internals");
+    try std.testing.expectEqualStrings("docs/explorations/frosted-dom.md", t.source.path);
+    try std.testing.expect(!t.source.dir);
 }
 
 test "fragments survive resolution" {

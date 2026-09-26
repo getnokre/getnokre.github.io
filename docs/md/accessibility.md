@@ -22,6 +22,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `qr` | `image` | label as name, encoded value carried |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
 | `stack`, `box`, `group` | `group` | — |
+| `accessibility_toggles` | `group` | — ; its rows are the `toggle`s nokre installs, below |
 | `diverging_group` | `group` | nameless: it decides a track width, not a reading |
 | `tile_group` | `group` | description as value |
 | `divider` | `separator` | — |
@@ -408,6 +409,65 @@ committing blind, and screen-reader users never need it: VoiceOver and
 TalkBack have their own back conventions, and the control is there for
 both.
 
+## Increase Contrast and Reduce Transparency
+
+Two preferences belong to the reader rather than the app, and nokre
+owns both. Each is a `Preference` — `auto`, `on` or `off` — resolved
+against an OS signal exactly as `Scheme` resolves against the OS
+appearance: `auto` follows the OS, and `on` or `off` is the reader's
+override from inside the app.
+
+| Preference | On the `App` | Draws, when on | OS signal |
+| --- | --- | --- | --- |
+| Increase Contrast | `contrast`, `setContrast` | `eink` | iOS and macOS Increase Contrast; Windows high contrast; the web's `prefers-contrast: more` |
+| Reduce Transparency | `transparency`, `setTransparency` | `depth` in place of `lamp` | iOS and macOS Reduce Transparency |
+
+Android and Linux report neither signal, and Windows and the web no
+Reduce Transparency — the web draws lamp as depth already — so `auto`
+there means off. A
+shell reports what its OS says through `setSystemContrast(bool)` and
+`setSystemTransparency(bool)`, the way it reports the appearance.
+
+**Which look is drawn.** `App.look` is the look the app declared
+(`addApp`'s `.theme`) and the one `setTheme` sets; `App.theme` is the
+look every draw site reads, resolved in this order:
+
+1. Increase Contrast resolves on → `eink`.
+2. Otherwise, a look of `eink` → `eink`.
+3. Otherwise, Reduce Transparency resolves on → `depth`.
+4. Otherwise, the look: `depth` or `lamp`.
+
+Increase Contrast draws `eink` because eink is the look that holds
+every gate, WCAG 1.4.11 included; Reduce Transparency draws `depth`
+because depth is lamp without its frosted chrome. What each look waives
+is [internals/pixel-model.md](internals/pixel-model.md#the-one-waived-gate).
+A change of either preference, from the OS or the reader, only repaints:
+layout, focus and scroll stand where they were.
+
+**Where the rows are shown.** An app places one
+[`accessibility_toggles`](elements.md#accessibility_toggles) in its
+settings, and nokre fills it with the rows that can change something —
+which depends on the look and the substrate, never on the preferences,
+so a flip never moves a row while a `setTheme` that changes the set
+relays the screen out:
+
+- **Increase Contrast** unless the look is `eink`, where it would draw
+  the frame already drawn.
+- **Reduce Transparency** only when the look is `lamp` *and* the
+  substrate is Skia. On the DOM substrate lamp is already drawn as
+  depth ([internals/lamp.md](internals/lamp.md#skia-only)), so nokre
+  emits no Reduce Transparency row at all: a switch that does nothing
+  is worse than none.
+
+While Increase Contrast is on, Reduce Transparency stays shown — not
+hidden, not disabled. It is still the reader's setting, and it decides
+what the frame is the moment Increase Contrast goes off.
+
+There is no theme picker, and nokre offers none: the look is the app's
+decision and these two are the reader's. nokre persists neither, as it
+persists no `Scheme`; the element hands each flip to the app to keep,
+and the app restores both at boot through the setters.
+
 ## Enforcement
 
 nokre's position is that a consumer should never face an accessibility
@@ -526,6 +586,8 @@ sits inside the readable band — at or above WCAG AA and at or below 16:1
 — on paper in every theme and appearance, that component boundaries
 clear non-text contrast (3:1) in `eink` (`depth` waives WCAG 1.4.11 for
 control boundaries and graphic tracks, keeping text and focus contrast;
+`lamp`, drawn in depth's bytes, waives the same and text contrast on
+its frosted chrome besides;
 choose `eink` where 1.4.11 must hold), and that each dark ramp *eases* text
 rather than mirroring it (an inversion would leave dark exactly as harsh as light, which is the
 wrong answer for the appearance where halation is worse); a test in

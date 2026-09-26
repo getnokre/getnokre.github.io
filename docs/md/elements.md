@@ -1759,6 +1759,49 @@ changeable. The track and knob mute together
 is what `in_progress` does above and for the opposite reason — in flight
 the value is not knowable, and here it is.
 
+### `accessibility_toggles`
+The reader's two accessibility preferences as settings rows, filled by
+nokre: place it once, where your settings live — under a scheme
+control is the natural spot — and nokre decides which rows it holds.
+
+```zig
+try b.accessibilityToggles(.{
+    .on_contrast_toggle = .bind(State.keepContrast, state),
+    .on_transparency_toggle = .bind(State.keepTransparency, state),
+});
+```
+
+**The rows are the ones that can change something.** Increase Contrast
+is there unless the app's look is `eink`; Reduce Transparency only when
+the look is `lamp` and the substrate is Skia — so on the DOM substrate,
+and under a `depth` look, it is never there. Under an `eink` look the
+element holds no rows and draws nothing, so a screen places it without
+asking the look first. Which look each row draws, the OS signal each
+follows and why Reduce Transparency stays shown while Increase Contrast
+is on are [accessibility.md](accessibility.md#increase-contrast-and-reduce-transparency).
+
+**The words are the framework's.** The labels come from `Chrome` like
+the back control's and the dial's, so an app states no words for them
+and a localized app says them with the rest of its chrome
+([localization.md](localization.md#the-frameworks-own-words)).
+
+**nokre installs the rows as toggles and keeps them in sync; you never
+append under it** — the tree refuses a child there
+(`error.AccessibilityTogglesRowsAreNokres`). With no rows it occupies
+no height and writes no markup.
+
+**A flip is applied by nokre and handed to you to keep.** Each row is
+a `toggle`, and flipping one sets the preference on the `App` itself;
+its `ToggleAction` then hands the new value to the app, whose only job
+is to persist it and to restore it at boot through `setContrast` and
+`setTransparency`. nokre persists nothing, as it persists no scheme.
+Either callback may be left unbound.
+
+Everything downstream sees the rows as the `toggle`s they are: a switch
+announced on or off under the framework's label, a 44px row, a focus
+stop each, and the same contrast and target-size gates as a toggle the
+app wrote.
+
 ### `checkbox`
 On/off state as a square check box: `label`, `checked`, `on_toggle`,
 `in_progress`. The same interaction as `toggle` — flipped by

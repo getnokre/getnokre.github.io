@@ -211,8 +211,9 @@ framework cannot express them.
   theme's dark mode is a ramp of its own rather than an inversion of its
   light one, so it can be gentler than light where light-on-dark reads
   heavier — a mirror moves every ratio together and cannot. Four ramps
-  (two themes, two appearances) and no others: a palette you can
-  enumerate is a palette you can prove.
+  (two of the three themes, two appearances; the third, `lamp`, paints
+  over depth's) and no others: a palette you can enumerate is a palette
+  you can prove.
 
   One honest asterisk, framework-drawn: the Google sign-in button's
   multicolour G — a trademark whose owner refuses a gray variant. The
@@ -251,10 +252,12 @@ framework cannot express them.
   elements the framework owns. A styling hook is an accessibility
   loophole. New capability means arguing a new *semantic* element into
   the set — see [elements.md](elements.md). The themes are not that
-  hook. The set is closed too: an app chooses `eink` or `depth` and can
-  define nothing, every theme is held to the same text and focus contrast
-  proofs — `depth` alone waives WCAG 1.4.11 for its control boundaries, and
-  `eink` keeps it ([getting-started.md](getting-started.md#a-theme)) — and a
+  hook. The set is closed too: an app chooses `eink`, `depth` or `lamp`
+  and can define nothing, every theme is held to the same text and focus
+  contrast proofs — `depth` waives WCAG 1.4.11 for its control
+  boundaries, `lamp` waives that and text contrast on its frosted
+  chrome, and `eink` keeps every gate
+  ([getting-started.md](getting-started.md#a-theme)) — and a
   theme changes paint alone — geometry, text positions, the
   accessibility tree, focus order and scroll extents are one across
   themes, and a test fails the build where they are not

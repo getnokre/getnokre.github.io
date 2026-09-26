@@ -365,8 +365,9 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // is all a page with no app behind it has.
   const root = doc.documentElement;
   const dark = matchMedia("(prefers-color-scheme: dark)");
+  const moreContrast = matchMedia("(prefers-contrast: more)");
   const SHAPE = ["", "desk", "desk-narrow"];
-  const THEME = ["", "depth"];
+  const THEME = ["", "depth", "depth"];
   let chromePair = null;
 
   function syncRoot() {
@@ -408,6 +409,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
 
   dark.addEventListener("change", () => {
     nk.nokre_dom_system_appearance(dark.matches ? 1 : 0);
+    frame();
+  });
+  moreContrast.addEventListener("change", () => {
+    nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
     frame();
   });
 
@@ -1147,6 +1152,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // locale is read inside the first `build` (services/locale/web.zig
   // says so at length).
   nk.nokre_dom_system_appearance(dark.matches ? 1 : 0);
+  nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
   // The notification service's worker, and the cold-start tap it may
   // have carried. Registration is after boot deliberately — it is
   // asynchronous either way, and nothing in the first `build` can wait

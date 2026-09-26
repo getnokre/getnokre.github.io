@@ -1518,7 +1518,7 @@ test "settings commit immediately: order flips the list" {
 ### A theme
 
 Appearance is light or dark; the *theme* is the look both are drawn in,
-and nokre owns the whole set: `eink`, the default, and `depth`. You
+and nokre owns the whole set: `eink`, the default, `depth` and `lamp`. You
 choose one and cannot define another
 ([introduction.md](introduction.md#what-nokre-refuses-to-do)). An app
 starts in the theme its build.zig declares:
@@ -1537,7 +1537,9 @@ code runs — the launch screen and window background, the web page's
 is told it a second time ([a driver](#the-fourth-artifact-a-driver)).
 `state.app.setTheme(.eink)` switches it at run time, a control in
 Settings like the scheme above, and a switch only repaints: layout,
-focus and scroll stand where they were.
+focus and scroll stand where they were — except that a screen holding
+[`accessibility_toggles`](elements.md#accessibility_toggles) relays out,
+because its rows follow the look.
 
 What `depth` paints differently: its own ramps, a page that is a
 dithered gradient, raised cards (a shadow in light; a lighter fill in
@@ -1547,6 +1549,21 @@ controls and on a toggle's knob, and an even veil for a scrim. Every screen keep
 and focus contrast proof holds in both; `depth` does not guarantee WCAG
 1.4.11 non-text contrast for its controls' boundaries and tracks, so an
 app that must meet it chooses `eink`.
+
+What `lamp` paints over depth: the same bytes and the same geometry,
+under one light fixed in the window that the page scrolls beneath —
+a pool on the ground, a lit rim, a face and a directional shadow on
+every filled box, and frosted glass for the nav and sheets, in the Skia
+substrate only. Everywhere else, the web's DOM substrate and packaging
+included, a lamp app is drawn as depth. It waives what depth waives,
+and text contrast on its frosted chrome besides; the design and its
+numbers are [internals/lamp.md](internals/lamp.md).
+
+Whatever the look, don't build your own "increase contrast" switch:
+place [`accessibility_toggles`](elements.md#accessibility_toggles) in
+Settings, and nokre gives the reader Increase Contrast and, under
+`lamp`, Reduce Transparency, each following the OS unless the reader
+overrides it ([accessibility.md](accessibility.md#increase-contrast-and-reduce-transparency)).
 
 ## Part 11 — A second language (l10n)
 

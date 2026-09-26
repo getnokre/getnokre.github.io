@@ -25,9 +25,9 @@ normative contract that makes it true.
 The full palette, from [src/core/color.zig](../../src/core/color.zig): thirteen
 steps `g0`–`g12`. A step is a *semantic* position, not a byte — each (theme,
 appearance) pair supplies its own ramp, and a dark one is deliberately not its
-light one reversed. The theme is the look (`eink`, the default, or `depth`;
-choosing one is [getting-started.md](../getting-started.md), "A theme"); it
-changes paint and never a rect.
+light one reversed. The theme is the look (`eink`, the default, `depth` or
+`lamp`; choosing one is [getting-started.md](../getting-started.md), "A
+theme"); it changes paint and never a rect.
 
 | Name | Eink light | Eink dark | Depth light | Depth dark |
 | --- | --- | --- | --- | --- |
@@ -51,6 +51,9 @@ in the rest of this section are eink's. Every text and focus gate they
 illustrate is asserted in all four ramps by color.zig's tests, and text on
 `paper` against both ends of depth's page ground too; the non-text gate on
 control boundaries is asserted in eink alone ("The one waived gate", below).
+`lamp` has no column because it has no bytes of its own: its ramps are
+depth's in both appearances, a proof asserts the equality, and what it
+paints over them is [lamp.md](lamp.md).
 
 Eink's light ramp is thirteen evenly spaced bytes across the full range, `g6` (the
 middle) being the 50-50 gray. `g7` is the one exception: even spacing puts it at
@@ -151,6 +154,32 @@ the waived gates for eink only, and each skip points here. Like the G below,
 this is a recorded reversal of a guarantee rather than a gap; it spends
 nothing an app can author.
 
+#### What lamp waives beside it
+
+`lamp` draws depth's bytes, so it inherits the waiver above whole. It
+adds two of its own, both from its frosted chrome
+([lamp.md](lamp.md#frosted-chrome)), and both owner-decided on the same
+terms:
+
+- **Text on a frosted fill cannot be gated.** A nav plate's or a sheet's
+  fill in lamp is whatever passed beneath it, blurred, lifted and shown
+  through a 58% paper tint, so no proof can name the byte behind a label
+  on it. The bound is known and it is not enough: a `g0` label over a
+  tint of 60% or more would clear AA at the worst case beneath it, and
+  `ink` and `mid` do not. 1.4.3 still holds in every ramp and on every
+  opaque fill; a frosted fill is neither. An app whose chrome text must
+  be gated declares `depth`, and a reader who needs it gated turns on
+  Reduce Transparency or Increase Contrast
+  ([accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)),
+  either of which draws an opaque fill.
+- **The blur reads pixels.** Every other op writes pixels and never
+  reads them; the frost reads the frame beneath it. So it needs a sync
+  point across the shim's raster bands — the rows it reads may belong
+  to another band, and they must be final before it runs — and it grows
+  a damage rect by its reach ([Partial frames](#partial-frames)). The
+  nav's blur runs on every scroll frame; a sheet's runs once per open
+  and is cached, since the page beneath a sheet is still.
+
 ### The one colored artwork
 
 One thing on any nokre screen is not gray: the multicolour G on the
@@ -206,11 +235,20 @@ nothing — or, for the ground, the flat `paper` a clear would — under eink.
   grayer paper of its own, black in depth dark. Eink's scrim stays the 1px `paper`
   checkerboard (`dither`), which writes only ramp bytes.
 
-These are the only ops that composite, and they are why depth frames
+Under depth these are the only ops that composite, and they are why depth frames
 hold grays on no ramp as *surfaces* — the ground's in-between bytes, a
 shadow's falloff, everything under a veil — where an eink frame's only
 off-ramp bytes are anti-aliased edges. Every one of them is still
 r=g=b: a gray composited over a gray by one coverage stays gray.
+
+`lamp` adds ops of the same kind, and they draw nothing under eink or
+depth: the ground's pool, and for every filled box a rim, a face and a
+directional shadow, the chrome's edge lights and contact lines, and the
+frost ([lamp.md](lamp.md)). Each is paint only, resolves its bytes from
+color.zig, and stays r=g=b. All but the frost are nokre-computed tiles
+sampled nearest in device space, per pixel exactly as depth's three
+are; the frost is the one op that reads pixels, and its record is the
+waiver above ([What lamp waives beside it](#what-lamp-waives-beside-it)).
 
 ## Geometry: anti-aliased only at rounded corners
 
@@ -435,7 +473,14 @@ setter that forgot to say so is still seen, and a writer that sets
 clip to it (`hsk_surface_pixels_within`), so chrome drawn after the
 content is drawn again inside the rect too. Rects, lines, the dither,
 the clear, the page ground, the drop shadow, the scrim veil and glyph
-masks are per pixel. The three depth ops are per pixel by construction
+masks are per pixel. So are lamp's ops, but for one: the frost reads the
+pixels beneath it, which in the buffer are last frame's frost, so a rect
+that comes within the blur's reach of a frosted plate is grown to that
+plate plus its reach — again, until no grown rect reaches another — and
+the page beneath is rasterised again before the blur reads it. The
+grown rects are what the frame reports as rasterised. A frost the
+surface already holds for the generation its caller states reads
+nothing, and grows nothing. The three depth ops are per pixel by construction
 rather than by luck: each is a nokre-computed tile sampled nearest in
 device space, the ground's bytes are a function of the pixel's place in
 the window rather than in the rect it was asked for, and a shadow
@@ -445,8 +490,8 @@ for the raster bands' reason above, and clipping every op to the rect
 alike moved bytes at tile edges across the golden suite. What moves
 is where a corner's curve crosses a scanline, so a rect is refused — and
 the frame rasterised whole — when it reaches a corner square of a
-rounded fill or stroke that it neither holds whole nor holds the clip
-stack of (`cutsPath`). A region scrolled inside a sheet is the common
+rounded fill, stroke or frost that it neither holds whole nor holds the
+clip stack of (`cutsPath`), after it is grown. A region scrolled inside a sheet is the common
 case: the nav's plates under the scrim have corners in its rect.
 
 ## Where the guarantee stops, and why there

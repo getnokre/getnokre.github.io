@@ -471,6 +471,7 @@ English until an app says otherwise:
 | `ranking_cancel` | "Cancel" | a ranking's armed row, which a second press disarms |
 | `ranking_in` / `ranking_out` | "In" / "Out" | a ranking's item rows while its line is armed: In below the line, Out above it, the side the row will be on after a press |
 | `ranking_here` | "Here" | a ranking's line while an item is armed and the band lets it cross |
+| `increase_contrast` / `reduce_transparency` | "Increase Contrast" / "Reduce Transparency" | the rows of [`accessibility_toggles`](elements.md#accessibility_toggles) |
 
 ```zig
 app.setChrome(L.chrome(loc)); // every word, from the catalog, or no build
@@ -504,6 +505,7 @@ plus the field camel-cased at its underscores:
 | `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` |
 | `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` |
 | `ranking_in` / `ranking_out` / `ranking_here` | `chromeRankingIn` / `chromeRankingOut` / `chromeRankingHere` |
+| `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` |
 
 A catalog missing one of them does not compile — the posture the rest
 of this document already holds, a catalog mistake is a build error,
