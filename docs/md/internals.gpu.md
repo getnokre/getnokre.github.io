@@ -362,7 +362,8 @@ not framebuffer-only — and the offscreen-then-copy path is gone. Ganesh
 on Metal has no framebuffer fetch, so a blend that reads the destination
 copies what it reads once per draw, and each copy ends the frame's
 render pass: that is why a contact line is one rect rather than its
-nine pieces (27 copies a nav row became 3).
+nine pieces (27 copies a nav row became 3), and a rim-only button's
+ring, which takes the same blend, one rect over its box.
 
 **The frost is the CPU's integers.** The snapshot is the plate out to
 its reach; the half frame is each 2×2 sum times 64, 8.8 fixed point in
@@ -443,32 +444,33 @@ and frost's corner squares) are reported and not held, since Ganesh
 rasterises glyphs and curves its own way; a lit glyph's box, less the
 corner squares drawn through it (a focus ring's), is held to 2 bytes —
 Ganesh's glyph coverage under the glyph's shader, which lands within
-the tile's; what a frost covers is held to 4; the plates and the
+the tile's; what a frost covers is held to 4; a rim-only button's
+ring band, through the contact line's blend, to 2; the plates and the
 ground — the void, rims, faces, shadows,
 contact lines over depth's fills — to 2.
 Max / mean byte difference on an M4:
 
-| Take | Plates + ground | Frost | Lit glyphs | Text + AA (max) |
-| --- | --- | --- | --- | --- |
-| elements | 1 / 0.000 | — | — | 49 |
-| button-forms | 1 / 0.000 | — | — | 23 |
-| button-in-progress | 1 / 0.001 | — | — | 45 |
-| meter | 1 / 0.000 | — | — | 27 |
-| tiles | 1 / 0.000 | — | 1 / 0.004 | 35 |
-| accessibility-toggles | 1 / 0.000 | — | — | 13 |
-| dial | 1 / 0.000 | — | 1 / 0.006 | 8 |
-| select-picker | 1 / 0.000 | 1 / 0.041 | 1 / 0.003 | 24 |
-| nav-bottom | 1 / 0.000 | 1 / 0.006 | 2 / 0.074 | 7 |
-| sheet | 1 / 0.000 | 1 / 0.049 | 1 / 0.021 | 47 |
-| notice-banner | 0 / 0 | 1 / 0.025 | 2 / 0.030 | 1 |
-| notices-pane | 0 / 0 | 1 / 0.054 | 1 / 0.051 | 3 |
-| nav-with-indicator | 1 / 0.000 | 1 / 0.008 | 1 / 0.025 | 7 |
-| frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | 23 |
-| header-action-two | 0 / 0 | — | 1 / 0.001 | 1 |
-| page-scrolled | 1 / 0.001 | 1 / 0.071 | 2 / 0.052 | 41 |
-| sheet-over-scrolled | 1 / 0.001 | 1 / 0.063 | 2 / 0.167 | 45 |
+| Take | Plates + ground | Frost | Lit glyphs | Rings | Text + AA (max) |
+| --- | --- | --- | --- | --- | --- |
+| elements | 1 / 0.006 | — | — | — | 48 |
+| button-forms | 1 / 0.000 | — | — | 0 / 0.000 | 23 |
+| button-in-progress | 1 / 0.001 | — | — | 0 / 0.000 | 45 |
+| meter | 1 / 0.001 | — | — | — | 26 |
+| tiles | 1 / 0.024 | — | 1 / 0.354 | — | 36 |
+| accessibility-toggles | 1 / 0.005 | — | — | — | 13 |
+| dial | 1 / 0.000 | — | 1 / 0.006 | — | 8 |
+| select-picker | 1 / 0.004 | 1 / 0.035 | 1 / 0.435 | — | 24 |
+| nav-bottom | 1 / 0.002 | 1 / 0.059 | 1 / 0.087 | — | 7 |
+| sheet | 0 / 0 | 1 / 0.040 | 1 / 0.037 | — | 49 |
+| notice-banner | 0 / 0 | 1 / 0.064 | 1 / 0.025 | — | 1 |
+| notices-pane | 1 / 0.000 | 1 / 0.055 | 1 / 0.031 | — | 4 |
+| nav-with-indicator | 1 / 0.001 | 1 / 0.054 | 1 / 0.034 | — | 7 |
+| frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | — | 23 |
+| header-action-two | 0 / 0 | — | 1 / 0.000 | — | 1 |
+| page-scrolled | 1 / 0.008 | 1 / 0.080 | 1 / 0.057 | — | 43 |
+| sheet-over-scrolled | 1 / 0.008 | 1 / 0.047 | 1 / 0.047 | — | 45 |
 
-Every take meets all three targets.
+Every take meets all four targets.
 
 **Frames.** Measured as the proof was — the kitchen sink in
 `ReleaseFast`, a 5 s CGEvent wheel scroll at 120 Hz, median / p95 ms

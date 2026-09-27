@@ -167,7 +167,7 @@ table.
 | `box` (bordered or filled), `tile_group`, `radio_group` | the card | card |
 | the collapsed nav's section list | the card, on the dim | card |
 | `button`, filled (primary) | the pill, a `.g9` plate | cta |
-| `button`, secondary | the rim alone, no fill ([below](#buttons-under-the-lamp)) | card; plate disabled |
+| `button`, secondary | no plate: its ring alone, no fill ([below](#buttons-under-the-lamp)) | none; the ring answers the lamp itself |
 | `button`, waiting on its words | the pill | plate |
 | `tile` | the mark's well | plate |
 | `segmented`, `dial` | the lit plate | knob |
@@ -244,16 +244,16 @@ squared distance: a separable face ships as two strips — the x term
 as one row repeated down, the y term as one column repeated across —
 each with four corner tiles where the rounded edge covers part of a
 pixel, through the route the drop shadow's nine-patch already takes to
-the shim: about 12 KB a card at 3× where a per-pixel tile would be
+the shim: about 22 KB a card at 3× where a per-pixel tile would be
 about 750 KB. The two strips are two black composites rather than one
 of their sum, and composing `(1 − a)(1 − b)` darkens by `u·a·b` less
 than `1 − a − b` would. A composite also rounds, and two rounded
 composites of fractional coverages overshoot the radial form's byte a
 few pixels in a hundred, so each strip's coverage is chosen by the
-byte it leaves on the fill instead: the x term darkens it by the floor
-of its bytes and the y term by their round, each at the coverage the
+byte it leaves on the fill instead: each term darkens it by its bytes
+dithered ([below](#rounding-is-dithered)), at the coverage the
 compositing needs for that. So chosen, the pair lands on the radial
-form's byte or one lighter, never darker.
+form's floor or ceiling, or one lighter, and never past the cap.
 
 `cap` is per fill, twice the reference's table as the owner tuned it.
 On `paper` it is twelve bytes over the void — `0x10`, where `mid`
@@ -312,7 +312,7 @@ A white fill in a lit dark scene is a second lamp. Depth dark's
 primary is an `ink` pill, `0xBD`, and under the lamp it read as a
 light source rather than as a lit object; so the owner (2026-09-27)
 stepped the forms down one each, paint only, in lamp dark only: the
-primary is a filled plate, the secondary a plate's rim alone, and a
+primary is a filled plate, the secondary its lit boundary alone, and a
 link stays words.
 
 - **Filled.** A `cta` plate in `.g9`, `0x3B`, the chosen plate's tone,
@@ -322,16 +322,48 @@ link stays words.
   plate is the off well's `.g11` with `disabled_ink`, and lies flat, as
   it does working. Working, its inner track is depth's, inside the plate.
 - **Rim-only.** No fill: the box is transparent over what it stands on
-  — the void, a card, a sheet's glass — and the rim is the whole of it,
-  lit as a `card`'s is and capped as every rim is. No face, since a face
-  darkens a fill, and no shadow, since nothing is filled to cast one.
-  The words are `ink`, which clears every ground already. Disabled, the
-  rim answers as a `plate` with `disabled_ink` words. Working with a
-  percentage, the ring's interior fills in the ambient track's `.g10`
-  from the leading edge up to it — the ring's own interior, so it takes
-  no rim of its own: two rims on one edge would composite white past
-  the cap. Focus is the secondary's in-place 2 px `ink` edge, as in
-  depth, which covers the one-device-pixel rim.
+  — the void, a card, a sheet's glass — and a **ring** is the whole of
+  it. No face, since a face darkens a fill, and no shadow, since nothing
+  is filled to cast one. The words are `ink`, which clears every ground
+  already.
+
+  The ring is not a plate's rim. A rim is a plate's lit edge and holds
+  under a boundary's 3:1 on every fill; with nothing else drawn, the
+  ring *is* the control's boundary, and a one-device-pixel rim read as
+  nothing past its lit end (`0x07` at its far side on the owner's
+  phone). So, as the owner tuned it (2026-09-27): **one logical pixel
+  plus the rim's one device pixel** wide — 2 device px at 1×, 3 at 2×,
+  4 at 3× — inside the box's edge. It lifts what is beneath toward
+  white, from `color.lamp_ring_floor_byte`'s lift at the box's farthest
+  point from the lamp (`0x1D` on the void) to
+  `color.lamp_ring_peak_byte`'s at its nearest (`0x66`), by the larger
+  of `t²` and the specular — `t` running over the box's own nearest and
+  farthest points, not the rim's bounds around it, so the far side lands
+  on the floor. A chrome edge reaching it adds a card's light. Over
+  paper the floor is `0x36`, 1.41:1.
+
+  **`0x66` is a clamp on the byte, on every ground** — the void, a card,
+  a sheet's frost — never exceeded whatever is beneath, and never
+  darkening what is already brighter. Focus on this form is the
+  in-place 2 px `ink` edge over the ring, and `ink` over `0x66` is
+  3.05:1 (2.4.13 on the same pixels); from `0x68` it would fail. It is
+  the rim's cap on paper, byte for byte; a rim over the void reaches
+  only `0x53`, and the ring may reach `0x66` there because it is the
+  boundary a finger looks for: its lit end is 3.66:1 over the void. A
+  clamp over an unknown byte is not a white composite at a coverage, so
+  the ring takes the contact line's route: a table write on the CPU
+  (`lamp.ring_bytes`, `color.lampRingByte` per byte beneath and
+  coverage, the band's anti-aliased edge scaling the coverage) and the
+  same runtime blend on the GPU, white for the tone and the peak for
+  the ceiling. It is left undithered: along a 135 px pill's top edge its
+  bytes step one at a time, the longest run six pixels.
+
+  Disabled, the ring lifts **half** as far — floor, peak and lights —
+  `0x0F` to `0x33` on the void, with `disabled_ink` words. Working with
+  a percentage, the ring's interior fills in the ambient track's `.g10`
+  from the leading edge up to it, and the ring lifts over it — the
+  ring's own interior, so it takes no rim of its own. Focus is the
+  in-place 2 px `ink` edge, as in depth, drawn over the ring.
 - **The vendor pills** are the exception, as everywhere: Apple's and
   Google's keep their store-facing fills, pinned to eink's light ramp.
 
@@ -564,6 +596,49 @@ around a glyph changes the very bytes a text proof measures that glyph
 against; a lit glyph ([above](#glyphs-on-plates-are-lit-surfaces))
 changes its own bytes and nothing around it.
 
+### Rounding is dithered
+
+Every lamp op computes in fractions and rounds to a byte at the end,
+and below about `0x30` one byte is a visible step: a paper face
+darkening a dozen bytes across a 350 px card stepped every 30 px or
+so, and a sheet's frost falling sixteen levels over 500 px drew
+sixteen bands the grain did not hide. So where a smooth field is
+quantised, the rounding is an ordered dither: the field's level in
+sixteenths of a byte rounds up at a device pixel where its sixteenths
+pass the page ground's threshold there — the ground's shifted 4×4
+Bayer (lamp_pixels.zig's `orderedThreshold`), fixed to the frame as
+the ground's pattern and the frost's grain are, so a scrolled page's
+pattern stays put. Over any sixteen columns of a row every threshold
+occurs once, so a level the row holds is its mean exactly, and a
+block's mean is its field's within a sixteenth of a byte.
+
+- **Faces.** Each strip's level is its term's darkening to the nearest
+  sixteenth, dithered, and the strip's coverage is the one leaving that
+  byte. The down strip dithers against the pattern's complement, so the
+  two strips round up at disjoint thresholds and together darken by
+  the floor or the ceiling of their sum — never past the cap, which
+  two strips rounding up together could pass by a byte. A strip then
+  repeats by the pattern's period rather than one row or column: the
+  across strip four rows deep, the down strip sixteen columns wide.
+  On glass the down strip stays a fraction: it lands on the frost,
+  whose own rounding is dithered and grained.
+- **Frost.** `frostByte`'s last rounding, from 256ths, is the same
+  dither; the grain stays as it was, a separate, designed texture.
+- **Not dithered.** A rim and a lit glyph are a pixel wide or a small
+  box, and do not band. A shadow and the contact line composite over
+  whatever is beneath, which the planner does not know, and a
+  coverage step moves that byte by `under/255` — a ninth of a byte
+  over `paper` — so a dither in the coverage cannot break a step in
+  the byte; they fall on the void almost everywhere, which neither
+  darkens nor bands.
+
+The GPU's shaders compute the same threshold from the device pixel in
+integers, so the two paths round alike.
+
+What it cannot do: the frame stays 8-bit. At the darkest levels one
+byte is still a visible jump, and dithered it reads as faint grain
+where rounded it read as a band.
+
 ## The light appearance
 
 A lamp in daylight is invisible: depth light's paper is `0xFF`, there is
@@ -592,7 +667,11 @@ the build:
   most `0x66`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
   lamp-dark take against depth dark's bytes pixel for pixel, the boxes
-  lamp repaints ([above](#buttons-under-the-lamp)) set aside.
+  lamp repaints ([above](#buttons-under-the-lamp)) set aside, and a
+  rim-only button's ring held to its own peak instead.
+- A rim-only button's ring never leaves a byte past `0x66` over any
+  byte under it, at any coverage, and never darkens; `ink` over `0x66`
+  is 3:1, and its floor stands 1.1:1 off the void and off paper.
 - Every word on a well — `ink` and `dark` over `g10` and `g11` — keeps
   its text band over the darkest byte its face leaves.
 - A face on `paper` only darkens, by at most twelve bytes — the full twelve
@@ -627,7 +706,7 @@ At 3× on a phone, per scroll frame unless stated:
 | Op | Cost | Note |
 | --- | --- | --- |
 | Rim | ≈7 KB per page plate | four edge strips, four corner tiles |
-| Face | ≈12 KB per page plate | two strips, each a row or a column and four corner tiles |
+| Face | ≈22 KB per page plate | two strips, a row four deep and a column sixteen wide for the dither, and four corner tiles each |
 | Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
 | Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
 | Lit glyph | ≈4–6 KB per glyph | a tile over the run's ink box, two device pixels out: a 24 px glyph's is 64–76 px square at 3×; filled again each frame it shows, chrome's included |

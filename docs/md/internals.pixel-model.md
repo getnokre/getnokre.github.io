@@ -272,6 +272,10 @@ frost are nokre-computed tiles sampled nearest in device space, per
 pixel exactly as depth's three are — a lit glyph's through the glyph's
 own coverage; the frost is the one op that reads pixels, and its record
 is the waiver above ([What lamp waives beside it](#what-lamp-waives-beside-it)).
+Where a face's strip or the frost rounds a smooth field to a byte, it
+rounds against the page ground's ordered threshold at that device
+pixel, so its bytes are still a function of the pixel's place in the
+frame ([lamp.md](lamp.md#rounding-is-dithered)).
 
 ## Geometry: anti-aliased only at rounded corners
 

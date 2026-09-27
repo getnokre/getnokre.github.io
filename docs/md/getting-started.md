@@ -1557,7 +1557,7 @@ What `lamp` paints over depth: the same bytes and the same geometry,
 under one light fixed in the window that the page scrolls beneath —
 a lit rim, a face and a directional shadow on every filled box, the
 icon glyphs on them lit as their surface, buttons stepped down a fill
-(no white pill: the primary a gray plate, the secondary a lit rim
+(no white pill: the primary a gray plate, the secondary a lit ring
 alone), a black ground, and frosted
 glass for the nav and sheets, in the dark appearance and the Skia
 substrate only. In light, and everywhere else — the web's DOM
