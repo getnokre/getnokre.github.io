@@ -95,7 +95,7 @@ macOS and Metal first, as a go/no-go:
    ([skia-build.md](skia-build.md#macos-with-metal-the-gpu-build)).
    *Built.*
 2. `-Dgpu` in build.zig. *Built*, for nokre's own `run-*` examples on
-   macOS arm64 and nowhere else: the shim compiles with `NOKRE_GPU`
+   macOS arm64 (Windows and Linux followed, below): the shim compiles with `NOKRE_GPU`
    plus `shim/nokre_skia_mtl.mm` against `deps/skia-macos-gpu`, and the
    app links that archive with Metal, QuartzCore and IOSurface in place
    of the prebuilt. Tests, goldens and a consumer's `addApp` stay on the
@@ -122,6 +122,10 @@ macOS and Metal first, as a go/no-go:
    ([iOS](#ios)).
 8. Android, on Vulkan. *Built*, verified on the emulator only
    ([Android](#android)).
+9. Windows, on Vulkan. *Written and compile-checked, unverified: no
+   machine* ([Windows](#windows)).
+10. Linux (Wayland), on Vulkan. *Written and compile-checked,
+    unverified: no machine* ([Linux](#linux)).
 
 ### iOS
 
@@ -230,6 +234,98 @@ is the Mac's Metal under gfxstream), the swapchain's pacing under FIFO
 and a real display's rate, rotation's `currentTransform` (the
 compositor's rotation pass, and whether a pre-rotated swapchain is worth
 it), the fallback on a device whose Vulkan refuses, and the frame costs.
+
+### Windows
+
+Vulkan, one backend — no GL, no ANGLE, no Direct3D — and the CPU
+presenter the only fallback. `-Dgpu` on the Windows target
+(x86_64-windows-msvc, as every Windows `-Dskia` build is) compiles the
+shim with `NOKRE_GPU` and `shim/nokre_skia_vk.cpp` against
+`deps/skia-windows-gpu`, which `tools/build-skia-windows.sh` builds
+([skia-build.md](skia-build.md#windows-and-linux-with-vulkan)), and
+shell.c with `NOKRE_GPU`. The Vulkan half is Android's — the device, the
+FIFO swapchain, the images wrapped as textures, acquire, replay, submit,
+present, the stale swapchain remade — with three differences: the
+loader is `vulkan-1.dll`, which every Vulkan driver installs, opened at
+run time; the surface is `VK_KHR_win32_surface` over the module's
+`HINSTANCE` and the window's `HWND` (`hsk_gpu_attach_hwnd`); and the
+extent is the surface's `currentExtent`, which Win32 makes the client
+area. The window attaches after creation and before it is shown,
+attaches again at `WM_SIZE` (the swapchain remade at the new client
+size) and draws inside the resize, and detaches at `WM_DESTROY`. Frames
+come from the shell's frame clock, a `DwmFlush` thread, on either path
+([platform-shells.md](platform-shells.md#windows-specifics)).
+
+```
+tools/build-skia-windows.sh     # once, in Git Bash, on Windows
+zig build run-kitchen-sink -Dskia -Dgpu
+```
+
+`NOKRE_FRAME_LOG=1` writes the macOS shell's frame line to stderr; the
+app is a GUI-subsystem executable, so redirect it (`2> frames.log`).
+Without `deps/skia-windows-gpu` the build stops before compiling and
+names the script.
+
+**Unverified: no machine.** From a Mac, `check-targets` compiles
+shell.c both ways and `nokre_skia_vk.cpp` and the shim's GPU mode for
+x86_64-windows-gnu (mingw's headers, not Visual Studio's), and nothing
+else here has happened: the script has never run, so neither has the
+MSVC link against its archive (nor whether the zlib and codec stubs
+still fit that archive); no frame has been drawn, on either presenter;
+no driver has answered the loader, the format, the image usage the
+frost needs (sampled and copyable swapchain images) or the fallback;
+nothing has measured whether `DwmFlush` pacing and FIFO's own blocking
+acquire hold the display's rate together; and the frame costs are
+unknown.
+
+### Linux
+
+Wayland, Vulkan, the same one backend and the same fallback. `-Dgpu` on
+an x86_64 Linux target compiles the shim with `NOKRE_GPU` and
+`shim/nokre_skia_vk.cpp` against `deps/skia-linux-gpu`
+(`tools/build-skia-linux.sh`), and shell.c with `NOKRE_GPU`. The
+loader is `libvulkan.so.1`, the soname every distribution's loader
+package installs (the unversioned name is the -dev package's), opened
+at run time. The surface is `VK_KHR_wayland_surface` over the
+connection's `wl_display` and the shell's `wl_surface`
+(`hsk_gpu_attach_wayland`); Skia's copy of the Vulkan headers ships no
+`vulkan_wayland.h`, so the shim declares that extension's one struct
+and entry point as Khronos's header does. A Wayland surface has no
+size until a buffer gives it one (`currentExtent` is 0xFFFFFFFF), so the
+extent is the shell's — the logical size times the buffer scale — as
+Android's is the window's. The first frame after the first configure
+attaches, a new size or scale attaches again, and teardown detaches
+before the connection closes; the shell still sets the buffer scale,
+which the present's commit carries.
+
+Frames are paced by the surface's frame callback, as on the CPU path.
+Each GPU frame asks for one and commits it itself after the present,
+so a frame the shim could not present still gets its callback and the
+clock never stops for good. The present is FIFO, under that callback:
+Mesa's FIFO present waits on a frame callback of its own, which comes
+with the shell's, and a window the compositor shows nothing of gets
+neither, so it is never presented to rather than blocking inside a
+present. The owed frame is drawn before the loop's
+`wl_display_prepare_read`, never between it and the read: the driver
+reads the connection inside the present, and libwayland's read waits
+for every prepared reader.
+
+```
+tools/build-skia-linux.sh
+zig build run-kitchen-sink -Dskia -Dgpu
+```
+
+**Unverified: no machine.** `check-targets` compiles shell.c both ways
+against declarations of the Wayland, xkbcommon and dbus calls it makes
+(src/platform/linux/check_headers, since none of those headers exist on
+a Mac), and `nokre_skia_vk.cpp` and the shim's GPU mode for
+x86_64-linux-gnu; nothing else has happened. The script has never run,
+nor the link against its libc++ archive; no frame has been drawn on
+either path, including the CPU path's new frame callback; no driver
+(Mesa's or NVIDIA's WSI) has answered the extent, the format, the image
+usage or the fallback; the reasoning above about Mesa's FIFO wait and
+the extra commit is reasoning, not a trace; and the frame costs are
+unknown.
 
 ### The shaders
 
@@ -434,8 +530,8 @@ What each shell presents with today, and what the GPU path makes it:
 | macOS | the frame copied into an IOSurface on the view's layer, display-link paced | Metal: `CAMetalLayer`, the same display link, a resize presented in its transaction (`-Dgpu`, built) |
 | iOS | the frame copied into an IOSurface on the view's layer, `CADisplayLink` paced — macOS's presenter | Metal: the view's layer a `CAMetalLayer` (`+layerClass`), the same display link, a layout's frame presented in its transaction (`-Dgpu`, built; simulator-verified, unverified on a device) |
 | Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, still Choreographer paced, remade on surfaceChanged (`nokreRaster=gpu`, built; emulator-verified, unverified on a device) |
-| Windows | `SetDIBitsToDevice` of the whole frame | not chosen yet |
-| Linux | `wl_shm` double buffer, no frame callback | not chosen yet |
+| Windows | the frame swizzled into a DIB section and `BitBlt` to the window, paced by a `DwmFlush` frame clock (unverified: no machine) | Vulkan: a FIFO swapchain over the `HWND` (`VK_KHR_win32_surface`, `vulkan-1.dll` opened at run time), the same clock, remade at `WM_SIZE` (`-Dgpu`; written, compile-checked, unverified: no machine) |
+| Linux | `wl_shm` double buffer, paced by the surface's frame callback (unverified: no machine) | Vulkan: a FIFO swapchain over the `wl_surface` (`VK_KHR_wayland_surface`, `libvulkan.so.1` opened at run time), sized by the shell, presented on the frame callback (`-Dgpu`; written, compile-checked, unverified: no machine) |
 
 The web is not on this list: the DOM substrate has no Skia and no frame
 of its own ([dom-substrate.md](dom-substrate.md)).

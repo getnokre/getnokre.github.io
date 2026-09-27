@@ -864,13 +864,30 @@ same contract with twists of its own:
 [windows/shell.c](../../src/platform/windows/shell.c) is a Win32 port
 of the same contract — plain C, message loop, no framework. Its twists:
 
-- **Blit.** GDI wants BGRX and the frame arrives RGBX, so the shell
-  swizzles the channels
-  once per frame and `SetDIBitsToDevice` maps it 1:1 onto device
-  pixels. Repaints stay on demand: events call `wants_frame` and
-  invalidate; `WM_PAINT` renders. Per-monitor-v2 DPI awareness, with
-  the DPI rounded to an integer scale (125% → 1, 150% → 2) — the
-  policy every shell shares — so glyphs never resample.
+- **The presenter.** macOS's, in GDI's terms. A frame is `on_frame`'s
+  buffer swizzled RGBX → BGRX straight into a top-down DIB section
+  selected into a memory DC, then `BitBlt` 1:1 onto the window, which
+  DWM composites. The DIB keeps the last frame, so `WM_PAINT` (an
+  exposure) blits it again and renders only when the client size or
+  scale moved. The swizzle stays once per frame: `on_frame`'s buffer
+  persists RGBX for partial frames, so it cannot be turned BGRX once in
+  place, and a DIB declaring RGBX masks would move the same pass into
+  GDI. Frames are paced by the **frame clock**: a thread waits in
+  `DwmFlush` (DWM's next composition) and posts a tick, one at a time;
+  an event or a request only owes a frame, and the tick draws at most
+  one. The clock runs while frames are owed and stops
+  `kNokreFrameClockLinger` idle ticks later; without a thread, an owed
+  frame draws on the loop's next turn. A resize draws inside `WM_SIZE`,
+  so content tracks the edge. `NOKRE_FRAME_LOG=1` prints the macOS
+  line to stderr. Under `NOKRE_GPU` the window's HWND is attached to
+  the shim's Vulkan swapchain after creation (`hsk_gpu_attach_hwnd`),
+  again at `WM_SIZE`, and detached at `WM_DESTROY`; the same clock
+  draws and `on_frame` presents inside the shim; a refused attach keeps
+  the DIB presenter ([gpu.md](gpu.md#windows)). Per-monitor-v2 DPI
+  awareness, with the DPI rounded to an integer scale (125% → 1, 150% →
+  2) — the policy every shell shares — so glyphs never resample. This
+  presenter and its clock are compile-checked and have not run: no
+  Windows machine has seen them.
 - **Input.** `WM_LBUTTONDOWN` is the tap; wheel messages send `FREE`
   scrolls at the pointer, 48 logical px per notch with sub-notch
   remainders accumulated for precision wheels. Keys map in
@@ -1244,10 +1261,23 @@ the same contract — plain C against libwayland, one poll loop, no
 framework. X11 is deliberately absent: Wayland is the modern default,
 and one backend per platform is the charter. Its twists:
 
-- **Blit.** `wl_shm`: the shell swizzles RGBX to XRGB8888 into a
-  double-buffered memfd pool and commits the free buffer, tracking
+- **The presenter.** `wl_shm`: the shell swizzles RGBX to XRGB8888 into
+  a double-buffered memfd pool and commits the free buffer, tracking
   `wl_buffer.release` so it never overwrites one the compositor still
-  holds. Integer buffer scale from the `wl_output` the surface is on, the
+  holds. Frames are paced by the **frame clock**, the surface's
+  `wl_surface.frame` callback: each commit asks for one, and while it
+  is outstanding an owed frame waits for it, so at most one frame is
+  drawn per compositor tick and none while the compositor shows nothing
+  of the window; a configure is answered at once, callback or not.
+  Damage stays whole. `NOKRE_FRAME_LOG=1` prints the macOS line to
+  stderr. Under `NOKRE_GPU` the first frame attaches the `wl_surface` to
+  the shim's Vulkan swapchain (`hsk_gpu_attach_wayland`, at the shell's
+  size, since a Wayland surface has none of its own), again at a new
+  size or scale, and detaches at teardown; the frame callback paces it
+  the same way, committed by the shell after the present; a refused
+  attach keeps `wl_shm` ([gpu.md](gpu.md#linux)). The frame callback
+  and the GPU path are compile-checked and have not run: no Linux
+  machine has seen them. Integer buffer scale from the `wl_output` the surface is on, the
   logical size from `xdg_toplevel.configure` — the Windows integer-DPI
   policy, so glyphs never resample. The generated `xdg-shell` and
   `text-input-unstable-v3` client glue is produced by `wayland-scanner`
@@ -1266,10 +1296,13 @@ and one backend per platform is the charter. Its twists:
   worker/a11y wake `eventfd`, a keyboard-repeat `timerfd`, a
   long-press `timerfd`, the single-instance socket, the D-Bus fd, and
   the read end of a paste transfer while one is open; it renders only
-  when the frame is dirty (a configure, an input event whose
-  `wants_frame` is true, a wake). No frame-callback ticker — an app at
+  when a frame is owed (a configure, an input event whose
+  `wants_frame` is true, a wake) and the last frame's callback has
+  come. A callback is asked for only by a frame drawn, so an app at
   rest costs zero CPU, and the `wl_display_prepare_read`/`read_events`
-  handshake keeps the sleep race-free.
+  handshake keeps the sleep race-free. The owed frame is drawn before
+  the prepare, never between it and the read: a Vulkan present reads
+  the connection itself, and a read waits for every prepared reader.
 - **Input.** `BTN_LEFT` press is the tap; `wl_pointer.axis_value120`
   sends `FREE` scrolls at 48 logical px per detent with sub-notch
   remainders (the Windows `WHEEL_DELTA` parity), falling back to `axis`

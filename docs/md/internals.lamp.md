@@ -294,16 +294,20 @@ white composited over the plate by `cov` times the glyph's own coverage.
   ([color.zig](../../src/core/color.zig)).
 - **The cap** is the rim's: `0x60` on paper, however many lights reach
   it, so a glyph is never brighter than the brightest rim beside it.
-- **Where.** The glyphs whose surface is a plate: an icon button's (on
-  its bar plate, its notice or its pane), a nav item's, marker's and
-  collapsed chip's glyph and the chip's chevron (on the nav plate), the
-  dial's step glyphs (on their buttons), a tile's mark (on its well) and
-  chevron (on its group's card), and a select's chevron (on its field).
-  A disabled one is lit too: its plate and its words carry the state.
+- **Where.** Every icon-only control's glyph, and the glyphs whose
+  surface is a plate: an icon button's (on its bar plate, its notice or
+  its pane), a sheet's close (on the sheet's glass), a nav item's,
+  marker's and collapsed chip's glyph and the chip's chevron (on the
+  nav plate), the dial's step glyphs (on their buttons), a tile's mark
+  (on its well) and chevron (on its group's card), and a select's
+  chevron (on its field). The back control and a header action stand
+  on the page ground, on no plate: each is lit as a `plate` over its
+  own target, so the lamp's falloff across that box and the floor are
+  what find it. A disabled one is lit too: its plate and its words
+  carry the state.
 - **What stays ink.** A checkbox's mark, a radio's dot, a notice's
   icon, the standalone `icon` element, a ranking's glyphs, a picker
-  row's, the back and header-action glyphs and every glyph inline in
-  reading text: each is a mark to be read against its ground, not the
+  row's and every glyph inline in reading text: each is a mark to be read against its ground, not the
   surface of a control, and each keeps its text proof. In light every
   glyph is ink: lamp light is depth light.
 

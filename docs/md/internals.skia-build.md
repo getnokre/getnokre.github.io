@@ -7,7 +7,8 @@ or shrinking Skia later a contained problem. Every default build is CPU
 raster only; the GPU backend for the `lamp` theme — Ganesh on Metal on
 Apple, Ganesh on Vulkan on Android, one per platform — is in separate
 archives built below and linked only under `-Dgpu` ([gpu.md](gpu.md)
-records why).
+records why); Ganesh on Vulkan on Windows and Linux is scripted and
+unrun.
 
 ## Today: prebuilts
 
@@ -137,6 +138,42 @@ allocator for a context given none, at the revision `DEPS` pins. The
 CPU archive is untouched; the example projects link this one only under
 `-PnokreRaster=gpu` ([gpu.md](gpu.md#android)). It takes a few minutes
 on an M4.
+
+## Windows and Linux with Vulkan
+
+The desktop prebuilts carry Ganesh on OpenGL only (Windows adds
+Direct3D), and nokre's GPU path off Apple is Vulkan alone
+([gpu.md](gpu.md#windows)). `tools/build-skia-windows.sh` and
+`tools/build-skia-linux.sh` compile the pinned tag from the shared
+source checkout with the Android `--gpu` profile retargeted:
+`skia_enable_ganesh=true`, `skia_use_vulkan=true`, `skia_use_vma=true`;
+GL, ANGLE, Direct3D, Metal, Dawn and Graphite off; every codec, shaping
+module, ICU, PDF, SVG and Skottie off; no system libraries; FreeType,
+libpng and zlib bundled and the memory-only font manager
+(`skia_enable_fontmgr_custom_empty`, with Windows's DirectWrite and GDI
+managers and Linux's fontconfig switched off), the shim's text stack on
+both. Each clones the Android GPU profile's four externals at the
+revisions `DEPS` pins, and lays its output out as
+`deps/skia-android-gpu` is: the archive under `lib/`, the checkout's
+`include/` (Skia's Vulkan headers among it) and skcms's two public
+headers beside it.
+
+- **Windows** (`deps/skia-windows-gpu/lib/skia.lib`): run in Git Bash
+  on an x86_64 Windows host with git, Python 3, Visual Studio 2022 or
+  its Build Tools (the C++ workload and a Windows SDK) and LLVM for
+  Windows, whose `clang-cl` gn is pointed at (`clang_win`, `LLVM_DIR`).
+  MSVC-ABI with the static runtime (`-MT`), as the prebuilt is, since a
+  Windows app links as x86_64-windows-msvc against `libcpmt`.
+- **Linux** (`deps/skia-linux-gpu/lib/libskia.a`): an x86_64 host with
+  git, python3, clang and libc++ (with libc++abi); the archive is
+  compiled against libc++, as the aseprite prebuilt is, because zig
+  links the app with its own libc++.
+
+Both are **unrun**: written on a Mac, which can build neither, so no gn
+argument above has been through gn on its platform, and whether the
+Windows archive still wants the zlib stub the prebuilt needs is
+unknown. `-Dgpu` without the archive stops the build before compiling
+and names the script. Every default build is untouched.
 
 ## Which scaler, and why it is not one scaler
 

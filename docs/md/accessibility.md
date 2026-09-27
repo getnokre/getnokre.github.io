@@ -592,8 +592,8 @@ clear non-text contrast (3:1) in `eink` (`depth` waives WCAG 1.4.11 for
 control boundaries and graphic tracks, keeping text and focus contrast;
 `lamp`, drawn in depth's bytes, waives the same and, in dark, text
 contrast on its frosted chrome and nokre's icon contrast floor for a
-glyph standing on a plate, which it paints as the plate's lit surface,
-besides;
+control's glyph — an icon-only control's, or one standing on a plate —
+which it paints as a plate's lit surface, besides;
 choose `eink` where 1.4.11 must hold), and that each dark ramp *eases* text
 rather than mirroring it (an inversion would leave dark exactly as harsh as light, which is the
 wrong answer for the appearance where halation is worse); a test in
