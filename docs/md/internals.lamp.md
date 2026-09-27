@@ -53,10 +53,12 @@ focus order and scroll extents are depth's, and the test that holds
 themes to one geometry holds lamp to it too
 ([testing.md](../testing.md#golden-screenshot-tests)). A second test
 holds the draw itself: lamp dark's recording with its own ops set aside
-is depth dark's, op for op, but for two substitutions — a frost stands
-where depth filled the same glass, and a lit glyph where depth drew the
-same glyph in ink ([below](#glyphs-on-plates-are-lit-surfaces)). Lamp
-light's recording is depth light's with nothing set aside.
+is depth dark's, op for op, but for its substitutions — a frost stands
+where depth filled the same glass, a lit glyph where depth drew the
+same glyph in ink ([below](#glyphs-on-plates-are-lit-surfaces)), and a
+button's and an on switch's knob's fills and words are repainted
+([below](#buttons-under-the-lamp)). Lamp light's recording is depth
+light's with nothing set aside.
 
 ## The dark appearance
 
@@ -141,8 +143,12 @@ shadow op like every plate, and the op casts nothing. Depth dark casts
 no drop shadow, so a plate in lamp dark casts only by its material. An
 off plate lies flat too, as depth's off lit plate does: a filled button
 disabled or working casts no shadow, and neither does a disabled
-segmented's or dial's lit plate. A switch's knob casts in every state,
-as depth light's does: on or off, its place is the switch's value.
+segmented's or dial's lit plate. An off switch's knob casts, as depth
+light's does, onto its dark well; an on switch's lies flat, in the off
+knob's gray (`.g6`, `.g9` disabled), with its face and rim. The on
+track is `ink`, the brightest surface in the scene, and reads as
+luminous: a matte knob casting onto a light source reads wrong. The
+track's fill carries the state, as it does in depth.
 
 The knob is the owner's (2026-09-27): a switch read flat, a `well`
 track under a `plate` knob, both near the dimmest numbers in the table
@@ -160,14 +166,15 @@ table.
 | --- | --- | --- |
 | `box` (bordered or filled), `tile_group`, `radio_group` | the card | card |
 | the collapsed nav's section list | the card, on the dim | card |
-| `button`, filled | the pill | cta |
-| `button`, secondary or waiting on its words | the pill | plate |
+| `button`, filled (primary) | the pill, a `.g9` plate | cta |
+| `button`, secondary | the rim alone, no fill ([below](#buttons-under-the-lamp)) | card; plate disabled |
+| `button`, waiting on its words | the pill | plate |
 | `tile` | the mark's well | plate |
 | `segmented`, `dial` | the lit plate | knob |
 | `ranking`, `dial` | a ranking row, a step button | plate |
 | `picker_item` | the chosen row | plate |
 | `badge`, `checkbox`, a notice in the notices pane | the chip, the box, the row | plate |
-| `toggle` | the knob | knob |
+| `toggle` | the knob, lying flat when on | knob |
 | `text_input`, `text_area`, `select`, `copyable` | the field on the page | plate |
 | the same | the field on a paper surface | well |
 | `meter`, `diverging_meter`, a working button | the track | well |
@@ -181,7 +188,8 @@ Not plates, and drawn as depth draws them: glyphs off a plate (a
 radio's discs among them; the glyphs on one are
 [below](#glyphs-on-plates-are-lit-surfaces)), hairlines and rules, the
 blockquote's bar, a diverging meter's centre tick, the QR tile and the
-vendor sign-in pills (both pinned to eink's light ramp), the selection
+vendor sign-in pills (both pinned to eink's light ramp, the pills in
+their vendors' fills), a `link` (words, not a box), the selection
 band, the caret and its handles, and the scroll bars.
 
 **The rim.** One device pixel of white, composited inside the plate's
@@ -297,6 +305,38 @@ is the same, so it tiles its reach once like depth's does.
 the inner edge facing the lamp; the owner removed it (2026-09-27). A
 well is concave by its rim alone — the lit edge is the far one
 ([the rim](#every-filled-box-is-a-plate)) — and its face.
+
+### Buttons under the lamp
+
+A white fill in a lit dark scene is a second lamp. Depth dark's
+primary is an `ink` pill, `0xBD`, and under the lamp it read as a
+light source rather than as a lit object; so the owner (2026-09-27)
+stepped the forms down one each, paint only, in lamp dark only: the
+primary is a filled plate, the secondary a plate's rim alone, and a
+link stays words.
+
+- **Filled.** A `cta` plate in `.g9`, `0x3B`, the chosen plate's tone,
+  with `ink` words — the pair depth's tonal-fill proof already covers.
+  `cta` because the role is the primary act's: the heaviest shadow
+  weight at the page's ×0.5 gain says it can be taken now. Disabled, the
+  plate is the off well's `.g11` with `disabled_ink`, and lies flat, as
+  it does working. Working, its inner track is depth's, inside the plate.
+- **Rim-only.** No fill: the box is transparent over what it stands on
+  — the void, a card, a sheet's glass — and the rim is the whole of it,
+  lit as a `card`'s is and capped as every rim is. No face, since a face
+  darkens a fill, and no shadow, since nothing is filled to cast one.
+  The words are `ink`, which clears every ground already. Disabled, the
+  rim answers as a `plate` with `disabled_ink` words. Working with a
+  percentage, the ring's interior fills in the ambient track's `.g10`
+  from the leading edge up to it — the ring's own interior, so it takes
+  no rim of its own: two rims on one edge would composite white past
+  the cap. Focus is the secondary's in-place 2 px `ink` edge, as in
+  depth, which covers the one-device-pixel rim.
+- **The vendor pills** are the exception, as everywhere: Apple's and
+  Google's keep their store-facing fills, pinned to eink's light ramp.
+
+Nothing moves: role, label and states are depth's, and depth and eink
+draw every byte they did.
 
 ### Glyphs on plates are lit surfaces
 
@@ -551,7 +591,8 @@ the build:
 - The rim's brightest byte on `paper` stays under `g7`'s `0x67`: at
   most `0x66`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
-  lamp-dark take against depth dark's bytes pixel for pixel.
+  lamp-dark take against depth dark's bytes pixel for pixel, the boxes
+  lamp repaints ([above](#buttons-under-the-lamp)) set aside.
 - Every word on a well — `ink` and `dark` over `g10` and `g11` — keeps
   its text band over the darkest byte its face leaves.
 - A face on `paper` only darkens, by at most twelve bytes — the full twelve

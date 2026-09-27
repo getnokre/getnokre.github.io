@@ -1340,7 +1340,10 @@ filled, one outlined, and the words carry the rest. Under
 [`depth`](getting-started.md#a-theme) both round fully at the ends (capped at a one-line button's
 half-height, so a wrapped label keeps its corners), and the focus ring
 follows; the secondary is a `.g10` well with no border rather than an
-outline; the glyph and provider faces keep eink's corner.
+outline; the glyph and provider faces keep eink's corner. Under
+[`lamp`](internals/lamp.md#buttons-under-the-lamp) dark the primary is a
+filled gray plate and the secondary a rim-only plate, with no fill —
+paint, not a form change.
 
 **The label wraps inside the pill, and the pill grows to hold it.** A
 button asks for the width its words want and takes what it is offered;
