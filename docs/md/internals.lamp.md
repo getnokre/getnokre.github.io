@@ -65,8 +65,7 @@ The dark appearance is where the lamp exists: depth dark's paper is
 room to light things. The ops, in paint order:
 
 1. **The page.** The ground; then each filled box as it is drawn — its
-   shadow, its fill, a well's inset shadow on that fill, its face and
-   its rim, the rim lit by the lamp and by every chrome edge that
+   shadow, its fill, its face and its rim, the rim lit by the lamp and by every chrome edge that
    reaches it at once
    ([below](#chrome-edges-are-lights)) — with the text and the rules on
    it drawn after it as in depth, and an icon glyph on it lit as its
@@ -102,9 +101,9 @@ under the lamp that the design first drew:
   most of a frame.
 - **The faces get their headroom back.** A lifted ground bounded paper's
   face: a darkened paper corner must stay 1.1:1 above the ground beside
-  it, and over the pool's `0x10` six bytes of darkening could not
-  ([below](#every-filled-box-is-a-plate)). Over the void the full six
-  hold everywhere.
+  it, and over the pool's `0x10` twelve bytes of darkening could not
+  ([below](#every-filled-box-is-a-plate)). Over the void the full
+  twelve hold everywhere.
 
 The chrome's contact lines are kept: they are a lamp op lifting the
 ground beside an edge, clamped at the ground's ceiling
@@ -122,17 +121,20 @@ honest against the element set; a rule stated on the fill cannot drift.
 Each plate answers the lamp through a material — how bright its lit
 rim runs, how bright its far rim, how strong its specular point, and
 how heavy a shadow it casts. The reference's six, and the knob, by
-role:
+role, as the owner tuned them on a live mockup (2026-09-27): every
+specular at 1.0, which the rim's cap still bounds, so it widens and
+hardens the hot corner rather than brightening it, and the well's and
+the knob's rim high raised:
 
 | Material | Role | Rim high | Rim low | Specular | Shadow weight |
 | --- | --- | --- | --- | --- | --- |
-| card | a card on the page | 0.28 | 0.03 | 0.34 | 1.0 |
-| cta | a primary button | 0.30 | 0.05 | 0.30 | 1.2 |
-| plate | an icon plate, a chosen row | 0.20 | 0.03 | 0.18 | 0.0 |
-| knob | a control standing on a track | 0.30 | 0.04 | 0.34 | 1.0, as a control |
-| well | a meter's track | 0.18 | 0.02 | 0.12 | 0.0, and an inset shadow |
-| fill | a meter's fill | 0.26 | 0.04 | 0.22 | 0.0 |
-| chrome | a nav plate, a sheet | 0.26 | 0.03 | 0.30 | 1.0 |
+| card | a card on the page | 0.28 | 0.03 | 1.0 | 1.0 |
+| cta | a primary button | 0.30 | 0.05 | 1.0 | 1.2 |
+| plate | an icon plate, a chosen row | 0.20 | 0.03 | 1.0 | 0.0 |
+| knob | a control standing on a track | 1.0 | 0.04 | 1.0 | 1.0, as a control |
+| well | a meter's track | 0.50 | 0.02 | 1.0 | 0.0 |
+| fill | a meter's fill | 0.26 | 0.04 | 1.0 | 0.0 |
+| chrome | a nav plate, a sheet | 0.26 | 0.03 | 1.0 | 1.0 |
 
 A weight of zero is a plate lying on another plate's face: it runs the
 shadow op like every plate, and the op casts nothing. Depth dark casts
@@ -144,8 +146,8 @@ as depth light's does: on or off, its place is the switch's value.
 
 The knob is the owner's (2026-09-27): a switch read flat, a `well`
 track under a `plate` knob, both near the dimmest numbers in the table
-and the knob casting nothing. A knob is raised — card's specular, a
-brighter rim than a plate's — and stands on its track the way a card
+and the knob casting nothing. A knob is raised — the brightest rim
+high of any material, and the heaviest shadow for its size — and stands on its track the way a card
 stands on the page, but a pixel off it rather than the page's 2 to 14
 (the control caster, under "The shadow" below); a
 segmented's and a dial's lit plate stand on theirs the same way.
@@ -191,7 +193,7 @@ a0   = att(dc) · 0.65                 dc: lamp to the box's centre
 t    = clamp((dFar − dp) / (dFar − dNear), 0, 1)
 a    = (low + (high − low) · t) · a0
      + specular · a0 · exp(−2.2 · (ds / specR)²)
-cov  = min(a + Σ edge, 0.30)
+cov  = min(a + Σ edge, cap)
 ```
 
 `Σ edge` is the light of every chrome edge reaching the plate
@@ -205,8 +207,9 @@ where `dp` is the pixel's distance to the lamp, `dNear = max(1, dc −
 min(w, h)/2)` and `dFar = dc + hypot(w, h)/2` bound it over the box,
 `ds` is the pixel's distance to the rim point nearest the lamp, and
 `specR = clamp(0.8 · min(w, h), 10, 30)`. The coverage cap is the rim
-gate: 30% white over `paper` is `0x60`, 2.7:1, under `g7`'s `0x67`, the
-first step that clears 3:1 on paper — so a lit edge never carries the
+gate: `color.lamp_rim_coverage_cap`, 83 of 255, lands `paper` on
+`0x66`, 2.97:1, one byte under `g7`'s `0x67`, the first step that
+clears 3:1 on paper — so a lit edge never carries the
 contrast a boundary or a focus change is read by, and at one device
 pixel it cannot be mistaken for the 2px ring. A **well** is concave:
 it mirrors the lamp through its own centre, so a track's lit inner
@@ -244,20 +247,21 @@ of its bytes and the y term by their round, each at the coverage the
 compositing needs for that. So chosen, the pair lands on the radial
 form's byte or one lighter, never darker.
 
-`cap` is per fill. On `paper` it is six bytes over the void, and would
-be less over a lifted ground: a darkened paper corner must stay 1.1:1
-above the ground at that corner, and six bytes cannot over `0x10`
-(paper `0x16` over `0x10` is 1.05:1). So paper's cap is the lesser of
-six and what that floor leaves over the ground byte at the box's
-farthest point from the lamp, where the face is darkest: six over
-ground `0x00`–`0x09`, then 5, 4, 4, 3, 2, 2, 1 over `0x0A`–`0x10`, and 0
-over `0x11`, the brightest byte the ground may take — and the ground
-there is the void's `0x00`, so every paper face takes the six. A face
-only ever darkens: `mid` on `paper` is 4.56:1 in depth dark, which leaves one
-byte of lift before AA fails, and a lamp's sheen spends more than one
-byte or nothing. The reference's caps for the other fills are `ink`
-13, `g11` 4, `g6` 8 and `g9` 5 bytes; color.zig's proofs own the final
-value of every one.
+`cap` is per fill, twice the reference's table as the owner tuned it.
+On `paper` it is twelve bytes over the void — `0x10`, where `mid`
+still reads at 5.09:1 — and would be less over a lifted ground: a
+darkened paper corner must stay 1.1:1 above the ground at that corner,
+and twelve bytes cannot over anything but the void. So paper's cap is
+the lesser of twelve and what that floor leaves over the ground byte
+at the box's farthest point from the lamp, where the face is darkest:
+twelve over ground `0x00`, then 11, 10, 10, 9, 8, 7, 7, 6, 6, 5, 4, 4,
+3, 2, 2, 1 over `0x01`–`0x10`, and 0 over `0x11`, the brightest byte
+the ground may take — and the ground there is the void's `0x00`, so
+every paper face takes the twelve. A face only ever darkens: `mid` on
+`paper` is 4.56:1 in depth dark, which leaves one byte of lift before
+AA fails, and a lamp's sheen spends more than one byte or nothing. The
+other fills' caps are `ink` 26, `g11` 8, `g6` 16 and `g9` 10 bytes;
+color.zig's proofs own the final value of every one.
 
 **The shadow.** Depth light's shadow, given a direction: the same
 smoothstep of signed distance to the rounded box, integer throughout
@@ -269,7 +273,7 @@ lamp along unit direction `n`:
 ```
 off  = (2 + 0.012 · min(dc, 1000)) · m.off
 blur = min(10 + 0.07 · dc, 36) · m.blur
-peak = (0.12 + 0.30 · att(dc)) · weight · 0.65 · m.peak
+peak = (0.12 + 0.30 · att(dc)) · weight · 0.65 · m.peak · gain
 ```
 
 drawn in two passes: a tight contact shadow (offset `0.35 · off`, blur
@@ -283,36 +287,16 @@ pixel off its track wherever it is in the window, so its `off` and
 `blur` are depth light's `.control` shadow's, 1 px and 3 px, and only
 its direction and its peak (`m.peak = 1`) come from the lamp. Depth
 light's peak, 14 of 255, does not carry over: over a dark track it
-darkens two bytes and shows nothing. What is new against depth light's
+darkens two bytes and shows nothing. `gain` is the owner's
+(2026-09-27): 0.5 for the page's and the chrome's casters, 2.0 for a
+control's. What is new against depth light's
 shadow is an x offset and a per-caster offset, blur and peak; the mask
 is the same, so it tiles its reach once like depth's does.
 
-**The inset shadow.** A well is a plate turned inside out. Where a
-plate stands up and casts outward, away from the lamp, a well is sunk:
-its lip nearest the lamp stands between the lamp and the floor, so the
-floor falls into shadow along the inner edge *facing* the lamp, and
-the lit rim is the far one (the rim, above).
-It is the shadow's own field turned inside out: move the well as a
-control's wide pass moves its caster — `n` times 1 px, and one pixel
-down — and blur it 3 px, and the inset coverage is what that field
-leaves uncovered, `peak − mask(p)`, times how much of the pixel the
-well itself covers. The peak is a control caster's of weight 1 from
-the same place, at most `color.lamp_inset_peak_coverage` (70, straight
-under the lamp). Black at that coverage, drawn over the well's fill
-and under its face and rim, so a knob's shadow and the lip's inside
-the track it stands on fall the same way.
-
-The well's own coverage is in the field rather than in a clip: a clip
-to a rounded box is an anti-aliased path, which a band chops where it
-crosses the band's edge. The moved box is not symmetric about the
-well's centre, so it ships as four corner tiles, each its own bytes,
-and four edge profiles; past `blur` inside the moved box the
-coverage is zero and the middle ships nothing. Every word a well
-carries keeps its text band over the shadow's darkest byte — a field's
-value and its placeholder (`dark` on the well; `mid` is 4.10:1 on
-`g11` before any shadow, so no well carries it), a segmented's labels
-— because a shadow only darkens a well under lighter words; the proof
-is color.zig's.
+**No inset shadow.** A well once took its own shadow inside it, along
+the inner edge facing the lamp; the owner removed it (2026-09-27). A
+well is concave by its rim alone — the lit edge is the far one
+([the rim](#every-filled-box-is-a-plate)) — and its face.
 
 ### Glyphs on plates are lit surfaces
 
@@ -343,13 +327,15 @@ edge lighting the plate, by the rim's formula
 the box's centre, so its far corner is the lit one.
 
 - **The two numbers** are `color.lamp_glyph_peak_coverage` and
-  `color.lamp_glyph_floor_coverage`: `0x80` and `0x30` on `paper`. They
+  `color.lamp_glyph_floor_coverage`: `0xB2` and `0x35` on `paper`. They
   are coverages of white, so on a brighter fill each lifts by the same
-  share of what is left above it: `0x85` / `0x38` on the `g11` well,
-  `0x91` / `0x4C` on the chosen nav plate's `g9` (the frost's brightest
-  tint), `0x70` / `0x16` over the void. The peak clears 3:1 on
+  share of what is left above it: `0xB5` / `0x3D` on the `g11` well,
+  `0xBC` / `0x51` on the chosen nav plate's `g9` (the frost's brightest
+  tint), `0xA8` / `0x1C` over the void. The peak clears 3:1 on
   `paper` — a control's glyph is to be found — and stays under `ink` on
-  every one of them; the floor never falls under any material's rim
+  every one of them: the owner asked for `0xBC` on `paper`, and `g9`
+  bounds it, since the same coverage lifts `g9` further, so the peak
+  is the largest coverage that keeps `g9` at `0xBC`, one under `ink`; the floor never falls under any material's rim
   `low` on the same fill. The proofs are
   [color.zig](../../src/core/color.zig)'s.
 - **Why not the plate's field.** Normalised over the plate, a 24 px
@@ -357,7 +343,7 @@ the box's centre, so its far corner is the lit one.
   measured `0x45` at its brightest against a `0x40` floor — and its
   peak was the rim's cap. Normalised over its own box, every glyph
   carries the whole range corner to corner, wherever it stands.
-- **Why the rim's cap does not bound it.** The rim's `0x60` keeps a lit
+- **Why the rim's cap does not bound it.** The rim's `0x66` keeps a lit
   edge from carrying a boundary's 3:1
   ([above](#every-filled-box-is-a-plate)); a glyph is not an edge, and
   the control it names is one to find, so its peak carries the 3:1 the
@@ -522,7 +508,7 @@ indicator frost as nav plates do, the panes as a sheet does.
   three times harder than its tint's (`k0 × 3`) and also catches a white
   sheen toward the lamp, coverage `s · (1 − (kx + ky))` with `s = 0.06 ·
   att(dc) · 0.65`. Measured on a full-width sheet: 40 near the lamp, 26
-  at the far corner. Paper cannot do this — its six-byte cap made a 500
+  at the far corner. Paper cannot do this — its cap, six bytes then, made a 500
   px sheet vary by three bytes, which reads as flat — but a frosted fill
   is outside the text proofs already ([below](#what-is-waived)), so
   its face is not held to them. The sheen is not separable, so it is
@@ -563,17 +549,16 @@ the build:
   draw, the contact lines included — the floor depth's ground is
   already proved to. Lamp dark's own ground is the void.
 - The rim's brightest byte on `paper` stays under `g7`'s `0x67`: at
-  most `0x60`, however many lights reach it, because the rim is one
+  most `0x66`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
   lamp-dark take against depth dark's bytes pixel for pixel.
-- A well's inset shadow darkens by at most 70 of 255, and every word
-  on a well — `ink` and `dark` over `g10` and `g11` — keeps its text
-  band over the darkest byte it and the face leave.
-- A face on `paper` only darkens, by at most six bytes — the full six
+- Every word on a well — `ink` and `dark` over `g10` and `g11` — keeps
+  its text band over the darkest byte its face leaves.
+- A face on `paper` only darkens, by at most twelve bytes — the full twelve
   over the void, less beside a ground a lamp op has lifted — and never
   lifts: one byte of lift is all the headroom `mid` on `paper` has.
-- A lit glyph's peak on `paper` is `0x80`, 3:1 over it and under `ink`
-  on every fill a glyph stands on, and its floor, `0x30` on `paper`, is
+- A lit glyph's peak on `paper` is `0xB2`, 3:1 over it and under `ink`
+  on every fill a glyph stands on, and its floor, `0x35` on `paper`, is
   no dimmer than any material's rim `low` on the same fill.
 - lamp's thirteen ramp bytes are depth's, in both appearances — one
   proof asserts the equality, so every text and focus proof depth
@@ -603,7 +588,6 @@ At 3× on a phone, per scroll frame unless stated:
 | Rim | ≈7 KB per page plate | four edge strips, four corner tiles |
 | Face | ≈12 KB per page plate | two strips, each a row or a column and four corner tiles |
 | Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
-| Inset shadow | ≈4–5 KB per well | four corner tiles and four edge profiles, whatever the well's length: a switch's track or a field at 3× |
 | Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
 | Lit glyph | ≈4–6 KB per glyph | a tile over the run's ink box, two device pixels out: a 24 px glyph's is 64–76 px square at 3×; filled again each frame it shows, chrome's included |
 | Edge lights | none of their own | a term in the rim's one mask |

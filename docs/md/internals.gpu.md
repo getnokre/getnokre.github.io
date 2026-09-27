@@ -67,7 +67,7 @@ The reversal spends the promise for GPU-backed frames and nothing else:
 | On the GPU | On the CPU |
 | --- | --- |
 | rasterizing the op list into the drawable, in order, on one canvas | the tree, layout, shaping and every planner |
-| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, a well's inset shadow, glow, frost blur | the op list itself and each planner's parameters |
+| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, glow, frost blur | the op list itself and each planner's parameters |
 | a lit glyph's paint: the glyph's shader over its own ink box's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
 | presenting, paced by the display | goldens, proofs and the audit |
 
@@ -346,7 +346,6 @@ it is a float, floored where the CPU divides.
 | Rim | `RimField.coverageAt`: the box's ring less its inner box's, times the lamp's light, the specular's `exp`, and every edge line, capped once | `RimField`: box, radius, lamp, `a0`, near and far, specular point and `specR²`, the material's high, low and specular, the cap, up to twelve edge lines |
 | Face and sheen | `sheenAt`, `acrossAt`, `downAt`, one draw each over the planner's pieces | `FaceField`: box, lamp, the near squares, span, darkest, glass's `k0`, `σ` and bright tint, `under`, sheen |
 | Shadow | `ShadowMask.coverageAt`: the smoothstep of rounded-box distance, both passes, and depth's drop shadow | `MaskField`: blur, radius, peak; the reach is the pieces' union, drawn as one rect |
-| Inset shadow | `InsetField.coverageAt`: `peak` less the shadow's smoothstep of the distance to the moved well, through the well's own box cover, one draw per piece | `InsetField`: the well and the moved well, blur, peak |
 | Contact line | the shadow's coverage, then a runtime *blender*: `lampGlowByte` of the destination's own byte, never darker, clamped at the ceiling | `MaskField`, the tone and the ceiling |
 | Frost | the frame drawn so far, snapshotted on the GPU beneath the plate; halved; three separable box-blur passes at both radii; sampled back and mixed per plate pixel | `FrostStyle`: radius, tint, gain |
 
@@ -445,7 +444,7 @@ rasterises glyphs and curves its own way; a lit glyph's box, less the
 corner squares drawn through it (a focus ring's), is held to 2 bytes —
 Ganesh's glyph coverage under the glyph's shader, which lands within
 the tile's; what a frost covers is held to 4; the plates and the
-ground — the void, rims, faces, shadows, a well's inset shadow,
+ground — the void, rims, faces, shadows,
 contact lines over depth's fills — to 2.
 Max / mean byte difference on an M4:
 

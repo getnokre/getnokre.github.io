@@ -187,10 +187,10 @@ And one from its lit glyphs ([lamp.md](lamp.md#glyphs-on-plates-are-lit-surfaces
   An icon glyph is otherwise `ink` and held to the text band like any
   word; in lamp dark a glyph standing on a plate is painted as a lit
   object instead (the back control and a header action, on no plate,
-  as one standing on their own targets), from `0x80` on `paper` at the
-  corner of its ink box facing the lamp (4.3:1) to `0x30` at the far
-  corner (1.3:1), so it clears 4.5:1 nowhere and 1.4.11's 3:1 only
-  toward the lamp. By design: a glyph flat at `ink` read as printed on
+  as one standing on their own targets), from `0xB2` on `paper` at the
+  corner of its ink box facing the lamp (8.0:1) to `0x35` at the far
+  corner (1.4:1), so it clears 4.5:1 and 1.4.11's 3:1 only toward the
+  lamp. By design: a glyph flat at `ink` read as printed on
   the light, not lit by it. Scoped
   exactly to the glyphs lamp.md lists — an icon button's, a sheet's
   close, the back control's and a header action's, the nav's glyphs
@@ -263,8 +263,7 @@ r=g=b: a gray composited over a gray by one coverage stays gray.
 
 `lamp` adds ops of the same kind, and they draw nothing under eink or
 depth, nor in lamp light: for every filled box a rim, a face and a
-directional shadow, and inside a well the shadow its lip casts on its
-floor, the chrome's edge lights and contact lines, the
+directional shadow, the chrome's edge lights and contact lines, the
 frost, and an icon glyph on a plate painted as its lit surface
 ([lamp.md](lamp.md)). Its ground is no op of its own: in dark it is a
 void, `0x00` throughout, drawn as depth's ground is. Each is paint
