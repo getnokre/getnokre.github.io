@@ -68,7 +68,7 @@ The reversal spends the promise for GPU-backed frames and nothing else:
 | --- | --- |
 | rasterizing the op list into the drawable, in order, on one canvas | the tree, layout, shaping and every planner |
 | lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, glow, frost blur | the op list itself and each planner's parameters |
-| a lit glyph's paint: the rim's shader over its plate's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
+| a lit glyph's paint: the glyph's shader over its own ink box's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
 | presenting, paced by the display | goldens, proofs and the audit |
 
 The proof order was deliberate: OP_FROST and OP_GLOW read pixels, so
@@ -437,12 +437,15 @@ with the GPU shim linked and draws every lamp-dark take a second time on
 an offscreen Metal surface, reads it back, and compares it with its
 committed golden (tests/gpu_accuracy.zig). Dark only: lamp light is
 depth light and draws no lamp op, so no shader has a light variant.
-Pixels are sorted by what drew them: a lit glyph's box, and text and
-anti-aliased edges (every other glyph run's box, and each rounded
-fill, stroke and frost's corner squares), are reported and not held,
-since Ganesh rasterises glyphs and curves its own way; what a frost
-covers is held to 4 bytes; the plates and the ground — the void, rims,
-faces, shadows, contact lines over depth's fills — to 2.
+Pixels are sorted by what drew them: text and anti-aliased edges
+(every glyph run's box but a lit one's, and each rounded fill, stroke
+and frost's corner squares) are reported and not held, since Ganesh
+rasterises glyphs and curves its own way; a lit glyph's box, less the
+corner squares drawn through it (a focus ring's), is held to 2 bytes —
+Ganesh's glyph coverage under the glyph's shader, which lands within
+the tile's; what a frost covers is held to 4; the plates and the
+ground — the void, rims, faces, shadows, contact lines over depth's
+fills — to 2.
 Max / mean byte difference on an M4:
 
 | Take | Plates + ground | Frost | Lit glyphs | Text + AA (max) |
@@ -451,20 +454,21 @@ Max / mean byte difference on an M4:
 | button-forms | 1 / 0.000 | — | — | 23 |
 | button-in-progress | 1 / 0.001 | — | — | 45 |
 | meter | 1 / 0.000 | — | — | 27 |
-| tiles | 1 / 0.000 | — | 1 / 0.011 | 35 |
+| tiles | 1 / 0.000 | — | 1 / 0.004 | 35 |
 | accessibility-toggles | 1 / 0.000 | — | — | 12 |
-| dial | 1 / 0.000 | — | 4 / 0.012 | 8 |
-| select-picker | 1 / 0.000 | 1 / 0.041 | 3 / 0.022 | 24 |
-| nav-bottom | 1 / 0.000 | 1 / 0.006 | 2 / 0.053 | 7 |
-| sheet | 1 / 0.000 | 1 / 0.049 | — | 47 |
-| notice-banner | 0 / 0 | 1 / 0.025 | 1 / 0.032 | 1 |
-| notices-pane | 0 / 0 | 1 / 0.054 | 1 / 0.057 | 3 |
-| nav-with-indicator | 1 / 0.000 | 1 / 0.008 | 2 / 0.053 | 7 |
+| dial | 1 / 0.000 | — | 1 / 0.006 | 8 |
+| select-picker | 1 / 0.000 | 1 / 0.041 | 1 / 0.003 | 24 |
+| nav-bottom | 1 / 0.000 | 1 / 0.006 | 2 / 0.074 | 7 |
+| sheet | 1 / 0.000 | 1 / 0.049 | 1 / 0.021 | 47 |
+| notice-banner | 0 / 0 | 1 / 0.025 | 2 / 0.030 | 1 |
+| notices-pane | 0 / 0 | 1 / 0.054 | 1 / 0.051 | 3 |
+| nav-with-indicator | 1 / 0.000 | 1 / 0.008 | 1 / 0.025 | 7 |
 | frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | 23 |
-| page-scrolled | 1 / 0.001 | 1 / 0.071 | 2 / 0.060 | 45 |
-| sheet-over-scrolled | 1 / 0.001 | 1 / 0.063 | 17 / 0.120 | 45 |
+| header-action-two | 0 / 0 | — | 1 / 0.001 | 1 |
+| page-scrolled | 1 / 0.001 | 1 / 0.071 | 2 / 0.053 | 45 |
+| sheet-over-scrolled | 1 / 0.001 | 1 / 0.063 | 2 / 0.164 | 45 |
 
-Every take meets both targets.
+Every take meets all three targets.
 
 **Frames.** Measured as the proof was — the kitchen sink in
 `ReleaseFast`, a 5 s CGEvent wheel scroll at 120 Hz, median / p95 ms

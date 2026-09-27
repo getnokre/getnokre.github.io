@@ -185,12 +185,13 @@ And one from its lit glyphs ([lamp.md](lamp.md#glyphs-on-plates-are-lit-surfaces
 
 - **A glyph on a plate sits under nokre's own icon contrast floor.**
   An icon glyph is otherwise `ink` and held to the text band like any
-  word; in lamp dark a glyph standing on a plate is painted as the
-  plate's lit surface instead (the back control and a header action,
-  on no plate, as a plate's over their own targets), at most the rim's `0x60` on `paper`
-  (2.7:1) and at least a byte above its fill far from the lamp, so it
-  clears neither 4.5:1 nor 1.4.11's 3:1. By design: a glyph brighter
-  than every rim read as printed on the light, not lit by it. Scoped
+  word; in lamp dark a glyph standing on a plate is painted as a lit
+  object instead (the back control and a header action, on no plate,
+  as one standing on their own targets), from `0x80` on `paper` at the
+  corner of its ink box facing the lamp (4.3:1) to `0x30` at the far
+  corner (1.3:1), so it clears 4.5:1 nowhere and 1.4.11's 3:1 only
+  toward the lamp. By design: a glyph flat at `ink` read as printed on
+  the light, not lit by it. Scoped
   exactly to the glyphs lamp.md lists — an icon button's, a sheet's
   close, the back control's and a header action's, the nav's glyphs
   and chevron, the dial's steps, a tile's mark and chevron, a select's

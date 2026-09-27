@@ -270,30 +270,52 @@ is the same, so it tiles its reach once like depth's does.
 
 ### Glyphs on plates are lit surfaces
 
-An icon glyph standing on a plate is part of the plate's surface, not
-ink printed on it. A flat glyph in depth dark's `ink` is `0xBD`, the
-brightest thing in a lit scene by far — every rim stops at `0x60` — and
-it read as printed on top of the light rather than lit by it. So the
-glyph takes the plate's own light: the rim's field
-([above](#every-filled-box-is-a-plate)) read at every pixel the glyph
-covers rather than on the ring — the lamp's falloff across the box, the
-specular at its nearest point, every chrome edge lighting it, a well's
-inversion — plus a floor, capped once:
+An icon glyph standing on a plate is part of the lit scene, not ink
+printed on it. A flat glyph in depth dark's `ink` is `0xBD`, the
+brightest thing in a lit scene by far, and it read as printed on top of
+the light rather than lit by it. So the glyph is a small lit object of
+its own: the lamp's light normalised over the glyph's own ink box —
+the run's glyph bounds, rounded out to device pixels — from a peak at
+the pixel nearest the lamp to a floor at the farthest, linear in the
+squared distance as a face's darkening is
+([above](#every-filled-box-is-a-plate)):
 
 ```
-lit  = (low + (high − low) · t) · a0 + specular · a0 · exp(…) + Σ edge
-cov  = min(lit + low, 0.30)
+t    = (d² − near²) / (far² − near²)
+cov  = min(floor + (peak − floor) · (1 − t)
+           + specular · exp(−2.2 · (ds / specR)²) + Σ edge, peak)
 ```
 
-white composited over the plate by `cov` times the glyph's own coverage.
+white composited over what the glyph stands on by `cov` times the
+glyph's own coverage. `d` is the pixel's distance to the lamp, `near`
+and `far` the ink box's nearest and farthest pixel centres'; the
+specular stands at the nearest, `specR` two fifths of the box's
+shorter side and its strength half of `peak − floor`, so it widens the
+peak into a hot corner rather than passing it. `Σ edge` is every chrome
+edge lighting the plate, by the rim's formula
+([below](#chrome-edges-are-lights)). A well mirrors the lamp through
+the box's centre, so its far corner is the lit one.
 
-- **The floor** is the material's rim `low`, as an even sheen at every
-  pixel: an icon-only button far from the lamp, where the falloff has
-  nearly nothing left, is still found. On paper it lifts the glyph at
-  least a byte above the fill, and a proof holds it
-  ([color.zig](../../src/core/color.zig)).
-- **The cap** is the rim's: `0x60` on paper, however many lights reach
-  it, so a glyph is never brighter than the brightest rim beside it.
+- **The two numbers** are `color.lamp_glyph_peak_coverage` and
+  `color.lamp_glyph_floor_coverage`: `0x80` and `0x30` on `paper`. They
+  are coverages of white, so on a brighter fill each lifts by the same
+  share of what is left above it: `0x85` / `0x38` on the `g11` well,
+  `0x91` / `0x4C` on the chosen nav plate's `g9` (the frost's brightest
+  tint), `0x70` / `0x16` over the void. The peak clears 3:1 on
+  `paper` — a control's glyph is to be found — and stays under `ink` on
+  every one of them; the floor never falls under any material's rim
+  `low` on the same fill. The proofs are
+  [color.zig](../../src/core/color.zig)'s.
+- **Why not the plate's field.** Normalised over the plate, a 24 px
+  glyph spans a sliver of the plate's range and reads flat — a nav glyph
+  measured `0x45` at its brightest against a `0x40` floor — and its
+  peak was the rim's cap. Normalised over its own box, every glyph
+  carries the whole range corner to corner, wherever it stands.
+- **Why the rim's cap does not bound it.** The rim's `0x60` keeps a lit
+  edge from carrying a boundary's 3:1
+  ([above](#every-filled-box-is-a-plate)); a glyph is not an edge, and
+  the control it names is one to find, so its peak carries the 3:1 the
+  rim is kept from.
 - **Where.** Every icon-only control's glyph, and the glyphs whose
   surface is a plate: an icon button's (on its bar plate, its notice or
   its pane), a sheet's close (on the sheet's glass), a nav item's,
@@ -301,10 +323,9 @@ white composited over the plate by `cov` times the glyph's own coverage.
   nav plate), the dial's step glyphs (on their buttons), a tile's mark
   (on its well) and chevron (on its group's card), and a select's
   chevron (on its field). The back control and a header action stand
-  on the page ground, on no plate: each is lit as a `plate` over its
-  own target, so the lamp's falloff across that box and the floor are
-  what find it. A disabled one is lit too: its plate and its words
-  carry the state.
+  on the page ground, on no plate: each answers as a `plate` standing
+  on its own target, and is lit over its ink box as every other is. A
+  disabled one is lit too: its plate and its words carry the state.
 - **What stays ink.** A checkbox's mark, a radio's dot, a notice's
   icon, the standalone `icon` element, a ranking's glyphs, a picker
   row's and every glyph inline in reading text: each is a mark to be read against its ground, not the
@@ -312,11 +333,14 @@ white composited over the plate by `cov` times the glyph's own coverage.
   glyph is ink: lamp light is depth light.
 
 It is a canvas op of its own (`litGlyph`): the run is shaped and placed
-as any run is, and the lit field is its paint. On the CPU the field is
-a tile over the run's ink box, in device pixels, which the glyph's
-coverage samples; on the GPU the rim's shader is the paint, over the
-same field. A glyph's semantics are its label, so the accessibility
-snapshot does not see any of this. What it costs the contrast gates is
+as any run is, and the lit field is its paint. Its plate chooses the
+material and the edge lights; the shim hands back the run's ink box,
+and the field is planned over it. On the CPU the field is a tile over
+that box and two pixels of fringe, which the glyph's coverage samples;
+on the GPU the glyph's own shader is the paint, over the same field,
+within 2 bytes of the tile ([gpu.md](gpu.md#what-the-shaders-measure)).
+A glyph's semantics are its label, so the accessibility snapshot does
+not see any of this. What it costs the contrast gates is
 the third waiver ([below](#what-is-waived)).
 
 ### Chrome edges are lights
@@ -499,8 +523,9 @@ the build:
 - A face on `paper` only darkens, by at most six bytes — the full six
   over the void, less beside a ground a lamp op has lifted — and never
   lifts: one byte of lift is all the headroom `mid` on `paper` has.
-- A lit glyph's brightest byte on `paper` is the rim's `0x60`, and its
-  floor on `paper` is above the fill on every material.
+- A lit glyph's peak on `paper` is `0x80`, 3:1 over it and under `ink`
+  on every fill a glyph stands on, and its floor, `0x30` on `paper`, is
+  no dimmer than any material's rim `low` on the same fill.
 - lamp's thirteen ramp bytes are depth's, in both appearances — one
   proof asserts the equality, so every text and focus proof depth
   passes, lamp passes on the same bytes — and lamp light's ground, drop

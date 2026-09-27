@@ -593,7 +593,7 @@ control boundaries and graphic tracks, keeping text and focus contrast;
 `lamp`, drawn in depth's bytes, waives the same and, in dark, text
 contrast on its frosted chrome and nokre's icon contrast floor for a
 control's glyph — an icon-only control's, or one standing on a plate —
-which it paints as a plate's lit surface, besides;
+which it paints as a lit object, besides;
 choose `eink` where 1.4.11 must hold), and that each dark ramp *eases* text
 rather than mirroring it (an inversion would leave dark exactly as harsh as light, which is the
 wrong answer for the appearance where halation is worse); a test in
