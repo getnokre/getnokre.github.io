@@ -1434,7 +1434,17 @@ demonstrate every element nokre has.
 On macOS an identity-carrying example is driven inside an assembled
 bundle, for the same reason its `run-` step is: hello's screen prints
 what `package_info` answers, and outside a bundle that question raises an
-NSException before a screen exists to fail.
+NSException before a screen exists to fail. An example that links a store
+is driven on its dev store rather than the platform leg its `run-` step
+keeps: on macOS that leg is the developer's login keychain, bound to a
+signature every rebuild of the driver changes, so a screen that read the
+store raised a password prompt on every gate run. On macOS and desktop
+Linux the driver is a twin of the example built with `_dev` declared,
+Debug whatever `-Doptimize` says (Debug is one of the dev store's gates;
+the step's name says so when they differ), with its store file in the
+build cache, and the run fails unless the dev store's launch line is on
+its stderr. On Windows, whose Credential Manager answers any process,
+the driver keeps the example's own instance.
 
 ### The web's own gate
 

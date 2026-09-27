@@ -149,6 +149,10 @@ knob's gray (`.g6`, `.g9` disabled), with its face and rim. The on
 track is `ink`, the brightest surface in the scene, and reads as
 luminous: a matte knob casting onto a light source reads wrong. The
 track's fill carries the state, as it does in depth.
+A radio's chosen disc is `ink` too and lies flat for the same reason:
+a plate in its fill with its face and rim, no shadow op, and its dot a
+mark on it. An empty disc is a small well, as an off track is, whose
+inverted rim is the only edge it has (owner's, 2026-09-27).
 
 The knob is the owner's (2026-09-27): a switch read flat, a `well`
 track under a `plate` knob, both near the dimmest numbers in the table
@@ -175,18 +179,20 @@ table.
 | `picker_item` | the chosen row | plate |
 | `badge`, `checkbox`, a notice in the notices pane | the chip, the box, the row | plate |
 | `toggle` | the knob, lying flat when on | knob |
+| `radio_group` | the chosen disc, lying flat | plate |
 | `text_input`, `text_area`, `select`, `copyable` | the field on the page | plate |
 | the same | the field on a paper surface | well |
 | `meter`, `diverging_meter`, a working button | the track | well |
 | `toggle`, `segmented`, `dial` | the track | well |
+| `radio_group` | an empty disc | well |
 | `meter`, `diverging_meter`, a working button | the fill, the arms | fill |
 | `nav_item`, `nav_here`, `nav_current`, the notices indicator | the plate, glass | chrome |
 | `sheet`, `notices_pane`, a picker, a notice banner | the pane, glass | chrome |
 | a pending run, under a `stand_in` | the block, lying flat | plate |
 
-Not plates, and drawn as depth draws them: glyphs off a plate (a
-radio's discs among them; the glyphs on one are
-[below](#glyphs-on-plates-are-lit-surfaces)), hairlines and rules, the
+Not plates, and drawn as depth draws them: glyphs off a plate (the
+glyphs on one are [below](#glyphs-on-plates-are-lit-surfaces)), a
+radio's dot, hairlines and rules, the
 blockquote's bar, a diverging meter's centre tick, the QR tile and the
 vendor sign-in pills (both pinned to eink's light ramp, the pills in
 their vendors' fills), a `link` (words, not a box), the selection
@@ -508,6 +514,10 @@ Nav plates and sheets are frosted glass: they show the page beneath,
 blurred, instead of an opaque fill — and so are the notices indicator,
 a notice banner, the notices pane and a picker. A banner and the
 indicator frost as nav plates do, the panes as a sheet does.
+A pane's glass, rim, shadow and contact line are all drawn on its body
+at the pane's corner (`layout.modalPaneRadius`), which under lamp is
+depth's doubled one ([elements.md](../elements.md#sheet), the owner's
+decision of 2026-09-27), so every effect follows the larger arc.
 
 - **Blur.** The frame beneath the plate blurred by three passes of a
   separable integer box blur — close to a Gaussian, deterministic, and

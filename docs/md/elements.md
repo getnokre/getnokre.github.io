@@ -3513,7 +3513,11 @@ A bottom-anchored panel (top corners rounded, `.g6` outline — none
 under [`depth`](getting-started.md#a-theme), whose paper stands off the veil by a glow
 in light and by its fill in dark), at most
 `metrics.sheet_max_w` (560px) wide and never closer than
-`metrics.sheet_min_top` (48px) to the top edge. The framework pins a
+`metrics.sheet_min_top` (48px) to the top edge. Its top corners are a
+card's 12px under `eink` and twice that, 24px, under `depth` and
+`lamp` (the owner's decision, 2026-09-27); the picker and the notices
+pane share the surface and its corners, and the notice banner keeps
+12px in every look. The framework pins a
 close control — a quiet Lucide square-x glyph with the accessible name "Close",
 occupying the full 44px touch target — in the header corner and moves
 focus to it; everything

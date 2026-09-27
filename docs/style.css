@@ -45,6 +45,7 @@
   --border: 1px;
   --radius: 8px;
   --radius-card: 12px;
+  --radius-pane: 12px;
   --touch: 44px;
   --tap-target: 24px;
   --focus: 2px;
@@ -280,6 +281,7 @@
 :root[data-nokre-theme="depth"] .notice:not(.notices-pane .notice) { background: var(--banner); }
 :root[data-nokre-theme="depth"] .scrim { background: var(--scrim-veil); }
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { box-shadow: var(--modal-shadow); }
+:root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { --radius-pane: 24px; }
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notice { border-color: transparent; }
 :root[data-nokre-theme="depth"] .btn:not(.auth, .icon-only) { border-radius: 18px; }
 :root[data-nokre-theme="depth"] .tile > .icon.square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
@@ -2398,7 +2400,7 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
   padding-bottom: calc(var(--sheet-pad) + var(--safe-b));
   /* The body extends past the bottom and the clip squares it off;
      here the same thing is said by rounding only the top. */
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border-radius: var(--radius-pane) var(--radius-pane) 0 0;
   border-bottom: 0;
 }
 /* h2 *scale*, regular face. A pane's title is chrome the framework

@@ -221,7 +221,8 @@ until the next rebuild, signing with any stable identity (even
 self-signed) ends it, and a Deny maps to `error.Unavailable` — a free
 rehearsal of the locked-keychain path every shipping app must handle.
 Tests never see it (they only reach the fake,
-[testing.md](testing.md)). Packaging note: static-lib consumers (the
+[testing.md](testing.md)), and neither do nokre's own gate binaries,
+which are built on the dev store below. Packaging note: static-lib consumers (the
 iOS Xcode project) add Security.framework themselves.
 
 **The dev store,** for the binary that drives your app end to end
