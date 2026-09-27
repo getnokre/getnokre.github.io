@@ -1022,8 +1022,8 @@ shell.m. Its twists:
   30+: the gesture-nav band's height is `safe_bottom`, the IME inset
   shrinks the view, and pre-30 devices run inside system windows with
   `adjustResize`.
-- **The GPU presenter.** Under `NOKRE_GPU` (the example projects'
-  `nokreRaster=gpu`) shell.c hands the window to the shim instead of
+- **The GPU presenter.** Under `NOKRE_GPU` (the packaging tree's
+  `raster.cmake`, for a GPU raster) shell.c hands the window to the shim instead of
   locking it: surfaceCreated's first `nativeSetSurface` attaches it
   (`hsk_gpu_attach_window`: a Vulkan swapchain over it), every later
   one — surfaceChanged, the same window at a new size — remakes the

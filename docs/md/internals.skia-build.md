@@ -6,9 +6,23 @@ modules — the shim is the entire contract, which is what makes swapping
 or shrinking Skia later a contained problem. Every default build is CPU
 raster only; the GPU backend for the `lamp` theme — Ganesh on Metal on
 Apple, Ganesh on Vulkan on Android, one per platform — is in separate
-archives built below and linked only under `-Dgpu` ([gpu.md](gpu.md)
-records why); Ganesh on Vulkan on Windows and Linux is scripted and
-unrun.
+archives built below and linked only for an app whose declaration
+resolves to the GPU ([gpu.md](gpu.md) records why, and its
+[Consumers](gpu.md#consumers) section the resolution); Ganesh on Vulkan
+on Windows and Linux is scripted and unrun.
+
+**What a consumer builds.** Every archive lives in the nokre checkout's
+`deps/`, so the scripts run there, once per machine and per Skia pin,
+and never in a consumer's tree. The CPU ones are the prerequisite of any
+native build: `tools/fetch-deps.sh` for the desktops, and
+`tools/build-skia-ios.sh` and `tools/build-skia-android.sh` for the two
+mobile targets. The GPU ones are the prerequisite of a *fast* lamp app,
+not of a working one: an app declaring `lamp` builds without them, on
+the CPU, and the build names the missing script — `tools/build-skia-macos.sh`,
+`tools/build-skia-ios.sh --gpu`, `tools/build-skia-android.sh --gpu`,
+and `tools/build-skia-windows.sh` and `tools/build-skia-linux.sh`, each
+of the last two on its own OS. Only an explicit `.raster = .gpu` makes
+one a hard prerequisite.
 
 ## Today: prebuilts
 
@@ -60,8 +74,8 @@ build's one backend switched on — `skia_enable_ganesh=true`,
 each against the CPU archive's 11), with its checkout's `include/` and
 skcms's two public headers beside them, since `deps/skia`'s prebuilt
 headers have no `gpu/ganesh/mtl`. The CPU archive and its default path
-are untouched; the example Xcode projects link this one only under
-`NOKRE_RASTER=gpu` ([gpu.md](gpu.md#ios)). It takes about five minutes
+are untouched; an Xcode project links this one only when the app's
+declaration resolves to the GPU ([gpu.md](gpu.md#consumers)). It takes about five minutes
 on an M4.
 
 ## macOS with Metal: the GPU build
@@ -85,11 +99,11 @@ could not link an arm64 archive.
 
 `tools/fetch-deps.sh` does not run it, the same as the iOS and Android
 builds: fetch-deps fetches published archives, and this one is built
-locally until the release artifacts below exist. `-Dgpu` in build.zig
-links it — the shim's GPU half (`shim/nokre_skia_mtl.mm`, compiled with
-the archive's client defines `SK_GANESH` and `SK_METAL`), the GPU
-archive, Metal, QuartzCore and IOSurface — for nokre's own `run-*`
-examples only ([gpu.md](gpu.md#the-proof-plan)). Every codec is off in
+locally until the release artifacts below exist. A GPU raster links it
+— the shim's GPU half (`shim/nokre_skia_mtl.mm`, compiled with the
+archive's client defines `SK_GANESH` and `SK_METAL`), the GPU archive,
+Metal, QuartzCore and IOSurface — for a lamp app, or any app under
+`.raster = .gpu` or nokre's own `-Dgpu` ([gpu.md](gpu.md#consumers)). Every codec is off in
 this archive as in iOS's, so the shim carries the same PNG encoder stub
 (`shim/nokre_skia_nocodec_stub.cpp`), and the script ships skcms's two
 public headers beside `include/`, since `SkColorSpace.h` includes them.
@@ -135,8 +149,8 @@ under `include/third_party/vulkan`) and skcms's two public headers
 beside it, `deps/skia-ios-gpu`'s layout. It clones one external the CPU
 profile does not: the Vulkan Memory Allocator (`skia_use_vma`), Skia's
 allocator for a context given none, at the revision `DEPS` pins. The
-CPU archive is untouched; the example projects link this one only under
-`-PnokreRaster=gpu` ([gpu.md](gpu.md#android)). It takes a few minutes
+CPU archive is untouched; a Gradle project links this one only when the
+app's declaration resolves to the GPU ([gpu.md](gpu.md#consumers)). It takes a few minutes
 on an M4.
 
 ## Windows and Linux with Vulkan
@@ -172,8 +186,9 @@ headers beside it.
 Both are **unrun**: written on a Mac, which can build neither, so no gn
 argument above has been through gn on its platform, and whether the
 Windows archive still wants the zlib stub the prebuilt needs is
-unknown. `-Dgpu` without the archive stops the build before compiling
-and names the script. Every default build is untouched.
+unknown. An explicit `.gpu` (or `-Dgpu`) without the archive stops the
+build before compiling and names the script; a lamp app without it
+builds on the CPU and prints a note naming the script. Every default build is untouched.
 
 ## Which scaler, and why it is not one scaler
 

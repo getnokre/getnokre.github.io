@@ -49,8 +49,9 @@ theme, and lamp is the theme that was designed. So the GPU draws lamp.
 
 The reversal spends the promise for GPU-backed frames and nothing else:
 
-- **The CPU raster path remains**, in every build, on every shell. A
-  build without `-Dgpu` is byte-for-byte what it was.
+- **The CPU raster path remains**, in every build, on every shell. An
+  app that does not declare lamp, and every test, builds byte-for-byte
+  what it did.
 - **eink and depth stay CPU-exact.** They never needed the GPU, and
   their bytes keep the full promise of
   [pixel-model.md](pixel-model.md).
@@ -98,11 +99,11 @@ macOS and Metal first, as a go/no-go:
    macOS arm64 (Windows and Linux followed, below): the shim compiles with `NOKRE_GPU`
    plus `shim/nokre_skia_mtl.mm` against `deps/skia-macos-gpu`, and the
    app links that archive with Metal, QuartzCore and IOSurface in place
-   of the prebuilt. Tests, goldens and a consumer's `addApp` stay on the
-   CPU whatever the flag says (build.zig's `Raster`); the example
-   drivers and `bench-lamp` import the app's module, so under `-Dgpu`
-   they link the GPU shim and, with no layer attached, draw on the CPU
-   through it.
+   of the prebuilt. It is now the examples' explicit `.raster = .gpu`,
+   and a consumer's app resolves its own ([Consumers](#consumers)). The
+   example drivers and `bench-lamp` import the app's module, so under
+   `-Dgpu` they link the GPU shim and, with no layer attached, draw on
+   the CPU through it.
 3. The shim's GPU path. *Built.* One `GrDirectContext` over the layer's
    device, made when the shell attaches its layer; per frame the
    recorded op list replays in order on one canvas — no bands, no pool,
@@ -135,10 +136,9 @@ both SDKs into `deps/skia-ios-gpu`
 ([skia-build.md](skia-build.md#ios-built-from-source)); `-Dgpu` on an
 iOS target compiles the shim with `NOKRE_GPU` and
 `shim/nokre_skia_mtl.mm` against it. The shell is compiled by Xcode,
-not zig, so the example project carries the switch as one build
-setting, `NOKRE_RASTER` (`cpu` by default): `gpu` passes `-Dgpu` to the
-Zig phase, links `deps/skia-ios-gpu` and Metal, and compiles the shell
-with `NOKRE_GPU=1`.
+not zig, so it learns the raster from the packaging tree, as a
+consumer's does ([Consumers](#consumers)); the example project's one
+setting, `NOKRE_RASTER=gpu`, only passes `-Dgpu` to the Zig phase.
 
 ```
 xcodebuild -project examples/kitchen_sink/ios/KitchenSink.xcodeproj \
@@ -197,14 +197,14 @@ made at it showed each rotated frame stretched into the old shape.
 The SkSL shaders compile to SPIR-V unchanged. `allowEs3` is still
 needed: the SkSL 100 limit is the front end's, before any backend.
 
-The switch is one Gradle property, `nokreRaster` (`cpu` in
-gradle.properties): `gpu` passes `-Dgpu` to the Zig phase, which then
-only checks the archive exists (the Zig is the same either way), and
-`-DNOKRE_RASTER=gpu` to CMake, which compiles `nokre_skia_vk.cpp`, the
+The example project's `nokreRaster=gpu` property passes `-Dgpu` to both
+of its zig builds; the Zig checks the archive exists and is otherwise
+the same either way. What CMake compiles — `nokre_skia_vk.cpp`, the
 shim and shell.c with `NOKRE_GPU=1` against `deps/skia-android-gpu`
-([skia-build.md](skia-build.md#android-built-from-source-freetype-from-memory)).
-The GPU build's `minSdk` is 30, Android 11, the floor set for it; the
-CPU build's stays 26. `zig build check-targets` parses shell.c both
+([skia-build.md](skia-build.md#android-built-from-source-freetype-from-memory))
+— it reads from the packaging tree, as a consumer's does
+([Consumers](#consumers)). The GPU build's `minSdk` is 30, Android 11,
+the floor set for it; the CPU build's stays 26. `zig build check-targets` parses shell.c both
 ways and the Vulkan half with the NDK's clang, when an NDK is found.
 
 ```
@@ -526,6 +526,61 @@ size and the pool's tile refilled for it.
 the frame holds the display's rate in both windows. What is left on the
 CPU is the tree walk and the op list; what is left on the GPU is about
 4.5 ms of its own time, most of it the frosts' render passes.
+
+## Consumers
+
+A consumer's app takes the GPU the way it takes its look: from its
+build.zig declaration, `AppOptions.raster` (`nokre.Raster`), resolved by
+`addApp` against the GPU archives in the nokre checkout
+(src/raster.zig holds the table and which script builds each archive):
+
+| `raster` | GPU archive built | Not built | No GPU archive for the target |
+| --- | --- | --- | --- |
+| null, look `lamp` | GPU | CPU, and a build note naming the script | CPU, noted |
+| null, `eink` or `depth` | CPU | CPU | CPU |
+| `.gpu` | GPU | the build fails, naming the script | the build fails |
+| `.cpu` | CPU | CPU | CPU |
+
+The targets with an archive are macOS arm64, iOS, Android, and Windows
+and Linux x86_64; every other native target is the last column, and the
+web ignores the field (the browser draws, [dom-substrate.md](dom-substrate.md)).
+The note is printed once per build, while the graph is made, however
+many lamp apps the build holds.
+
+**One declaration, every artifact.** The desktop executable links the
+GPU shim, the archive and the shell compiled with `NOKRE_GPU`
+(`addDesktopApp`). The iOS and Android libraries are the GPU shim and a
+checked archive respectively, and the half each platform project
+compiles itself is told by the packaging tree, resolved per platform
+whatever this build's own target is — `zig build pkg` runs for the host:
+
+- `pkg/ios/nokre_raster.h` defines `NOKRE_GPU` for the GPU, and the iOS
+  shell includes it first and refuses to compile without it — a shell
+  that silently compiled for the CPU would present a GPU shim's app on
+  the CPU. `pkg/ios/raster-<sdk>.rsp` is a clang response file: the
+  SDK's Skia archive by absolute path, and Metal for the GPU. The
+  project names `$(SRCROOT)/build/zig-$(PLATFORM_NAME)/pkg/ios` in
+  `HEADER_SEARCH_PATHS` and
+  `@$(SRCROOT)/build/zig-$(PLATFORM_NAME)/pkg/ios/raster-$(PLATFORM_NAME).rsp`
+  in `OTHER_LDFLAGS`, in place of `-lskia` and a Skia search path. Not
+  an xcconfig: build settings are fixed before any phase runs, and
+  these are written by the Zig phase, which runs before the app target
+  compiles. A changed header recompiles the shell (it is a compile
+  dependency), and the link reruns because the shim archive changed.
+- `pkg/android/raster.cmake` sets the archive, the shim's Vulkan half,
+  its defines and include directories for a CMakeLists to `include()`
+  with `NOKRE_ROOT` and `ANDROID_ABI` set, and fails naming the script
+  when the archive is missing; `package.properties` carries `min_sdk`,
+  30 for the GPU and 26 otherwise, for Gradle's `minSdk`.
+
+The example projects read the same files, so a copied project needs no
+switch of its own. What stays on the CPU whatever the declaration says:
+`addGoldenTests` and `linkSkia` (the golden oracle), the harness, and
+`addDriver` and `addDevStoreDriver` — a driver presents no window (it
+names the headless shell) and links the CPU shim through `linkSkia`.
+`tests/declared_raster.zig` holds the link: a lamp app built through
+`addApp` asks the shim it linked whether it draws on the GPU, against
+what the build resolved.
 
 ## Presenters per shell
 

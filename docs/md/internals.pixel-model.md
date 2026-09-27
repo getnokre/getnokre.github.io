@@ -541,7 +541,7 @@ disagree about the ink inside a glyph's box; they do not disagree about
 where the box is, what wrapped, or what a screen reader is told.
 
 The promise is also the CPU raster's. A frame drawn on the GPU — the
-`lamp` theme under `-Dgpu` ([gpu.md](gpu.md)) — is the driver's bytes,
+`lamp` theme where its GPU archive is built ([gpu.md](gpu.md)) — is the driver's bytes,
 per driver, and outside it; the CPU frame stays the oracle.
 
 Goldens follow from that: a golden set belongs to the platform that

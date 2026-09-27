@@ -1566,6 +1566,29 @@ waives what depth waives, and text contrast on its frosted chrome and
 the icon floor for its lit glyphs besides; the design and its numbers
 are [internals/lamp.md](internals/lamp.md).
 
+A lamp app is drawn on the GPU where the platform has one — Metal on
+macOS and iOS, Vulkan on Android, Windows and Linux — because its light
+is per-pixel work a full-screen CPU frame cannot keep up with
+([internals/gpu.md](internals/gpu.md)). Your build.zig says nothing
+more: `addApp` reads the look and takes the GPU on every target whose
+GPU archive is built in the nokre checkout. Each is a one-time build
+there, like the CPU archives of Part 13 — `tools/build-skia-macos.sh`,
+`tools/build-skia-ios.sh --gpu`, `tools/build-skia-android.sh --gpu`,
+and `tools/build-skia-windows.sh` and `tools/build-skia-linux.sh` on
+their own OS ([internals/skia-build.md](internals/skia-build.md)).
+Where one has not run the app still builds, on the CPU, and the build
+prints a note naming the script. `.raster` overrides the look's choice:
+
+```zig
+    .raster = .gpu, // a missing archive fails the build instead
+```
+
+and `.cpu` keeps the CPU everywhere. Goldens, harnesses and drivers
+draw on the CPU whatever it says, and a device whose GPU refuses falls
+back to the CPU at run time. The Xcode and Gradle projects read the
+answer from the packaging tree rather than a switch of their own
+([Part 13](#part-13--every-platform)).
+
 Whatever the look, don't build your own "increase contrast" switch:
 place [`accessibility_toggles`](elements.md#accessibility_toggles) in
 Settings, and nokre gives the reader Increase Contrast and, under
@@ -2251,7 +2274,7 @@ once, every iOS build refuses with `iOS <version> is not installed`.
 
 ```sh
 xcodebuild -downloadPlatform iOS                # once per Xcode
-(cd ../nokre && tools/build-skia-ios.sh)     # once
+(cd ../nokre && tools/build-skia-ios.sh)     # once; add --gpu for a lamp app
 cp -R ../nokre/examples/kitchen_sink/ios ios
 ```
 
@@ -2301,6 +2324,15 @@ build (the template's script does this whether or not an icon is
 declared), and `ASSETCATALOG_COMPILER_APPICON_NAME` already says
 `AppIcon`, which is the name nokre normalizes the bundle to — so that one
 drag is the whole wiring, and the icon still has exactly one source.
+The raster reaches the project the same way, through two lines that
+need no edit: `HEADER_SEARCH_PATHS` names the `pkg/ios` tree, whose
+`nokre_raster.h` tells the shell which presenter to compile, and
+`OTHER_LDFLAGS` names `@…/pkg/ios/raster-$(PLATFORM_NAME).rsp`, a
+response file carrying that raster's Skia archive and, for the GPU,
+Metal — so the project names no Skia directory and holds no switch. A
+project without the header path fails to compile the shell, saying so,
+rather than drawing a lamp app on the CPU
+([internals/gpu.md](internals/gpu.md#consumers)).
 The per-target split of who compiles what is
 [internals/platform-shells.md](internals/platform-shells.md). The
 Simulator needs no signing setup; for your own iPhone, a free Apple ID's
@@ -2341,14 +2373,18 @@ calls `zig build`, and the NDK's CMake compiles the shell and links
 Skia:
 
 ```sh
-(cd ../nokre && tools/build-skia-android.sh) # once; needs an NDK
+(cd ../nokre && tools/build-skia-android.sh) # once; needs an NDK; --gpu for a lamp app
 cp -R ../nokre/examples/kitchen_sink/android android
 ```
 
 Repoint the copy the same way — the Zig invocation, the consumed static
 library, and the applicationId, which Gradle reads from the generated
 identity properties so it tracks your declaration; `NOKRE_ZIG_FLAGS`
-reaches both of its `zig build` calls as above. The copied
+reaches both of its `zig build` calls as above. The raster needs no
+edit: the CMakeLists `include()`s the tree's `android/raster.cmake`,
+which names the Skia archive, the shim's Vulkan half and its defines,
+and `minSdk` reads the same properties' `min_sdk` — 30 for the GPU, 26
+otherwise ([internals/gpu.md](internals/gpu.md#consumers)). The copied
 `res/values*/styles.xml` set `android:windowBackground` to
 `@color/nokre_window_background`, which the generated res tree carries
 as the top of your declared theme's page per appearance; a style of
