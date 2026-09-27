@@ -438,18 +438,9 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // That rule holds between two frames of one running app, because both
   // came out of one tree and a `data-n` is a handle *into* that tree: a
   // slot index and that slot's generation (core/tree.zig's `NodeId`).
-  // Across a boot over a page a generator wrote, there is no shared
-  // tree. The file was serialized by another process out of another
-  // node table, and by the time it wrote this page that table had a
-  // history — every screen it published freed its content subtree and
-  // took the slots back off a free list, which moves both halves of the
-  // id: the generation climbs and the index comes back in release order
-  // rather than the order it was first handed out in. A generator
-  // writing N pages and a browser booting one cannot agree, and only
-  // the generator's very first page ever did. Insisting on the id here
-  // made every other page's handover a replacement — the scroll offset,
-  // the caret and the focus above, thrown away on a page that then
-  // looked perfectly correct.
+  // A page a generator wrote carries no such handles: the file numbers
+  // its own nodes (file_numbering.zig), so the numbers it arrives with
+  // name nothing in this app's tree and cannot be matched against it.
   //
   // So across the handover identity is **positional**. The file and the
   // frame are the same tree serialized twice by the same walk in the
@@ -460,12 +451,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // frame on the document carries the running tree's own and the rule
   // above is the rule again.
   //
-  // The alternative was to make the ids agree — reset the generation per
-  // page, or number the nodes per frame. Both are worse. The generation
-  // is what stops a stale handle from addressing a recycled slot, which
-  // is a live hazard in a driver that holds ids across rebuilds; and a
-  // per-frame ordinal would shift every node after an insertion, which
-  // destroys exactly the mid-session identity this diff is for.
+  // The frames themselves keep the tree's ids and are never numbered:
+  // a per-frame ordinal would shift every node after an insertion, which
+  // destroys exactly the mid-session identity this diff is for
+  // (dom-substrate.md, "Node ids").
   let hydrating = true;
 
   function sameNode(a, b) {

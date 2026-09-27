@@ -1401,43 +1401,52 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   ([serialize.zig](../../src/render/dom/serialize.zig)'s `json` has the
   bytes and the evidence).
 - **Node ids.** With `Emitter.Options.node_ids`, every focus stop carries its
-  `NodeId` as `data-n` (and an inline link its span as `data-s`) — the
-  live driver's way of naming the node the reader meant. A page written
-  to a file has nobody to tell and leaves it off, *unless* that file is
-  going to be booted over: identity across frames is what makes the boot
-  a patch instead of a replacement, and a replacement throws away the
-  scroll position the reader arrived at. Between two frames of one
-  running app the match is tag plus `data-n` — two nodes are the same
-  node when they are the same kind of thing carrying the same id.
+  identity as `data-n` (and an inline link its span as `data-s`) — the
+  live driver's way of naming the node the reader meant. Between two
+  frames of one running app the match is tag plus `data-n` — two nodes
+  are the same node when they are the same kind of thing carrying the
+  same id — and there the number is the node's `NodeId`: a slot index
+  and that slot's generation ([tree.zig](../../src/core/tree.zig)), a
+  handle into the tree that wrote it.
 
-  **Across the handover it is not, and cannot be.** A `data-n` is a
-  handle into the tree that wrote it: a slot index and that slot's
-  generation ([tree.zig](../../src/core/tree.zig)'s `NodeId`). A
-  generator has one app and one tree and publishes a page per screen per
-  locale; every `switchTo` releases the content subtree and takes the
-  slots back off a free list, so by the second page both halves of the
-  id have moved — the generation has climbed and the index comes back in
-  release order rather than the order it was first handed out in. A
-  browser booting *one* page has none of that history behind it and no
-  way to acquire it. **The two agree only on the very first page a
-  generator writes, and by coincidence there.** So the first frame
-  matches **positionally**: the file and the frame are the same tree
-  serialized twice by the same walk in the same order, and position plus
-  tag is the whole of what two processes share. The frame's own ids
-  arrive as attributes — adopted, not matched — and from the second
-  frame on the document carries the running tree's ids and the rule
-  above is the rule again ([live.js](../../src/render/dom/live.js)'s
+  **A file does not carry `NodeId`s.** A generator has one app and one
+  tree and publishes a page per screen per locale; every `switchTo`
+  releases the content subtree and takes the slots back off a free list,
+  so the id a node gets depends on every screen built before it. Written
+  into a file, that made every page after an edited one differ in every
+  id-derived token — a site's diff was its whole tail. So `document`
+  numbers the nodes of the file it writes, from 1, in the order the walk
+  first writes each one, and every token derived from a node's identity
+  takes the number: `data-n`, `data-dial`, a radio group's `name`, and
+  the `field-`, `problem-` and `pane-title-` ids with the
+  `aria-labelledby` / `aria-describedby` that name them. It is a map and
+  not a counter, because a field's `aria-describedby` is written before
+  the problem it names; and one count per file, because an `id` is
+  unique across the document, not per mount. The same screen is the same
+  bytes whatever the generator wrote before it. `document` switches it
+  on for the emitter it was handed and off when it returns; a driver
+  that writes a file by calling `content` and `chrome` itself gets the
+  tree's ids, because that is exactly how the live driver writes a
+  frame ([file_numbering.zig](../../src/render/dom/file_numbering.zig)).
+
+  **Across the handover the ids are not read at all.** The file's numbers
+  and the frame's `NodeId`s are two different namings of the same nodes,
+  so the first frame matches **positionally**: the file and the frame
+  are the same tree serialized twice by the same walk in the same order,
+  and position plus tag is the whole of what two processes share. The
+  frame's own ids arrive as attributes — adopted, not matched — and from
+  the second frame on the document carries the running tree's ids and
+  the rule above is the rule again ([live.js](../../src/render/dom/live.js)'s
   `sameNode`).
 
-  Making the ids agree instead was the obvious move and is the wrong
-  one, twice over. Resetting the generation per page removes the only
-  thing that stops a stale handle from addressing a recycled slot, which
-  a driver holding ids across rebuilds actually needs; and numbering the
-  nodes per frame would shift every node after an insertion, destroying
-  exactly the mid-session identity the diff exists for. The ids are a
-  hydration contract, not decoration — but the contract they carry is
-  *within* one running app, and across the boot the contract is the
-  walk.
+  Numbering *frames* is still the wrong move, and so is making the
+  running tree's ids agree with a file's. A per-frame ordinal would shift
+  every node after an insertion, destroying exactly the mid-session
+  identity the diff exists for; and resetting the generation removes the
+  only thing that stops a stale handle from addressing a recycled slot,
+  which a driver holding ids across rebuilds actually needs. A file has
+  neither problem: nothing holds a handle into it, and nothing diffs one
+  of its versions against another but the site's history.
 
   **And the ids are only half of it: a mount's children have to *be*
   the frame's nodes.** Positional matching makes that stricter, not

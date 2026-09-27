@@ -68,11 +68,12 @@ The reversal spends the promise for GPU-backed frames and nothing else:
 | On the GPU | On the CPU |
 | --- | --- |
 | rasterizing the op list into the drawable, in order, on one canvas | the tree, layout, shaping and every planner |
-| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, glow, frost blur | the op list itself and each planner's parameters |
+| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, a ring's lift, frost blur | the op list itself and each planner's parameters |
 | a lit glyph's paint: the glyph's shader over its own ink box's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
 | presenting, paced by the display | goldens, proofs and the audit |
 
-The proof order was deliberate: OP_FROST and OP_GLOW read pixels, so
+The proof order was deliberate: OP_FROST and the contact line (then a
+table op, OP_GLOW; a plain shadow since 2026-09-27) read pixels, so
 the first GPU frame read them back to the CPU and ran the CPU's
 arithmetic, and the shaders replaced that readback afterwards — a
 correct slow frame before a fast one ([The shaders](#the-shaders)).
@@ -185,7 +186,7 @@ display's vsync), three images unless the surface demands more, an
 whose encode would change the bytes — opaque alpha, identity
 pre-transform (the compositor rotates), and images sampled and copyable,
 each wrapped once as an `SkSurface` texture for the frost's snapshot and
-the glow's blend. A frame acquires the next image on a fresh semaphore
+a ring's lift blend. A frame acquires the next image on a fresh semaphore
 Ganesh waits on, replays, flushes with the image's own semaphore
 signalled, submits, and presents; an out-of-date or suboptimal answer
 remakes the swapchain at the next acquire, and the same window attached
@@ -345,25 +346,25 @@ it is a float, floored where the CPU divides.
 | --- | --- | --- |
 | Rim | `RimField.coverageAt`: the box's ring less its inner box's, times the lamp's light, the specular's `exp`, and every edge line, capped once | `RimField`: box, radius, lamp, `a0`, near and far, specular point and `specR²`, the material's high, low and specular, the cap, up to twelve edge lines |
 | Face and sheen | `sheenAt`, `acrossAt`, `downAt`, one draw each over the planner's pieces | `FaceField`: box, lamp, the near squares, span, darkest, glass's `k0`, `σ` and bright tint, `under`, sheen |
-| Shadow | `ShadowMask.coverageAt`: the smoothstep of rounded-box distance, both passes, and depth's drop shadow | `MaskField`: blur, radius, peak; the reach is the pieces' union, drawn as one rect |
-| Contact line | the shadow's coverage, then a runtime *blender*: `lampGlowByte` of the destination's own byte, never darker, clamped at the ceiling | `MaskField`, the tone and the ceiling |
+| Shadow | `ShadowMask.coverageAt`: the smoothstep of rounded-box distance, both passes, the chrome's contact shadow, and depth's drop shadow | `MaskField`: blur, radius, peak; the reach is the pieces' union, drawn as one rect |
 | Frost | the frame drawn so far, snapshotted on the GPU beneath the plate; halved; three separable box-blur passes at both radii; sampled back and mixed per plate pixel | `FrostStyle`: radius, tint, gain |
 
 The CPU's comptime tables are their formulas again: the specular's
-falloff is `round(4096 · exp(−2.2 · i/64))`, the glow's is
-`lampGlowByte`'s arithmetic on the byte beneath, and the face's
+falloff is `round(4096 · exp(−2.2 · i/64))`, a ring's lift is
+`lampRingByte`'s arithmetic on the byte beneath, and the face's
 `darkened` search is the inequality it solves, `under · c > 255 ·
 bytes − 128` (lamp_pixels.zig holds the two equal for every byte).
 
-**No readback in a frame.** The contact line blends with the
+**No readback in a frame.** A rim-only button's ring blends with the
 destination and the frost copies from it, both on the GPU, so a frame
 draws straight onto the drawable's texture — which is why the layer is
 not framebuffer-only — and the offscreen-then-copy path is gone. Ganesh
 on Metal has no framebuffer fetch, so a blend that reads the destination
 copies what it reads once per draw, and each copy ends the frame's
-render pass: that is why a contact line is one rect rather than its
-nine pieces (27 copies a nav row became 3), and a rim-only button's
-ring, which takes the same blend, one rect over its box.
+render pass: that is why a ring is one rect over its box. The chrome's
+contact line took the same blend, one rect per plate, until it became
+a contact shadow (lamp.md, "Chrome edges are lights"): a plain
+composite, so a nav row no longer copies at all.
 
 **The frost is the CPU's integers.** The snapshot is the plate out to
 its reach; the half frame is each 2×2 sum times 64, 8.8 fixed point in
@@ -410,7 +411,7 @@ arithmetic on them); "present" is the submit and the present.
 | lamp, full screen | 7.26 / 11.52 | 0.81 / 0.85 | 10.60 / 17.7 | 7.76 / 9.26 | 0.05 / 0.10 | 8.51 / 16.7 |
 
 Inside lamp's GPU raster at full screen: six reads a frame (three
-contact lines, three nav frosts) cost 3.85 / 4.76 ms of waiting, the
+contact lines, which read the frame then, and three nav frosts) cost 3.85 / 4.76 ms of waiting, the
 arithmetic on them 0.87 / 1.65, the replay 0.79 / 1.04, and the Zig
 record 2.29 / 3.44. With `NOKRE_GPU_SYNC=1` (the submit waits for the
 GPU) the present of a full-screen frame is 1.89 ms for depth and
@@ -445,9 +446,9 @@ rasterises glyphs and curves its own way; a lit glyph's box, less the
 corner squares drawn through it (a focus ring's), is held to 2 bytes —
 Ganesh's glyph coverage under the glyph's shader, which lands within
 the tile's; what a frost covers is held to 4; a rim-only button's
-ring band, through the contact line's blend, to 2; the plates and the
+ring band, through its lift blend, to 2; the plates and the
 ground — the void, rims, faces, shadows,
-contact lines over depth's fills — to 2.
+contact shadows over depth's fills — to 2.
 Max / mean byte difference on an M4:
 
 | Take | Plates + ground | Frost | Lit glyphs | Rings | Text + AA (max) |
@@ -459,16 +460,16 @@ Max / mean byte difference on an M4:
 | tiles | 1 / 0.024 | — | 1 / 0.354 | — | 36 |
 | accessibility-toggles | 1 / 0.005 | — | — | — | 13 |
 | dial | 1 / 0.000 | — | 1 / 0.006 | — | 8 |
-| select-picker | 1 / 0.004 | 1 / 0.035 | 1 / 0.435 | — | 24 |
-| nav-bottom | 1 / 0.002 | 1 / 0.059 | 1 / 0.087 | — | 7 |
-| sheet | 0 / 0 | 1 / 0.040 | 1 / 0.037 | — | 49 |
-| notice-banner | 0 / 0 | 1 / 0.064 | 1 / 0.025 | — | 1 |
-| notices-pane | 1 / 0.000 | 1 / 0.055 | 1 / 0.031 | — | 4 |
-| nav-with-indicator | 1 / 0.001 | 1 / 0.054 | 1 / 0.034 | — | 7 |
+| select-picker | 1 / 0.004 | 1 / 0.008 | 1 / 0.435 | — | 24 |
+| nav-bottom | 1 / 0.000 | 1 / 0.013 | 1 / 0.031 | — | 7 |
+| sheet | 0 / 0 | 1 / 0.008 | 1 / 0.029 | — | 49 |
+| notice-banner | 0 / 0 | 1 / 0.007 | 1 / 0.022 | — | 1 |
+| notices-pane | 1 / 0.000 | 1 / 0.008 | 1 / 0.019 | — | 4 |
+| nav-with-indicator | 1 / 0.000 | 1 / 0.017 | 1 / 0.028 | — | 7 |
 | frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | — | 23 |
 | header-action-two | 0 / 0 | — | 1 / 0.000 | — | 1 |
-| page-scrolled | 1 / 0.008 | 1 / 0.080 | 1 / 0.057 | — | 43 |
-| sheet-over-scrolled | 1 / 0.008 | 1 / 0.047 | 1 / 0.047 | — | 45 |
+| page-scrolled | 1 / 0.008 | 1 / 0.095 | 1 / 0.037 | — | 43 |
+| sheet-over-scrolled | 1 / 0.008 | 1 / 0.043 | 1 / 0.027 | — | 46 |
 
 Every take meets all four targets.
 

@@ -2807,11 +2807,12 @@ A bordered vertical group of tappable rows — the list-row form of
 `button` and `link`. `tile_group` children must be `tile`s; a tile
 anywhere else is rejected at `append`. The group draws `radio_group`'s
 geometry — a rounded 1px `.g10` border, 44px rows, one hairline between
-them — but here the border is pure grouping: no selection, no state.
+them — but here the border is pure grouping: no selection, no state,
+and each hairline starts at its row's padding — under a row with an
+icon, where its label does — in every theme.
 Under [`depth`](getting-started.md#a-theme) the group is a raised card, as a bordered
 [`box`](#box) is, a leading icon sits on a `.g11` well, and each
-hairline softens to `.g11` and starts at its row's padding — under a
-row with an icon, where its label does.
+hairline softens to `.g11`.
 An optional `description` hangs below the border in dimmed small print,
 wrapped at the group width: the group-level counterpart of a tile's
 `detail`, for a caption that belongs to the set of rows rather than any

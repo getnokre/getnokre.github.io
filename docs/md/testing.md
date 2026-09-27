@@ -1533,18 +1533,18 @@ rather than analyzed:
   where the generator has *already written other pages*, which is every
   page of a static site but the first and the case the scenario above
   cannot reach. A generator is one app and one tree, and each screen it
-  publishes spends the tree's slot allocator, so the `data-n` in the
-  file it writes second is not the one a browser booting that file
-  arrives at — the handover was a replacement on 3,377 of rokovski.com's
-  3,378 pages and looked perfectly right afterwards. What is asserted is
-  the contract rather than the mechanism, deliberately: the ids in the
-  frame **must** differ from the ids in the file — that is what proves
-  the app rebuilt its tree at all, and reading id equality as health
-  gets it exactly backwards — *and* the control the reader had tabbed to
-  before the module landed must still be `document.activeElement`. Focus
-  survives only if the element does, so the second assertion is the
-  scroll, selection and caret claim as well, made on the one term this
-  harness can observe directly.
+  publishes spends the tree's slot allocator, so the tree's ids for a
+  screen depend on every screen before it; the file numbers its own
+  nodes instead (dom-substrate.md, "Node ids"). Three assertions. The
+  file is byte for byte the one a generator with no history writes for
+  that screen — the history does not reach it. After the boot the
+  screen carries exactly the ids the running app's own frame states,
+  read out of the module — the app rebuilt its tree and the file's nodes
+  took that tree's ids. And the control the reader had tabbed to before
+  the module landed is still `document.activeElement`, with every node
+  that carried an id still the same object: focus survives only if the
+  element does, so this is the scroll, selection and caret claim as
+  well, made on the one term this harness can observe directly.
 - **the boot** — the same page again, booted by *the file the page asks
   for* rather than by a `mount` call the harness typed. Every scenario
   above hands `mount` an option object written in JavaScript, so until
@@ -1623,8 +1623,8 @@ rather than analyzed:
   page whose footer is a `stack` of `link`s must have three elements in
   its body and no class on it — nothing stands outside the screen in a
   page nokre wrote whole — with the stack last inside the screen, every
-  anchor in it carrying nokre's own classes and a `data-n` the tree
-  knows, the two internal destinations resolved through `RefResolver` and the
+  anchor in it carrying nokre's own classes and the `data-n` only a
+  node of the tree is written with, the two internal destinations resolved through `RefResolver` and the
   external one wearing the new-tab pair. And at 375px the reserve must
   resolve onto the screen the footer is inside. It is one scenario
   because it is one claim: a footer in the tree is styled, cleared,

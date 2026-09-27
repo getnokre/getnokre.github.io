@@ -73,14 +73,14 @@ room to light things. The ops, in paint order:
    it drawn after it as in depth, and an icon glyph on it lit as its
    surface is ([below](#glyphs-on-plates-are-lit-surfaces)). So the
    chrome's edges are known before the page is drawn.
-2. **The bottom row.** First every plate's contact line: each nav
+2. **The bottom row.** First every plate's contact shadow: each nav
    plate's and the notices indicator's. Then plate by plate: its
    shadow, its frost, its glass face and rim, its lit glyph and its
    words. A notice banner in the row's place takes a nav plate's
    treatment.
 3. **Each modal layer** — a sheet, the notices pane, a picker — in the
    order they stack: the dim over everything drawn so far, the layer's
-   shadow, its contact line, its frost, its glass face and rim, then
+   shadow, its contact shadow, its frost, its glass face and rim, then
    its content, whose filled boxes are plates like the page's and which
    no edge lights. The collapsed nav's section list is a card on the
    dim, not glass.
@@ -107,10 +107,10 @@ under the lamp that the design first drew:
   ([below](#every-filled-box-is-a-plate)). Over the void the full
   twelve hold everywhere.
 
-The chrome's contact lines are kept: they are a lamp op lifting the
-ground beside an edge, clamped at the ground's ceiling
-([below](#chrome-edges-are-lights)). The ground is flat, so it is the
-16-column tile depth's ground takes, every byte the same.
+No lamp op lifts the ground: the chrome's contact line, which did, is
+a contact shadow since 2026-09-27, and a shadow over `0x00` leaves
+`0x00` ([below](#chrome-edges-are-lights)). The ground is flat, so it
+is the 16-column tile depth's ground takes, every byte the same.
 
 ### Every filled box is a plate
 
@@ -358,11 +358,12 @@ link stays words.
   only `0x53`, and the ring may reach `0x66` there because it is the
   boundary a finger looks for: its lit end is 3.66:1 over the void. A
   clamp over an unknown byte is not a white composite at a coverage, so
-  the ring takes the contact line's route: a table write on the CPU
-  (`lamp.ring_bytes`, `color.lampRingByte` per byte beneath and
-  coverage, the band's anti-aliased edge scaling the coverage) and the
-  same runtime blend on the GPU, white for the tone and the peak for
-  the ceiling. It is left undithered: along a 135 px pill's top edge its
+  the ring is the one lamp op a byte table writes: on the CPU the shim
+  writes each pixel from `lamp.ring_bytes` (`color.lampRingByte` per
+  byte beneath and coverage, the band's anti-aliased edge scaling the
+  coverage), and on the GPU a runtime blend that reads the destination
+  lifts it by the same rule, white for the tone and the peak for the
+  ceiling. It is left undithered: along a 135 px pill's top edge its
   bytes step one at a time, the longest run six pixels.
 
   Disabled, the ring lifts **half** as far — floor, peak and lights —
@@ -456,10 +457,10 @@ the third waiver ([below](#what-is-waived)).
 
 ### Chrome edges are lights
 
-A frosted plate glows where it meets the page, and the page's boxes
-nearest it catch that light. Each chrome edge is a short area light: a
-segment inset from the edge's ends, adding to the rims of the page's
-boxes just above it
+A frosted plate's edge is a light where it meets the page, and the
+page's boxes nearest it catch that light. Each chrome edge is a short
+area light: a segment inset from the edge's ends, adding to the rims
+of the page's boxes just above it
 
 ```
 edge = high · amp / (1 + (d / reach)²)
@@ -486,28 +487,43 @@ A sheet's edge light is in the page's rims, so the dim lowers it with
 the page: under a sheet over the scrolled page, a card's lower rim just
 above the sheet's edge is `0x3F` lit by the sheet against `0x20` by
 the lamp alone, both dimmed — the sheet's light reads, and the cap
-still holds beneath the dim. Each edge also lays a contact
-line on the ground beside it: the shadow's smoothstep field around the
-plate, unshifted, 5 px deep for a nav plate and 6 px for a sheet,
-lightening toward `0x24` at a peak coverage of 0.8, never darkening
-anything already brighter, and clamped at `0x11`, the brightest byte
-`paper` stays 1.1:1 above. The clamp is the gate, not a margin: over
-the void the unclamped line reaches `0x1D` at its peak, brighter than
-paper itself. Clamped, the line is a lift to `0x11`, not the
-reference's glow; the floor wins.
+still holds beneath the dim.
 
-The contact line is the one op here whose byte depends on the byte it
-lands on in a way no Skia blend spells — a lift toward a tone, clamped
-at a ceiling, leaving brighter pixels alone. So the shim writes it
-itself: its coverage ships as the shadow's pieces, and each pixel they
-reach takes the byte `lampGlowByte` gives for its own byte, from a
-table nokre builds from that function. It reads no neighbour, so it
-bands and repaints like any composite.
+**Each edge also casts a contact shadow**: the shadow's smoothstep
+field around the plate, unshifted, 5 px deep for a nav plate and 6 px
+for a sheet, black at a peak coverage of 0.20
+(`color.lamp_contact_shadow_peak`, 51 of 255), composited over what is
+beneath. The field is centred on the edge, so the first pixel outside
+takes about 0.09 and the peak lies inside, under the glass. It only
+darkens: over the void it leaves `0x00`, so it shows only where the
+page passes under the chrome, as a soft dark edge — over a scrolled
+card at `0x18` beside a nav plate, the last three pixels before the
+rim are `0x17`, `0x17`, `0x16`. It is drawn before the plate's frost,
+which reads the frame beneath, so the frost blurs the darkened page
+under the glass's edge, as it blurred the contact line's lift.
+
+It was a contact *line* until 2026-09-27: a lift of the ground beside
+the edge toward `0x24` at a peak coverage of 0.8, clamped at `0x11`,
+the brightest byte `paper` stays 1.1:1 above. A Mac's display had
+hidden the lift; on an Android tablet's LCD it read as a glow around
+every nav pill on the void (1, 2, 4, 5, 7, 9, 11, 13 up to the rim). The owner decided it on 2026-09-27: "the glow wass supposed to
+be a shadow, right? we have alpha channel, I'd say go with pitch black
+and give it some alpha channel", and then set the alpha at 0.20. So it
+is a shadow, drawn by the shadow's route on the CPU and the GPU, with
+no table and no blend of its own.
+
+What it costs the words passing under it: text and the paper it is on
+darken by the same coverage, which narrows the pair. At the peak, which
+lies inside the edge, `ink` on `paper` is 6.2:1 and `dark` 4.9:1 —
+color.zig proves both keep AA — and `mid` 3.35:1; on the first pixel
+outside the edge `mid` is 4.0:1. The chrome's directional shadow darkens
+the same content further out; neither is gated, because what lies under
+the chrome's edge is passing beneath it.
 
 **Rejected: a haze.** A wide leak of light onto the ground around the
 chrome, toward `0x2C`, was refused as unmanaged: it reads as mood
-rather than as an edge, and at that byte it lifts the ground past the
-elevation floor the contact lines are clamped at.
+rather than as an edge, and at that byte it lifts the ground past
+`paper`'s elevation floor.
 
 ### Frosted chrome
 
@@ -515,7 +531,7 @@ Nav plates and sheets are frosted glass: they show the page beneath,
 blurred, instead of an opaque fill — and so are the notices indicator,
 a notice banner, the notices pane and a picker. A banner and the
 indicator frost as nav plates do, the panes as a sheet does.
-A pane's glass, rim, shadow and contact line are all drawn on its body
+A pane's glass, rim, shadow and contact shadow are all drawn on its body
 at the pane's corner (`layout.modal_pane_radius`), twice a card's in
 every look ([elements.md](../elements.md#sheet), the owner's decision
 of 2026-09-27), so every effect follows the larger arc.
@@ -636,12 +652,15 @@ block's mean is its field's within a sixteenth of a byte.
 - **Frost.** `frostByte`'s last rounding, from 256ths, is the same
   dither; the grain stays as it was, a separate, designed texture.
 - **Not dithered.** A rim and a lit glyph are a pixel wide or a small
-  box, and do not band. A shadow and the contact line composite over
-  whatever is beneath, which the planner does not know, and a
-  coverage step moves that byte by `under/255` — a ninth of a byte
-  over `paper` — so a dither in the coverage cannot break a step in
-  the byte; they fall on the void almost everywhere, which neither
-  darkens nor bands.
+  box, and do not band. A shadow, the contact shadow included,
+  composites over whatever is beneath, which the planner does not
+  know, and a coverage step moves that byte by `under/255` — a ninth of
+  a byte over `paper` — so a dither in the coverage cannot break a step
+  in the byte; it falls on the void almost everywhere, which neither
+  darkens nor bands. Over a card the contact shadow is 5 or 6 px deep
+  and a few bytes at most, so it steps a byte a pixel or two at a time:
+  on the scrolled page it runs `0x18`, `0x17`, `0x17`, `0x16` into the
+  rim, with no run to band.
 
 The GPU's shaders compute the same threshold from the device pixel in
 integers, so the two paths round alike.
@@ -672,8 +691,10 @@ over every ramp its gate applies to, and a byte that breaks one fails
 the build:
 
 - `paper` stays 1.1:1 above the brightest ground pixel the theme can
-  draw, the contact lines included — the floor depth's ground is
-  already proved to. Lamp dark's own ground is the void.
+  draw — the floor depth's ground is already proved to. Lamp dark's own
+  ground is the void, and no lamp op lifts it.
+- The contact shadow only darkens and leaves the void as it is, and
+  `ink` and `dark` on `paper` keep AA under its peak.
 - The rim's brightest byte on `paper` stays under `g7`'s `0x67`: at
   most `0x66`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
@@ -686,7 +707,7 @@ the build:
 - Every word on a well — `ink` and `dark` over `g10` and `g11` — keeps
   its text band over the darkest byte its face leaves.
 - A face on `paper` only darkens, by at most twelve bytes — the full twelve
-  over the void, less beside a ground a lamp op has lifted — and never
+  over the void, less over any ground above it — and never
   lifts: one byte of lift is all the headroom `mid` on `paper` has.
 - A lit glyph's peak on `paper` is `0xB2`, 3:1 over it and under `ink`
   on every fill a glyph stands on, and its floor, `0x35` on `paper`, is
@@ -719,7 +740,7 @@ At 3× on a phone, per scroll frame unless stated:
 | Rim | ≈7 KB per page plate | four edge strips, four corner tiles |
 | Face | ≈22 KB per page plate | two strips, a row four deep and a column sixteen wide for the dither, and four corner tiles each |
 | Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
-| Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
+| Chrome's rims, faces, shadows and contact shadows | none per scroll frame | kept by the surface across frames |
 | Lit glyph | ≈4–6 KB per glyph | a tile over the run's ink box, two device pixels out: a 24 px glyph's is 64–76 px square at 3×; filled again each frame it shows, chrome's included |
 | Edge lights | none of their own | a term in the rim's one mask |
 | Frost, nav | ≈1.5 M adds | two half-resolution blurs under one 390×48 bar; per scroll frame |
