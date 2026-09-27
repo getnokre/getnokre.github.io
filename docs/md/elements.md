@@ -1864,13 +1864,25 @@ An order the user sets over a fixed set, with a line above which items
 count, inside a band the app sets. Fields: `label`; `options` (2+),
 given *in their current order* — the app owns the order the way it owns
 a `radio_group`'s `selected`; `viable`, how many of them count, which is
-also where the divider row — the line — sits: after that many items;
+also where the line sits: after that many items;
 `viable_min` (default 0) and `viable_max`, the band the count may take;
-`divider`, the divider row's words; and `on_swap(a, b)`, called with
+`divider`, the line's caption; and `on_swap(a, b)`, called with
 the ordered pair a press completed: `a` the slot that was armed, `b`
-the one pressed after it. The divider's words are the app's because
-the number they carry and the language they are in are both the app's
-("Up to 5 count. Items below this do not.").
+the one pressed after it. A ranking can also open in a *picking*
+phase before this one, with fields of its own (below,
+[two phases](#two-phases-picking-then-edit)).
+
+**The caption is one generic line.** `divider` is a short line the app
+writes once and passes to every ranking it draws — "Your ranking ends
+here" — with no count, no placeholder and nothing about this ranking's
+content. It is the app's only because the language it is in is the
+app's. A count, where an app wants to say one, is not the line's to
+carry: it belongs in `picking_hint` while picking, or in the app's own
+words around the device. The owner decided this on 2026-09-27: a
+caption that restated the band ("Up to 5 count. Items below this do
+not.") read as a rule the person was being held to, and was different
+words on every ballot for a line that means the same thing on all of
+them.
 
 The band is `viable_min <= viable <= viable_max`, with `viable_max` at
 least 1 and at most the option count. A band reaching the count is
@@ -1881,29 +1893,46 @@ is not a ranking.
 The device is one column under a small label: a full-width row per
 slot, and **the row is the button**. The slots are every option plus
 the line, top to bottom, so a five-item ranking has six of them. Each
-row leads with its ordinal, carries its words, and ends in a verb band
-on its trailing edge, where it says what a press on it does now.
+item row leads with its ordinal, carries its words, and ends in a verb
+band on its trailing edge, where it says what a press on it does now.
+
+**The line is a rule, not a row.** It is drawn as a thin rule across
+the device with the `divider` words centred between its two segments,
+at the small scale. It is the one pressable part drawn as a rule
+rather than a row, because first-time users read a full row as a
+barrier they were forced to stay above. What it keeps of a row is the
+part a press needs: its slot is still a full-width rect at least a
+press target tall (44px) however thin the rule inside it, so a tap
+anywhere across it lands, and it still says a word when a press on it
+would do something other than arm it — **Here** and **Cancel**, in its
+trailing band, standing in place of the trailing segment. At rest it
+says nothing.
 
 **The hidden line.** When the band is pinned at the count —
 `viable_min == viable_max ==` the option count — every item counts and
-nothing can move the line, so there is nothing to divide: no divider
-row is drawn, the slots are the options alone, every one carries its
+nothing can move the line, so there is nothing to divide: no line
+is drawn, the slots are the options alone, every one carries its
 rank, and the only pair left is two items swapping
 (`Ranking.hasDivider`). `divider` is still required and is never shown.
 Any other one-wide band pins the line where it stands, as a caption
 (below).
 
-**Every item row is one height and the divider row is its own.** The
+**Every item row is one height and the line's slot is its own.** The
 items share the tallest item's height, because a row as tall as its
 own words would move the rows under it the moment it traded places
-with a shorter one. The line is the one row whose words are a sentence
-rather than a name, so it is the row that wraps in a language that
-spends more of them; tying the items to it made every row as tall as
-the longest sentence the app writes. Keeping it apart costs nothing:
-wherever the line rests the device is the same items and one line, so
-its total height is the same. The ordinal band and the verb band are
-reserved on every row, the divider's included, for the same reason: a
-band that came and went would rewrap the words.
+with a shorter one. The line never trades places with an item, so its
+slot is its own: as tall as its caption and padding, and never under a
+press target's 44px — which, for a one-line caption, is exactly what
+it is.
+Keeping it apart costs nothing: wherever the line rests the device is
+the same items and one line, so its total height is the same. The
+ordinal band and the verb band are reserved on every item row for the
+same reason: a band that came and went would rewrap the words. The
+line reserves the wider of the two on *both* sides, so its caption is
+centred on the device and never rewraps or meets a word when Here or
+Cancel appears; a long caption wraps to centred lines inside that
+column. The caption is the app's to keep short, and the generic line
+keeps it to one line at a phone's width.
 
 **A pair of presses, and the line is a cut.** Pressing a slot's row
 arms it — the row inverts; pressing another's acts on the pair and
@@ -1922,8 +1951,9 @@ line moves to the other side of it.
 - **Two items.** Every other item row says **Swap**, and the two trade
   places. Nothing else moves.
 
-At rest every live row says **Move**, and the armed row says
-**Cancel**. Each is a word beside a glyph. The words are the
+At rest every live item row says **Move** and the line says nothing,
+though a press on it still arms it; the armed row, or the armed line,
+says **Cancel**. Each is a word beside a glyph. The words are the
 framework's chrome — `ranking_move`, `ranking_swap`, `ranking_cancel`,
 `ranking_in`, `ranking_out`, `ranking_here`
 ([localization.md](localization.md#the-frameworks-own-words)) — and
@@ -1968,8 +1998,9 @@ you will send and draw the words from it:
 nokre.element.Ranking.applySwap(u16, order.ids[0..order.len], &order.viable, band.min, band.max, a, b);
 ```
 
-**The band on screen.** At rest nothing marks it — the divider's own
-words are where an app says it. While the line is armed the verb is
+**The band on screen.** At rest nothing marks it, and the caption does
+not say it either (above); an app that wants the count said says it in
+its own words. While the line is armed the verb is
 **gone** from every item row the line may not rest just past — nothing
 drawn in the band — which is the cap made visible at the moment it
 applies; and while an item is armed whose crossing would take the
@@ -1979,19 +2010,24 @@ honest as absence where a dimmed one read as a smudge, and a screen
 should not lie about state to keep a resemblance. The row stays: a
 press on it moves the keyboard cursor there and nothing else.
 `viable_min == viable_max` below the count is legal — a fixed count —
-and pins the line: its row has no verb and takes no press, so the
-items still swap around a line that stays put.
+and pins the line: it is a caption over a quieter rule and takes no
+press, so the items still swap around a line that stays put.
 
 Counted rows are lit — `.paper` under `.ink` words, outlined `.g6`,
 the selected chip's pair. Uncounted rows are the unchecked box's well,
 `.g11` outlined `.g6`, which a reader already knows takes a press, and
 their words stay `.ink`: dim words on a button say off, and every one
-of these rows is a button. The divider row is `.paper` under `.dark`
-words inside the `.g10` *grouping* edge, because it is the device's
-own caption and not a state — and it is pressable all the same: Move
-on the divider moves the line. Under [`depth`](getting-started.md#a-theme)
+of these rows is a button. The line is no plate in any look: its
+caption is `.dark`, and its rule is `.g6` — a control's edge, the
+lightest step that holds 3:1 on every ground it can stand on — or,
+pinned, the `.g10` *grouping* tone, so a line that takes a press and
+one that does not are told apart when neither says a word. Armed, its
+rule is the 2px `.ink` of a focus stroke and its caption `.ink`; the
+keyboard cursor on it is the same 2px `.ink` edge round its whole slot.
+Under [`depth`](getting-started.md#a-theme)
 no row is outlined: a counted row is a lit plate, as `segmented`'s chip
-is, an uncounted one a control well, and the divider bare paper.
+is, and an uncounted one a control well; the line is drawn alike in
+every look.
 Counted-ness is carried by the ordinal and the position, not by ink:
 counted rows lead with their ordinal, in the app's digits, and an
 uncounted item carries none — an item below the divider has no rank,
@@ -2031,7 +2067,7 @@ keyboard contract above is the whole of what is announced: there is
 no "move up" action, because the device has no such verb — a move is
 two presses, arm and release.
 Counted-ness reaches a reader as the rank's presence and nothing else,
-and the divider's own sentence is read where it sits
+and the line's caption is read where it sits
 ([accessibility.md](accessibility.md#derivation)).
 
 **A ranking carries no `problem`, and that is a refusal.** A field
@@ -2048,9 +2084,9 @@ and leave the rows saying what they say, which is an order.
 like `radio_group`'s. It draws in the [shared off
 vocabulary](#turning-a-control-off-disabled): the label, the ranks and
 the words and the verbs recede, the rows give up their state edge,
-an armed row stays armed under the muted pair. Row fills and the
-divider's grouping edge do not move: an order is a value, and
-it stays legible after it stops being changeable.
+an armed row stays armed under the muted pair, and the line's rule
+steps to `.g10` (`.g6` while armed). Row fills do not move: an order is
+a value, and it stays legible after it stops being changeable.
 
 The construction errors, by name: `error.RankingNeedsTwoOptions`,
 `error.RankingTooManyOptions` (past `Ranking.max_options`, which is
@@ -2059,28 +2095,173 @@ device past it would be drawn whole and read short),
 `error.RankingEmptyOption`, `error.RankingNeedsDivider`,
 `error.RankingMaxOutsideCount`, `error.RankingBandInverted`
 (`viable_min` above `viable_max`), `error.RankingViableOutsideBand`,
-and `error.InputOwnedField` above.
+and `error.InputOwnedField` above. Picking adds its own:
+`error.RankingPickedOutsideOptions`, `error.RankingPickedTwice`,
+`error.RankingPickedAtMax` (the choice that meets the maximum has
+already ended picking), `error.RankingPickingUnwired` (a picking
+ranking needs all four of `on_pick`, `on_undo`, `on_start_over` and
+`on_done`), `error.RankingUndoRestoresWithChoices` and
+`error.RankingUndoRestoresInEdit`.
+
+#### Two phases: picking, then edit
+
+Everything above is **edit**. A ranking nothing has been chosen on
+opens first in **picking**: the library's prompt ("Pick your first
+choice", then "Pick your next choice"), the app's `picking_hint` under
+it, the choices so far as edit's lit rows with their ranks, and under
+them the **pool** — the unchosen options, in the app's own order, each
+a row a press makes the next choice. No line is drawn while picking;
+it first appears in edit, resting where the person stopped. The owner
+decided this on 2026-09-27, because first-time users met a list
+already in some order, looked for a drag, and read the line as a
+barrier they were forced to stay above; some asked for a step-by-step
+tool. Picking is not a replacement for edit but its first phase.
+
+The fields, all app-owned and all defaulted, so a ranking that sets
+none of them is edit exactly as it was:
+
+- `picked: ?[]const u16` — null is edit. A slice is picking: the
+  choices so far, in the order chosen, as indices into `options`.
+  While picking, `options` is the words **in pool order**, so an index
+  is a pool position and never moves. `viable` is not read while
+  picking; the choices are the count.
+- `picking_hint` — the app's sentence under the prompt, "" for none.
+  The one place a count belongs while picking ("Choose 1 to 4.").
+- `undo_restores` — the app holds the ranking a Start over discarded,
+  so Undo is offered with nothing chosen and brings it back.
+- `on_pick(position)`, `on_undo`, `on_start_over`, `on_done`.
+
+The controls, under the rows (Done is the emphasis; Undo and Start
+over are secondary; an absent one keeps its box, so nothing shifts
+when it appears):
+
+| State | Undo | Start over | Done |
+| --- | --- | --- | --- |
+| picking, nothing chosen | only if `undo_restores` | — | if `viable_min` is 0 |
+| picking, some chosen, under the minimum | ✓ | ✓ | — |
+| picking, the minimum met | ✓ | ✓ | ✓ |
+| edit | — | if `on_start_over` is wired | — |
+
+- **Undo** takes back the last choice only, and it returns to its own
+  place in the pool: the pool is the app's order and the element never
+  re-sorts it.
+- **Start over** asks nothing. It empties the choices, from picking or
+  from edit, and Undo is then offered once and brings back what it
+  discarded — until a new choice forgets it.
+- **Done** ends picking once the band's minimum is met. The choice that
+  meets the band's **maximum** ends picking by itself.
+- Picking ends in edit with the unchosen after the choices, in pool
+  order, and the line resting after the last choice.
+- A chosen row takes no press: only Undo takes a choice back. Edit has
+  no Undo — a swap is its own undo — and saving is the app's.
+
+**Keep the order as pool positions, and apply every press with the
+element's own arithmetic.** `Ranking.applyPick`, `applyUndo`,
+`applyStartOver` and `applyDone` sit beside `applySwap`; each is the
+arithmetic the tree has already run on its own copy before the
+callback, and each refuses a stale press with a named error that leaves
+the state as it was. The one thing the element cannot hold is what a
+Start over discarded, because every press is followed by a rebuild and
+only the app's state outlives it — so the app keeps it, and tells the
+element with `undo_restores`:
 
 ```zig
-const Order = struct {
-    // Mutable: `applySwap` reorders it in place.
-    items: [4][]const u8 = .{ "Alpha", "Bravo", "Charlie", "Delta" },
-    viable: usize = 2,
+const Ballot = struct {
+    const n = 4;
+    const Kept = struct { order: [n]u16, chosen: usize, picking: bool };
+    // Picking: order[0..chosen] are the choices. Edit: the whole order.
+    order: [n]u16 = .{ 0, 1, 2, 3 },
+    chosen: usize = 0,
+    picking: bool = true, // nothing saved: open in picking
+    kept: ?Kept = null,
+    app: *nokre.App,
+
+    fn undoRestores(s: *const Ballot) bool {
+        return s.picking and s.chosen == 0 and s.kept != null;
+    }
+    fn pick(s: *Ballot, position: usize) void {
+        _ = nokre.element.Ranking.applyPick(&s.order, &s.chosen, &s.picking, 3, position) catch return;
+        s.kept = null; // a choice forgets what Start over discarded
+        s.app.refresh(.{});
+    }
+    fn undo(s: *Ballot) void {
+        switch (nokre.element.Ranking.applyUndo(&s.chosen, s.picking, s.undoRestores()) catch return) {
+            .last_choice => {},
+            .restore_discarded => {
+                const k = s.kept.?;
+                s.order = k.order;
+                s.chosen = k.chosen;
+                s.picking = k.picking;
+                s.kept = null;
+            },
+        }
+        s.app.refresh(.{});
+    }
+    fn startOver(s: *Ballot) void {
+        const kept: Kept = .{ .order = s.order, .chosen = s.chosen, .picking = s.picking };
+        nokre.element.Ranking.applyStartOver(&s.chosen, &s.picking) catch return;
+        s.kept = kept;
+        s.app.refresh(.{});
+    }
+    fn done(s: *Ballot) void {
+        nokre.element.Ranking.applyDone(&s.order, s.chosen, 1, &s.picking) catch return;
+        s.kept = null;
+        s.app.refresh(.{});
+    }
+    fn swap(s: *Ballot, a: usize, b: usize) void {
+        nokre.element.Ranking.applySwap(u16, &s.order, &s.chosen, 1, 3, a, b);
+    }
 };
 
-fn reorder(order: *Order, a: usize, b: usize) void {
-    nokre.element.Ranking.applySwap([]const u8, &order.items, &order.viable, 0, 3, a, b);
-}
-
+// Picking: the words in pool order. Edit: in the order the person made.
+var words: [Ballot.n][]const u8 = undefined;
+for (&words, 0..) |*w, i| w.* = names[if (ballot.picking) i else ballot.order[i]];
 try b.ranking(.{
     .label = "Ballot",
-    .options = &order.items,
-    .viable = order.viable,
+    .options = &words,
+    .viable = ballot.chosen,
+    .viable_min = 1,
     .viable_max = 3,
-    .divider = "Up to three count. Items below this do not.",
-    .on_swap = .bind(reorder, &order),
+    .divider = L.tr(loc, .rankingLine), // "Your ranking ends here", every ranking
+    .picked = if (ballot.picking) ballot.order[0..ballot.chosen] else null,
+    .picking_hint = hint, // "Choose 1 to 3.", the app's words and digits
+    .undo_restores = ballot.undoRestores(),
+    .on_pick = .bind(Ballot.pick, &ballot),
+    .on_undo = .bind(Ballot.undo, &ballot),
+    .on_start_over = .bind(Ballot.startOver, &ballot),
+    .on_done = .bind(Ballot.done, &ballot),
+    .on_swap = .bind(Ballot.swap, &ballot),
 });
 ```
+
+An app that saved an order opens it in edit: `picked = null`, its
+saved `options` order and `viable`. The element infers nothing — an
+edit with `viable == 0` is legal and is not "nothing chosen". Every
+handler rebuilds, because an Undo that restores and a Start over from
+edit change what the tree cannot work out on its own copy. The kitchen
+sink's ballot is this recipe, wired end to end.
+
+**What a consumer that does nothing sees.** A ranking that sets none
+of the picking fields is edit as shipped: no picking, no Undo, no
+Done, and no Start over, which edit offers only where `on_start_over`
+is wired. The one change it meets is the line's drawing, a rule with
+its caption, which every ranking has.
+
+**Whose words are whose.** The library owns the two prompts and the
+three controls — `ranking_first_prompt`, `ranking_next_prompt`,
+`ranking_undo`, `ranking_start_over`, `ranking_done` — beside the six
+verbs, in every language its chrome speaks
+([localization.md](localization.md#the-frameworks-own-words)). The
+prompts are two sentences so that no language needs ordinals, and they
+name no input device, because a mouse and a keyboard pick too. The app
+owns the label, the options, the line's caption and `picking_hint` —
+the last because it carries the band's numbers. The library still
+owns no "not counted" word: a choice is a lit row with a rank, a pool
+row is the look's secondary pill with none, and that is the whole
+distinction. What a reader hears while picking is in
+[accessibility.md](accessibility.md).
+
+#### What it is for, and the drag it is not
 
 Reach for it when the answer is an order over things the app already
 knows — a ballot, a priority list. A choice of one is `radio_group`;
@@ -2088,7 +2269,8 @@ reordering that needs a drag is not something nokre draws.
 Hold-and-drag was considered and deliberately left out for now: it
 costs a pointer stream the input model does not carry, and on touch it
 competes with the scroll the page is already listening for. A swap
-reaches every order a drag reaches, two rows at a time.
+reaches every order a drag reaches, two rows at a time, and picking
+builds one by choosing in sequence, with nothing moved at all.
 
 Neither half of that is a rule about gestures in general, and
 [`dial`](#dial) is where the difference shows: a dial takes a one-axis

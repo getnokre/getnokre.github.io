@@ -57,6 +57,8 @@
   --list-gap: 4px;
   --list-marker-gap: 8px;
   --ranking-gap: 6px;
+  --ranking-controls-gap: 16px;
+  --ranking-pool-radius: 22px;
   --dial-gap: 6px;
   --quote-indent: 16px;
   --icon-gap: 8px;
@@ -292,14 +294,13 @@
 :root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
 :root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .ranking.off .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle::after { box-shadow: var(--control-shadow); }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .plate.pool, :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.pool, :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked)::after { background: var(--knob); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked):is(:disabled, [aria-disabled="true"])::after { background: var(--knob-off); }
 :root[data-nokre-theme="depth"] .meter-track, :root[data-nokre-theme="depth"] .diverging-track, :root[data-nokre-theme="depth"] .btn.secondary .btn-track { background: var(--g10); border-color: transparent; }
 :root[data-nokre-theme="depth"] .btn.secondary:not(.auth) .btn-track { background: var(--g11); }
 :root[data-nokre-theme="depth"] .badge { background: var(--g11); border-color: transparent; }
-:root[data-nokre-theme="depth"] .plate.cut { border-color: transparent; }
 :root[data-nokre-theme="depth"] .picker-item[aria-selected="true"] { background: var(--chosen-fill); border-color: transparent; }
 :root[data-nokre-theme="depth"] .picker-item { box-shadow: none; }
 
@@ -1654,12 +1655,39 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 }
 /* Lit is the selected chip's pair, off is the unchecked box's —
    ink words, because the row is the button and dim words on a
-   button say "off" — and the divider is a caption inside a grouping
-   edge (renderer.zig, `drawRanking`). Armed is ink to its edge. */
+   button say "off" (renderer.zig, `drawRanking`). Armed is ink to
+   its edge. */
 .plate.lit { background: var(--paper); border-color: var(--g6); color: var(--ink); }
 .plate.off { background: var(--g11); border-color: var(--g6); color: var(--ink); }
-.plate.cut { background: var(--paper); border-color: var(--g10); color: var(--dark); }
-.plate[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.plate:not(.cut)[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+/* The line (`drawRankingLine`): no plate, a rule through the row's
+   middle parted by the small caption. The two `.cut-rule`s are
+   equal flex boxes, so the caption stays centred on the row while
+   a verb stands inside the trailing one; the caption's column
+   gives up `--line-side` on each side (`rankingLineSide`), and a
+   marker gap parts it from each segment. At rest the rule is a
+   control's `.g6` edge, armed the 2px ink of focus, pinned (the
+   `div`) the `.g10` grouping rule. */
+.plate.cut { align-items: center; background: transparent; color: var(--dark); }
+.plate.cut > .ranking-words {
+  flex: none;
+  max-width: calc(100% - 2 * var(--line-side) + 2 * var(--list-marker-gap));
+  padding-inline: var(--list-marker-gap);
+  font-size: var(--px-small);
+  line-height: var(--lh-small);
+  text-align: center;
+}
+.cut-rule { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
+.cut-rule::before { content: ""; flex: 1; border-top: var(--border) solid var(--g6); }
+.cut-rule > .verb { flex: none; margin-inline-start: var(--list-marker-gap); white-space: nowrap; unicode-bidi: isolate; line-height: var(--lh-body); }
+/* A verb stands in place of the trailing segment, which would be a
+   stub whenever the caption fills its column. Hidden, not removed,
+   so the verb keeps the trailing end. */
+.cut-rule:has(> .verb)::before { visibility: hidden; }
+div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
+.plate.cut[aria-pressed="true"] { color: var(--ink); }
+.plate.cut[aria-pressed="true"] .cut-rule::before { border-top: var(--focus) solid var(--ink); }
+.plate.cut .verb { color: var(--ink); }
 /* `--ord-band` is the measured width the serializer wrote
    (`rankingOrdinalBand`), gap included: the rank ends a marker gap
    short of the words, as a list marker does, so a two-digit rank
@@ -1704,7 +1732,65 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .ranking[disabled] .field-label, .ranking.off .field-label,
 .ranking[disabled] .plate, .ranking.off .plate { color: var(--g6); -webkit-text-fill-color: var(--g6); }
 .ranking[disabled] :is(.plate.lit, .plate.off), .ranking.off :is(.plate.lit, .plate.off) { border-color: var(--g10); }
-.ranking[disabled] .plate[aria-pressed="true"], .ranking.off .plate[aria-pressed="true"] { background: var(--g6); border-color: var(--g6); color: var(--g11); -webkit-text-fill-color: var(--g11); }
+.ranking[disabled] .plate:not(.cut)[aria-pressed="true"], .ranking.off .plate:not(.cut)[aria-pressed="true"] { background: var(--g6); border-color: var(--g6); color: var(--g11); -webkit-text-fill-color: var(--g11); }
+:is(.ranking[disabled], .ranking.off) .cut-rule::before { border-top-color: var(--g10); }
+:is(.ranking[disabled], .ranking.off) .plate.cut[aria-pressed="true"] .cut-rule::before { border-top-color: var(--g6); }
+:is(.ranking[disabled], .ranking.off) .plate.cut .verb { color: var(--g6); }
+/* Edit's Start over (`rankingStopRect`): a pill at the leading
+   edge, a controls gap under the rows. A flex box of its own
+   rather than the pill's inline one, which would stand on a line
+   box and take its strut. */
+.ranking > .btn {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: var(--ranking-controls-gap);
+}
+/* Picking (`RankingPicking`): the prompt at body scale, the hint at
+   small, a ranking gap between every stacked piece. Both prompts
+   stand in one grid cell and the one not said now is hidden, so
+   the taller is reserved and the first pick moves nothing. */
+.ranking-prompt { display: grid; margin-top: var(--input-label-gap); }
+.ranking-prompt > p { grid-area: 1 / 1; }
+.ranking-prompt > .reserve { visibility: hidden; }
+.ranking-hint { margin-top: var(--ranking-gap); font-size: var(--px-small); line-height: var(--lh-small); color: var(--dark); }
+.ranking.picking > .ranking-rows { margin-top: var(--ranking-gap); }
+/* The choices sit on the rows' own tracks, so a choice and a pool
+   row are the one `1fr` height; the serializer writes how many
+   tracks the list spans. */
+.ranking-choices {
+  display: grid;
+  grid-template-rows: subgrid;
+  list-style: none;
+}
+.ranking-choices[hidden] { display: none; }
+/* A choice is a row, not a list's item: the list gap between a
+   list item's blocks would part its rank from its words. */
+.ranking-choices > li > * + * { margin-top: 0; }
+/* A pool row is the secondary button at a row's size
+   (`drawSecondaryFace`): the `.g6` outline over the ground, a pill's
+   corner, and focus taking the outline over. */
+.plate.pool { background: transparent; border-color: var(--g6); color: var(--ink); border-radius: var(--ranking-pool-radius); }
+.plate.pool:focus-visible { border-color: transparent; }
+:is(.ranking[disabled], .ranking.off) .plate.pool { border-color: var(--g10); }
+.ranking[disabled] :is(.ranking-prompt, .ranking-hint), .ranking.off :is(.ranking-prompt, .ranking-hint) { color: var(--g6); }
+/* The controls (`rankingControls`): Undo and Start over at the
+   leading edge, Done at the trailing, a control gap apart. The
+   pair is one flex item, so where the three do not fit Done wraps
+   alone, and where the pair does not fit it stands alone on its
+   line, shrinks to the device and wraps Start over under Undo.
+   An absent control keeps its box, hidden. */
+.ranking-controls, .ranking-control-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--control-gap);
+  min-width: 0;
+}
+.ranking-controls { margin-top: var(--ranking-controls-gap); }
+.ranking-controls .btn { max-width: 100%; }
+.ranking-controls > .btn { margin-inline-start: auto; }
+.ranking-controls .absent { visibility: hidden; }
 
 /* The dial: one vertical column at the leading edge, a step button
    above and below it (`dialButtonRect`, `dialPlateRect`). Block
@@ -2169,7 +2255,7 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
 .field-box:has(:focus-visible) { border-color: var(--ink); }
 /* An armed row is already ink to its edge, so the indicator on
    its edge would vanish: it steps outside, the default clear. */
-.plate[aria-pressed="true"]:focus-visible { outline-offset: var(--focus-clear); }
+.plate:not(.cut)[aria-pressed="true"]:focus-visible { outline-offset: var(--focus-clear); }
 .btn.secondary:focus-visible { border-color: transparent; }
 
 /* Where the row is the control, the row is what carries the

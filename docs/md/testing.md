@@ -147,7 +147,8 @@ have already told you so.
 `tap(id)`, `tapLabel`, `tapLink(stop)`, `pressKey`, `typeText`,
 `composeText(composition, committed)` (full IME start→update→commit
 sequence), `paste(text)`, `selectOption(group_label, option)`,
-`swapSlots(label, a_words, b_words)`, `scroll(id, delta)`,
+`swapSlots(label, a_words, b_words)`, `pickOption(label, words)`,
+`pressRankingControl(label, control)`, `scroll(id, delta)`,
 `scrollElastic(id, deltas)`, `scrollFling(id, velocity, band_ms)`,
 `endScrollGesture()`, `stateScrollPresentation(mode)`,
 `stateScrollBarVisible(shown)`, `dragScrollThumb(id, deltas)`,
@@ -336,8 +337,8 @@ moves the line and named second moves the item:
 ```zig
 // Alpha, Bravo | line | Charlie, Delta — two count, the band 0 to 3.
 try t.swapSlots("Ballot", "Bravo", "Alpha");   // two items trade places
-try t.swapSlots("Ballot", "Up to three count. Items below this do not.", "Charlie");   // the line rests past Charlie: three count
-try t.swapSlots("Ballot", "Alpha", "Up to three count. Items below this do not.");   // Alpha crosses to just below the line: two count
+try t.swapSlots("Ballot", "Your ranking ends here", "Charlie");   // the line rests past Charlie: three count
+try t.swapSlots("Ballot", "Alpha", "Your ranking ends here");   // Alpha crosses to just below the line: two count
 ```
 
 It takes the keyboard route too: focus the ranking, ↑/↓ to the first
@@ -352,6 +353,19 @@ did not take (`error.NotInteractive`): a pinned line armed first, or a
 pair whose new count the band refuses, which the diagnostic names —
 the count the pair would have made and the band that holds it — before
 Esc disarms the device again.
+
+A ranking that is picking has no pair to make — `swapSlots` refuses it
+(`error.NotEditing`) — and two verbs of its own. `pickOption` chooses
+the pool row with those words; `pressRankingControl` presses Undo,
+Start over or Done, named by `Ranking.Control` rather than by words,
+because an option may be called "Done". Both take the keyboard route
+and trace as `pick <words>` and `press <the control's word>`.
+`pickOption` refuses a ranking in edit (`error.NotPicking`) and words
+on no pool row (`error.NoSuchSlot`, whose diagnostic lists the pool,
+or says the words are already a choice — only Undo takes one back);
+`pressRankingControl` refuses a control not offered now
+(`error.NotInteractive`, saying why: nothing chosen, or the band's
+minimum not met, or edit with no Start over wired).
 
 **Two verbs go back, and they are two different acts.** `back()` presses
 the back *control* — the one the router installs on every pushed screen,
@@ -1643,6 +1657,15 @@ rather than analyzed:
   *can* honor its activation — and the same screen mounted as an app
   shell still cancels Enter and still lands on `#terms`, because there
   the destination was always core's to reach.
+- **a ranking's picking phase** — a pick, an Undo, Esc and Done
+  pressed on the document's own buttons, each read back from the app's
+  handlers as the order and the phase it now holds. The document is
+  held to the same presses: the choice lands in the list, the live
+  region says the state that holds after an Undo as after a pick and is
+  the *same node* throughout (the patch pairs by position, and a
+  replaced region is one a reader stops hearing), the cursor is stated
+  where the reference says it stands, and Done leaves edit's line in
+  place of the picking markup.
 
 What that gate is **not** is a browser. Layout, styling, the real event
 loop, a real popup's window management and a real storage's quota
@@ -1921,8 +1944,8 @@ running the harness's own ladders**, each with a wait in front. It is
 not a copy of the harness and not a parallel vocabulary — `press`,
 `reveal`, `back`, `typeInto`, `clearField`, `replaceField`, `select`,
 `dragSelect`,
-`longPress`, `selectOption`, `swapSlots`,
-`goTab`, `expectPresent`, `expectAbsent`, `expectDestination`, `expectRoute`,
+`longPress`, `selectOption`, `swapSlots`, `pickOption`,
+`pressRankingControl`, `goTab`, `expectPresent`, `expectAbsent`, `expectDestination`, `expectRoute`,
 `expectValue`, `expectProblem`, `expectSelection`, `expectSelectedText`,
 `expectDisabled`, `expectEnabled`,
 `expectNotified` mean here exactly what they mean in a unit test,

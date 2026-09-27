@@ -51,8 +51,10 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `region` (folded) | — | absent, subtree included: a narrow desk is not showing it and the switcher speaks for it |
 | `segmented` | `radio_group` | selected option as value, focused, `disabled` |
 | `radio_group` | `radio_group` | selected option as value, focused, `disabled` |
-| `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below) |
+| `ranking` | `group` | the cursor slot's words as value and its rank as description — where the one stop is standing; selected while that slot is the armed one; focused; `disabled`. Every slot of the device is a child of its own (below). While picking: the cursor stop's words as value — a pool row's, or a control's word — and, on a pool row, the prompt as description |
 | `ranking` slot | `button` | the row's words as name, its rank as value — a rank only a counted slot has, so an item below the line is heard with none; selected while it is the armed slot; `disabled` where the band rules it out; activatable, never a focus stop; at the row's rect. A pinned divider's slot is `static_text` at its row instead: it is a caption, and there is nothing to press. A hidden line has no slot: no row is drawn, so every slot is an item and every item carries its rank |
+| `ranking` control (framework) | `button` | Undo, Start over or Done by the framework's word, activatable, never a focus stop, present only while offered; edit's Start over too, where the app wired it |
+| `ranking` while picking | — | the prompt and the app's `picking_hint` as `static_text`; the choices as an unnamed `list` of `list_item`s named by their words, whose rank is the list's own position; each pool row a `button` named by its words, with no rank; the controls as above; and a polite `status` saying the state that now holds — the last choice with its rank, or the first prompt when none is chosen |
 | `dial` | `spin_button` | the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | selected option as value, focused, `disabled` |
@@ -248,6 +250,24 @@ Three things it deliberately is not:
   "3 of 9" would be a sentence nokre does not own, and the two bridges
   that flatten their trees (iOS, Android) announce no structural
   position anyway.
+
+**While picking, a reader hears the state that holds, not the press
+that changed it.** Tabbing in meets the device named by its label,
+valued by the pool row under the cursor and described by the prompt:
+"Ballot, group, Bike lanes, Pick your first choice". A press on a pool
+row makes it a choice, and the live region says it with its rank —
+"Bike lanes, 1" — while the cursor stays at the same place in the pool,
+now on the next row. After an Undo the region says the choice that is
+now last, or the first prompt when none is left: an Undo is heard as
+where the ranking stands, because saying what was taken back would
+need a word the library does not own. A choice is a list item and not
+a button — nothing is pressed there; only Undo takes one back — and
+its rank is the list's own position, so no number is spelled into its
+name. Done ends picking: the device becomes edit, the cursor lands on
+the line, and what follows is edit's contract above. The DOM says the
+same in markup: an `<ol>` of choices, pool rows and controls as
+buttons, and a visually hidden `aria-live="polite"` region that stays
+the same node from the first press to the last.
 
 What a rank can be is bounded, because a borrowing snapshot points at
 comptime strings and the bridge keys each slot's id off its element's:
@@ -502,9 +522,12 @@ after the fact would mean the bad state existed:
 - choice controls (segmented, radio group, select) with fewer than two
   options, empty option labels, or a selection out of range
 - a malformed ranking: fewer than two options, an empty option, no
-  divider words, a band maximum of zero or past the option count, an
+  caption for the line, a band maximum of zero or past the option count, an
   inverted band, a count outside the band, or an input-owned field
-  (`cursor`, `armed`) set by hand — a screen cannot open mid-swap
+  (`cursor`, `armed`) set by hand — a screen cannot open mid-swap;
+  while picking, a choice outside the options or chosen twice, as many
+  choices as the maximum, a picking callback left unwired, or
+  `undo_restores` with choices made or in edit
 - a malformed dial: a floor below zero, an inverted range, a range
   holding one value — that is a reading, not a device — a value outside
   it, a range past `Dial.max_digits`, or a `reading_buf` set by hand,

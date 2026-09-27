@@ -471,6 +471,10 @@ English until an app says otherwise:
 | `ranking_cancel` | "Cancel" | a ranking's armed row, which a second press disarms |
 | `ranking_in` / `ranking_out` | "In" / "Out" | a ranking's item rows while its line is armed: In below the line, Out above it, the side the row will be on after a press |
 | `ranking_here` | "Here" | a ranking's line while an item is armed and the band lets it cross |
+| `ranking_first_prompt` / `ranking_next_prompt` | "Pick your first choice" / "Pick your next choice" | a ranking's prompt while picking: the first with nothing chosen, the next after that — two sentences, so no language needs ordinals |
+| `ranking_undo` | "Undo" | a ranking's control that takes back the last choice, or brings back what Start over cleared |
+| `ranking_start_over` | "Start over" | a ranking's control that clears the choices, from picking or from edit |
+| `ranking_done` | "Done" | a ranking's control that ends picking once the band's minimum is met |
 | `increase_contrast` / `reduce_transparency` | "Increase Contrast" / "Reduce Transparency" | the rows of [`accessibility_toggles`](elements.md#accessibility_toggles) |
 
 ```zig
@@ -505,6 +509,8 @@ plus the field camel-cased at its underscores:
 | `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` |
 | `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` |
 | `ranking_in` / `ranking_out` / `ranking_here` | `chromeRankingIn` / `chromeRankingOut` / `chromeRankingHere` |
+| `ranking_first_prompt` / `ranking_next_prompt` | `chromeRankingFirstPrompt` / `chromeRankingNextPrompt` |
+| `ranking_undo` / `ranking_start_over` / `ranking_done` | `chromeRankingUndo` / `chromeRankingStartOver` / `chromeRankingDone` |
 | `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` |
 
 A catalog missing one of them does not compile — the posture the rest
@@ -536,14 +542,19 @@ mistake is a *build* error — but there is no comptime left to check a
 string written into a struct at run time. Joining costs the reordering a
 few languages would want and buys a string that cannot be wrong.
 
-One of them is also *measured*: `more`, the control an overflowing row
-of actions folds into ([elements.md](elements.md#the-folded-tail-more)).
-Every other string here rides on the node it names, but layout claims
-that control's width while *deciding* the fold — before the control
-exists — so this word reaches layout on its own. The consequence is
-worth knowing: it is the one chrome string whose translation changes a
-layout. A long word takes its room from the row and folds it an action
-deeper, rather than clipping the pill that carries it.
+Some of them are also *measured*, and reach layout on their own rather
+than riding on the node they name. `more`, the control an overflowing
+row of actions folds into
+([elements.md](elements.md#the-folded-tail-more)): layout claims that
+control's width while *deciding* the fold, before the control exists. A
+long word takes its room from the row and folds it an action deeper,
+rather than clipping the pill that carries it. And every `ranking_`
+word: a ranking reserves its verb band as wide as the widest verb, its
+prompt as tall as the taller of the two, and room for all three
+controls, so a long translation widens the band, wraps the prompt, or
+moves a control to a line of its own — the device keeps one shape
+however the words change under it. These are the chrome strings whose
+translation changes a layout; the rest never do.
 
 ## What the compiler checks
 
