@@ -122,7 +122,7 @@ macOS and Metal first, as a go/no-go:
    the other shells, each with its goldens by readback.
 7. iOS. *Built*, verified on the Simulator only
    ([iOS](#ios)).
-8. Android, on Vulkan. *Built*, verified on the emulator only
+8. Android, on Vulkan. *Built*, verified on the emulator and on a MediaTek tablet
    ([Android](#android)).
 9. Windows, on Vulkan. *Written and compile-checked, unverified: no
    machine* ([Windows](#windows)).
@@ -183,17 +183,40 @@ context is made once and outlives windows. `hsk_gpu_attach_window`
 makes the surface and a swapchain at the window's size: FIFO (the
 display's vsync), three images unless the surface demands more, an
 8-bit UNORM format, BGRA if offered and RGBA otherwise — never sRGB,
-whose encode would change the bytes — opaque alpha, identity
-pre-transform (the compositor rotates), and images sampled and copyable,
+whose encode would change the bytes — opaque alpha, pre-rotated to the
+display's turn (below), and images sampled and copyable,
 each wrapped once as an `SkSurface` texture for the frost's snapshot and
 a ring's lift blend. A frame acquires the next image on a fresh semaphore
 Ganesh waits on, replays, flushes with the image's own semaphore
-signalled, submits, and presents; an out-of-date or suboptimal answer
-remakes the swapchain at the next acquire, and the same window attached
-again (surfaceChanged) remakes it at once. The window's size is the
-extent, not the surface's `currentExtent`: inside surfaceChanged the
-emulator's still answered the size before a rotation, and a swapchain
-made at it showed each rotated frame stretched into the old shape.
+signalled, submits, and presents. An out-of-date answer remakes the
+swapchain at the next acquire; a suboptimal one only asks, at the next
+acquire, whether the window's size or the display's turn has moved from
+the swapchain's, and remakes it if so; the same window attached again
+(surfaceChanged) remakes it when either moved and keeps it otherwise.
+The window's size is the frame, not the surface's `currentExtent`:
+inside surfaceChanged the emulator's still answered the size before a
+rotation, and a swapchain made at it showed each rotated frame
+stretched into the old shape.
+
+**Pre-rotation.** The swapchain's `preTransform` is the surface's
+`currentTransform` — the display's quarter or half turn, when the
+surface lists it; identity otherwise — and a quarter turn swaps the
+window's size for the extent, so the image is the display's own shape
+and the compositor shows it as it is. The frame is drawn turned: the
+turn (`nokre_gpu::turn`, clockwise, as Vulkan's transforms are) is the
+replay canvas's base matrix, every op that draws in device space — the
+ground, shadows, the frost's plate, the lamp's fields — returns to that
+base rather than to identity, and the frost's snapshot is taken through
+the turn and sampled back through its inverse. A turn takes each pixel's
+centre onto a pixel's centre, so every effect that reads the frame reads
+the pixel it reads unturned: `check-gpu` holds every lamp-dark take at
+all four turns to the same targets ([What the shaders
+measure](#what-the-shaders-measure)). What moves is text: Ganesh
+rasterises a glyph under the turn in the turned space, so a turned
+frame's plain text differs from the unturned one's at glyph edges —
+the class the reversal already reports and does not hold. Windows and
+Linux are unchanged: their surfaces offer identity alone, and there a
+suboptimal answer still remakes the swapchain.
 
 The SkSL shaders compile to SPIR-V unchanged. `allowEs3` is still
 needed: the SkSL 100 limit is the front end's, before any backend.
@@ -214,7 +237,11 @@ cd examples/kitchen_sink/android
 ```
 
 `adb shell setprop debug.nokre.frame_log 1` before launch logs the
-macOS shell's frame line to logcat (tag `nokre`), on either path.
+macOS shell's frame line to logcat (tag `nokre`), on either path, with
+two Android fields: on the GPU `swapchains`, the count made so far
+(`hsk_gpu_swapchains_made`), which a steady frame must not move; on the
+CPU `lock`, the part of `raster` spent waiting in `ANativeWindow_lock`
+for a buffer.
 
 On the emulator (API 35, arm64, `-gpu host -feature Vulkan` on an M4:
 gfxstream's Vulkan 1.1, device "Apple M4"), the kitchen sink in lamp
@@ -230,11 +257,49 @@ interval 16.6 ms (the emulator's 60 Hz), against 29.4 / 30.6 raster and
 an interval of 31.1 on the CPU; the context 12–19 ms; the first frame's
 submit 28 ms with the host's pipeline cache warm and 992 ms cold.
 
-On a device nothing is verified: a real driver's Vulkan (the emulator's
-is the Mac's Metal under gfxstream), the swapchain's pacing under FIFO
-and a real display's rate, rotation's `currentTransform` (the
-compositor's rotation pass, and whether a pre-rotated swapchain is worth
-it), the fallback on a device whose Vulkan refuses, and the frame costs.
+The emulator rotated cleanly and showed nothing of the defect a device
+then did, so an emulator is not evidence for a presenter.
+
+On a device — a Lenovo TB336FU (MediaTek, Mali-G57 MC2, Android 16,
+1600×2560 at 90 Hz, natural orientation portrait), 2026-09-27 — the
+swapchain as first built, at identity, drew portrait at 90 fps and
+landscape at 30–45. On a turned display the present answered
+suboptimal at every frame, and each answer remade the swapchain: one
+swapchain per frame, 19 ms of every frame spent remaking it. Drawn
+through at identity instead, the frame held 90 in eink, but the layer
+left the display's overlay for a GPU composition pass (`CLIENT`, with
+the compositor's rotation) — the same GPU lamp draws on. Pre-rotated,
+it stays on the overlay (`DEVICE`, transform 0) in every orientation.
+The kitchen sink, a 10 s scroll at a fixed 400 px/s, frame log (median
+raster; median / p95 interval) and SurfaceFlinger (share of presents
+over 1.5 refreshes apart):
+
+| Window | Look | Before | After |
+| --- | --- | --- | --- |
+| portrait, 1600×2494 | eink | 2.9 ms; 11.1 / 11.4; 0.3% | 2.7 ms; 11.1 / 11.3; 0.4% |
+| landscape, 2560×1534, both turns | eink | 21.9 ms; 24.7 / 27.2; 99–100% (a swapchain per frame) | 2.6 ms; 11.1 / 11.4; 0.4–0.5% |
+| portrait | lamp | 3.9 ms; 11.1 / 11.5; 0.7% | 3.8 ms; 11.1 / 11.5; 0.7% |
+| landscape, both turns | lamp | 22.9 ms; 27.6 / 30.1; 99–100% (a swapchain per frame) | 3.4 ms; 11.1 / 11.6; 0.9–1.0% |
+| floating 2100×1184, landscape | eink | 18.0 ms; 20.2 / 22.8; 78% (a swapchain per frame) | 2.6 ms; 11.1 / 11.5; 1.0% |
+| floating 1400×734, 700×1734, 1000×934, 600×434, 1000×1134 (both displays) | eink | — | 2.3–2.6 ms; 11.1 / 11.5; ≤1.3% (600×434: 5.5%, on the CPU raster too) |
+| split screen, portrait and landscape | eink | — | 2.5 ms; 11.1 / 11.6; ≤1.4% |
+| floating 1400×734, 700×1734, 1000×1134 | lamp | — | 2.9–3.2 ms; 11.1 / 11.5; ≤3.6% |
+
+No steady frame made a swapchain in any of them. A change costs one
+or two: a half turn one, when a present finds the new turn, 15–25 ms
+of that frame; a quarter turn two, inside the system's own rotation
+animation, since surfaceChanged's surface can still answer the old
+turn; resizing a floating window one, at surfaceChanged, and a first
+frame of 8–14 ms.
+
+One case holds less than portrait, and not by orientation: a *large*
+floating window in lamp (2100×1184 on the turned display, 1500×1634 on
+the upright one, alike) runs at a median 13 ms with a fifth of its
+presents late. Every layer of a floating window is composited by
+SurfaceFlinger on the GPU (its rounded corners and shadow), so the
+compositor and lamp share the GPU, and the present waits on it. Eink in
+the same windows holds 90. The fallback on a device whose Vulkan
+refuses is still unverified.
 
 ### Windows
 
@@ -437,7 +502,20 @@ Zig record's tile fills are most of that.
 **Accuracy.** `zig build check-gpu -Dskia -Dgpu` runs the golden suite
 with the GPU shim linked and draws every lamp-dark take a second time on
 an offscreen Metal surface, reads it back, and compares it with its
-committed golden (tests/gpu_accuracy.zig). Dark only: lamp light is
+committed golden (tests/gpu_accuracy.zig) — and then through each
+quarter turn a pre-rotated swapchain draws through
+(`hsk_surface_turn_gpu`), read back unturned, against the same targets
+([Android](#android)). Plates and rings land exactly where the unturned
+take does. Frost keeps the unturned take's maximum at every turn; its
+mean is the unturned one's where it lies over plates alone, and drifts
+by a few thousandths where it lies over scrolled text (page-scrolled
+0.095 → 0.109, sheet-over-scrolled 0.043 → 0.046, notices-pane 0.008 →
+0.013), because it blurs glyphs Ganesh rasterises differently under the
+turn. Lit glyphs land within a byte of the unturned take (page-scrolled's
+max 1 → 2, the target): a lit glyph's coverage is Ganesh's under the
+turn. Text and anti-aliased edges, rasterised in the turned space, grow
+to a max of up to 188 and a mean of up to 3.5 (frosted-chrome's, with
+no glyph under a turn that moves, stays at 23 / 0.03). Dark only: lamp light is
 depth light and draws no lamp op, so no shader has a light variant.
 Pixels are sorted by what drew them: text and anti-aliased edges
 (every glyph run's box but a lit one's, and each rounded fill, stroke
@@ -591,7 +669,7 @@ What each shell presents with today, and what the GPU path makes it:
 | --- | --- | --- |
 | macOS | the frame copied into an IOSurface on the view's layer, display-link paced | Metal: `CAMetalLayer`, the same display link, a resize presented in its transaction (`-Dgpu`, built) |
 | iOS | the frame copied into an IOSurface on the view's layer, `CADisplayLink` paced — macOS's presenter | Metal: the view's layer a `CAMetalLayer` (`+layerClass`), the same display link, a layout's frame presented in its transaction (`-Dgpu`, built; simulator-verified, unverified on a device) |
-| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, still Choreographer paced, remade on surfaceChanged (`nokreRaster=gpu`, built; emulator-verified, unverified on a device) |
+| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, pre-rotated to the display's turn, still Choreographer paced, remade when the window's size or the turn moves (`nokreRaster=gpu`, built; verified on a MediaTek tablet) |
 | Windows | the frame swizzled into a DIB section and `BitBlt` to the window, paced by a `DwmFlush` frame clock (unverified: no machine) | Vulkan: a FIFO swapchain over the `HWND` (`VK_KHR_win32_surface`, `vulkan-1.dll` opened at run time), the same clock, remade at `WM_SIZE` (`-Dgpu`; written, compile-checked, unverified: no machine) |
 | Linux | `wl_shm` double buffer, paced by the surface's frame callback (unverified: no machine) | Vulkan: a FIFO swapchain over the `wl_surface` (`VK_KHR_wayland_surface`, `libvulkan.so.1` opened at run time), sized by the shell, presented on the frame callback (`-Dgpu`; written, compile-checked, unverified: no machine) |
 

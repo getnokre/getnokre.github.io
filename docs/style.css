@@ -299,7 +299,6 @@
 :root[data-nokre-theme="depth"] .btn.secondary:not(.auth) .btn-track { background: var(--g11); }
 :root[data-nokre-theme="depth"] .badge { background: var(--g11); border-color: transparent; }
 :root[data-nokre-theme="depth"] .picker-item[aria-selected="true"] { background: var(--chosen-fill); border-color: transparent; }
-:root[data-nokre-theme="depth"] .picker-item { box-shadow: none; }
 
 :root[data-nokre-theme="depth"], :root[data-nokre-theme="depth"] .box[style*="background:"]:not([style*="background:var(--g12)"]) { --field-fill: var(--field-plate); --field-fill-off: var(--field-plate-off); --field-shadow: var(--control-shadow); --field-placeholder: var(--mid); }
 :root[data-nokre-theme="depth"] .box:not(.bare):not([style*="background:"]), :root[data-nokre-theme="depth"] .box[style*="background:var(--g12)"], :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notices-pane { --field-fill: var(--field-well); --field-fill-off: var(--field-well-off); --field-shadow: none; --field-placeholder: var(--field-well-placeholder); }
@@ -2567,7 +2566,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    without it a flex item floors at its content and the pane grows
    past its own cap instead of scrolling. */
 .picker > .scroll, .notices-pane > .scroll { flex: 1; min-height: 0; }
-/* Picker rows are tiles: flush but for the hairline separator, not
+/* Picker rows are a list: 1px apart and no line between them, not
    gapped like free-flowing content — `layoutBlock` flows them at
    `border` where a free region uses the control gap. */
 .picker > .scroll { --gap: var(--border); }
@@ -2591,22 +2590,6 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   border-color: var(--g6);
   color: var(--ink);
 }
-/* Hairlines between plain rows only, drawn in the 1px flow gap
-   layout leaves between them rather than taken out of a row's own
-   height: a chip carries its own outline, and a rule abutting it
-   reads as a glitch. */
-.picker-item + .picker-item { box-shadow: 0 calc(-1 * var(--border)) 0 var(--g10); }
-/* The shadow a row carries is the one *above* it, so both halves of
-   `drawPickerSeparators`'s test — neither this row nor the one
-   before it may be a chip — are rules about the row that owns the
-   line. Written as `:has(+ chip)` this reached one row too high: it
-   took the line above the chip's *predecessor* and left the line
-   abutting the chip itself, which is the one thing the reference
-   goes out of its way not to draw. */
-.picker-item[aria-selected="true"],
-.picker-item[aria-selected="true"] + .picker-item,
-.picker-item:focus-visible,
-.picker-item:focus-visible + .picker-item { box-shadow: none; }
 
 /* ---- the document ------------------------------------------------ */
 

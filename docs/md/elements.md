@@ -2566,9 +2566,9 @@ promises a picker that no longer opens
 
 Activation (tap/Enter/Space) opens the framework's picker: a modal
 bottom panel with the select's label as its title and one 44px tile row
-per option — hairline-separated, like `radio_group`'s rows, in eink —
-scrolling
-when they overflow. It uses the sheet's geometry and
+per option — a list on one surface, with no line between two rows in
+any look, since the chosen row's chip already says which is which —
+scrolling when they overflow. It uses the sheet's geometry and
 scrim and may stack above an open sheet. The current option is
 focused on open and rendered as a dimmed `.g11` chip with a 1px `.g6`
 border (the `segmented` pattern) — under [`depth`](getting-started.md#a-theme) a flat

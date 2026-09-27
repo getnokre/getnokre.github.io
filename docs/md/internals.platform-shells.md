@@ -1027,7 +1027,8 @@ shell.m. Its twists:
   locking it: surfaceCreated's first `nativeSetSurface` attaches it
   (`hsk_gpu_attach_window`: a Vulkan swapchain over it), every later
   one — surfaceChanged, the same window at a new size — remakes the
-  swapchain, and surfaceDestroyed's detaches it before the window goes.
+  swapchain when the size or the display's turn moved, and
+  surfaceDestroyed's detaches it before the window goes.
   The Choreographer-paced `render()` is unchanged; `on_frame` presents
   inside the shim and shell.c reads no pixels. A window the GPU refuses
   (no Vulkan, no swapchain) stays on the CPU blit above, the one

@@ -200,6 +200,56 @@ And one from its lit glyphs ([lamp.md](lamp.md#glyphs-on-plates-are-lit-surfaces
   who needs them gated turns on Reduce Transparency or Increase
   Contrast, and an app whose glyphs must be gated declares `depth`.
 
+#### What the chrome's shadows cost what passes under it
+
+Under lamp dark every plate in the bottom row — each nav plate, the
+collapsed chip, the notices indicator, a notice banner in the row's
+place — lays a contact shadow, black at a peak of 0.20 and 5 px deep,
+and casts its own shadow away from the lamp, whose penumbra reaches 28
+to 34 px above the plate on the windows the test below stands up. Both
+only darken, and text darkens with the paper it is on, so the pair
+narrows: at the contact shadow's peak `mid` on `paper` falls to 3.35:1
+for a few pixels, under 1.4.3's 4.5:1, while `ink` and `dark` keep AA
+([lamp.md](lamp.md#chrome-edges-are-lights) has the bytes). Nothing is
+gated for it, and no shadow was changed to avoid it.
+
+It is not a standing state, and that is the owner's recorded position
+(2026-09-28): "nav pills can get out of everyone's way once the user
+scrolls down, so in fact they are not affecting anything's visuals."
+Only content in motion passes under the chrome. At rest, layout has
+already moved it out: `contentArea` ends above the bar, and a page's
+flow keeps `metrics.nav_content_gap` (24 px) below its last element on
+every screen with bottom chrome (`layout.trailingSpace`), so scrolled
+to its end a page's last line box stops 28 px above the plates' top —
+the 24 and the bar's own 4 above its items. The contact shadow's 5 px
+never reaches it, and the cast lays 0 of 255 on it, on a phone with and
+without the home-indicator band, in landscape, with the nav collapsed
+to its chip, with the notices indicator beside it, and on a wide page.
+
+Two shapes hold it with less room, and it is recorded as it measures:
+
+- **A notice banner** stands where the row did, its body's top at
+  `contentArea`'s bottom, so the words stop 24 px above it rather than
+  28. The contact shadow still clears; the cast's last tail touches the
+  nearest line box at 1 of 255 at 3×.
+- **A desk** does not window-scroll, and a region ends at `contentArea`'s
+  bottom with only its own 16 px pad inside, so its words stop 20 px
+  above the plates. The contact shadow clears; the cast touches the
+  nearest line box at 1 of 255 at every scale.
+
+One of 255 over the brightest ink moves a byte by one at most; neither
+case is where 3.35:1 comes from. A sheet is not covered by any of this:
+it is modal, the page beneath it is dimmed (by 30% toward black under
+lamp, [lamp.md](lamp.md#frosted-chrome)) and out of reach, and nothing
+reserves room under its edge — what lies there is a page the reader has
+set aside, and the dim, not the shadow, is what sets its contrast.
+
+The test "scrolled to its end, no word lies under the bottom row's
+contact shadow, and a page's none under its plates' shadow"
+(`renderer_lamp_test.zig`) holds all of it at 1×, 2× and 3×: every
+text-bearing node's line box against every chrome shadow's coverage,
+with the banner's and the desk's 1 of 255 as their stated bound.
+
 ### The one colored artwork
 
 One thing on any nokre screen is not gray: the multicolour G on the

@@ -518,7 +518,9 @@ lies inside the edge, `ink` on `paper` is 6.2:1 and `dark` 4.9:1 —
 color.zig proves both keep AA — and `mid` 3.35:1; on the first pixel
 outside the edge `mid` is 4.0:1. The chrome's directional shadow darkens
 the same content further out; neither is gated, because what lies under
-the chrome's edge is passing beneath it.
+the chrome's edge is passing beneath it — at rest, nothing is
+([pixel-model.md](pixel-model.md#what-the-chromes-shadows-cost-what-passes-under-it)
+records how far, in each shape, as the owner's position of 2026-09-28).
 
 **Rejected: a haze.** A wide leak of light onto the ground around the
 chrome, toward `0x2C`, was refused as unmanaged: it reads as mood
