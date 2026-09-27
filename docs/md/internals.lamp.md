@@ -515,9 +515,9 @@ blurred, instead of an opaque fill — and so are the notices indicator,
 a notice banner, the notices pane and a picker. A banner and the
 indicator frost as nav plates do, the panes as a sheet does.
 A pane's glass, rim, shadow and contact line are all drawn on its body
-at the pane's corner (`layout.modalPaneRadius`), which under lamp is
-depth's doubled one ([elements.md](../elements.md#sheet), the owner's
-decision of 2026-09-27), so every effect follows the larger arc.
+at the pane's corner (`layout.modal_pane_radius`), twice a card's in
+every look ([elements.md](../elements.md#sheet), the owner's decision
+of 2026-09-27), so every effect follows the larger arc.
 
 - **Blur.** The frame beneath the plate blurred by three passes of a
   separable integer box blur — close to a Gaussian, deterministic, and

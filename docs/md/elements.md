@@ -1336,11 +1336,17 @@ so the pair aligns; identical semantics, so assistive tech hears no
 difference. Because its text draws on the ambient, it passes the same
 contrast gate as `text` — a secondary button on a dark box fill is
 rejected at `append`. There is no tertiary and no danger variant: one
-filled, one outlined, and the words carry the rest. Under
-[`depth`](getting-started.md#a-theme) both round fully at the ends (capped at a one-line button's
-half-height, so a wrapped label keeps its corners), and the focus ring
-follows; the secondary is a `.g10` well with no border rather than an
-outline; the glyph and provider faces keep eink's corner. Under
+filled, one outlined, and the words carry the rest. In every look
+both round fully at the ends (capped at a one-line button's
+half-height, so a wrapped label keeps its corners), and the focus ring,
+the outline, and the off, working and waiting drawings follow; the
+glyph and provider faces keep the control corner, 8px. Eink took the
+pill on the owner's decision (2026-09-27) that the looks differ only
+where their own principle forces it
+([A theme](getting-started.md#a-theme)); its 1px boundary stroke is
+the same WCAG 1.4.11 carrier on a curve. Under
+[`depth`](getting-started.md#a-theme) the secondary is a `.g10` well
+with no border rather than an outline. Under
 [`lamp`](internals/lamp.md#buttons-under-the-lamp) dark the primary is a
 filled gray plate and the secondary its lit ring alone, with no fill —
 paint, not a form change.
@@ -3135,9 +3141,9 @@ them.
 
 Plates are **pills** — the corner is half the slot's height, derived
 rather than fixed, so the shape follows the slot instead of drifting
-back to a rounded rectangle the next time the row grows. Nothing else
-in the library is a pill: the nav is the one place a control is *only*
-a target, with nothing around it to square up against. The collapsed
+back to a rounded rectangle the next time the row grows. A filled or
+secondary button is a pill too, its corner capped at a one-line
+button's because its label may wrap; a plate's never does. The collapsed
 chip takes the same corner, and the notices indicator beside them — a
 pill as tall as it is wide — is a circle.
 
@@ -3513,11 +3519,17 @@ A bottom-anchored panel (top corners rounded, `.g6` outline — none
 under [`depth`](getting-started.md#a-theme), whose paper stands off the veil by a glow
 in light and by its fill in dark), at most
 `metrics.sheet_max_w` (560px) wide and never closer than
-`metrics.sheet_min_top` (48px) to the top edge. Its top corners are a
-card's 12px under `eink` and twice that, 24px, under `depth` and
-`lamp` (the owner's decision, 2026-09-27); the picker and the notices
-pane share the surface and its corners, and the notice banner keeps
-12px in every look. The framework pins a
+`metrics.sheet_min_top` (48px) to the top edge. Its top corners are
+twice a card's, 24px, in every look (the owner's decision,
+2026-09-27); the picker and the notices pane share the surface and its
+corners, and the notice banner keeps a card's 12px. Its title is centred on the pane in every look
+(the owner's decision, 2026-09-27) when it fits on one line in the
+width left after the corner control's room is held off *both* sides,
+so a centred title never runs under the control; a title longer than
+that stands at its leading edge beside the control, wrapping if it
+must, and a wrapped title is never centred. The picker (no corner
+control) and the notices pane (two) follow the same rule with their
+own room. The framework pins a
 close control — a quiet Lucide square-x glyph with the accessible name "Close",
 occupying the full 44px touch target — in the header corner and moves
 focus to it; everything

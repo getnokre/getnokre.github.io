@@ -1544,10 +1544,18 @@ focus and scroll stand where they were — except that a screen holding
 [`accessibility_toggles`](elements.md#accessibility_toggles) relays out,
 because its rows follow the look.
 
+The three looks are one design (the owner's decision, 2026-09-27): a
+look departs from the others only where its own limitation or
+principle forces it — eink's outlines where depth fills, because eink
+proves every boundary's contrast; lamp's light, because a light is the
+whole of lamp — and a shape, a size, an inset or an alignment that
+differs for no such reason is a defect. So the buttons are pills and a
+pane's title is centred in every look.
+
 What `depth` paints differently: its own ramps, a page that is a
 dithered gradient, raised cards (a shadow in light; a lighter fill in
 dark), tonal fills where eink outlines a control, a field or a track,
-softer rules, pill buttons, tile wells, raised plates on selection
+softer rules, tile wells, raised plates on selection
 controls and on a toggle's knob, and an even veil for a scrim. Every screen keeps eink's geometry to the pixel, and every text
 and focus contrast proof holds in both; `depth` does not guarantee WCAG
 1.4.11 non-text contrast for its controls' boundaries and tracks, so an

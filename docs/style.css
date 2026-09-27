@@ -45,7 +45,8 @@
   --border: 1px;
   --radius: 8px;
   --radius-card: 12px;
-  --radius-pane: 12px;
+  --radius-pill: 18px;
+  --radius-pane: 24px;
   --touch: 44px;
   --tap-target: 24px;
   --focus: 2px;
@@ -281,9 +282,7 @@
 :root[data-nokre-theme="depth"] .notice:not(.notices-pane .notice) { background: var(--banner); }
 :root[data-nokre-theme="depth"] .scrim { background: var(--scrim-veil); }
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { box-shadow: var(--modal-shadow); }
-:root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker:not(.above-nav) { --radius-pane: 24px; }
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notice { border-color: transparent; }
-:root[data-nokre-theme="depth"] .btn:not(.auth, .icon-only) { border-radius: 18px; }
 :root[data-nokre-theme="depth"] .tile > .icon.square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
 :root[data-nokre-theme="depth"] hr, :root[data-nokre-theme="depth"] tr + tr > th, :root[data-nokre-theme="depth"] tr + tr > td, :root[data-nokre-theme="depth"] .tiles > .tile { border-top-color: var(--rule); }
 :root[data-nokre-theme="depth"]:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
@@ -1303,6 +1302,11 @@ a.link.block {
      substrate's `wrap.breakWord` already breaks against. */
   overflow-wrap: anywhere;
 }
+/* Filled and secondary faces are pills in every look
+   (`buttonCornerRadius`). The vendor pill keeps its store-facing
+   corner and the glyph has none. The focus outline follows
+   `border-radius` on its own. */
+.btn:not(.auth, .icon-only) { border-radius: var(--radius-pill); }
 /* An outline is the boundary a state carrier draws, so it is `.g6`,
    the same tone every compact control's edge takes. */
 .btn.secondary { background: transparent; color: var(--ink); border-color: var(--g6); }
@@ -2408,12 +2412,37 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    draws it with the plain prose face, and every heading level
    drawing bold is a rule about headings. */
 .pane-title { font-size: var(--px-h2); line-height: var(--lh-h2); font-weight: 400; }
-/* Only the two panes that pin controls to the header corner narrow
-   their title for them. A select's picker has none, so its title
-   takes the full width; the notices pane pins two, so it steps
-   twice as far aside. */
-.sheet > .pane-title { padding-inline-end: calc(var(--touch) + var(--icon-gap)); }
-.notices-pane > .pane-title { padding-inline-end: calc(2 * var(--touch) + var(--icon-gap)); }
+/* The trailing corner a pane's pinned controls take
+   (`layout.modalTitleReserve`): none on a select's picker, two on
+   the notices pane. */
+.sheet > .pane-title { --title-reserve: calc(var(--touch) + var(--icon-gap)); }
+.notices-pane > .pane-title { --title-reserve: calc(2 * var(--touch) + var(--icon-gap)); }
+/* Centred on the pane when it fits one line held off both sides
+   by the reserve, lead-aligned beside it otherwise
+   (`layout.modalTitle`). `text-align: center` would centre a
+   wrapped title too, so the words are the one anonymous item of a
+   wrapping flex row between two empty ones: a leading spacer of
+   the reserve and a trailing one of nothing, growing alike, and the
+   row's own end pad is the reserve. They share a line only when
+   the words fit inside the reserve on both sides, and then the
+   equal growth centres them on the pane. Otherwise the words wrap
+   to a line of their own below a spacer of no height, and stand at
+   the start. `anywhere` lets the words' item shrink past its
+   longest word, as the raster wrap breaks one.
+   One case differs from the reference: words that run against the
+   chrome (a Persian title in a left-to-right app), on one line but
+   too wide to centre, stand at the chrome's leading edge rather
+   than their own, because an item narrower than its line is placed
+   by the row. Wrapped, the item fills its line and the words take
+   their own edge as everywhere. */
+.pane-title {
+  display: flex;
+  flex-wrap: wrap;
+  padding-inline-end: var(--title-reserve, 0px);
+  overflow-wrap: anywhere;
+}
+.pane-title::before { content: ""; flex: 1 0 var(--title-reserve, 0px); }
+.pane-title::after { content: ""; flex: 1 0 0px; }
 /* Centred on the title's first line; the target is wider than that
    line, so it grows symmetrically into the header's pad. */
 .sheet > .icon-button.sheet-close, .notices-pane > .icon-button {
@@ -2635,8 +2664,8 @@ input.check::after { content: "\e06c"; }
   /* Pills: the corner is half the slot's height, derived rather
      than fixed, so the shape follows the slot instead of
      drifting back to a rounded rectangle the next time the row
-     grows. Nothing else in the library is a pill. The pad is
-     the reference's, less the border drawn inside it.
+     grows. The pad is the reference's, less the border drawn
+     inside it.
 
      Three levels: the page, the destinations on .g11, and the
      current route one step above them on .g10, outlined in mid
