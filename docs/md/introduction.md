@@ -265,8 +265,9 @@ framework cannot express them.
   hook. The set is closed too: an app chooses `eink`, `depth` or `lamp`
   and can define nothing, every theme is held to the same text and focus
   contrast proofs — `depth` waives WCAG 1.4.11 for its control
-  boundaries, `lamp` waives that and text contrast on its frosted
-  chrome, and `eink` keeps every gate
+  boundaries, `lamp` waives that, text contrast on its frosted chrome
+  and the icon floor for the glyphs it lights, and `eink` keeps every
+  gate
   ([getting-started.md](getting-started.md#a-theme)) — and a
   theme changes paint alone — geometry, text positions, the
   accessibility tree, focus order and scroll extents are one across

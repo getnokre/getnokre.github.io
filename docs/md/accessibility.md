@@ -439,7 +439,11 @@ look every draw site reads, resolved in this order:
 
 Increase Contrast draws `eink` because eink is the look that holds
 every gate, WCAG 1.4.11 included; Reduce Transparency draws `depth`
-because depth is lamp without its frosted chrome. What each look waives
+because depth is lamp without its frosted chrome. It governs the dark
+appearance: lamp in light is drawn as depth light already
+([internals/lamp.md](internals/lamp.md#the-light-appearance)), so there
+the preference changes nothing — and its row still stands, since the
+rows follow the look, not the appearance. What each look waives
 is [internals/pixel-model.md](internals/pixel-model.md#the-one-waived-gate).
 A change of either preference, from the OS or the reader, only repaints:
 layout, focus and scroll stand where they were.
@@ -586,8 +590,10 @@ sits inside the readable band — at or above WCAG AA and at or below 16:1
 — on paper in every theme and appearance, that component boundaries
 clear non-text contrast (3:1) in `eink` (`depth` waives WCAG 1.4.11 for
 control boundaries and graphic tracks, keeping text and focus contrast;
-`lamp`, drawn in depth's bytes, waives the same and text contrast on
-its frosted chrome besides;
+`lamp`, drawn in depth's bytes, waives the same and, in dark, text
+contrast on its frosted chrome and nokre's icon contrast floor for a
+glyph standing on a plate, which it paints as the plate's lit surface,
+besides;
 choose `eink` where 1.4.11 must hold), and that each dark ramp *eases* text
 rather than mirroring it (an inversion would leave dark exactly as harsh as light, which is the
 wrong answer for the appearance where halation is worse); a test in

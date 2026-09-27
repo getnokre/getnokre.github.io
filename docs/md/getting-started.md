@@ -1552,12 +1552,14 @@ app that must meet it chooses `eink`.
 
 What `lamp` paints over depth: the same bytes and the same geometry,
 under one light fixed in the window that the page scrolls beneath —
-a pool on the ground, a lit rim, a face and a directional shadow on
-every filled box, and frosted glass for the nav and sheets, in the Skia
-substrate only. Everywhere else, the web's DOM substrate and packaging
-included, a lamp app is drawn as depth. It waives what depth waives,
-and text contrast on its frosted chrome besides; the design and its
-numbers are [internals/lamp.md](internals/lamp.md).
+a lit rim, a face and a directional shadow on every filled box, the
+icon glyphs on them lit as their surface, a black ground, and frosted
+glass for the nav and sheets, in the dark appearance and the Skia
+substrate only. In light, and everywhere else — the web's DOM
+substrate and packaging included — a lamp app is drawn as depth. It
+waives what depth waives, and text contrast on its frosted chrome and
+the icon floor for its lit glyphs besides; the design and its numbers
+are [internals/lamp.md](internals/lamp.md).
 
 Whatever the look, don't build your own "increase contrast" switch:
 place [`accessibility_toggles`](elements.md#accessibility_toggles) in

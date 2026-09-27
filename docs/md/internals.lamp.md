@@ -3,7 +3,9 @@
 `lamp` is the third look beside `eink` and `depth`: depth's surfaces
 under one light. Its thirteen ramp bytes are depth's in both
 appearances, every rect and metric is depth's, and what it changes is
-paint alone, on the Skia substrate alone. This page is the design
+paint alone, in the dark appearance alone — in light it is depth light,
+byte for byte ([below](#the-light-appearance)) — on the Skia substrate
+alone. This page is the design
 record — what each op draws, the numbers it draws with, what holds by
 construction, and what it costs. The palette it paints over is
 [pixel-model.md](pixel-model.md); how an app declares a look, and what
@@ -50,27 +52,30 @@ the tree. Every text and focus position, the accessibility snapshot,
 focus order and scroll extents are depth's, and the test that holds
 themes to one geometry holds lamp to it too
 ([testing.md](../testing.md#golden-screenshot-tests)). A second test
-holds the draw itself: lamp's recording with its own ops set aside is
-depth's, op for op, but for two substitutions — a frost stands where
-depth filled the same glass, and depth's drop shadows are gone, since
-lamp casts its own from every plate.
+holds the draw itself: lamp dark's recording with its own ops set aside
+is depth dark's, op for op, but for two substitutions — a frost stands
+where depth filled the same glass, and a lit glyph where depth drew the
+same glyph in ink ([below](#glyphs-on-plates-are-lit-surfaces)). Lamp
+light's recording is depth light's with nothing set aside.
 
 ## The dark appearance
 
 The dark appearance is where the lamp exists: depth dark's paper is
-`0x1C` over a ground of `0x08`–`0x00`, which leaves room to light
-things. The ops, in paint order:
+`0x1C`, and lamp's ground under it is a void of `0x00`, which leaves
+room to light things. The ops, in paint order:
 
-1. **The page.** The ground and its pool; then each filled box as it
-   is drawn — its shadow, its fill, its face and its rim, the rim lit
-   by the lamp and by every chrome edge that reaches it at once
+1. **The page.** The ground; then each filled box as it is drawn — its
+   shadow, its fill, its face and its rim, the rim lit by the lamp and
+   by every chrome edge that reaches it at once
    ([below](#chrome-edges-are-lights)) — with the text and the rules on
-   it drawn after it as in depth. So the chrome's edges are known
-   before the page is drawn.
+   it drawn after it as in depth, and an icon glyph on it lit as its
+   surface is ([below](#glyphs-on-plates-are-lit-surfaces)). So the
+   chrome's edges are known before the page is drawn.
 2. **The bottom row.** First every plate's contact line: each nav
    plate's and the notices indicator's. Then plate by plate: its
-   shadow, its frost, its glass face and rim, its glyph and words. A
-   notice banner in the row's place takes a nav plate's treatment.
+   shadow, its frost, its glass face and rim, its lit glyph and its
+   words. A notice banner in the row's place takes a nav plate's
+   treatment.
 3. **Each modal layer** — a sheet, the notices pane, a picker — in the
    order they stack: the dim over everything drawn so far, the layer's
    shadow, its contact line, its frost, its glass face and rim, then
@@ -78,27 +83,32 @@ things. The ops, in paint order:
    no edge lights. The collapsed nav's section list is a card on the
    dim, not glass.
 
-### The ground pool
+### The ground is a void
 
-The page ground gains the lamp's pool, a lift of
+Lamp dark's page ground is `0x00` at every pixel: lamp's own ground
+(`color.pageGround(.lamp, .dark)`), where depth dark keeps its gradient
+from `0x08`. The owner decided it on 2026-09-27, over a pool of light
+under the lamp that the design first drew:
 
-```
-pool(d) = 12 · max(0, 1 − d / (0.72 · H))²   bytes
-```
+- **The plates say where the lamp is.** Every rim brightens toward it,
+  every face falls away from it, every shadow points away from it. A
+  pool on the ground says it a fourth time, on the one surface nothing
+  stands on.
+- **A bloom puts a surface where the eye wants nothing.** Lit, the
+  ground between the cards reads as something to look at; black, it
+  reads as the room the cards float in.
+- **OLED off.** A true-black pixel emits nothing, and the ground is
+  most of a frame.
+- **The faces get their headroom back.** A lifted ground bounded paper's
+  face: a darkened paper corner must stay 1.1:1 above the ground beside
+  it, and over the pool's `0x10` six bytes of darkening could not
+  ([below](#every-filled-box-is-a-plate)). Over the void the full six
+  hold everywhere.
 
-at distance `d` from the lamp, `H` the window's height, added to
-depth's ground before the dither, with the sum capped at `0x10`. The
-pool is dithered the way depth's ground already is — the ordered 4×4
-Bayer, each 4-column block reading the matrix one row further down
-([pixel-model.md](pixel-model.md#what-depth-paints-that-is-not-a-step))
-— because a lift of a few bytes bands exactly as the gradient would.
-The cap is the elevation floor: `paper` must stay 1.1:1 above the
-brightest ground pixel ([below](#what-holds-by-construction)), and
-`0x10` is where that ratio still clears against `0x1C`.
-
-Like the ground, the pool is a function of the pixel's place in the
-window, so it ships as one tile per viewport change and every frame
-after is the same blit depth already does.
+The chrome's contact lines are kept: they are a lamp op lifting the
+ground beside an edge, clamped at the ground's ceiling
+([below](#chrome-edges-are-lights)). The ground is flat, so it is the
+16-column tile depth's ground takes, every byte the same.
 
 ### Every filled box is a plate
 
@@ -122,11 +132,10 @@ how heavy a shadow it casts. The reference's six, by role:
 | chrome | a nav plate, a sheet | 0.26 | 0.03 | 0.30 | 1.0 |
 
 A weight of zero is a plate lying on another plate's face: it runs the
-shadow op like every plate, and the op casts nothing. So under lamp
-light the knob and the field that depth light raises by a `.control`
-shadow lie flat: lamp casts depth's drop shadows nowhere, and a plate
-casts only by its material. An off plate lies flat too, as depth's off
-lit plate does: a filled button disabled or working casts no shadow.
+shadow op like every plate, and the op casts nothing. Depth dark casts
+no drop shadow, so a plate in lamp dark casts only by its material. An
+off plate lies flat too, as depth's off lit plate does: a filled button
+disabled or working casts no shadow.
 
 **Materials by element.** Which material each filled box answers the
 lamp with, by the role it plays; the renderer's draw sites are this
@@ -150,12 +159,14 @@ table.
 | `meter`, `diverging_meter`, a working button | the fill, the arms | fill |
 | `nav_item`, `nav_here`, `nav_current`, the notices indicator | the plate, glass | chrome |
 | `sheet`, `notices_pane`, a picker, a notice banner | the pane, glass | chrome |
+| a pending run, under a `stand_in` | the block, lying flat | plate |
 
-Not plates, and drawn as depth draws them: glyphs (a radio's discs
-among them), hairlines and rules, the blockquote's bar, a diverging
-meter's centre tick, a pending run's block, the QR tile and the vendor
-sign-in pills (both pinned to eink's light ramp), the selection band,
-the caret and its handles, and the scroll bars.
+Not plates, and drawn as depth draws them: glyphs off a plate (a
+radio's discs among them; the glyphs on one are
+[below](#glyphs-on-plates-are-lit-surfaces)), hairlines and rules, the
+blockquote's bar, a diverging meter's centre tick, the QR tile and the
+vendor sign-in pills (both pinned to eink's light ramp), the selection
+band, the caret and its handles, and the scroll bars.
 
 **The rim.** One device pixel of white, composited inside the plate's
 edge along its whole perimeter, brightest on the side facing the lamp.
@@ -219,15 +230,16 @@ of its bytes and the y term by their round, each at the coverage the
 compositing needs for that. So chosen, the pair lands on the radial
 form's byte or one lighter, never darker.
 
-`cap` is per fill. On `paper` it is six bytes wherever the ground
-beside the box is depth's own, and less where the pool has lifted it: a
-darkened paper corner must stay 1.1:1 above the ground at that corner,
-and six bytes cannot over `0x10` (paper `0x16` over `0x10` is 1.05:1).
-So paper's cap is the lesser of six and what that floor leaves over the
-ground byte at the box's farthest point from the lamp, where the face
-is darkest and the pool dimmest: six over ground `0x00`–`0x09`, then
-5, 4, 4, 3, 2, 2, 1 over `0x0A`–`0x10`, and 0 over `0x11`, the
-brightest byte the ground may take. A face only ever darkens: `mid` on `paper` is 4.56:1 in depth dark, which leaves one
+`cap` is per fill. On `paper` it is six bytes over the void, and would
+be less over a lifted ground: a darkened paper corner must stay 1.1:1
+above the ground at that corner, and six bytes cannot over `0x10`
+(paper `0x16` over `0x10` is 1.05:1). So paper's cap is the lesser of
+six and what that floor leaves over the ground byte at the box's
+farthest point from the lamp, where the face is darkest: six over
+ground `0x00`–`0x09`, then 5, 4, 4, 3, 2, 2, 1 over `0x0A`–`0x10`, and 0
+over `0x11`, the brightest byte the ground may take — and the ground
+there is the void's `0x00`, so every paper face takes the six. A face
+only ever darkens: `mid` on `paper` is 4.56:1 in depth dark, which leaves one
 byte of lift before AA fails, and a lamp's sheen spends more than one
 byte or nothing. The reference's caps for the other fills are `ink`
 13, `g11` 4, `g6` 8 and `g9` 5 bytes; color.zig's proofs own the final
@@ -255,6 +267,53 @@ the page; chrome stands higher — `m.off = 1.2` and `m.blur = 1.2` for a
 nav plate, `1.6` blur for a sheet. What is new against depth light's
 shadow is an x offset and a per-caster offset, blur and peak; the mask
 is the same, so it tiles its reach once like depth's does.
+
+### Glyphs on plates are lit surfaces
+
+An icon glyph standing on a plate is part of the plate's surface, not
+ink printed on it. A flat glyph in depth dark's `ink` is `0xBD`, the
+brightest thing in a lit scene by far — every rim stops at `0x60` — and
+it read as printed on top of the light rather than lit by it. So the
+glyph takes the plate's own light: the rim's field
+([above](#every-filled-box-is-a-plate)) read at every pixel the glyph
+covers rather than on the ring — the lamp's falloff across the box, the
+specular at its nearest point, every chrome edge lighting it, a well's
+inversion — plus a floor, capped once:
+
+```
+lit  = (low + (high − low) · t) · a0 + specular · a0 · exp(…) + Σ edge
+cov  = min(lit + low, 0.30)
+```
+
+white composited over the plate by `cov` times the glyph's own coverage.
+
+- **The floor** is the material's rim `low`, as an even sheen at every
+  pixel: an icon-only button far from the lamp, where the falloff has
+  nearly nothing left, is still found. On paper it lifts the glyph at
+  least a byte above the fill, and a proof holds it
+  ([color.zig](../../src/core/color.zig)).
+- **The cap** is the rim's: `0x60` on paper, however many lights reach
+  it, so a glyph is never brighter than the brightest rim beside it.
+- **Where.** The glyphs whose surface is a plate: an icon button's (on
+  its bar plate, its notice or its pane), a nav item's, marker's and
+  collapsed chip's glyph and the chip's chevron (on the nav plate), the
+  dial's step glyphs (on their buttons), a tile's mark (on its well) and
+  chevron (on its group's card), and a select's chevron (on its field).
+  A disabled one is lit too: its plate and its words carry the state.
+- **What stays ink.** A checkbox's mark, a radio's dot, a notice's
+  icon, the standalone `icon` element, a ranking's glyphs, a picker
+  row's, the back and header-action glyphs and every glyph inline in
+  reading text: each is a mark to be read against its ground, not the
+  surface of a control, and each keeps its text proof. In light every
+  glyph is ink: lamp light is depth light.
+
+It is a canvas op of its own (`litGlyph`): the run is shaped and placed
+as any run is, and the lit field is its paint. On the CPU the field is
+a tile over the run's ink box, in device pixels, which the glyph's
+coverage samples; on the GPU the rim's shader is the paint, over the
+same field. A glyph's semantics are its label, so the accessibility
+snapshot does not see any of this. What it costs the contrast gates is
+the third waiver ([below](#what-is-waived)).
 
 ### Chrome edges are lights
 
@@ -293,10 +352,10 @@ line on the ground beside it: the shadow's smoothstep field around the
 plate, unshifted, 5 px deep for a nav plate and 6 px for a sheet,
 lightening toward `0x24` at a peak coverage of 0.8, never darkening
 anything already brighter, and clamped at `0x11`, the brightest byte
-`paper` stays 1.1:1 above. The clamp is the gate, not a margin: over a
-pool at `0x10` the unclamped line reaches `0x18` at 40% coverage, and
-paper stands 1.04:1 off that. Over the pool the line is a byte of lift,
-not the reference's glow; the floor wins.
+`paper` stays 1.1:1 above. The clamp is the gate, not a margin: over
+the void the unclamped line reaches `0x1D` at its peak, brighter than
+paper itself. Clamped, the line is a lift to `0x11`, not the
+reference's glow; the floor wins.
 
 The contact line is the one op here whose byte depends on the byte it
 lands on in a way no Skia blend spells — a lift toward a tone, clamped
@@ -309,7 +368,7 @@ bands and repaints like any composite.
 **Rejected: a haze.** A wide leak of light onto the ground around the
 chrome, toward `0x2C`, was refused as unmanaged: it reads as mood
 rather than as an edge, and at that byte it lifts the ground past the
-elevation floor the pool is capped at.
+elevation floor the contact lines are clamped at.
 
 ### Frosted chrome
 
@@ -399,29 +458,26 @@ indicator frost as nav plates do, the panes as a sheet does.
   reference's per-pixel form over the tint. The frost is drawn first,
   then the sheen and the face, then the rim.
 
-**Rejected: glyph glow.** Bloom from the chrome's ink-tone glyphs or
-its primary button, through the glass or onto the page, in any form.
-Light around a glyph changes the very bytes a text proof measures that
-glyph against.
+**Rejected: glyph glow.** Bloom from the chrome's glyphs or its
+primary button, through the glass or onto the page, in any form. Light
+around a glyph changes the very bytes a text proof measures that glyph
+against; a lit glyph ([above](#glyphs-on-plates-are-lit-surfaces))
+changes its own bytes and nothing around it.
 
 ## The light appearance
 
-Depth light's paper is `0xFF` over a ground of `0xF3`–`0xEF`. There is
-no byte above paper to spend, so the pool, the rims, the faces and the
-edge lights do not exist in light: a lamp in daylight is invisible.
-What the theme keeps in light is direction and glass.
-
-- **Shadows** are depth light's, given a direction from a lamp *above*
-  the window — 50% across, 15% of the window's height above its top
-  edge — as the sun. They still never point up (a caster above the
-  sun's height would cast upward, so the direction's upward part is
-  dropped); they fan with x and sharpen near the top, by the dark
-  formula with its peak scaled ×0.4.
-- **Frost** is the dark recipe with a gain of 0.95, and under a sheet
-  the page is lifted 30% toward white (`v + (255 − v) · 0.3`) instead
-  of depth light's white veil.
-- **Reduce Transparency** in light is depth light as shipped
-  ([below](#what-the-end-user-sees)).
+A lamp in daylight is invisible: depth light's paper is `0xFF`, there is
+no byte above it to spend, and the theme is a dark-appearance
+phenomenon. So in light lamp *is* depth light, byte for byte — its
+ground, its drop shadows (`color.dropShadow(.lamp, .light, …)` is
+depth's), its white veil under a sheet (`color.scrimVeil`), its opaque
+chrome, its ink glyphs — and no lamp op draws: the renderer keeps no
+lamp state in light, and every backend's lamp op answers only lamp dark.
+The look is still lamp (`App.theme` stays `.lamp`, and the reader's
+Reduce Transparency row stands); only the draw is depth's. The golden
+suite holds it: a lamp scene's light take is its depth light frame and
+its committed `-depth` golden, so lamp keeps no light goldens of its
+own.
 
 ## What holds by construction
 
@@ -430,17 +486,21 @@ over every ramp its gate applies to, and a byte that breaks one fails
 the build:
 
 - `paper` stays 1.1:1 above the brightest ground pixel the theme can
-  draw, the pool and the contact lines included — the floor depth's
-  ground is already proved to.
+  draw, the contact lines included — the floor depth's ground is
+  already proved to. Lamp dark's own ground is the void.
 - The rim's brightest byte on `paper` stays under `g7`'s `0x67`: at
   most `0x60`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
   lamp-dark take against depth dark's bytes pixel for pixel.
-- A face on `paper` only darkens, by at most six bytes and by less over
-  a ground the pool has lifted, and never lifts: one byte of lift is all the headroom `mid` on `paper` has.
+- A face on `paper` only darkens, by at most six bytes — the full six
+  over the void, less beside a ground a lamp op has lifted — and never
+  lifts: one byte of lift is all the headroom `mid` on `paper` has.
+- A lit glyph's brightest byte on `paper` is the rim's `0x60`, and its
+  floor on `paper` is above the fill on every material.
 - lamp's thirteen ramp bytes are depth's, in both appearances — one
   proof asserts the equality, so every text and focus proof depth
-  passes, lamp passes on the same bytes.
+  passes, lamp passes on the same bytes — and lamp light's ground, drop
+  shadows and veil are depth light's.
 - depth and eink keep every byte they had: their goldens are the
   regression gate, byte-identical.
 
@@ -449,11 +509,12 @@ timer. A frame renders when state changes and otherwise nothing runs.
 
 ## What is waived
 
-Two things, both on record in
-[pixel-model.md](pixel-model.md#the-one-waived-gate) beside depth's
-1.4.11 waiver, which lamp inherits with depth's bytes: text on a
-frosted fill cannot be gated, and the frost reads pixels. Neither is
-restated here.
+Three things, all on record in
+[pixel-model.md](pixel-model.md#what-lamp-waives-beside-it) beside
+depth's 1.4.11 waiver, which lamp inherits with depth's bytes: text on
+a frosted fill cannot be gated, the frost reads pixels, and a glyph on
+a plate sits under nokre's own icon contrast floor. None is restated
+here.
 
 ## What a frame costs
 
@@ -465,7 +526,7 @@ At 3× on a phone, per scroll frame unless stated:
 | Face | ≈12 KB per page plate | two strips, each a row or a column and four corner tiles |
 | Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
 | Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
-| Ground pool | one ≈3 MB tile per viewport change | kept by the surface across frames, then the same blit as today |
+| Lit glyph | ≈4–6 KB per glyph | a tile over the run's ink box, two device pixels out: a 24 px glyph's is 64–76 px square at 3×; filled again each frame it shows, chrome's included |
 | Edge lights | none of their own | a term in the rim's one mask |
 | Frost, nav | ≈1.5 M adds | two half-resolution blurs under one 390×48 bar; per scroll frame |
 | Frost, sheet | ≈12 M adds once per open | two half-resolution blurs under a full-width 560-tall sheet; kept while the sheet is up |
@@ -512,6 +573,13 @@ and 6.3): the per-pixel loops are lamp_pixels.zig, compiled at
 ReleaseFast into every build as the Skia shim is (build.zig's
 `addLampPixels`). Before that, a Debug scroll frame took 98 ms.
 
+In the real shell, scrolling the kitchen sink full screen (2704×1696)
+costs 7.3 ms a frame on the CPU and 1.4 ms before the submit on the
+GPU — 1.5 since the ground became a void and the glyphs on plates lit —
+where every op above is a shader over its planner's parameters
+(medians; every theme and both window sizes are in
+[gpu.md](gpu.md#what-the-shaders-measure)).
+
 **The CPU did not keep up, so lamp moves to the GPU.** The window
 scroll's 6 ms at 1440×900@2 is the measurement that decided it: at full
 screen, where depth scrolls smoothly, lamp visibly does not, and the
@@ -524,7 +592,8 @@ CPU, and the proof it waits on are [gpu.md](gpu.md).
 There is no theme picker, and nokre offers none: an app declares its
 look, and the reader gets two accessibility preferences nokre owns —
 Increase Contrast, which draws `eink`, and Reduce Transparency, which
-draws `depth` in place of `lamp`. Each follows the OS's own setting
+draws `depth` in place of `lamp` (in dark; in light the two are one
+frame). Each follows the OS's own setting
 unless the reader overrides it in the app. The resolution order, the
 OS signals per platform, and where each row is shown are
 [accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency);
@@ -549,8 +618,9 @@ parked.
 
 ## Implementation order
 
-Pool, rim, shadow, faces, edge lights, frost — each its own golden
-review, and each cap added to color.zig's proofs before the renderer
-draws the op it bounds. The ground's floor bounds everything drawn over
-it, so it comes first; the frost is the only op that reads pixels, so
-it comes last, over a frame whose every other byte is already settled.
+Ground, rim, shadow, faces, edge lights, frost, then lit glyphs — each
+its own golden review, and each cap added to color.zig's proofs before
+the renderer draws the op it bounds. The ground's floor bounds
+everything drawn over it, so it came first (a pool then, a void since);
+the frost is the only op that reads pixels, so it comes last among the
+surfaces, over a frame whose every other byte is already settled.

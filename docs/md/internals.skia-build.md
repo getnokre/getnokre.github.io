@@ -72,10 +72,14 @@ could not link an arm64 archive.
 
 `tools/fetch-deps.sh` does not run it, the same as the iOS and Android
 builds: fetch-deps fetches published archives, and this one is built
-locally until the release artifacts below exist. What will link it is
-`-Dgpu` in build.zig — the shim's GPU half, the GPU archive, Metal and
-QuartzCore — which is the next step of the proof plan and **not built
-yet**; today nothing links `deps/skia-macos-gpu`.
+locally until the release artifacts below exist. `-Dgpu` in build.zig
+links it — the shim's GPU half (`shim/nokre_skia_gpu.mm`, compiled with
+the archive's client defines `SK_GANESH` and `SK_METAL`), the GPU
+archive, Metal, QuartzCore and IOSurface — for nokre's own `run-*`
+examples only ([gpu.md](gpu.md#the-proof-plan)). Every codec is off in
+this archive as in iOS's, so the shim carries the same PNG encoder stub
+(`shim/nokre_skia_nocodec_stub.cpp`), and the script ships skcms's two
+public headers beside `include/`, since `SkColorSpace.h` includes them.
 
 ## The web builds no Skia at all
 

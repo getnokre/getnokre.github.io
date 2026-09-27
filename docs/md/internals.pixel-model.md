@@ -157,9 +157,10 @@ nothing an app can author.
 #### What lamp waives beside it
 
 `lamp` draws depth's bytes, so it inherits the waiver above whole. It
-adds two of its own, both from its frosted chrome
-([lamp.md](lamp.md#frosted-chrome)), and both owner-decided on the same
-terms:
+adds three of its own, all in its dark appearance — in light it is
+depth light ([lamp.md](lamp.md#the-light-appearance)) — and all
+owner-decided on the same terms. Two come from its frosted chrome
+([lamp.md](lamp.md#frosted-chrome)):
 
 - **Text on a frosted fill cannot be gated.** A nav plate's or a sheet's
   fill in lamp is whatever passed beneath it, blurred, lifted and shown
@@ -179,6 +180,22 @@ terms:
   a damage rect by its reach ([Partial frames](#partial-frames)). The
   nav's blur runs on every scroll frame; a sheet's runs once per open
   and is cached, since the page beneath a sheet is still.
+
+And one from its lit glyphs ([lamp.md](lamp.md#glyphs-on-plates-are-lit-surfaces)):
+
+- **A glyph on a plate sits under nokre's own icon contrast floor.**
+  An icon glyph is otherwise `ink` and held to the text band like any
+  word; in lamp dark a glyph standing on a plate is painted as the
+  plate's lit surface instead, at most the rim's `0x60` on `paper`
+  (2.7:1) and at least a byte above its fill far from the lamp, so it
+  clears neither 4.5:1 nor 1.4.11's 3:1. By design: a glyph brighter
+  than every rim read as printed on the light, not lit by it. Scoped
+  exactly to the glyphs lamp.md lists — an icon button's, the nav's
+  glyphs and chevron, the dial's steps, a tile's mark and chevron, a
+  select's chevron — each of which names a control whose label carries
+  its meaning; every other glyph keeps `ink` and its proof. A reader
+  who needs them gated turns on Reduce Transparency or Increase
+  Contrast, and an app whose glyphs must be gated declares `depth`.
 
 ### The one colored artwork
 
@@ -242,13 +259,16 @@ off-ramp bytes are anti-aliased edges. Every one of them is still
 r=g=b: a gray composited over a gray by one coverage stays gray.
 
 `lamp` adds ops of the same kind, and they draw nothing under eink or
-depth: the ground's pool, and for every filled box a rim, a face and a
-directional shadow, the chrome's edge lights and contact lines, and the
-frost ([lamp.md](lamp.md)). Each is paint only, resolves its bytes from
-color.zig, and stays r=g=b. All but the frost are nokre-computed tiles
-sampled nearest in device space, per pixel exactly as depth's three
-are; the frost is the one op that reads pixels, and its record is the
-waiver above ([What lamp waives beside it](#what-lamp-waives-beside-it)).
+depth, nor in lamp light: for every filled box a rim, a face and a
+directional shadow, the chrome's edge lights and contact lines, the
+frost, and an icon glyph on a plate painted as its lit surface
+([lamp.md](lamp.md)). Its ground is no op of its own: in dark it is a
+void, `0x00` throughout, drawn as depth's ground is. Each is paint
+only, resolves its bytes from color.zig, and stays r=g=b. All but the
+frost are nokre-computed tiles sampled nearest in device space, per
+pixel exactly as depth's three are — a lit glyph's through the glyph's
+own coverage; the frost is the one op that reads pixels, and its record
+is the waiver above ([What lamp waives beside it](#what-lamp-waives-beside-it)).
 
 ## Geometry: anti-aliased only at rounded corners
 
