@@ -96,7 +96,7 @@ macOS and Metal first, as a go/no-go:
    *Built.*
 2. `-Dgpu` in build.zig. *Built*, for nokre's own `run-*` examples on
    macOS arm64 and nowhere else: the shim compiles with `NOKRE_GPU`
-   plus `shim/nokre_skia_gpu.mm` against `deps/skia-macos-gpu`, and the
+   plus `shim/nokre_skia_mtl.mm` against `deps/skia-macos-gpu`, and the
    app links that archive with Metal, QuartzCore and IOSurface in place
    of the prebuilt. Tests, goldens and a consumer's `addApp` stay on the
    CPU whatever the flag says (build.zig's `Raster`); the example
@@ -118,6 +118,118 @@ macOS and Metal first, as a go/no-go:
 5. **Go/no-go:** measured below; the verdict is the owner's scroll.
 6. Lamp's ops as shaders. *Built* ([The shaders](#the-shaders)). Then
    the other shells, each with its goldens by readback.
+7. iOS. *Built*, verified on the Simulator only
+   ([iOS](#ios)).
+8. Android, on Vulkan. *Built*, verified on the emulator only
+   ([Android](#android)).
+
+### iOS
+
+The shim's Metal half is platform-neutral, so iOS moves the shell
+alone. `tools/build-skia-ios.sh --gpu` builds the macOS GPU profile for
+both SDKs into `deps/skia-ios-gpu`
+([skia-build.md](skia-build.md#ios-built-from-source)); `-Dgpu` on an
+iOS target compiles the shim with `NOKRE_GPU` and
+`shim/nokre_skia_mtl.mm` against it. The shell is compiled by Xcode,
+not zig, so the example project carries the switch as one build
+setting, `NOKRE_RASTER` (`cpu` by default): `gpu` passes `-Dgpu` to the
+Zig phase, links `deps/skia-ios-gpu` and Metal, and compiles the shell
+with `NOKRE_GPU=1`.
+
+```
+xcodebuild -project examples/kitchen_sink/ios/KitchenSink.xcodeproj \
+  -scheme KitchenSink -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  NOKRE_RASTER=gpu build
+```
+
+On the iOS 26.5 Simulator (iPhone 17 Pro, 1206×2436 frame), the kitchen
+sink in lamp dark drew on the Mac's GPU through the Simulator's Metal,
+and a screenshot of it against the same build without the flag differs
+by at most 1 over the ground and 14 at most in the nav chip's frost and
+glyph edges (mean 0.002 over the whole frame) — `check-gpu`'s split,
+roughly, not held. Launch frames, Simulator only and not a device
+number: the first 19.0 ms before the submit and 19.4 to submit on the
+GPU (19.4 and 2.6 on the CPU), the second 2.4 and 0.6 (0.6 raster and
+3.9 copy on the CPU), then the clock stops. No scroll was measured:
+nothing on the host drives a Simulator touch without taking the Mac's
+pointer. On a device, nothing is verified yet — the drawable pacing, a
+rotation's transaction, ProMotion (the display link asks for the
+screen's fastest rate, but an iPhone caps it at 60 without
+`CADisableMinimumFrameDurationOnPhone` in the Info.plist, which
+packaging does not write) and the frame costs.
+
+### Android
+
+One backend, Vulkan: no GLES and no ANGLE, and the CPU raster path is
+the only fallback. The shim's replay and shaders are shared; what a
+backend owns is the seam `shim/nokre_skia_gpu.h` names — the context, a
+surface over the presenter's next image, the submit and the present —
+which `shim/nokre_skia_mtl.mm` implements for Metal and
+`shim/nokre_skia_vk.cpp` for Vulkan. (The submit moved behind the seam
+with this: Metal's is a plain flush, Vulkan's signals the semaphore the
+present waits on and leaves the image in the present's layout.)
+
+The Vulkan half opens `libvulkan.so` at run time rather than linking it,
+makes a Vulkan 1.1 instance (`VK_KHR_surface`,
+`VK_KHR_android_surface`) and a device with one graphics queue and
+`VK_KHR_swapchain`, no features, and hands Skia the rest
+(`GrDirectContexts::MakeVulkan`, Skia's own memory allocator). The
+context is made once and outlives windows. `hsk_gpu_attach_window`
+makes the surface and a swapchain at the window's size: FIFO (the
+display's vsync), three images unless the surface demands more, an
+8-bit UNORM format, BGRA if offered and RGBA otherwise — never sRGB,
+whose encode would change the bytes — opaque alpha, identity
+pre-transform (the compositor rotates), and images sampled and copyable,
+each wrapped once as an `SkSurface` texture for the frost's snapshot and
+the glow's blend. A frame acquires the next image on a fresh semaphore
+Ganesh waits on, replays, flushes with the image's own semaphore
+signalled, submits, and presents; an out-of-date or suboptimal answer
+remakes the swapchain at the next acquire, and the same window attached
+again (surfaceChanged) remakes it at once. The window's size is the
+extent, not the surface's `currentExtent`: inside surfaceChanged the
+emulator's still answered the size before a rotation, and a swapchain
+made at it showed each rotated frame stretched into the old shape.
+
+The SkSL shaders compile to SPIR-V unchanged. `allowEs3` is still
+needed: the SkSL 100 limit is the front end's, before any backend.
+
+The switch is one Gradle property, `nokreRaster` (`cpu` in
+gradle.properties): `gpu` passes `-Dgpu` to the Zig phase, which then
+only checks the archive exists (the Zig is the same either way), and
+`-DNOKRE_RASTER=gpu` to CMake, which compiles `nokre_skia_vk.cpp`, the
+shim and shell.c with `NOKRE_GPU=1` against `deps/skia-android-gpu`
+([skia-build.md](skia-build.md#android-built-from-source-freetype-from-memory)).
+The GPU build's `minSdk` is 30, Android 11, the floor set for it; the
+CPU build's stays 26. `zig build check-targets` parses shell.c both
+ways and the Vulkan half with the NDK's clang, when an NDK is found.
+
+```
+cd examples/kitchen_sink/android
+./gradlew installDebug -PnokreRaster=gpu
+```
+
+`adb shell setprop debug.nokre.frame_log 1` before launch logs the
+macOS shell's frame line to logcat (tag `nokre`), on either path.
+
+On the emulator (API 35, arm64, `-gpu host -feature Vulkan` on an M4:
+gfxstream's Vulkan 1.1, device "Apple M4"), the kitchen sink in lamp
+dark drew on the GPU, and a screenshot of it against the same build on
+the CPU is byte-identical over the ground and every flat area, and
+differs only in the nav chip and its picker — frost and glyph edges — by
+at most 6 at rest and 30 with the picker open (whole-app mean 0.0004 and
+0.0014); no pixel has r, g and b apart on either path. Not held, as on
+iOS. Rotation both ways and a trip through the home screen redraw at
+the new size. Emulator frames, not a device number: a scroll's frames
+median / p95 1.66 / 2.59 ms raster and 0.71 / 1.35 present on the GPU,
+interval 16.6 ms (the emulator's 60 Hz), against 29.4 / 30.6 raster and
+an interval of 31.1 on the CPU; the context 12–19 ms; the first frame's
+submit 28 ms with the host's pipeline cache warm and 992 ms cold.
+
+On a device nothing is verified: a real driver's Vulkan (the emulator's
+is the Mac's Metal under gfxstream), the swapchain's pacing under FIFO
+and a real display's rate, rotation's `currentTransform` (the
+compositor's rotation pass, and whether a pre-rotated swapchain is worth
+it), the fallback on a device whose Vulkan refuses, and the frame costs.
 
 ### The shaders
 
@@ -320,8 +432,8 @@ What each shell presents with today, and what the GPU path makes it:
 | Shell | Today (CPU) | GPU |
 | --- | --- | --- |
 | macOS | the frame copied into an IOSurface on the view's layer, display-link paced | Metal: `CAMetalLayer`, the same display link, a resize presented in its transaction (`-Dgpu`, built) |
-| iOS | `drawRect` → CGImage, the same as macOS | Metal: `CAMetalLayer`, `CADisplayLink` paced |
-| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan or GLES on the same `SurfaceView`, still Choreographer paced |
+| iOS | the frame copied into an IOSurface on the view's layer, `CADisplayLink` paced — macOS's presenter | Metal: the view's layer a `CAMetalLayer` (`+layerClass`), the same display link, a layout's frame presented in its transaction (`-Dgpu`, built; simulator-verified, unverified on a device) |
+| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, still Choreographer paced, remade on surfaceChanged (`nokreRaster=gpu`, built; emulator-verified, unverified on a device) |
 | Windows | `SetDIBitsToDevice` of the whole frame | not chosen yet |
 | Linux | `wl_shm` double buffer, no frame callback | not chosen yet |
 

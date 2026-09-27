@@ -4,9 +4,10 @@ nokre uses Skia as a rasterizer behind a ~15-function C shim
 ([shim/nokre_skia.h](../../shim/nokre_skia.h)). No PDF, no animation
 modules — the shim is the entire contract, which is what makes swapping
 or shrinking Skia later a contained problem. Every default build is CPU
-raster only; the one GPU backend, Ganesh on Metal for the `lamp` theme,
-is a separate archive built below and linked only under `-Dgpu`
-([gpu.md](gpu.md) records why).
+raster only; the GPU backend for the `lamp` theme — Ganesh on Metal on
+Apple, Ganesh on Vulkan on Android, one per platform — is in separate
+archives built below and linked only under `-Dgpu` ([gpu.md](gpu.md)
+records why).
 
 ## Today: prebuilts
 
@@ -51,6 +52,17 @@ satisfies it (shared with Android's build);
 adds the one other symbol Apple's static linker demands. Both are
 definitions that must never run; the rationale for each is in the file.
 
+`tools/build-skia-ios.sh --gpu` is the same script with the macOS GPU
+build's one backend switched on — `skia_enable_ganesh=true`,
+`skia_use_metal=true`, Dawn off, everything else as above — into
+`deps/skia-ios-gpu/{iphoneos,iphonesimulator}/libskia.a` (about 20 MB
+each against the CPU archive's 11), with its checkout's `include/` and
+skcms's two public headers beside them, since `deps/skia`'s prebuilt
+headers have no `gpu/ganesh/mtl`. The CPU archive and its default path
+are untouched; the example Xcode projects link this one only under
+`NOKRE_RASTER=gpu` ([gpu.md](gpu.md#ios)). It takes about five minutes
+on an M4.
+
 ## macOS with Metal: the GPU build
 
 The reversed GPU refusal ([gpu.md](gpu.md)) needs a macOS archive with
@@ -73,7 +85,7 @@ could not link an arm64 archive.
 `tools/fetch-deps.sh` does not run it, the same as the iOS and Android
 builds: fetch-deps fetches published archives, and this one is built
 locally until the release artifacts below exist. `-Dgpu` in build.zig
-links it — the shim's GPU half (`shim/nokre_skia_gpu.mm`, compiled with
+links it — the shim's GPU half (`shim/nokre_skia_mtl.mm`, compiled with
 the archive's client defines `SK_GANESH` and `SK_METAL`), the GPU
 archive, Metal, QuartzCore and IOSurface — for nokre's own `run-*`
 examples only ([gpu.md](gpu.md#the-proof-plan)). Every codec is off in
@@ -112,6 +124,19 @@ The example's CMake
 ([examples/kitchen_sink/android](../../examples/kitchen_sink/android))
 compiles the shim with the same NDK and links everything, reusing the
 nocodec stub.
+
+`tools/build-skia-android.sh --gpu` is the same script with one backend
+switched on — `skia_enable_ganesh=true`, `skia_use_vulkan=true`; GL,
+ANGLE, Metal, Dawn and Graphite off, everything else as above — into
+`deps/skia-android-gpu/<abi>/libskia.a` (about 19 MB for arm64-v8a),
+with its checkout's `include/` (which carries Skia's own Vulkan headers
+under `include/third_party/vulkan`) and skcms's two public headers
+beside it, `deps/skia-ios-gpu`'s layout. It clones one external the CPU
+profile does not: the Vulkan Memory Allocator (`skia_use_vma`), Skia's
+allocator for a context given none, at the revision `DEPS` pins. The
+CPU archive is untouched; the example projects link this one only under
+`-PnokreRaster=gpu` ([gpu.md](gpu.md#android)). It takes a few minutes
+on an M4.
 
 ## Which scaler, and why it is not one scaler
 

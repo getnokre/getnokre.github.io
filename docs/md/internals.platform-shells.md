@@ -655,6 +655,27 @@ above, beside the other shells'. Its presenter and its scrolling:
 [ios/shell.m](../../src/platform/ios/shell.m) is a UIKit port of the
 same contract with twists of its own:
 
+- **The presenter.** macOS's, on UIKit: the view never implements
+  `drawRect:` — UIKit would replace the layer's contents with its own
+  backing store if it did — and a frame is `on_frame`'s buffer copied
+  into one of three `IOSurface`s (swizzled to BGRA) handed to the
+  view's layer as its contents, where it used to be a CGImage drawn into
+  UIKit's backing store every frame. The IOSurface rather than a Metal
+  layer fed from the CPU because it is the macOS path verbatim and needs
+  no Metal in a CPU build; the Simulator composites it. Frames are paced
+  by a `CADisplayLink` in the common run-loop modes (so frames keep
+  coming while the feeder's pan tracks a finger): an event or a request
+  only owes a frame, the next tick draws at most one, and the link
+  pauses `kNokreFrameClockLinger` idle ticks later. A layout that
+  changes the view's size — a rotation, a docked keyboard — draws at
+  once, in the transaction UIKit lays out in. The band's recall needs
+  no clock here: the feeder animates it, and each step is an offset
+  change that owes a frame. Under `NOKRE_GPU` the layer is a
+  `CAMetalLayer` (`+layerClass`) and the shim presents into it, a
+  layout's frame with `presentsWithTransaction` ([gpu.md](gpu.md#ios)).
+  `NOKRE_FRAME_LOG=1` (`SIMCTL_CHILD_NOKRE_FRAME_LOG=1` through
+  `simctl launch`) prints the macOS shell's frame line.
+
 - **Safe area.** The view respects the safe area's top and sides but
   runs to the physical bottom edge, reporting the home-indicator band's
   height as `safe_bottom` — so a bottom pane's surface (the notice
@@ -788,7 +809,7 @@ same contract with twists of its own:
   has no scroll bar setting, and an iPad's trackpad or mouse keeps
   UIKit's overlay indicator — and follows `on_scroll_indicator`'s rule
   in shell.h. `nokre_shell_scroll_activity` only owes the bit, and the
-  top of `drawRect:` states it. The clock is one `NSTimer` that exists
+  top of `drawFrameFlushing:` states it. The clock is one `NSTimer` that exists
   only while the bar is shown, and its length is where UIKit's own
   indicator, measured on the iOS 26.5 Simulator, has finished fading
   (`kNokreScrollBarHold`).
@@ -984,6 +1005,16 @@ shell.m. Its twists:
   30+: the gesture-nav band's height is `safe_bottom`, the IME inset
   shrinks the view, and pre-30 devices run inside system windows with
   `adjustResize`.
+- **The GPU presenter.** Under `NOKRE_GPU` (the example projects'
+  `nokreRaster=gpu`) shell.c hands the window to the shim instead of
+  locking it: surfaceCreated's first `nativeSetSurface` attaches it
+  (`hsk_gpu_attach_window`: a Vulkan swapchain over it), every later
+  one — surfaceChanged, the same window at a new size — remakes the
+  swapchain, and surfaceDestroyed's detaches it before the window goes.
+  The Choreographer-paced `render()` is unchanged; `on_frame` presents
+  inside the shim and shell.c reads no pixels. A window the GPU refuses
+  (no Vulkan, no swapchain) stays on the CPU blit above, the one
+  fallback ([gpu.md](gpu.md#android)).
 - **Before the first frame.** The window background is
   `@color/nokre_window_background`, generated per appearance by `pkg`
   (`packaging.androidColorsXml`) and named by the consumer's
