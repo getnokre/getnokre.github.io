@@ -65,8 +65,9 @@ The dark appearance is where the lamp exists: depth dark's paper is
 room to light things. The ops, in paint order:
 
 1. **The page.** The ground; then each filled box as it is drawn — its
-   shadow, its fill, its face and its rim, the rim lit by the lamp and
-   by every chrome edge that reaches it at once
+   shadow, its fill, a well's inset shadow on that fill, its face and
+   its rim, the rim lit by the lamp and by every chrome edge that
+   reaches it at once
    ([below](#chrome-edges-are-lights)) — with the text and the rules on
    it drawn after it as in depth, and an icon glyph on it lit as its
    surface is ([below](#glyphs-on-plates-are-lit-surfaces)). So the
@@ -120,14 +121,16 @@ honest against the element set; a rule stated on the fill cannot drift.
 
 Each plate answers the lamp through a material — how bright its lit
 rim runs, how bright its far rim, how strong its specular point, and
-how heavy a shadow it casts. The reference's six, by role:
+how heavy a shadow it casts. The reference's six, and the knob, by
+role:
 
 | Material | Role | Rim high | Rim low | Specular | Shadow weight |
 | --- | --- | --- | --- | --- | --- |
 | card | a card on the page | 0.28 | 0.03 | 0.34 | 1.0 |
 | cta | a primary button | 0.30 | 0.05 | 0.30 | 1.2 |
 | plate | an icon plate, a chosen row | 0.20 | 0.03 | 0.18 | 0.0 |
-| well | a meter's track | 0.18 | 0.02 | 0.12 | 0.0 |
+| knob | a control standing on a track | 0.30 | 0.04 | 0.34 | 1.0, as a control |
+| well | a meter's track | 0.18 | 0.02 | 0.12 | 0.0, and an inset shadow |
 | fill | a meter's fill | 0.26 | 0.04 | 0.22 | 0.0 |
 | chrome | a nav plate, a sheet | 0.26 | 0.03 | 0.30 | 1.0 |
 
@@ -135,7 +138,17 @@ A weight of zero is a plate lying on another plate's face: it runs the
 shadow op like every plate, and the op casts nothing. Depth dark casts
 no drop shadow, so a plate in lamp dark casts only by its material. An
 off plate lies flat too, as depth's off lit plate does: a filled button
-disabled or working casts no shadow.
+disabled or working casts no shadow, and neither does a disabled
+segmented's or dial's lit plate. A switch's knob casts in every state,
+as depth light's does: on or off, its place is the switch's value.
+
+The knob is the owner's (2026-09-27): a switch read flat, a `well`
+track under a `plate` knob, both near the dimmest numbers in the table
+and the knob casting nothing. A knob is raised — card's specular, a
+brighter rim than a plate's — and stands on its track the way a card
+stands on the page, but a pixel off it rather than the page's 2 to 14
+(the control caster, under "The shadow" below); a
+segmented's and a dial's lit plate stand on theirs the same way.
 
 **Materials by element.** Which material each filled box answers the
 lamp with, by the role it plays; the renderer's draw sites are this
@@ -148,10 +161,11 @@ table.
 | `button`, filled | the pill | cta |
 | `button`, secondary or waiting on its words | the pill | plate |
 | `tile` | the mark's well | plate |
-| `segmented`, `ranking`, `dial` | the lit plate, a ranking row, a step button | plate |
+| `segmented`, `dial` | the lit plate | knob |
+| `ranking`, `dial` | a ranking row, a step button | plate |
 | `picker_item` | the chosen row | plate |
 | `badge`, `checkbox`, a notice in the notices pane | the chip, the box, the row | plate |
-| `toggle` | the knob | plate |
+| `toggle` | the knob | knob |
 | `text_input`, `text_area`, `select`, `copyable` | the field on the page | plate |
 | the same | the field on a paper surface | well |
 | `meter`, `diverging_meter`, a working button | the track | well |
@@ -264,9 +278,41 @@ drawn in two passes: a tight contact shadow (offset `0.35 · off`, blur
 down. So a shadow is sharper and darker the nearer its caster stands to
 the lamp, and fans with the caster's place in the window. `m` is 1 for
 the page; chrome stands higher — `m.off = 1.2` and `m.blur = 1.2` for a
-nav plate, `1.6` blur for a sheet. What is new against depth light's
+nav plate, `1.6` blur for a sheet. A **control** — a knob — stands a
+pixel off its track wherever it is in the window, so its `off` and
+`blur` are depth light's `.control` shadow's, 1 px and 3 px, and only
+its direction and its peak (`m.peak = 1`) come from the lamp. Depth
+light's peak, 14 of 255, does not carry over: over a dark track it
+darkens two bytes and shows nothing. What is new against depth light's
 shadow is an x offset and a per-caster offset, blur and peak; the mask
 is the same, so it tiles its reach once like depth's does.
+
+**The inset shadow.** A well is a plate turned inside out. Where a
+plate stands up and casts outward, away from the lamp, a well is sunk:
+its lip nearest the lamp stands between the lamp and the floor, so the
+floor falls into shadow along the inner edge *facing* the lamp, and
+the lit rim is the far one (the rim, above).
+It is the shadow's own field turned inside out: move the well as a
+control's wide pass moves its caster — `n` times 1 px, and one pixel
+down — and blur it 3 px, and the inset coverage is what that field
+leaves uncovered, `peak − mask(p)`, times how much of the pixel the
+well itself covers. The peak is a control caster's of weight 1 from
+the same place, at most `color.lamp_inset_peak_coverage` (70, straight
+under the lamp). Black at that coverage, drawn over the well's fill
+and under its face and rim, so a knob's shadow and the lip's inside
+the track it stands on fall the same way.
+
+The well's own coverage is in the field rather than in a clip: a clip
+to a rounded box is an anti-aliased path, which a band chops where it
+crosses the band's edge. The moved box is not symmetric about the
+well's centre, so it ships as four corner tiles, each its own bytes,
+and four edge profiles; past `blur` inside the moved box the
+coverage is zero and the middle ships nothing. Every word a well
+carries keeps its text band over the shadow's darkest byte — a field's
+value and its placeholder (`dark` on the well; `mid` is 4.10:1 on
+`g11` before any shadow, so no well carries it), a segmented's labels
+— because a shadow only darkens a well under lighter words; the proof
+is color.zig's.
 
 ### Glyphs on plates are lit surfaces
 
@@ -520,6 +566,9 @@ the build:
   most `0x60`, however many lights reach it, because the rim is one
   mask capped once. The golden suite checks it too, over every
   lamp-dark take against depth dark's bytes pixel for pixel.
+- A well's inset shadow darkens by at most 70 of 255, and every word
+  on a well — `ink` and `dark` over `g10` and `g11` — keeps its text
+  band over the darkest byte it and the face leave.
 - A face on `paper` only darkens, by at most six bytes — the full six
   over the void, less beside a ground a lamp op has lifted — and never
   lifts: one byte of lift is all the headroom `mid` on `paper` has.
@@ -554,6 +603,7 @@ At 3× on a phone, per scroll frame unless stated:
 | Rim | ≈7 KB per page plate | four edge strips, four corner tiles |
 | Face | ≈12 KB per page plate | two strips, each a row or a column and four corner tiles |
 | Shadow | ≈9 KB per page caster | the nine-patch depth light uses today |
+| Inset shadow | ≈4–5 KB per well | four corner tiles and four edge profiles, whatever the well's length: a switch's track or a field at 3× |
 | Chrome's rims, faces, shadows and contact lines | none per scroll frame | kept by the surface across frames |
 | Lit glyph | ≈4–6 KB per glyph | a tile over the run's ink box, two device pixels out: a 24 px glyph's is 64–76 px square at 3×; filled again each frame it shows, chrome's included |
 | Edge lights | none of their own | a term in the rim's one mask |

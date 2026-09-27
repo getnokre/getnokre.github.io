@@ -263,7 +263,8 @@ r=g=b: a gray composited over a gray by one coverage stays gray.
 
 `lamp` adds ops of the same kind, and they draw nothing under eink or
 depth, nor in lamp light: for every filled box a rim, a face and a
-directional shadow, the chrome's edge lights and contact lines, the
+directional shadow, and inside a well the shadow its lip casts on its
+floor, the chrome's edge lights and contact lines, the
 frost, and an icon glyph on a plate painted as its lit surface
 ([lamp.md](lamp.md)). Its ground is no op of its own: in dark it is a
 void, `0x00` throughout, drawn as depth's ground is. Each is paint
