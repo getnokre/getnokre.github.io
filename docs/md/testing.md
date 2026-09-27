@@ -1242,39 +1242,51 @@ it the truth.
 So the surface is written down. `src/surface_walk.zig` renders every public
 declaration reachable from a root — namespaces, types, their fields and whether
 each has a default, enum and error members, function signatures, and the values
-of scalar constants — into one deterministic document, and a gate
-(`src/surface_gate.zig`) holds a committed record to it on every
-`zig build test`.
+of scalar constants — into one deterministic document. Both documents are
+generated files, committed for review like the site's docs tree: `zig build
+test` rewrites them in place whenever the walk disagrees with them, and a gate
+(`src/surface_gate.zig`) decides whether it may.
 
 **The contract has two roots, so there are two records.** `src/surface.zig`
 walks the library from `src/nokre.zig` into `src/public_surface.txt`;
 `src/build_surface.zig` walks the build API from `build.zig` into
-`src/build_surface.txt`. Both carry the same `revision`, and `zig build test`
-runs both gates.
+`src/build_surface.txt`. Both carry the same `revision` as a line of their own.
 
-**The revision is a line inside each document, not a header beside it.** It is
-what makes the omission impossible rather than merely visible:
+**What is contract is what a consumer writes; the rest is `nokre.internal`.**
+Zig has no `pub(crate)`, so a helper that is `pub` for a sibling module is
+reachable from the root whether or not anyone meant it to be — and before
+revision 159 that made the renderer's lamp strengths, the canvas vtable and
+layout's geometry helpers contract, and every tuning of the lamp a bump that
+moved a pin in every consumer for nothing. So the root declares the line:
+`src/nokre.zig` exports the consumer contract, and everything else lives under
+one `pub const internal` namespace, which the library walk skips by name. A
+change confined to it moves no record and owes no revision. The line is drawn
+by evidence, not taste — a name stays at the root when a consumer reaches it or
+a page under `docs/*.md` offers it (the golden fixtures' `testing`, the site's
+`render.dom`, a driver's `render.skia.PixelSink`) — and a namespace a consumer
+reaches only in part is curated to that part: `color` is the five names an app
+writes, `layout` is `metrics` and `Medium`, and the full modules are
+`internal.color` and `internal.layout`. Under the root the rule is still
+everything reachable, so a `pub` helper added to `element` is contract; move it
+under `internal` if no consumer should write it.
 
-- Surface matches the record: pass.
-- Surface moved and `nokre.revision` did not: **fail, and write nothing**. There
-  is no `.actual` to move into place, so the only way forward is to bump the
-  constant. This is the case that shipped once.
-- `nokre.revision` moved: the live surface is written to `<record>.actual` and
-  the test fails naming the first line that differs. Review that diff — it *is*
-  the contract change, stated — then `mv` it over the record and commit both.
+**When the number moves.** `revision` stays hand-set — a pin states intent —
+and the gate holds it to the records exactly:
 
-Every revision bump therefore rewrites both records, which is the point: each
-one says which revision it is the surface of, so a bump made for the library
-half still has to be adopted into the build half and vice versa.
+- The walk matches both records: pass.
+- A record's content moved and `revision` did not: **fail, and write nothing.**
+  Bump the constant. This is the case that shipped once.
+- `revision` moved and a record's content moved with it: the record is
+  rewritten in place and the test passes. Review its diff — it *is* the
+  contract change, stated — and commit it with the bump.
+- `revision` moved and neither record's content did: **fail, and write
+  nothing.** The bump was needless; put the number back.
 
-**What counts as the surface is everything a consumer can name.** Zig has no
-`pub(crate)`, so a helper that is `pub` for a sibling module is reachable at
-`nokre.layout.screenColumn` and is contract whether or not anyone meant it to be.
-Measured against the twenty-five most recent commits touching `src/`, that costs
-a bump on about one in ten that no consumer could have observed. Take it: a bump
-nobody needed is an integer and a scheduled adoption; a bump nobody made is a
-consumer compiling against a library it did not expect. Over-bumping is the
-sanctioned direction, and the failure message says so.
+The last rule is a question about both records, and no one process holds both
+walks. So the build gate runs after the library's and reads the library
+record's revision line off disk: already at the new number means the library's
+content moved in this bump. The build gate is also what carries the new number
+into whichever record did not move, so after a bump both records name it.
 
 Enum members are in the record because a `switch` without an `else` is
 exhaustive — adding one member breaks every consumer that switches on that enum,

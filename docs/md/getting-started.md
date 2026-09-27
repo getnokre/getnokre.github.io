@@ -144,7 +144,10 @@ comptime {
 
 A checkout that moved under you then fails the build naming the
 mismatch, instead of failing at whatever call site the contract moved
-under — or, worse, not failing.
+under — or, worse, not failing. The number moves only when something
+you can write moved: nokre's own tests refuse a bump that changed
+nothing, and `nokre.internal` is outside the pin altogether — name
+anything under it and you have opted out of the contract.
 
 `build.zig` — nokre's build.zig is importable by package name, and
 `addApp` assembles the right artifact for whatever target you pass: the

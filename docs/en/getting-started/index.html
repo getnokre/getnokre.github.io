@@ -58,7 +58,7 @@ mkdir -p src</code></pre><p><code>build.zig.zon</code> — on the first <code>zi
     if (nokre.revision != 1) @compileError(
         &quot;written against nokre revision 1 — survey the app against the checkout before bumping this assert&quot;,
     );
-}</code></pre><p>A checkout that moved under you then fails the build naming the mismatch, instead of failing at whatever call site the contract moved under — or, worse, not failing.</p><p><code>build.zig</code> — nokre&#39;s build.zig is importable by package name, and <code>addApp</code> assembles the right artifact for whatever target you pass: the windowed executable on macOS and Windows, the static libraries an Xcode or Gradle consumes on iOS and Android:</p><pre class="code" tabindex="0" data-n="4194419" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
+}</code></pre><p>A checkout that moved under you then fails the build naming the mismatch, instead of failing at whatever call site the contract moved under — or, worse, not failing. The number moves only when something you can write moved: nokre&#39;s own tests refuse a bump that changed nothing, and <code>nokre.internal</code> is outside the pin altogether — name anything under it and you have opted out of the contract.</p><p><code>build.zig</code> — nokre&#39;s build.zig is importable by package name, and <code>addApp</code> assembles the right artifact for whatever target you pass: the windowed executable on macOS and Windows, the static libraries an Xcode or Gradle consumes on iOS and Android:</p><pre class="code" tabindex="0" data-n="4194419" style="--bleed:16px"><code>const std = @import(&quot;std&quot;);
 const nokre = @import(&quot;nokre&quot;); // the dependency&#39;s build.zig
 
 pub fn build(b: *std.Build) void {

@@ -282,10 +282,12 @@ way. The shell's complete job description is in
 All gates run through `zig build test` — see [testing.md](../testing.md)
 for the full list. The ones that don't have a `docs/testing.md` page:
 
-- **The contract** — two records held to `revision`:
-  [src/public_surface.txt](../../src/public_surface.txt) (library) and
+- **The contract** — two generated records held to `revision`:
+  [src/public_surface.txt](../../src/public_surface.txt) (library, minus
+  `nokre.internal`) and
   [src/build_surface.txt](../../src/build_surface.txt) (build API).
-  Neither refreshes while the number stands still.
+  `zig build test` rewrites them; neither moves while the number stands
+  still, and the number cannot move while neither does.
 - **The l10n checker's own rules** — [src/l10n/check](../../src/l10n/check/check_test.zig)
   derives its sets from nokre's declarations (not a hand-written list),
   so a nokre that grows one is a compile error in the checker.
