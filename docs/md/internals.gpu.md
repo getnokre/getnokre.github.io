@@ -241,7 +241,12 @@ macOS shell's frame line to logcat (tag `nokre`), on either path, with
 two Android fields: on the GPU `swapchains`, the count made so far
 (`hsk_gpu_swapchains_made`), which a steady frame must not move; on the
 CPU `lock`, the part of `raster` spent waiting in `ANativeWindow_lock`
-for a buffer.
+for a buffer. `debug.nokre.gpu_sync 1` beside it is the shim's
+`NOKRE_GPU_SYNC`, since adb can hand an app no environment variable
+(`wrap.*` is refused on a user build). On the tablet it overstates the
+GPU's time: the GPU idles between synced frames and its clock falls,
+so a synced submit measured 11–14 ms of a frame that holds 90 Hz
+unsynced, and leaving work out could lengthen it.
 
 On the emulator (API 35, arm64, `-gpu host -feature Vulkan` on an M4:
 gfxstream's Vulkan 1.1, device "Apple M4"), the kitchen sink in lamp
@@ -298,8 +303,116 @@ the upright one, alike) runs at a median 13 ms with a fifth of its
 presents late. Every layer of a floating window is composited by
 SurfaceFlinger on the GPU (its rounded corners and shadow), so the
 compositor and lamp share the GPU, and the present waits on it. Eink in
-the same windows holds 90. The fallback on a device whose Vulkan
+the same windows holds 90.
+
+Where lamp's GPU time goes there (Vulkan timestamps between phases,
+2026-09-28): the three nav frosts' snapshot, half frame and blurs were
+1.1 ms of a 5.2 ms frame at 2100×1184, and everything else — the
+ground, the page's text, rims, faces and shadows — the rest, no one
+class of it dominant (leaving any one out moved the interval less than
+leaving out the frosts). The blurs drew every sum over the whole
+region, three wide radii past the plate on each side, where the plate
+reads only its own span: each sum is now drawn over the span grown by
+the radius once per sum still to come along its axis, and nothing else
+changes (`blurs`). The frosts' phase fell to 0.8 ms and the frame to
+4.2; `check-gpu` reads back the same bytes at all four turns with the
+working surfaces cleared to a colour first, so no pixel outside the
+cones is read. The scroll in the two large windows, before and after,
+two rounds each (median / p95 interval; late share):
+13.2–13.8 / 16.7 ms and 22–25% late, then 12.0–12.6 / 16.6 and 13–16%.
+Full screen stays at 90 either way. What remains is the compositor's
+share of the same GPU; the rest of the frame repeats no work. The fallback on a device whose Vulkan
 refuses is still unverified.
+
+**A window of any size.** Frame rate must not depend on orientation,
+window size or aspect ratio; a one-time cost at a change is fine,
+staying slow is not (owner, 2026-09-27). Density rounds to an integer
+scale and the frame is the ceiling of the window in logical pixels, so
+a floating window 1273 px wide at scale 2 makes a 1274 px frame. The
+view is now given the frame's size and the window crops the leftover
+pixel ([platform-shells.md](platform-shells.md#android-specifics); the
+owner's decision, 2026-09-28), so the window, and with it the
+swapchain's extent (`ANativeWindow_getWidth`), is always the frame's
+size on both rasters. Before, the GPU's extent was a pixel short and
+the frame was drawn into it, its last column or row clipped: the same
+pixels, at no cost, at every turn. The CPU raster was the one that
+paid. The window buffer was a pixel short of the frame, so it could not
+be drawn into directly; every frame was recorded a second time,
+rasterised whole and copied. On the tablet, 1273 px wide ran a median
+13.6 ms of raster against 6.9 ms at 1274, in either orientation, and
+missed a third of its presents.
+
+On the emulator (API 35, scale 3), a window 1000 or 1001 px wide shows
+the same bytes as one 1002 px wide over every pixel of the narrower
+window, at all four turns and in a floating window, CPU and GPU alike:
+cropped at the edge, neither scaled nor shifted, and the columns past a
+floating window's edge show what lies behind it. A 10 s scroll declined
+no frame (`declined` in the frame log stays 0). Emulator frames, not a
+device number: the CPU raster before, a median 17.4 and 14.9 ms at 1002
+against 23.9 and 34.3 at 1000; after, 13.2 and 20.0 against 14.7 and
+14.3.
+
+On the tablet (scale 2, CPU raster, 2026-09-28), floating windows whose
+odd side shares a frame with the even one beside it, the same 10 s
+scroll at 400 px/s (median / p95 raster; median / p95 interval; share
+of SurfaceFlinger's presents late):
+
+| Window | Before | After |
+| --- | --- | --- |
+| 1001×1600 upright (frame 1002 wide) | 12.2 / 14.7; 14.7 / 17.4; 34.5% | 6.8 / 9.3; 11.1 / 11.9; 1.5% |
+| 1002×1600 upright | 6.7 / 9.2; 11.1 / 11.9; 1.2% | 6.7 / 9.1; 11.1 / 11.8; 1.5% |
+| 1002×1601 upright (frame 1536 high) | 12.2 / 15.1; 14.7 / 17.6; 35.1% | 6.7 / 9.1; 11.1 / 11.9; 1.6% |
+| 1002×1602 upright | 6.8 / 9.4; 11.1 / 11.8; 1.2% | 6.8 / 9.4; 11.1 / 11.8; 1.7% |
+| 1273×1570, quarter turn (frame 1274 wide) | 13.8 / 17.1; 15.8 / 18.7; 42.6% | 7.1 / 9.8; 11.1 / 12.2; 2.0% |
+| 1274×1570, quarter turn | 6.8 / 9.4; 11.1 / 12.1; 1.9% | 6.8 / 9.5; 11.1 / 12.0; 1.0% |
+| 1273×1570, three quarters (frame 1274 wide) | 13.7 / 16.7; 15.8 / 18.5; 42.6% | 6.7 / 9.2; 11.1 / 11.9; 1.4% |
+| 1274×1570, three quarters | 6.8 / 9.4; 11.1 / 12.1; 1.8% | 6.8 / 9.5; 11.1 / 12.0; 1.9% |
+
+`declined` stayed 0 through every run. A screenshot of each odd window
+matches the even one that shares its frame over every pixel of the odd
+window except the system's own: the window's border and caption, the
+accessibility button and the gesture bar, which sit where the screen
+puts them and so one pixel apart in the two windows.
+
+The GPU raster after the change, the same scroll on the tablet
+(median raster; median / p95 interval; share of presents late), no
+steady frame making a swapchain: every row within noise of the
+pre-rotation table's.
+
+| Window | eink | lamp |
+| --- | --- | --- |
+| portrait, 1600×2494 | 2.7; 11.1 / 11.4; 0.4% | 3.8; 11.1 / 11.5; 0.7% |
+| quarter turn, 2560×1534 | 2.6; 11.1 / 11.4; 0.5% | 3.4; 11.1 / 11.5; 1.1% |
+| three quarters | 2.6; 11.1 / 11.4; 0.7% | 3.4; 11.1 / 11.5; 0.8% |
+| half turn, 1600×2494 | 2.7; 11.1 / 11.4; 0.3% | 3.8; 11.1 / 11.5; 0.6% |
+| floating 1001×1600 (frame 1002×1534) | 2.6; 11.1 / 11.4; 0.6% | 3.0; 11.1 / 11.5; 0.5% |
+| floating 1500×1634 | 2.7; 11.1 / 11.4; 0.7% | 3.6; 12.3 / 16.6; 14% |
+| floating 2100×1184, quarter turn | 2.6; 11.1 / 11.5; 0.9% | 3.4; 12.8 / 16.6; 17% |
+
+The tablet turns upside down (`user_rotation 2`): the swapchain takes
+the half turn and the layer stays on the display's overlay (`DEVICE`,
+transform 0) while it scrolls. On the CPU raster a half turn costs what
+a quarter does, 8.2 ms of eink raster against 7.5 upright, the display
+hardware turning the buffer.
+
+In Persian, a floating window 1001 px wide shows the bytes the 1002 px
+one does over every pixel of the narrower window, CPU and GPU alike:
+the frame's first column is the window's, and it is the far edge's
+column that is cropped. Only the system's own pixels differ — the
+window's border and bottom corner, and the ends of its handle, each
+half a pixel off centre. A tap 39 px inside that window's right edge
+and one 40 px above its bottom landed on the control under them.
+
+Split screen is not measured since the change: on this tablet the
+command that enters it locked the device once, so it is not driven by
+command, and it stays for a person to try by hand.
+
+One cost does depend on orientation, and it stays. On the CPU raster
+the tablet in full-screen landscape rasterises in 9.0 ms against 7.5 in
+portrait, because the display hardware rotates the buffer. Accepted
+for the CPU raster (owner, 2026-09-28): an app that needs full rate in
+every orientation declares lamp and takes the GPU raster, which
+pre-rotates.
 
 ### Windows
 

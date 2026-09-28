@@ -1013,15 +1013,26 @@ shell.m. Its twists:
   `nokreWebBuild` bargain), with one comptime line forcing the export
   block into the build. The allocator is bionic's malloc
   (`std.heap.c_allocator`) — the same heap the NDK-linked Skia uses.
-- **Blit.** `SurfaceView`: shell.c locks the `ANativeWindow`, copies
-  the RGBX rows straight into the window buffer (the one shell whose
-  format matches the frame's), and posts. The buffer stays at
-  the window's own pixel size so the compositor never scales; density
-  rounds to an integer scale and logical size is the ceiling, remainder
-  cropped at the edge (the Windows policy). Edge-to-edge on API
+- **The view is the frame's size.** `SurfaceView`: shell.c locks the
+  `ANativeWindow`, the frame is drawn into it (below), and posts. The
+  buffer is the view's own pixel size (`setBuffersGeometry` 0×0), so
+  the compositor never scales. Density rounds to an integer scale and
+  logical size is the ceiling, so a space that is not a whole number
+  of logical pixels — a floating window 1273 px wide at scale 2 — makes
+  a frame up to scale − 1 pixels larger than it. `NokreView.onMeasure`
+  gives the view that frame's size, rounding its parent's space up, and
+  the leftover pixels hang past the right and bottom edges, where the
+  window crops them (the Windows policy, by the compositor instead of a
+  copy). The view is pinned top left, never START, which in an RTL
+  layout would hang the pixel off the left edge and crop the frame's
+  first column. The two alternatives scale: `SurfaceHolder.setFixedSize`
+  or a buffer geometry larger than the view is stretched to the view by
+  the compositor, blurring every pixel. Owner-decided 2026-09-28
+  ([gpu.md](gpu.md#android) has the measurements). Edge-to-edge on API
   30+: the gesture-nav band's height is `safe_bottom`, the IME inset
   shrinks the view, and pre-30 devices run inside system windows with
-  `adjustResize`.
+  `adjustResize`; a leftover pixel past an inset lies under the bar or
+  the keyboard that inset is for.
 - **The GPU presenter.** Under `NOKRE_GPU` (the packaging tree's
   `raster.cmake`, for a GPU raster) shell.c hands the window to the shim instead of
   locking it: surfaceCreated's first `nativeSetSurface` attaches it
@@ -1239,10 +1250,14 @@ shell.m. Its twists:
   to `nokre_android_frame_into`, and the shim rasterises the frame's
   bands straight into it (`hsk_surface_render_into`) — RGBX on both
   sides, so no row is copied. The source declines a frame that does
-  not begin by painting every pixel or a buffer smaller than the frame,
-  and the shell then takes `nokre_android_frame` and copies row by row
-  as it always did. On a Lenovo TB336FU at 1600x2560 the copy was
-  2.9 ms of an 11.6 ms frame.
+  not begin by painting every pixel or a buffer of another size than
+  the frame; it then rasterises the same recording into its own buffer
+  and copies it in, cropped (`c_shell.IntoFrame.copied`), and the frame
+  log counts those frames as `declined`, which a steady frame must not
+  move. On a Lenovo TB336FU at 1600x2560 the copy was 2.9 ms of an
+  11.6 ms frame; before the view took the frame's size, every frame of
+  a window with an odd side was declined, recorded a second time and
+  rasterised whole, at twice the raster.
 - **Packaging.** `zig build -Dtarget=aarch64-linux-android` produces
   one static library of all the Zig (no C rides along — qrcodegen and
   the shim need bionic headers zig does not bundle); the example's
