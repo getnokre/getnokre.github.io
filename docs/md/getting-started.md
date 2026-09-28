@@ -2393,6 +2393,18 @@ a line of `NOKRE_ZIG_FLAGS` because a second `-Doptimize` is one
 (`-O3`) beside `ReleaseFast`. Under the NDK both carry `-g` and
 `-DNDEBUG`, so the level is the only difference.
 
+`ReleaseSmall` is not one of the two, and for a native target on an
+Apple CPU it is unsafe under Zig 0.16 with LLVM 21. At its highest
+code-generation level LLVM's machine copy propagation marks a register
+that is still live as undefined, and the machine outliner, which runs
+only when a function is built for size, then keeps the return address
+in it. nokre met this in the ranking's word lookup, where every row
+said "In" or nothing, and a table stands in for the switch there now;
+that covers the one function and not the cause. Android, Linux on a
+generic CPU and the browser build are not affected, and neither is any
+target at `ReleaseSafe`, `ReleaseFast` or `Debug`, where the outliner
+does not run.
+
 **Android.** The same split with Gradle in Xcode's chair: a Gradle task
 calls `zig build`, and the NDK's CMake compiles the shell and links
 Skia:

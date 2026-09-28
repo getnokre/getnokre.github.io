@@ -1626,7 +1626,6 @@ input.toggle:checked::after { border-color: transparent; margin-inline-start: au
    keeps a locale that spends more words on it from making every
    row that tall. */
 .ranking > .ranking-rows {
-  margin-top: var(--input-label-gap);
   display: grid;
   grid-auto-rows: 1fr;
   gap: var(--ranking-gap);
@@ -1746,7 +1745,10 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    small, a ranking gap between every stacked piece. Both prompts
    stand in one grid cell and the one not said now is hidden, so
    the taller is reserved and the first pick moves nothing. */
-.ranking-prompt { display: grid; margin-top: var(--input-label-gap); }
+.ranking-prompt { display: grid; }
+/* The label's gap is the label's (`rankingLabelSpace`): a ranking
+   named by `accessible_name` alone has no legend and no gap. */
+.ranking > legend + :is(.ranking-rows, .ranking-prompt) { margin-top: var(--input-label-gap); }
 .ranking-prompt > p { grid-area: 1 / 1; }
 .ranking-prompt > .reserve { visibility: hidden; }
 .ranking-hint { margin-top: var(--ranking-gap); font-size: var(--px-small); line-height: var(--lh-small); color: var(--dark); }
@@ -2811,15 +2813,25 @@ input.check::after { content: "\e06c"; }
 
 /* The clear space bottom chrome owes the page, at the four widths it is asked. */
 :root .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
 :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
+:root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
+:root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
 
 @media (max-width: 560px) {
   :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
+  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
 }
 
 @media print {
   :root .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
   :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
 }
 
 /* The driver's own guard: the substrate clips its screen, and this

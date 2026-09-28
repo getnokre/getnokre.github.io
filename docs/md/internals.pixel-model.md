@@ -217,38 +217,31 @@ It is not a standing state, and that is the owner's recorded position
 (2026-09-28): "nav pills can get out of everyone's way once the user
 scrolls down, so in fact they are not affecting anything's visuals."
 Only content in motion passes under the chrome. At rest, layout has
-already moved it out: `contentArea` ends above the bar, and a page's
-flow keeps `metrics.nav_content_gap` (24 px) below its last element on
-every screen with bottom chrome (`layout.trailingSpace`), so scrolled
-to its end a page's last line box stops 28 px above the plates' top —
-the 24 and the bar's own 4 above its items. The contact shadow's 5 px
-never reaches it, and the cast lays 0 of 255 on it, on a phone with and
-without the home-indicator band, in landscape, with the nav collapsed
-to its chip, with the notices indicator beside it, and on a wide page.
+already moved it out, by one rule in every shape: the band
+(`contentArea`) ends `metrics.nav_bar_pad` (4 px) above the bottom
+chrome's top — the bar's own top pad, which a banner reserves too —
+and whatever flow ends at the band's edge keeps
+`metrics.nav_content_gap` (24 px) below its last element
+(`layout.trailingSpace`). On a page that flow is the window's; on a desk
+it is the composer's, or with none each region's in the band
+(`layoutDesk`). So scrolled to its end the last line box stops 28 px
+above the plates' or the banner's top, and the contact shadow's 5 px
+never reaches it and the cast lays 0 of 255 on it: on a phone with and
+without the home-indicator band, in landscape, mirrored, with the nav
+collapsed to its chip, with the notices indicator beside it, on a wide
+page, beside a notice banner, and on a desk with and without an aside or
+a composer, scrolled or not.
 
-Two shapes hold it with less room, and it is recorded as it measures:
-
-- **A notice banner** stands where the row did, its body's top at
-  `contentArea`'s bottom, so the words stop 24 px above it rather than
-  28. The contact shadow still clears; the cast's last tail touches the
-  nearest line box at 1 of 255 at 3×.
-- **A desk** does not window-scroll, and a region ends at `contentArea`'s
-  bottom with only its own 16 px pad inside, so its words stop 20 px
-  above the plates. The contact shadow clears; the cast touches the
-  nearest line box at 1 of 255 at every scale.
-
-One of 255 over the brightest ink moves a byte by one at most; neither
-case is where 3.35:1 comes from. A sheet is not covered by any of this:
-it is modal, the page beneath it is dimmed (by 30% toward black under
-lamp, [lamp.md](lamp.md#frosted-chrome)) and out of reach, and nothing
+A sheet is not covered by any of this: it is modal, the page beneath it
+is dimmed (by 30% toward black under lamp,
+[lamp.md](lamp.md#frosted-chrome)) and out of reach, and nothing
 reserves room under its edge — what lies there is a page the reader has
 set aside, and the dim, not the shadow, is what sets its contrast.
 
 The test "scrolled to its end, no word lies under the bottom row's
-contact shadow, and a page's none under its plates' shadow"
-(`renderer_lamp_test.zig`) holds all of it at 1×, 2× and 3×: every
-text-bearing node's line box against every chrome shadow's coverage,
-with the banner's and the desk's 1 of 255 as their stated bound.
+contact shadow or its plates' shadow" (`renderer_lamp_test.zig`) holds
+all of it at 1×, 2× and 3×: the 28 in every shape, and every
+text-bearing node's line box against every chrome shadow's coverage.
 
 ### The one colored artwork
 

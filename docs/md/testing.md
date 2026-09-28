@@ -1306,6 +1306,13 @@ Enum members are in the record because a `switch` without an `else` is
 exhaustive — adding one member breaks every consumer that switches on that enum,
 which makes `IconName`'s glyph list contract by the same rule as anything else.
 
+**An error set is written in name order.** The language gives a set no order,
+and `@typeInfo` hands its members over in the order the compiler first interned
+each name, which moves with `-Doptimize`: `DriverApp.Error` came out
+`OutOfMemory` first in Debug and `Refused` first in ReleaseSafe, so the record
+differed by build level with nothing about the set moved. The walker sorts
+them, so the records are byte-identical at every level.
+
 **The build half is the half a consumer types first**, and it was unrecorded
 until revision 79. `build.zig` is a second root: a module rooted at
 `src/nokre.zig` cannot import a file above its own directory, so nothing the

@@ -1145,6 +1145,21 @@ scroll; fixed takes the edges out of flow and stands them over the band
 the chrome reserve just carved out. A viewport-height root with `auto`
 end rows pins them in flow instead.
 
+**The content gap is the regions', not the screen's.** A desk's screen
+keeps only the band under it (`--chrome-reserve` less
+`--nav-content-gap`), and the gap goes on the flow that ends at the
+band's edge — the composer, or with none each region in the band — as
+its bottom padding, which is where `layoutDesk` spends
+`layout.trailingSpace`. Kept on the screen, as it once was, a region's
+words stopped 16 px further from the plates than core's did.
+
+**Beside a notice banner the two substrates do not agree.** Core
+reserves the banner's own height plus `nav_bar_pad` (`contentArea`);
+this sheet reserves `--chrome-reserve`, the bar's, because the banner
+is a fixed layer whose height no rule on the screen can read. So the
+words stop where the bar's reserve leaves them, which is near 28 above a
+one-line banner and less above a taller one.
+
 **A pinned strip is not capped here**, which is the one place this grid
 stops being `layoutDesk` in another language. Core stops a masthead or a
 composer at a third of the band (`layout.metrics.desk_pin_divisor`);

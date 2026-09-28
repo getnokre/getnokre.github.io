@@ -1861,7 +1861,8 @@ words and the rings
 
 ### `ranking`
 An order the user sets over a fixed set, with a line above which items
-count, inside a band the app sets. Fields: `label`; `options` (2+),
+count, inside a band the app sets. Fields: `label`, or
+`accessible_name` in its place (below); `options` (2+),
 given *in their current order* — the app owns the order the way it owns
 a `radio_group`'s `selected`; `viable`, how many of them count, which is
 also where the line sits: after that many items;
@@ -1871,6 +1872,29 @@ the ordered pair a press completed: `a` the slot that was armed, `b`
 the one pressed after it. A ranking can also open in a *picking*
 phase before this one, with fields of its own (below,
 [two phases](#two-phases-picking-then-edit)).
+
+**The label is the default; the name need not be drawn.** A ranking is
+named by its `label`, drawn small above the device. Where the screen
+already says what is being ranked in words of its own — a ballot's
+question standing right above it — the label would say it twice, so
+leave `label` empty and set `accessible_name` to that question: no
+label is drawn and no space is kept for one, in either phase and on both
+substrates, and assistive tech hears the name as the group's. A ranking
+with neither is refused (`error.UnlabeledInteractive`). With both, the
+name is a [`button`'s](#button) `accessible_name` exactly: it must
+contain the drawn label (`error.NameOmitsVisibleLabel`).
+
+```zig
+try app.tree.append(root, .{ .text = .{ .content = question } });
+try app.tree.append(root, .{ .ranking = .{
+    .label = "",
+    .accessible_name = question,
+    .options = options,
+    .viable = viable,
+    .viable_max = max,
+    .divider = tr(.ranking_ends_here),
+} });
+```
 
 **The caption is one generic line.** `divider` is a short line the app
 writes once and passes to every ranking it draws — "Your ranking ends
@@ -1890,8 +1914,8 @@ legal and says everything may count: the line may then rest last,
 with every item above it. A maximum of zero lets nothing count, so it
 is not a ranking.
 
-The device is one column under a small label: a full-width row per
-slot, and **the row is the button**. The slots are every option plus
+The device is one column under its small label, where it draws one: a
+full-width row per slot, and **the row is the button**. The slots are every option plus
 the line, top to bottom, so a five-item ranking has six of them. Each
 item row leads with its ordinal, carries its words, and ends in a verb
 band on its trailing edge, where it says what a press on it does now.
@@ -2052,7 +2076,8 @@ it carries a text field's caret ([routing.md](routing.md)), vetted
 against the rebuilt device's slot count.
 
 **What assistive tech gets is the device and every slot in it.** The
-element is one node — a group named by the label, valued by the slot
+element is one node — a group named by the label, or by
+`accessible_name` where it is stated, valued by the slot
 the cursor stands on and described by that slot's rank, which is what a
 keyboard reader hears change under ↑/↓ — and each slot is a child
 control of its own, sitting on its row's rect: a button named by the
@@ -3345,7 +3370,9 @@ glyph target rather than a word.
 
 Because nothing hides what passes behind it, every screen whose bar is
 in the **band** reserves `metrics.nav_content_gap` (24px) below its last
-element, on top of the bar and the OS safe band. Scrolled to the end, a
+element, on top of the bar and the OS safe band — on a desk, below the
+last element of each region that ends above the bar, and the same
+beside a notice banner. Scrolled to the end, a
 page stands clear of the nav; mid-scroll, lines pass behind the items
 and down into the safe band — that glimpse of a half-covered line is the
 only thing left saying there is more below. A header reserves nothing:
