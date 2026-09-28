@@ -342,6 +342,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     restoreFocus();
     syncAddressBar();
     syncRoot();
+    syncBanner();
   }
 
   // The page-level facts core owns and no markup carries: which ramp
@@ -405,6 +406,43 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     for (const meta of doc.querySelectorAll('meta[name="theme-color"]')) {
       meta.setAttribute("content", pair[/dark/.test(meta.getAttribute("media") ?? "") ? 1 : 0]);
     }
+  }
+
+  // The banner's height, which is the one length on the page the sheet
+  // needs and cannot read. Beside a banner core reserves the banner
+  // itself plus the bar's top pad (`layout.contentArea`); here the
+  // banner is a fixed layer that wraps to the reader's width, text size
+  // and language, so the driver measures it and the sheet's
+  // `--chrome-reserve` spends the answer (stylesheet.zig, `write`).
+  //
+  // An observer rather than a read per frame, because a banner rewraps
+  // on things that are not frames — a font arriving, a zoom, a text-size
+  // change. It reports after layout and before paint, so a banner that
+  // appears or rewraps is never painted beside the old reserve, and
+  // the reserve grows at the end of the screen, where the reader's
+  // scroll offset does not move what they are looking at.
+  const bannerWatch = typeof ResizeObserver === "function"
+    ? new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        root.style.setProperty("--notice-banner-height", `${entry.borderBoxSize[0].blockSize}px`);
+      }
+    })
+    : null;
+  let watchedBanner = null;
+
+  function syncBanner() {
+    if (!bannerWatch) return;
+    // The banner is a direct child of the chrome's mount; a notice row
+    // inside the pane is not one.
+    let banner = null;
+    for (const el of into.childNodes) {
+      if (el.nodeType === Node.ELEMENT_NODE && el.classList.contains("notice")) banner = el;
+    }
+    if (banner === watchedBanner) return;
+    if (watchedBanner) bannerWatch.unobserve(watchedBanner);
+    watchedBanner = banner;
+    if (banner) bannerWatch.observe(banner, { box: "border-box" });
+    else root.style.removeProperty("--notice-banner-height");
   }
 
   dark.addEventListener("change", () => {

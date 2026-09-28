@@ -176,7 +176,7 @@ table.
 | `tile` | the mark's well | plate |
 | `segmented`, `dial` | the lit plate | knob |
 | `ranking`, `dial` | a ranking's item row (a choice while picking among them), a step button | plate |
-| `ranking`, picking | a pool row | no plate: a secondary button's ring at a row's size |
+| `ranking`, picking | a pool row | none: a `.g6` stroke, lit on its own, one tone all the way round and nothing the lamp answers (owner, 2026-09-28; docs/elements.md, picking) |
 | `picker_item` | the chosen row | plate |
 | `badge`, `checkbox`, a notice in the notices pane | the chip, the box, the row | plate |
 | `toggle` | the knob, lying flat when on | knob |

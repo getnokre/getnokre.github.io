@@ -229,7 +229,7 @@ above the plates' or the banner's top, and the contact shadow's 5 px
 never reaches it and the cast lays 0 of 255 on it: on a phone with and
 without the home-indicator band, in landscape, mirrored, with the nav
 collapsed to its chip, with the notices indicator beside it, on a wide
-page, beside a notice banner, and on a desk with and without an aside or
+page, beside a notice banner of one line or several, and on a desk with and without an aside or
 a composer, scrolled or not.
 
 A sheet is not covered by any of this: it is modal, the page beneath it

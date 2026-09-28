@@ -367,6 +367,23 @@ or says the words are already a choice — only Undo takes one back);
 (`error.NotInteractive`, saying why: nothing chosen, or the band's
 minimum not met, or edit with no Start over wired).
 
+**The device verbs find their device by role and name together.**
+`selectOption`, `swapSlots`, `pickOption`, `pressRankingControl`, `dial`
+and `dialBy` look the label up among controls of their own kind — a
+choice control, a ranking, a dial — by accessible name, so a device
+`named_by` the heading above it
+([naming](elements.md#naming-a-device-without-drawing-its-label)),
+whose words are then its name, is found past the heading. A driver's verbs wait on the
+same lookup. Where no control of the kind wears the name but something
+else does, the harness hands the verb that node and the verb refuses it
+by what it is (`error.NotARanking`: "is a heading, which has nothing to
+pick"); a driver keeps waiting instead, since the device may still
+arrive. Two controls of one kind under one name answer to the first in
+document order: the audit already refuses that screen
+(`duplicate_interactive_label`), and the harness audits every step, so
+a second refusal here would say the audit's words again. Every
+diagnostic names the device by its accessible name, drawn or not.
+
 **Two verbs go back, and they are two different acts.** `back()` presses
 the back *control* — the one the router installs on every pushed screen,
 which consumers never wire ([elements.md](elements.md#back-control)).
@@ -2074,8 +2091,8 @@ The rules the set follows, each of them a decision:
   wait and strand the verb. Both then refuse a field that is
   `disabled` by name rather than letting the tab walk time out: a field
   out of the focus order is not unreachable by accident, and a test
-  that meant to fill it is asserting against a form still in flight. `selectOption` waits for a choice control
-  the same way. `goTab` waits for the bar to be able to answer for the
+  that meant to fill it is asserting against a form still in flight. `selectOption` waits for a choice control,
+  and the ranking's and the dial's verbs for a ranking and a dial, the same way. `goTab` waits for the bar to be able to answer for the
   destination in any of its three shapes. `expectValue` waits for the
   **value**, `expectProblem` for the **reason**, and
   `expectEnabled`/`expectDisabled` for the **state**: a

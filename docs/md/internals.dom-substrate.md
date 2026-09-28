@@ -1153,12 +1153,39 @@ its bottom padding, which is where `layoutDesk` spends
 `layout.trailingSpace`. Kept on the screen, as it once was, a region's
 words stopped 16 px further from the plates than core's did.
 
-**Beside a notice banner the two substrates do not agree.** Core
-reserves the banner's own height plus `nav_bar_pad` (`contentArea`);
-this sheet reserves `--chrome-reserve`, the bar's, because the banner
-is a fixed layer whose height no rule on the screen can read. So the
-words stop where the bar's reserve leaves them, which is near 28 above a
-one-line banner and less above a taller one.
+**Beside a notice banner the reserve is the banner's, and the driver
+measures it.** Core reserves the banner's own height plus `nav_bar_pad`
+(`contentArea`), and the banner here is a fixed layer that wraps to the
+reader's width, text size and language, so no rule on the screen can read
+how tall it stands. The live driver watches it with a `ResizeObserver`
+and publishes its border box as `--notice-banner-height` on the document
+root; the sheet redefines `--chrome-reserve` under
+`:root:has(<the banner>)` to that height, the bar's pad and the gap, so
+every rule that spends the reserve, the desk's and a host page's
+included, is right beside a banner with no rule of its own. The observer
+reports after layout and before paint, so no frame shows the old reserve,
+and the reserve changes at the end of the screen, so the reader's scroll
+offset and what they are looking at do not move.
+
+Two layouts that measure nothing were tried on paper and fail on this
+page's own structure. A `position: sticky` banner in flow needs a
+containing block spanning the scroll, and the banner's is the chrome
+mount, which comes before the screen and holds only the chrome; and a
+desk's root is a viewport-high grid that does not scroll at all. An
+anchored box sized with `anchor-size()` cannot anchor to a fixed layer
+outside its own containing block.
+
+**A written page reserves one line until its driver boots.** A banner
+needs a runtime ([static-sites.md](../static-sites.md)), so a file carrying one always carries
+its boot, and before the module has run the property is unset and the
+sheet's fallback stands: `layout.noticeRowHeight` of one body line,
+which is core's banner for a one-line title and exact for it. A taller
+banner overlaps the last words by its extra lines for that moment, and
+the first observation corrects it. The fallback is exact because the
+banner's box keeps its whole pad along its bottom, where it has no
+outline, and so stands exactly as tall as core's rect; with the
+outline's pixel taken there too it stood one short, and so did the
+reserve.
 
 **A pinned strip is not capped here**, which is the one place this grid
 stops being `layoutDesk` in another language. Core stops a masthead or a

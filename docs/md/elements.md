@@ -1007,6 +1007,28 @@ accessibility snapshot of a row that wrapped is identical to the same
 row's on a wider screen. A reader is never told a line broke — because
 nothing about the app did.
 
+#### A field in a row
+
+A `text_input`, `text_area`, `select` or `copyable` on a row takes the
+width the row's other children leave — they keep their own widths, as
+buttons, icons, chips and toggles always have — and two or more fields
+on one line share what is left evenly; a field alone on its row takes
+the whole span, as it does in a column. A field enters the line at a
+minimum of ten body ems (160px), and a line that cannot give it that
+much breaks before it, exactly as a row wraps any child that does not
+fit, so the field lands on a line of its own and takes all of it.
+Nothing about this is a field on the element: which children grow is
+what they are. **A row holding a field lines its children up on the
+field's box**, not on the label above it and the problem under it: every
+child stands in a slot padded to the tallest label and the deepest
+problem among the row's fields, less whatever of those it draws itself,
+and the slots are centred on the line — so a button beside a labelled
+field centres on the outline, a field named without a drawn label keeps
+its box level with a labelled one, and a problem appearing under a field
+moves nothing beside it. The padding is the row's, not each line's, so a
+child that wraps onto a line of its own keeps the band above and below
+it. Both substrates apply the same rule from the same numbers.
+
 ### `group`
 A vertical flow whose children belong together, and nothing else: it
 has no fields and draws nothing. `b.group()` is the cursor form.
@@ -1254,7 +1276,10 @@ both.
 
 Every interactive element **requires a label**. That is not a convention
 and not a lint: `tree.append` refuses to construct an interactive element
-with an empty label — an inaccessible control cannot exist.
+with an empty label — an inaccessible control cannot exist. Four devices
+may carry the name without drawing it
+([below](#naming-a-device-without-drawing-its-label)); none may carry
+neither.
 
 ### Turning a control off: `disabled`
 
@@ -1313,6 +1338,67 @@ section describes — the field named `disabled`, read by reflection
 (`Element.isOff`, `Element.turnOff`) — which is why a tenth kind that
 declares one is announced, marked up and drawn off the day it is
 declared, with nothing to wire.
+
+### Naming a device without drawing its label
+
+**The label is the default; four devices may be named by a node on the
+screen instead.** A `ranking`, a `radio_group`, a `select` and a `dial`
+each draw their `label` small above themselves, and that label is their
+name. Where the screen already asks the question in words of its own — a
+heading or a line of text standing right above the device — the label
+would say it twice. So leave `label` empty and set `named_by` to that
+node's id: no label is drawn and no space is kept for one, on both
+substrates, and the device's name is the node's words. The name is never
+a string of its own, so it cannot say something the screen does not, and
+it cannot drift from the words: `setContent` on the node carries the new
+words to the device. Nothing else about the device moves: its card,
+field or column stands at the top of its rect, and focus goes round the
+same box it always did. A select's picker takes the node's words as its
+title.
+
+```zig
+const asked = try app.tree.appendId(root, .{ .heading = .{ .content = question, .level = .h2 } });
+try app.tree.append(root, .{ .radio_group = .{
+    .label = "",
+    .named_by = asked,
+    .options = options,
+} });
+```
+
+`append` refuses every naming that would let the reader hear words they
+cannot see, each by its own error, and the refused device is not left in
+the tree:
+
+| The naming node… | Error |
+|---|---|
+| does not exist (never appended, or removed) | `error.NamedByMissing` |
+| is not a `heading` or a `text` | `error.NamedByNotWords` |
+| stands under a `stand_in`, so is not drawn yet | `error.NamedByStandIn` |
+| stands in another sheet or region than the device, or on the page behind a sheet the device is in | `error.NamedByOtherPane` |
+| comes after the device in document order | `error.NamedByAfterDevice` |
+| has no words (empty, or only whitespace) | `error.NamedByEmpty` |
+| already names another device — one question asks for one answer | `error.NamedByTaken` |
+
+A device has exactly one name: `label` and `named_by` together is
+`error.NamedTwice`, and neither is `error.UnlabeledInteractive`.
+`named_as` holds the node's words and is `append`'s to write
+(`error.LayoutOwnedField`). Once named, the node stays: `setContent` that
+would empty it is `error.NamedByEmpty`, and `remove` or `clearChildren`
+that would take it out from under a device that stays is
+`error.NamesDevice` — take the device first, or both together.
+
+In the browser the device carries `aria-labelledby` pointing at the
+node's words, which take an id of their own (`name-` and the node's
+number in the file).
+
+**No other element takes it, and on purpose.** `text_input` and
+`text_area` are form fields, and a field wants a label a sighted reader
+can see beside it while typing (WCAG 3.3.2), which a heading two
+controls up is not. A `toggle`'s or a `checkbox`'s label is the words
+beside the control, the only thing saying what it switches. A `meter` or
+`diverging_meter` is a reading whose label says what is measured, and a
+`tile_group` has no label to drop. A `segmented` track never draws its
+label: it is already the name alone.
 
 ### `button`
 `label`, `on_press`, `disabled`, `in_progress`, `form`,
@@ -1842,8 +1928,10 @@ The same exclusive-choice semantics as `segmented` in a different form:
 a full-width tile group under a visible group label (small scale, like
 `text_input`'s) — a rounded 1px `.g10` border around 44px option rows,
 one hairline between them. Same fields — `label`, `options` (2+),
-`selected`, `on_select`. One tab stop (focus takes the group's own
-border, not the label); ↑/↓ (and ←/→) move the selection and commit
+`selected`, `on_select`, and `named_by` in the label's place
+where a question above says it
+([naming](#naming-a-device-without-drawing-its-label)). One tab stop
+(focus takes the group's own border, not the label); ↑/↓ (and ←/→) move the selection and commit
 immediately; tapping a row selects it. Reach for it when every option
 should stay visible at once — a choice made once and submitted — where
 `segmented`'s scrolling track would hide some. The
@@ -1861,8 +1949,8 @@ words and the rings
 
 ### `ranking`
 An order the user sets over a fixed set, with a line above which items
-count, inside a band the app sets. Fields: `label`, or
-`accessible_name` in its place (below); `options` (2+),
+count, inside a band the app sets. Fields: `label`, or `named_by` in
+its place ([naming](#naming-a-device-without-drawing-its-label)); `options` (2+),
 given *in their current order* — the app owns the order the way it owns
 a `radio_group`'s `selected`; `viable`, how many of them count, which is
 also where the line sits: after that many items;
@@ -1873,28 +1961,11 @@ the one pressed after it. A ranking can also open in a *picking*
 phase before this one, with fields of its own (below,
 [two phases](#two-phases-picking-then-edit)).
 
-**The label is the default; the name need not be drawn.** A ranking is
-named by its `label`, drawn small above the device. Where the screen
-already says what is being ranked in words of its own — a ballot's
-question standing right above it — the label would say it twice, so
-leave `label` empty and set `accessible_name` to that question: no
-label is drawn and no space is kept for one, in either phase and on both
-substrates, and assistive tech hears the name as the group's. A ranking
-with neither is refused (`error.UnlabeledInteractive`). With both, the
-name is a [`button`'s](#button) `accessible_name` exactly: it must
-contain the drawn label (`error.NameOmitsVisibleLabel`).
-
-```zig
-try app.tree.append(root, .{ .text = .{ .content = question } });
-try app.tree.append(root, .{ .ranking = .{
-    .label = "",
-    .accessible_name = question,
-    .options = options,
-    .viable = viable,
-    .viable_max = max,
-    .divider = tr(.ranking_ends_here),
-} });
-```
+**The label is the default; the name need not be drawn.** A ballot's
+question standing right above the device is its name, and the label
+need not say it twice: [naming a device without drawing its
+label](#naming-a-device-without-drawing-its-label) has the rule, which
+holds in either phase.
 
 **The caption is one generic line.** `divider` is a short line the app
 writes once and passes to every ranking it draws — "Your ranking ends
@@ -2076,8 +2147,8 @@ it carries a text field's caret ([routing.md](routing.md)), vetted
 against the rebuilt device's slot count.
 
 **What assistive tech gets is the device and every slot in it.** The
-element is one node — a group named by the label, or by
-`accessible_name` where it is stated, valued by the slot
+element is one node — a group named by the label, or by the words of
+the node it is `named_by`, valued by the slot
 the cursor stands on and described by that slot's rank, which is what a
 keyboard reader hears change under ↑/↓ — and each slot is a child
 control of its own, sitting on its row's rect: a button named by the
@@ -2135,7 +2206,16 @@ opens first in **picking**: the library's prompt ("Pick your first
 choice", then "Pick your next choice"), the app's `picking_hint` under
 it, the choices so far as edit's lit rows with their ranks, and under
 them the **pool** — the unchosen options, in the app's own order, each
-a row a press makes the next choice. No line is drawn while picking;
+a row a press makes the next choice. A pool row is not a button and is
+not drawn as one: it is a stroke at a pill's corner and nothing else —
+no fill, well, plate or shadow — the same shape, width and `.g6` tone in
+every look and appearance, and under the lamp it is lit on its own, one
+tone all the way round, answering nothing the lamp does (owner,
+2026-09-28). The tone holds WCAG 1.4.11's 3:1 against every ground the
+row can stand on in every look, 3.34:1 at the least (depth's and lamp's
+dark paper), and the ranking's line takes the same tone. Off, it takes
+`.g10`; the keyboard cursor on it takes the stroke over as a 2px ink
+edge in place. No line is drawn while picking;
 it first appears in edit, resting where the person stopped. The owner
 decided this on 2026-09-27, because first-time users met a list
 already in some order, looked for a drag, and read the line as a
@@ -2282,7 +2362,7 @@ name no input device, because a mouse and a keyboard pick too. The app
 owns the label, the options, the line's caption and `picking_hint` —
 the last because it carries the band's numbers. The library still
 owns no "not counted" word: a choice is a lit row with a rank, a pool
-row is the look's secondary pill with none, and that is the whole
+row a stroke with none, and that is the whole
 distinction. What a reader hears while picking is in
 [accessibility.md](accessibility.md).
 
@@ -2577,8 +2657,10 @@ way. Semantics: a multiline text field carrying the value.
 ### `select`
 An exclusive choice among many options, in `text_input`'s clothing: the
 same labeled-field geometry, showing the current option with a chevron
-affordance. Same fields as `radio_group` — `label`, `options` (2+),
-`selected`, `on_select`. Reach for it when the options are too many to
+affordance at the trailing edge; an option longer than the field is
+cut where the chevron's slot begins, never drawn under it. Same fields as `radio_group` — `label`, `options` (2+),
+`selected`, `on_select`, and `named_by` in the label's place
+([naming](#naming-a-device-without-drawing-its-label)). Reach for it when the options are too many to
 lay out in place; for a handful, prefer `radio_group`, which shows
 every choice at once, or `segmented` for a choice the user switches
 repeatedly.
@@ -2590,7 +2672,8 @@ promises a picker that no longer opens
 ([`disabled`](#turning-a-control-off-disabled)).
 
 Activation (tap/Enter/Space) opens the framework's picker: a modal
-bottom panel with the select's label as its title and one 44px tile row
+bottom panel with the select's label as its title (the words of the
+node it is `named_by` where it draws none) and one 44px tile row
 per option — a list on one surface, with no line between two rows in
 any look, since the chosen row's chip already says which is which —
 scrolling when they overflow. It uses the sheet's geometry and
@@ -2624,11 +2707,13 @@ more than the widget wants features.
 
 ### `dial`
 A count the user sets over a range too wide to lay bare as options,
-turned on one device. Fields: `label`; `min` (default 0) and `max`, the
+turned on one device. Fields: `label`, or `named_by` in its place
+([naming](#naming-a-device-without-drawing-its-label)); `min` (default 0) and `max`, the
 range; `value`, where the device stands; `on_change(value)`, which
 carries the whole new number and never a delta; and `disabled`. The
 whole state is the app's — there is no input-owned field here, unlike
-`ranking`, so a dial can be built at any value the range holds.
+`ranking`, so a dial can be built at any value the range holds. The
+value it announces is its own reading whatever names it.
 
 Reach for it when the answer is a number over a range nobody would
 enumerate. A handful of values is a `radio_group` or a `select`, where
@@ -2822,8 +2907,12 @@ Not an editor — the value cannot be changed in place; a value that
 needs editing is a `text_input`, and prose worth reading is `text`.
 A value wider than the field elides in the middle (`ab…yz`, marker
 dimmed): both ends survive because both ends are what a human checks a
-pasted value against, and the display is only a receipt — activation
-copies the whole value, semantics announce it whole. Semantics: a
+pasted value against, and the display is only a receipt. The glyph
+takes the trailing edge, which is the chrome's, and the value takes the
+rest of the field in **its own** direction: a link or a code reads from
+its left under Persian chrome too, starting beside the glyph, and a
+right-to-left value keeps its head on the right under English chrome.
+Activation copies the whole value, and semantics announce it whole. Semantics: a
 button named by the label, carrying the value — assistive tech hears
 both.
 

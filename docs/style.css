@@ -79,6 +79,7 @@
   --button-pad-v: 5px;
   --input-pad: 5px;
   --input-label-gap: 6px;
+  --row-field-min: 160px;
   --toggle-w: 36px;
   --toggle-h: 20px;
   --toggle-inset: 2px;
@@ -118,6 +119,12 @@
   --lh-h2: 32px;
   --px-h1: 32px;
   --lh-h1: 40px;
+}
+
+:root:has(.notice:not(.notices-pane .notice)) {
+  --chrome-reserve: calc(
+    var(--nav-content-gap) + var(--nav-bar-pad) + var(--notice-banner-height, calc(66px + var(--safe-b)))
+  );
 }
 :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) ::selection { background: #808080; color: #eaeaea; }
 
@@ -291,8 +298,8 @@
 :root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
 :root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .ranking.off .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle::after { box-shadow: var(--control-shadow); }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .plate.pool, :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
-:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.pool, :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label), :root[data-nokre-theme="depth"] .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step { background: var(--control-well); border-color: transparent; }
+:root[data-nokre-theme="depth"] .ctl:not(.busy) :is(input.check, input.toggle):not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .radios input[type="radio"]:not(:checked):is(:disabled, [aria-disabled="true"]), :root[data-nokre-theme="depth"] .btn.secondary:not(.auth, .pending-label):is([disabled], [aria-disabled="true"]:not([aria-busy="true"])), :root[data-nokre-theme="depth"] :is(.ranking[disabled], .ranking.off) .plate.off:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-step[aria-disabled="true"], :root[data-nokre-theme="depth"] :is(.dial[disabled], .dial.off) .dial-step, :root[data-nokre-theme="depth"] .btn.pending-label { background: var(--control-well-off); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked)::after { background: var(--knob); border-color: transparent; }
 :root[data-nokre-theme="depth"] .ctl:not(.busy) input.toggle:not(:checked):is(:disabled, [aria-disabled="true"])::after { background: var(--knob-off); }
 :root[data-nokre-theme="depth"] .meter-track, :root[data-nokre-theme="depth"] .diverging-track, :root[data-nokre-theme="depth"] .btn.secondary .btn-track { background: var(--g10); border-color: transparent; }
@@ -733,6 +740,28 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    rule over the same intrinsic widths, which is as close as the two
    substrates get on geometry (substrates.md). */
 .stack.row > * { flex: none; max-width: 100%; }
+/* And each is centred on its line, as `alignRowLine` centres it.
+   The `flex-start` a button, a chip, a control row or a link takes
+   is for a column, where it keeps the thing from stretching across
+   the page; on a row's vertical cross axis it would stand every
+   one of them at the top of its line instead. */
+.stack.row > *, .stack.row > a.link.block { align-self: center; }
+/* Except a field, which enters the line at its minimum and grows
+   into what the line leaves, shared with any other field there
+   (`layout.fillsRow`): the basis is what the break is decided on,
+   as in `layoutWrappingRow`, and a field alone on its line is the
+   whole line. `min-width: 0` so a long label or value never widens
+   the basis core broke the line at. */
+.stack.row > :is(.field, .field-group) { flex: 1 0 min(var(--row-field-min), 100%); min-width: 0; }
+/* A row holding a field lines its children up on the field's box
+   (`layout.fieldRowBands`, written onto the row): each child's
+   margins pad it to the label band above and the problem band
+   below, less what it draws of either itself, so centring the
+   padded slots centres a button on the box and not on the label
+   and box together. */
+.stack.row.fields > * { margin-block: var(--band-above) var(--band-below); }
+.stack.row.fields > :is(.field:has(> .field-label), .field-group) { margin-top: 0; }
+.stack.row.fields > .field-group { margin-bottom: calc(var(--band-below) - var(--own-below)); }
 
 /* A box groups; it does not decorate. Its edge is a wall — the
    margin advice stops at it, so nothing bleeds across a border.
@@ -1746,8 +1775,9 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    stand in one grid cell and the one not said now is hidden, so
    the taller is reserved and the first pick moves nothing. */
 .ranking-prompt { display: grid; }
-/* The label's gap is the label's (`rankingLabelSpace`): a ranking
-   named by `accessible_name` alone has no legend and no gap. */
+/* The label's gap is the label's (`smallLabelSpace`): a device
+   named by another node has no legend and no gap. The
+   dial and the radio group below take theirs the same way. */
 .ranking > legend + :is(.ranking-rows, .ranking-prompt) { margin-top: var(--input-label-gap); }
 .ranking-prompt > p { grid-area: 1 / 1; }
 .ranking-prompt > .reserve { visibility: hidden; }
@@ -1765,8 +1795,8 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 /* A choice is a row, not a list's item: the list gap between a
    list item's blocks would part its rank from its words. */
 .ranking-choices > li > * + * { margin-top: 0; }
-/* A pool row is the secondary button at a row's size
-   (`drawSecondaryFace`): the `.g6` outline over the ground, a pill's
+/* A pool row is a stroke and nothing else, in every look
+   (`drawPoolRow`): the `.g6` outline over the ground, a pill's
    corner, and focus taking the outline over. */
 .plate.pool { background: transparent; border-color: var(--g6); color: var(--ink); border-radius: var(--ranking-pool-radius); }
 .plate.pool:focus-visible { border-color: transparent; }
@@ -1799,8 +1829,8 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    of their own. Nothing here mirrors: up is more in both
    directions, and the device moves with the chrome because the
    block it sits in does. */
+.dial > legend + .dial-device { margin-top: var(--input-label-gap); }
 .dial > .dial-device {
-  margin-top: var(--input-label-gap);
   display: flex;
   flex-direction: column;
   gap: var(--dial-gap);
@@ -1860,7 +1890,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 /* A column of tile rows under a label, in the tile group's shape.
    Block flow, not flex: the legend is the label and no engine puts
    a legend in its parent's flex line (see the reset). */
-.radios > .tiles { margin-top: var(--input-label-gap); }
+.radios > legend + .tiles { margin-top: var(--input-label-gap); }
 .radios input[type="radio"] {
   appearance: none;
   width: var(--radio-glyph);
@@ -2084,7 +2114,12 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    already darkens that border, and one appearance cannot carry
    two states. */
 .field-problem { font-size: var(--px-small); line-height: var(--lh-small); color: var(--ink); }
-.copyable code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The value reads in its own direction, from its own start, as the
+   reference draws it (`drawCopyable`): a link is left-to-right under
+   mirrored chrome too, so it starts beside the glyph and loses its
+   tail, never its scheme. Without it the `code` takes the chrome's
+   direction, right-aligns the link and cuts it at the front. */
+.copyable code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: plaintext; }
 /* The affordance is quiet; the acknowledgement is not — the check
    arrives in ink, because it is the only visible sign the copy
    happened. */
@@ -2380,9 +2415,11 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   margin-inline: auto;
   /* `notice_pad` is measured from the rect, and the outline is
      drawn inside it — so the border is part of that inset, not
-     added to it. */
+     added to it. There is no outline along the bottom, so there
+     the pad is whole, or the banner stands a pixel shorter than
+     core's and the reserve its height buys is a pixel short. */
   padding: calc(var(--notice-pad) - var(--border));
-  padding-bottom: calc(var(--notice-pad) - var(--border) + var(--safe-b));
+  padding-bottom: calc(var(--notice-pad) + var(--safe-b));
   /* A banner is the dim track tone, not paper: it is a surface
      sitting on the page, and `.g6` is the boundary that says so. */
   background: var(--g11);
