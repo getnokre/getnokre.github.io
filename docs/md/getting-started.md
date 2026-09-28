@@ -2376,6 +2376,23 @@ Gradle reads the environment. What a flag *means* is yours — nokre has
 no notion of a profile, so a rule like "a Release archive must name
 one" is a line in your copy, not in the template.
 
+The Zig half's optimisation level is one setting of its own, in both
+templates: `NOKRE_OPTIMIZE`, a build setting in the Xcode project
+(`xcodebuild … NOKRE_OPTIMIZE=ReleaseFast`), and `-PnokreOptimize` for
+Gradle (`./gradlew installDebug -PnokreOptimize=ReleaseFast`). It takes
+two values and refuses any other by name. `ReleaseSafe` is the default
+and what the templates ship: it keeps bounds and overflow checks, so a
+bug traps where it happens instead of corrupting memory and surfacing
+somewhere else. `ReleaseFast` drops them, for a measurement or a release
+where the last of the speed matters. Lamp's per-pixel loops are
+`ReleaseFast` under either value
+([internals/lamp.md](internals/lamp.md#what-a-frame-costs)). It is not
+a line of `NOKRE_ZIG_FLAGS` because a second `-Doptimize` is one
+`zig build` refuses. On Android the native half follows it: CMake's
+`RelWithDebInfo` (`-O2`) beside `ReleaseSafe`, unchanged, and `Release`
+(`-O3`) beside `ReleaseFast`. Under the NDK both carry `-g` and
+`-DNDEBUG`, so the level is the only difference.
+
 **Android.** The same split with Gradle in Xcode's chair: a Gradle task
 calls `zig build`, and the NDK's CMake compiles the shell and links
 Skia:
@@ -2399,7 +2416,8 @@ as the top of your declared theme's page per appearance; a style of
 your own keeps that line, or the window shows the platform's gray until
 the first frame. Open the project in
 Android Studio and Run, or `./gradlew installDebug` headlessly. Keep
-the template's `-DCMAKE_BUILD_TYPE=RelWithDebInfo`: a debug APK differs
+the template's `-DCMAKE_BUILD_TYPE` line, which names an optimised build
+type under either `nokreOptimize`: a debug APK differs
 in signing and debuggability, not in how the frame path is compiled,
 and without that line AGP's own `Debug` compiles the shim and HarfBuzz
 at `-O0` — shaping sits on every frame, and a tablet frame went from
