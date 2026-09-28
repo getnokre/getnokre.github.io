@@ -638,16 +638,32 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // core/router.zig's `Change`, in that enum's order.
   const MOTION = ["push", "pop", "replace", "switch_to"];
 
-  let bar = "";
-  // The fragment names the screen the app is on, in both directions
-  // and without configuration. It is a reference, unencoded: every byte
-  // a name or an argument may carry is one encodeURIComponent leaves
-  // alone, so what the app writes is what a reader copies.
+  // The address bar, both ways (docs/routing.md, "The address"). What
+  // the bar shows is core's answer — the current screen's address in the
+  // app's declared form, its secret arguments dropped — and what an
+  // arriving address names is core's answer too: this glue splits no
+  // path and joins no separator.
+  //
+  // **Secrets never rest in the bar or in history**, and history is
+  // written to disk for session restore, `state` included. So an entry
+  // holds a key and nothing else, and the whole reference behind it —
+  // secrets and all — is held here, in memory, for this page's life:
+  // Back and Forward within it restore the screen whole, and after a
+  // reload the map is empty, the entry is read as the address it shows,
+  // and the screen is entered without its secrets and says what it
+  // needs. The key carries the page life's origin so that an entry from
+  // before a reload can never name one kept after it.
+  const life = String(performance.timeOrigin);
+  const kept = new Map();
+  let entries = 0;
+  let shown = "";
+  const current = () => read(nk.nokre_dom_address(), nk.nokre_dom_address_len());
+
   function syncAddressBar() {
     const ref = read(nk.nokre_dom_route(), nk.nokre_dom_route_len());
-    if (ref === bar) return;
-    const first = bar === "";
-    bar = ref;
+    if (ref === shown) return;
+    const first = shown === "";
+    shown = ref;
     // Where a screen is a document, a route change *is* a navigation:
     // the reader is owed the file for that screen, not this file
     // wearing its name. Nothing to do on the first frame — the screen
@@ -666,7 +682,21 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // the same motion, deliberately, and they only stay the same if the
     // entries match.
     const push = MOTION[nk.nokre_dom_route_motion()] === "push";
-    history[push ? "pushState" : "replaceState"](null, "", "#" + ref);
+    const key = `${life}:${++entries}`;
+    kept.set(key, ref);
+    history[push ? "pushState" : "replaceState"]({ nokre: key }, "", current());
+  }
+
+  // The address the bar holds now, as core reads it: the path, and the
+  // fragment without its `#`, in one scratch.
+  function arrive() {
+    const path = bytes.encode(location.pathname);
+    const fragment = bytes.encode(location.hash.slice(1));
+    const ptr = nk.nokre_dom_scratch(path.length + fragment.length);
+    if (!ptr) return 0;
+    memory().set(path, ptr);
+    memory().set(fragment, ptr + path.length);
+    return nk.nokre_dom_arrive(path.length, fragment.length);
   }
 
   // ---- events -----------------------------------------------------
@@ -698,12 +728,12 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // reasons: it carries a real href (target _blank, noopener —
     // serialize.zig), and re-opening it through the open_url service
     // would drop the reader's modifier keys — their middle click, their
-    // "open in new window". Route links keep their fragment hrefs and
+    // "open in new window". Route links carry the screen's address and
     // stay the router's; keyboard activation of an external link still
     // crosses into core and reaches the service (services.js).
     {
       const anchor = e.target.closest("a[href]");
-      if (anchor && !anchor.getAttribute("href").startsWith("#")) return;
+      if (anchor && anchor.getAttribute("target") === "_blank") return;
     }
     // An exclusive choice is resolved on the chip, which is the whole
     // label — checked *first*, because the label is an ancestor of the
@@ -1033,42 +1063,26 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     return (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0);
   }
 
-  // deep_link's lane (services/deep_link/web.zig): the web deep link
-  // is the fragment, delivered as the whole URL — the service's
-  // `fragment` helper extracts it, so the app reads a link the same
-  // way on every platform. The export exists only when the app linked
-  // the service; a page that never claims a deep link pays nothing.
-  // This runs *alongside* the router's own reading of the fragment
-  // below, deliberately: the two answer different questions — a URL
-  // arrived, versus which screen is showing — and an app that routes
-  // on both sees the fragment twice by that contract (docs/routing.md
-  // says to route on one or the other). A handler that navigates to
-  // the reference the router already switched to is idempotent.
-  function deliverDeepLink() {
-    if (!nk.nokre_deep_link_receive) return;
-    const b = bytes.encode(location.href);
-    const ptr = nk.nokre_dom_scratch(b.length);
-    if (!ptr) return;
-    memory().set(b, ptr);
-    nk.nokre_deep_link_receive(ptr, b.length);
-    frame();
-  }
-
-  addEventListener("hashchange", deliverDeepLink);
-
-  // The browser's Back and the in-app Back are the same motion,
-  // deliberately. A fragment the router cannot honor leaves the app
-  // where it is, and the bar goes back to what it was — so it never
-  // describes a screen nobody is on.
-  addEventListener("hashchange", () => {
+  // The browser's Back and Forward, and a fragment the reader typed.
+  // An entry this page life wrote is entered whole, from what was kept
+  // for it; any other is read as the address it shows. The browser's
+  // Back and the in-app Back are the same motion, deliberately. An
+  // address that names no screen leaves the app where it is and the bar
+  // goes back to it — so it never describes a screen nobody is on.
+  addEventListener("popstate", (e) => {
     // Not this lane's, where a screen is a document: a fragment there
     // names a heading on the page the reader is already on, and the
     // browser is the only thing that should act on it.
     if (documents) return;
-    const ref = location.hash.slice(1);
-    if (!ref || ref === bar) return;
-    if (!nk.nokre_dom_navigate(put(ref))) {
-      history.replaceState(null, "", "#" + bar);
+    const whole = kept.get(e.state?.nokre);
+    if (whole === shown) return;
+    const entered = whole === undefined ? arrive() : nk.nokre_dom_navigate(put(whole));
+    if (!entered) {
+      // The entry now shows the screen the reader is still on, so it
+      // keeps that screen whole too.
+      const key = `${life}:${++entries}`;
+      kept.set(key, shown);
+      history.replaceState({ nokre: key }, "", current());
       return;
     }
     frame();
@@ -1209,15 +1223,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     }
   }
 
-  if (!documents) {
-    const inbound = location.hash.slice(1);
-    if (inbound) nk.nokre_dom_navigate(put(inbound));
-  }
-  // The launch deep link: a fragment present at load is delivered
-  // after boot, so the handler the app registered inside its first
-  // build is already installed — the "first callback after boot"
-  // contract (docs/services.md).
-  if (location.hash) deliverDeepLink();
+  // The address the page was loaded at. An arrival that names no screen
+  // leaves the app where its build put it, and the first frame writes
+  // that screen's address over the one that named nothing; one that
+  // does is written back without its secrets. A page that states the
+  // screen it is (`route`, above) was written for that screen, and its
+  // own statement outranks the address it was served at.
+  if (!documents && !route) arrive();
   frame();
   return nk;
 }

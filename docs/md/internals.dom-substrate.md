@@ -254,7 +254,32 @@ refresh away, and resolves a target to a path inside the site or to
 nothing at all. Its two decisions are unit-tested in the file, and
 `main` is referenced by a test so a broken server is caught by
 `zig build test` rather than by a developer who wanted to look at their
-app.
+app. Handed a fallback file — build.zig hands it `index.html` for an app
+in the path form — it answers every path that names no file with that
+page, which is the one rewrite a path-form host owes
+([../routing.md](../routing.md#hosting-the-path-form)).
+
+### The address bar is core's answer, both ways
+
+live.js splits no URL and joins no separator. At load, and on every
+`popstate` whose entry this page life wrote nothing for, it hands core
+the path and the fragment (`nokre_dom_arrive`), and core parses them in
+the declared form (`core/address.zig`) and enters the screen or refuses.
+What the bar shows is core's answer too: the current screen's address
+with its secret arguments dropped (`nokre_dom_address`).
+
+History is written to disk by the browser, `state` included, so an entry
+holds a key and nothing else — the page life's `performance.timeOrigin`
+and a counter, which no earlier life can reuse. The whole reference
+behind the key, secrets and all, is held in a `Map` in live.js for the
+page's life, and `popstate` onto a key it holds re-enters that reference
+through `nokre_dom_navigate`. After a reload the map is empty and the
+entry is read as the address it shows. A refused address puts the bar
+back to the screen the reader is on, under a key of its own.
+
+A page that states the screen it is — a generated page's `route` — was
+written for that screen, and its statement outranks the address it was
+served at: the driver does not arrive over it.
 
 ### Live over a generated page
 
@@ -661,7 +686,7 @@ What the driver still owes when it boots over the page it wrote:
   is otherwise a screen that renders empty for one frame and then
   refills, which is worse than the page the reader already had.
 - **`nokreWebRefs`.** The static driver installed a `RefResolver` to resolve
-  `routing` to `/routing/` where the default answers `#routing`; the live one has to
+  `routing` to `/routing/` where the default answers the app's own address; the live one has to
   install the *same* one, or the first frame rewrites every link on the
   page into a URL the site publishes nothing at. One mapping, stated
   once, spent by both drivers — and `nokre_dom_href` asks it again for
@@ -703,7 +728,8 @@ External links are the browser's on *every* driver, for the same
 modifier-key reasons: serialize.zig writes them as real anchors
 (`target="_blank" rel="noopener noreferrer"` — same-tab would tear the
 running instance down), and the live driver's click handler passes any
-anchor whose href is not a `#fragment`. Where the app shell addresses
+anchor that carries `target="_blank"` — an href alone cannot say, since a
+route's href is an address like any other. Where the app shell addresses
 its screens, keyboard activation still crosses into core and reaches the
 open_url service, whose web leg is services.js's `window.open`
 ([../services.md](../services.md)); under `documents` the Enter branch
@@ -938,11 +964,11 @@ the only difference.
 The other web legs export their own doorways from their service files
 rather than through live.zig — [oauth](oauth.md)'s redirect seed and
 popup receiver, [secure_store](secure_store.md)'s snapshot seed and
-sessionStorage mirror, deep_link's `nokre_deep_link_receive`, and
-locale's seed/receive pair. services.js implements the imports they
-call out through; live.js seeds the pre-boot values (locale tag, oauth
-redirect, secure_store snapshot) and delivers the boot-time and
-`hashchange` deep links, per each file's stated ordering. share is the
+sessionStorage mirror, and locale's seed/receive pair. services.js
+implements the imports they call out through; live.js seeds the pre-boot
+values (locale tag, oauth redirect, secure_store snapshot), per each
+file's stated ordering. deep_link has no web leg: a link into a web app
+is an address, and the bar is read above. share is the
 degenerate case that needs no doorway and no seed: both directions are
 plain imports — the `nokre_share_available` probe App.init calls (a
 bool needs no scratch buffer) and the fire-and-forget
@@ -1509,10 +1535,11 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   a route to a `LinkDest` — `internal` (a plain href) or `external` (the
   new-tab pair every external anchor carries) — and the emitter writes
   the whole attribute for both forms, so no driver ever writes a byte
-  of one. The default resolves to the fragment the web shell already
-  mirrors routes into (`#note~42`), so a link in a serialized page and
-  a link in a running app point at the same screen. A driver publishing
-  one file per screen installs its own.
+  of one. The default resolves to the screen's address in the app's
+  declared form with its secrets dropped (`/note/42`, or `#note~42`),
+  so a link in a serialized page and the bar of a running app point at
+  the same screen; a reference the table cannot spell keeps `#` and its
+  own bytes. A driver publishing one file per screen installs its own.
 - **`rootClass`.** The class list for whatever a driver wraps the screen
   in, as the whole attribute value rather than the names to build one
   from — a driver's own classes stand beside it (`class="{s} page"`).

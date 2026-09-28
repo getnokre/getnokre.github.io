@@ -283,8 +283,9 @@ framework cannot express them.
   came from is what nav chrome, links, and the back stack already show,
   and they can differ from visit to visit because the app remembers the
   trail. A reference is only a name, so one screen has one reference,
-  whoever is looking. URLs stay short as a side effect —
-  [routing.md](routing.md).
+  whoever is looking. Where an address bar shows it as a path,
+  `/note/42`, the path is that same name spelled for a URL, and never a
+  parent — [routing.md](routing.md).
 - **No named platform groups.** There is no "phones", no "tablets" and
   no "wearables" to test against, and no call that hands one to an app.
   A group goes stale the first time a device is unlike its group — a

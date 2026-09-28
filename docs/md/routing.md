@@ -446,7 +446,7 @@ nokre: reference "note" carries 0 argument(s); route "note" declares 1
 
 `RouteDef.args` says how many arguments a screen takes, defaulting to
 none. A reference carrying the wrong number is refused rather than
-building a screen with nothing to show, so `#note` and `#note~1~2` both
+building a screen with nothing to show, so `note` and `note~1~2` both
 fail where a missing id would otherwise render as a blank.
 
 #### An optional trailing argument is refused
@@ -489,19 +489,59 @@ replaces — is no longer needed to stay inside a fixed arity.
 over one builder, and the cut-back reference is refused" is the claim
 against a real router.
 
+The one argument that *may* be missing is a secret one, and it is
+missing for a different reason: nokre took it out.
+
+#### Secret arguments
+
+Some arguments must not rest where an address is kept — the key that
+opens a sealed ballot, an invitation's token. The address bar is read
+over a shoulder, the browser's history is written to disk for session
+restore, and a server logs every path it serves. A route says how many
+of its arguments are secret, and they are always the **last** ones:
+
+```zig
+.{ .name = "ballot", .title = title, .args = 2, .secret_args = 1, .build = buildBallot },
+
+// in buildBallot:
+const key = app.routeArg(1) orelse return showMissingKey(app);
+```
+
+Trailing and counted, so an address is always its public part and then
+its secret part, and there is no per-argument flag to get out of step. A
+count past `args` is `error.RouteSecretArgCount` at `App.init`.
+
+From there nokre keeps them out of every place an address is kept
+([The address](#the-address)): the path form writes them into the
+fragment, which no request carries; the bar and every history entry
+drop them; an `href` in the page drops them; every reference nokre
+prints or records has them redacted. The app still has them — a tapped
+tile enters the reference the tree holds, secrets and all, and
+`currentRef` and the route observer hand the app its own reference
+whole.
+
+So a screen with secrets can be **arrived at without them**, and that is
+an arrival, not a refusal: a reload, a Back after a reload, a link a
+messenger cut. `routeArg` answers null for each secret that did not
+come, and the screen says what it needs. A reference carries all the
+secrets or none of them — a partial set is a cut in the middle of one,
+and is `arg_count`. The public arguments stay required, exactly as the
+section above has it: a secret is not a second optional argument to
+append to.
+
 ### The separator is `~`
 
-Not `/`. A path puts the way you got here into the name of the screen. A
-stack in the URL does the same, just more of it. Neither is kept, and
-both leave the same thing behind: one screen, one reference. That is the
-**no paths** refusal ([introduction.md](introduction.md)), and `~`
-carries none of the conventions a slash does — nothing about a reference
-is truncatable, so `note~42` cut back to `note` is a missing argument
-rather than a parent.
+Inside a reference, not `/`. A path puts the way you got here into the
+name of the screen, and nothing about a reference is truncatable, so
+`note~42` cut back to `note` is a missing argument rather than a parent.
+That is the **no paths** refusal ([introduction.md](introduction.md)),
+and it is about the *reference*: the address a URL shows may spell the
+same screen `/note/42` ([The address](#the-address)), and the path there
+is still a name and never a parent.
 
-It is also one of the few characters `encodeURIComponent` leaves alone
-(the whole set is `. ! ~ * ' ( ) - _` and alphanumerics), so a reference
-and its rendering in an address bar are the same bytes, always.
+`~` is also one of the few characters `encodeURIComponent` leaves alone
+(the whole set is `. ! ~ * ' ( ) - _` and alphanumerics), which is what
+lets the fragment form carry a reference as the same bytes.
 
 ### Names are flat
 
@@ -517,11 +557,19 @@ UUIDs and slugs are arguments with no escaping:
 `ticket~1.2.3-rc1` is fine.
 
 Everything else is out. An argument says *which* thing a screen is
-about; free text and structure are a URL's business, which is
-`deep_link`'s ([services.md](services.md)).
+about, and free text is not a screen's name.
+
+**`.` and `..` alone are out too**, as an argument and as a route name.
+A URL's path reads them as "this segment" and "the one above", and a
+browser removes them before anything can read the address, so the path
+form could not carry one — and a reference that is legal in one form
+and not the other would be two grammars. Nothing else in the charset
+needs anything in a path: no byte in it is ever percent-encoded, and a
+`%` is outside it, so an address arrives as the reference's own bytes or
+is refused.
 
 **A reference must stay safe to open.** Arguments identify, they never
-command: `#sum~10~5` is fine, `#delete~42` is not. Anything in an address
+command: `sum~10~5` is fine, `delete~42` is not. Anything in an address
 bar gets opened by link previewers, history restores, and people pasting,
 none of which intended to act.
 
@@ -599,8 +647,9 @@ name to surface as a mystery at first navigation:
 | | |
 |---|---|
 | `error.EmptyRouteName` | a route with no name |
-| `error.RouteNameCharset` | a name outside `[a-zA-Z0-9_.-]` — including one carrying a `~`, which would make every reference to it ambiguous |
+| `error.RouteNameCharset` | a name outside `[a-zA-Z0-9_.-]` — including one carrying a `~`, which would make every reference to it ambiguous, and `.` or `..`, which no path can carry |
 | `error.DuplicateRouteName` | two routes sharing a name — otherwise every reference would quietly resolve to the first |
+| `error.RouteSecretArgCount` | a route declaring more secret arguments than arguments ([Secret arguments](#secret-arguments)) |
 | `error.NoUnresolvedDestination` | a table with routes and no not-found screen among them — the next section |
 
 A reference is validated at resolution, and who hears about a bad one
@@ -621,12 +670,13 @@ because a tap is three frames from the builder that wrote the
 reference and has nothing to do about it. So does `reload`, for the one
 thing it can refuse. Those leave the stack exactly as it was, return
 normally, and record what they refused in `router.refused`: the
-reference (bounded to `max_ref_bytes`) and a reason —
+reference (bounded to `max_ref_bytes`, with its secret arguments
+redacted to `*`) and a reason —
 
 | | |
 |---|---|
 | `unknown_route` | no route by that name |
-| `arg_count` | not the number of arguments the route declares |
+| `arg_count` | not the number of arguments the route declares — or, for a route with secret ones, not that number and not its public part alone |
 | `arg_charset` | an argument outside the charset, or empty (a trailing `~` is a *missing* argument, not an empty one) |
 | `ref_too_long` | past `max_ref_bytes` — 256 unless this app declared otherwise (above) — because a reference can arrive from outside the app, and one enormous argument would pass the arity check |
 | `reload_in_build` | a `reload` issued while the screen's builder was already running — honoring it would rebuild the screen over its own half-built output, duplicating it. The record carries the reference of the screen being built. (`refresh` never trips this: the polite verb declines the same call quietly.) |
@@ -691,7 +741,7 @@ reason)` is the door — it names the refusal, asserts both halves and
 takes the record with it, so the not-found screen audits and
 photographs like any other and **every refusal nobody names goes on
 failing**. The navigation stays the app's own verb (`harness.app.navigate`,
-a deep link), because it is the app being asked for something it cannot
+`switchTo`), because it is the app being asked for something it cannot
 give. A not-found screen that reads nothing off the record has a second
 route in with no refusal at all: its own name resolves, since
 `for_unresolved` forces `args = 0`.
@@ -756,13 +806,13 @@ arguments as often as for its name and there is nothing safe to hand
 one.
 
 Being a route like any other, it is also reachable by its own name — a
-tile pointing at it, a fragment naming it — and then nothing was
+tile pointing at it, an address naming it — and then nothing was
 refused, so `router.refused` is null. A not-found screen reads it as an
 optional, and says something without a reference to quote.
 
 **Bytes from outside the program are different.** An address bar, a
-deep-link fragment, a notification payload — a stranger's typo there is
-not a programmer error, and it must not read as one. Ask first:
+deep link, a notification payload — a stranger's typo there is not a
+programmer error, and it must not read as one. Ask first:
 
 ```zig
 if (app.router.vet(route) == null) try app.navigate(route);
@@ -773,9 +823,9 @@ and records nothing; it is also what `navigate` itself asks before it
 enters, so the difference is only whether you want the reason or the
 error. It never falls to the unresolved destination either, and an app
 that wants a stranger's typo to land there says so itself, at the door
-where it decided the bytes were worth honoring. The web shell already
-vets the fragment at its own door, which is what keeps the bar restored
-and the app unmoved.
+where it decided the bytes were worth honoring. An address — the bar,
+a deep link — is vetted at nokre's own door and never reaches your code
+at all ([The address](#the-address)).
 
 ## Handing off from the other app
 
@@ -783,8 +833,8 @@ One package may hold several apps, split on the dwell line — a sitting
 app and a glance app sharing state, actions, services and every catalog
 key, but not their route tables
 ([getting-started.md](getting-started.md), "Several apps in one
-package"). A reference written by one of them can arrive at the other:
-in a notification payload the glance app scheduled, or in a deep link.
+package"). A reference written by one of them can arrive at the other
+in a notification payload the glance app scheduled.
 
 Crossing that line is a **page load or a process launch, never a
 function call**: two apps of a package are two artifacts, and no `App`
@@ -826,48 +876,98 @@ audit fails the test that trips one: right for a programmer's dead
 reference, wrong here, where a screen the other dwell has and this one
 does not is the design working.
 
-The two doors that keep their old verbs keep them for reasons that
-survive this: the site manifest's boot route is nokre's own and a wrong
-one must fail the boot loudly, and the address bar's contract is
-one screen, one URL, so landing silently elsewhere while the glue
-restores the bar would break it.
+The doors that keep their old verbs keep them for reasons that survive
+this: the site manifest's boot route is nokre's own and a wrong one must
+fail the boot loudly, and an address — the bar, and every link into the
+app — is one screen, one URL, entered exactly or refused, so landing
+silently on a trimmed screen would break it ([The address](#the-address)).
 
-## The address bar
+## The address
 
-On the **web**, the URL fragment names the screen the app is on, in both
+Where a URL names a screen — the web's address bar, a link shared into
+a message, a Universal Link or an App Link — the reference is written as
+an **address**, in one of two forms the app declares once, beside its
+other build declarations:
+
+```zig
+const app = nokre.addApp(nokre_dep, .{
+    .name = "votes",
+    .address_form = .fragment,   // leave it out for .path, the default
+    // ...
+});
+```
+
+| | `ballot~b7~key`, whose last argument is secret | the first route, `home` |
+|---|---|---|
+| `.path` | `/ballot/b7#key` | `/` |
+| `.fragment` | `#ballot~b7~key` | `#home` |
+
+**The path form is the default** because it is the address a reader, a
+crawler and a link preview all expect. Its public part is the path and
+its secrets are the fragment, the one part of a URL no request carries.
+The first route of the table, when it takes no arguments, is the front
+door, `/`. **The fragment form** is the hash router: the whole reference
+in the fragment, secrets last — for a host that cannot answer every
+path with the app's page, and for an app served below the root of its
+origin, which the path form does not support.
+
+There is no third form, no per-route template and no hook. nokre writes
+the address and nokre reads it, in both directions and on every
+platform, so your code never holds a URL string: a link you need to
+hand someone is `App.routeLink`, and an address that arrives is entered
+before your code sees it.
+
+### Reading an address
+
+An address is parsed in one place (`core/address.zig`) and **nothing is
+guessed**. In the path form the path must carry exactly the route's
+public arguments and the fragment all of its secrets or none, so a
+secret written into the path is one segment too many and is refused as
+`arg_count` — never read as the secret it probably was. A trailing slash
+is an empty argument; a query is not part of an address and is ignored,
+because a messenger or a campaign may add one to any link. An address
+that names no screen leaves the app where it is.
+
+### The address bar
+
+On the **web**, the bar names the screen the app is on, in both
 directions and without configuration:
 
-- navigating writes it — `#notes`, `#note~42`;
+- navigating writes it — `/notes`, `/note/42`;
 - typing one, opening a shared link, or pressing the browser's Back and
   Forward puts the app on it;
-- a fragment the router cannot honor — an unknown name, the wrong number
-  of arguments, a byte an argument may not contain — leaves the app where
-  it is and puts the bar back, so the bar never describes a screen nobody
-  is on.
+- an address that names no screen leaves the app where it is and puts
+  the bar back, so the bar never describes a screen nobody is on.
 
-The fragment is a reference, unencoded: every byte a name or argument may
-contain is one `encodeURIComponent` leaves alone, so what the app writes
-is what a user copies and what comes back.
+**Secrets never rest in the bar or in history**, in either form. After
+the driver reads an arriving address it replaces the entry with the
+address minus its secrets; a screen pushed with secrets is pushed
+without them; and the entry's `history.state` holds a key and nothing
+else, because a browser writes state to disk too. Within one page's
+life the driver keeps each entry's whole reference in memory, so Back
+and Forward bring a screen back *with* its secrets. After a reload that
+memory is gone, the entry is read as the address it shows, and the
+screen is entered without them — the legal arrival
+[Secret arguments](#secret-arguments) describes.
 
-**The fragment is the current screen, never the stack.** A reference is
+**The address is the current screen, never the stack.** A reference is
 an identity for a screen: one screen, one URL, whoever is looking and
 however they got there. Encoding the stack would break exactly that —
-`note~42` would be reachable as `notes/note~42`, `settings/note~42`, or
-`note~42`, three strings for one screen, none of them a stable link. The
-trail that led to a screen is the app's own memory, and the browser
-already keeps a history of its own; nokre does not keep a second one in
-the URL.
+three trails to one note would be three strings, none of them a stable
+link. The trail that led to a screen is the app's own memory, and the
+browser already keeps a history of its own; nokre does not keep a
+second one in the URL.
 
-So arriving by link **resets the stack** to that one screen — `switchTo`,
-not `push`. A visitor has nothing to go back to inside the app, and the
-framework's Back control is correctly absent; the browser's Back takes
-them where they actually came from.
+So arriving by address **resets the stack** to that one screen —
+`switchTo`, not `push`. A visitor has nothing to go back to inside the
+app, and the framework's Back control is correctly absent; the browser's
+Back takes them where they actually came from.
 
-The corollary, stated plainly: **depth does not survive the URL.**
+The corollary, stated plainly: **depth does not survive a reload.**
 Reloading two screens deep comes back one screen deep, without the Back
-control, and so does walking browser Back and then Forward — Forward is
-an arrival like any other. That is the trade for a URL that means one
-thing, and it is the same trade every web app makes.
+control. Within a page's life Back and Forward walk the entries the app
+wrote, and each one is entered as the screen it was — also at depth one,
+since history, not the stack, is what the browser is walking.
 
 Browser Back and the in-app Back control are otherwise the same motion,
 deliberately. A pushed screen adds a history entry and nothing else does
@@ -877,18 +977,48 @@ Back rewinds only history this app added: opening a link straight into a
 pushed screen and pressing Back moves up a screen instead of leaving the
 site.
 
-On **every other platform** nothing is rendered, because a native window
-has no address bar — the router announces each change either way, and
-those shells simply do not listen. Nothing to enable, nothing to turn
-off, no platform branching in app code. The wiring is
-[internals/platform-shells.md](internals/platform-shells.md).
+### Hosting the path form
 
-**Not to be confused with `deep_link`** ([services.md](services.md)),
-which delivers an inbound URL it deliberately does not interpret and
-leaves routing to the app. The two answer different questions — *a URL
-arrived* versus *which screen is showing*. A reference reaches as far as
-identifiers reach; a link carrying free text, a query, a path, or a
-claimed domain is a real URL, and that is `deep_link`'s. An app that both
-links `deep_link` and routes on the fragment itself will see the fragment
-twice, once through its handler and once through the mirror; route on one
-or the other.
+A path-form address is a screen, not a file, so the host owes the site
+**one rewrite: every GET for a path that names no file in the site is
+answered with the site's `index.html`**, status 200. That page is the
+fallback page — there is no second file — and the build makes it work
+at any depth: it names every file it loads from the site root
+(`/style.css`, `/boot.js`), because a page served at `/ballot/b7` would
+otherwise ask for `/ballot/style.css`, and a `<base>` is refused by the
+page's own `base-uri 'none'`. nokre's own `serve` step applies the same
+rewrite, so a developer's browser meets the site a reader's will.
+
+The fragment form needs nothing: every address is the page itself, the
+page names its files relative to itself, and the site works below the
+root of its origin. That is also the one thing the path form cannot do
+yet — nothing in the build knows a sub-path, so an app served under one
+declares the fragment form.
+
+### Links into the app
+
+On every platform an inbound link — a Universal Link, an App Link, a
+custom-scheme open — arrives as the whole URL, and the address in it is
+read by the same parser the web's bar goes through and entered the same
+way ([services.md](services.md), deep_link). There is no handler to
+write: a link is an address, and addresses are nokre's. A link carrying
+a route's secrets opens the screen whole; nothing on a native platform
+keeps an address, so there is nothing to strip.
+
+A link you want to hand someone is written the same way, never
+concatenated:
+
+```zig
+const link = try app.routeLink(gpa, "ballot", &.{ id, key });
+defer gpa.free(link);   // https://votes.example.com/ballot/b7#a2V5
+```
+
+The link starts at the origin the app already declared for its web
+build — `.web_origin = "https://votes.example.com"` beside
+`.address_form` — and the rest is the address in the app's declared
+form, **secrets kept**, because this is the one link meant to carry
+them. The origin is scheme and authority and nothing after, and one
+with a path, a query, a fragment or a trailing slash fails the build
+that declared it. An app that declared no origin has no address to hand
+anyone, so `routeLink` does not compile in it. The reference is vetted
+as `routeRef` vets it, with the same errors.

@@ -41,7 +41,7 @@ internals doc.
 | `roaming_store` | The same pouch, opposite posture: entries are meant to reach the account's next device. | **Working** — iCloud Keychain on Apple, the platform backup on Android; device-local elsewhere |
 | `package_info` | App identity: name, id, version, build, installer source. One struct. | **Working** |
 | `clipboard` | Copy UTF-8 text out; ask the platform to paste. Still no read. | **Working** |
-| `deep_link` | Inbound URL at launch and while running. Delivers the URL; routing is the app's. | **Working** — native + web; Windows is custom-scheme only |
+| `deep_link` | A link into the app, at launch and while running. The address in it is entered; there is no handler. | **Working** — native; the web's is its address bar; Windows is custom-scheme only |
 | `worker` | Long-lived compute actors off the UI thread: typed messages in, typed replies out, in order on the UI thread. | **Working** |
 | `http` | Request/response client: a request from any action, one typed `Result` back on the UI thread. | **Working** |
 | `locale` | Device locale at boot + change events — the tag that feeds `l10n.Bundle`'s `resolve` ([localization.md](localization.md)). | **Working** — every shell and the web; nothing links; the Linux tag is boot-only |
@@ -1002,12 +1002,15 @@ the fix.
 
 The shell page's head states identity as well as mechanics, all of it
 out of the declaration (`packaging.webIndexHtml`). The intake is two
-fields beside `web_lang`: **`web_origin`** — scheme and host, no
-trailing slash — and **`web_description`**, one sentence. The origin
-faces `packaging.checkOrigin` at the tree, before a byte is written
-from it; the rules are `dom`'s `alternates.checkOrigin` rules,
-restated because packaging imports nothing that reaches the library,
-and a test holds the two implementations equal.
+fields beside `web_lang`: **`web_origin`** — scheme and authority,
+nothing after: no path, query, fragment or trailing slash — and
+**`web_description`**, one sentence. The origin faces
+`packaging.checkOrigin` on every artifact of the app, because it is
+also where `App.routeLink` writes a link on every platform
+([routing.md](routing.md#links-into-the-app)); the rules are `dom`'s
+`alternates.checkOrigin` rules, restated because packaging imports
+nothing that reaches the library, and a test holds the two
+implementations equal.
 
 What is written: `og:type website` and `og:title` — the declared name —
 unconditionally, because every app is a website called something. A
@@ -1380,69 +1383,48 @@ no per-request configuration surface. Like `worker` — and unlike
 `package_info` — nothing links: the service is always available, and
 an app that never calls it pays nothing.
 
-### deep_link: the URL comes in, routing stays yours
+### deep_link: a link is an address
 
-A link into the app — `https://notes.example.com/n/42` tapped in Mail, a
-custom-scheme re-open, a `#/n/42` fragment on the web — arrives as one
-thing: the URL. nokre hands it over and stops. Where that URL goes is
-the router's job, which the app already owns; deep_link owns only *that a
-URL came in*. That line is the whole design: no route table baked into
-the service, no URL scheme convention imposed, no matching rules to
-configure. The app reads the URL and decides.
+A link into the app — `https://votes.example.com/ballot/b7` tapped in
+Mail, an App Link from another app, a custom-scheme re-open — is a URL
+with a screen's address in it, and nokre enters that screen. The address
+is read by the same parser the web's address bar goes through, in the
+app's declared form, and arriving by link resets the stack the way
+arriving by address always does ([routing.md](routing.md#the-address)).
+There is no handler to register and nothing to route: the app's code
+never sees the URL. A link that names no screen leaves the app where it
+was; a link carrying a route's secret arguments opens the screen whole.
 
-Not to be confused with the current route, which the web shell mirrors
-into the address bar without any service at all
-([routing.md](routing.md)). That one is a reference nokre fully owns —
-a screen name plus identifier arguments, `#note~42` — and can therefore
-both write and honor; this one is a URL nokre deliberately does not
-interpret. Reach for deep_link when the link carries what a reference
-cannot: free text, a query, a path, or a claimed domain.
+The launch link — present because a link opened the app — is entered
+after the app's first build and before the first event, so it replaces
+the build's own landing rather than being replaced by it; every link
+while running is entered on the UI thread, interleaved with input like
+a worker reply. A link to hand someone is `App.routeLink`, never a
+string the app puts together.
 
-One handler, one lane. The launch URL — present because the app was
-opened by a link — is the first callback after boot; every runtime link
-is a callback after that, each on the UI thread, interleaved with input
-like a worker reply. Register once, inside `build`:
+**The web has no leg here**: a link into a web app is a page load at an
+address, or a history entry the reader walks onto, and the live driver
+reads that address itself.
 
-```zig
-// Inside build (or the route builder): wire the handler once.
-nokre.services.deep_link.setHandler(app, .bind(onLink, state));
-
-fn onLink(state: *State, url: []const u8) void {
-    // The web deep link is the fragment; native links carry a path.
-    // Route on whichever the app speaks — this is the app's job.
-    const target = nokre.services.deep_link.fragment(url) orelse url;
-    state.app.navigate(target) catch {};
-}
-```
-
-`fragment(url)` is the one helper: the bytes after the first `#`, or
-null when there is none (an empty fragment, `…#`, is present and empty —
-absence and emptiness are distinct, secure_store's rule). Nothing else is
-parsed for you; a URL is the app's to read.
-
-Like secure_store — and unlike http — it links, and linking requires
-`pkg_id`: the iOS entitlement and the Android assetlinks are keyed to the
-app's identity, and the domains the app claims drive the packaging
-derivation. The link and the claim are two declarations, and the claim
+Linking is still a declaration, because the OS has to trust the app for
+the domains its links live on, and that trust is keyed to the app's
+identity. The link and the claim are two declarations, and the claim
 implies the link:
 
 ```zig
 const nokre = b.dependency("nokre", .{
     // ...
-    .pkg_id = @as([]const u8, "com.example.notes"),
-    // Claim the domains the OS should route into the app. Neither this
-    // nor `.deep_link` leaves the service unlinked; every setHandler call
-    // site is then a comptime error naming this fix.
-    .deep_link_domains = @as([]const []const u8, &.{ "notes.example.com", "example.com" }),
+    .pkg_id = @as([]const u8, "com.example.votes"),
+    // Claim the domains the OS should route into the app.
+    .deep_link_domains = @as([]const []const u8, &.{ "votes.example.com" }),
 });
 ```
 
-`.deep_link = true` alone links with no claim: the handler still lands
-the launch URL, a custom-scheme open and the web fragment, and the
-packaging derives none of the four artifacts below. That is what a
-build signed by a team that cannot provision associated domains
-declares — a personal Apple team is one — so the same app builds under
-it with the handler intact and without the entitlement.
+`.deep_link = true` alone links with no claim: a custom-scheme open
+still lands, and the packaging derives none of the four artifacts below.
+That is what a build signed by a team that cannot provision associated
+domains declares — a personal Apple team is one — so the same app builds
+under it without the entitlement.
 
 That one declaration lights up the packaging tree
 ([packaging.zig](../src/packaging/packaging.zig)): the iOS
@@ -1455,6 +1437,16 @@ Everything derivable is derived; the two values a declaration cannot know
 with a loud `REPLACE_…` placeholder in those server files, never a
 fabricated value that would silently fail verification.
 
+**A claimed domain is the app's whole.** The association files claim
+every path — `"/": "*"` in `apple-app-site-association`, an App-Links
+`intent-filter` with no `pathPrefix` — and that is exactly what either
+address form needs: under the path form every path on the domain is a
+screen's address, and under the fragment form every address is `/` and
+its fragment. So claim a domain the app answers in full; a site that
+shares its domain with pages the app does not answer would open the app
+for those too. A custom scheme's link names its screen after the
+authority, `votes:///ballot/b7`.
+
 **Domains, not a `myapp://` custom scheme — on purpose.** A deep link can
 be a private scheme the app registers or a real `https://` URL on a domain
 the app owns (Universal Links / App Links); nokre derives only the
@@ -1464,8 +1456,8 @@ vouches for the app — whereas any installed app can claim `myapp://` and
 intercept it. The verified link also degrades gracefully: one
 `https://notes.example.com/n/42` opens the app when installed and the
 website when not, while a custom-scheme URL is dead wherever the app is
-absent. The runtime side is scheme-agnostic — the handler receives
-whatever URL the OS delivers, custom scheme included — but a custom scheme
+absent. The runtime side is scheme-agnostic — whatever URL
+the OS delivers is read for its address, custom scheme included — but a custom scheme
 is a *different*, underived manifest declaration (`CFBundleURLTypes` / a
 `scheme=` intent-filter): its own opt-in if a need appears.
 
@@ -1474,9 +1466,8 @@ is a *different*, underived manifest declaration (`CFBundleURLTypes` / a
 Win32 app does not exist: that is MSIX's `windows.appUriHandler`, a
 different packaging model. The contract is otherwise the one above:
 one instance surfaces (a link tapped while the app runs reaches the
-running window rather than stacking a duplicate), a launch link is
-buffered until the first build wires `setHandler` so it is never
-dropped, and the handler receives whatever URL the OS delivers — the
+running window rather than stacking a duplicate), and a launch link is
+buffered until the first build is done so it is never dropped — the
 process hand-off behind that is
 [internals/platform-shells.md](internals/platform-shells.md)'s to
 explain. What nokre does not do: register the scheme. The
@@ -1487,22 +1478,12 @@ reason the paragraph above states: nokre derives only *verified* links,
 and a registry key any installed app can also write is precisely not
 one.
 
-**On the web** the deep link is the URL fragment: a `hashchange` is a
-runtime link, and a fragment present at load is the launch URL, delivered
-once after boot. No entitlement, no server file — the origin already
-proves ownership. It is also the one leg here nokre executes rather than
-mocks on its own side: a launch fragment, a later `hashchange`, and a
-percent-encoded payload byte for byte, on every `zig build test`
-([testing.md](testing.md#the-webs-own-gate)).
-
-In tests the mock is one app's fake link source: `deliver(url)` is the
-launch URL as the first call, then any runtime link, journaled in order
-and routed to the registered handler on the spot — the harness's
-`deliverDeepLink` adds the trace step and re-audit
-([testing.md](testing.md)). A URL delivered before the app registers a
-handler is journaled but unhandled (`received()` shows it, `hasHandler()`
-is false) — a launch link the app has not wired to route yet is data, not
-a crash.
+In tests the harness is the link source: `deliverDeepLink(url)` is the
+launch URL as the first call, then any runtime link, entered on the
+spot, with a trace step naming the screen it landed on — redacted, never
+the URL — and a re-audit ([testing.md](testing.md)). Every URL delivered
+is journaled (`deepLinksReceived()`), including one that named no
+screen.
 
 ### locale: the device's tag, cached
 

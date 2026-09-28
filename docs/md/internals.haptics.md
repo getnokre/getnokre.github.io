@@ -116,7 +116,7 @@ a nokre threshold nor a finger turning anything.
 - **macOS, Windows, Linux, web** — no gesture and no knock. A wheel is
   not a finger on a device, and none of the four has a turning one. The
   web's back is the browser's own, already mirrored through the route
-  observer and `hashchange` (a fragment the router cannot honor is put
+  observer and `popstate` (an address the router cannot honor is put
   back with `history.replaceState`).
 
 There is no nokre-side setting for any of this, because iOS already

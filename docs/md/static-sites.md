@@ -1020,7 +1020,7 @@ A handful of these fields do carry defaults, and the rule is worth
 stating because it is what keeps a default from becoming a decision the
 library made for you: **where a field has one, the default is a fact
 about nokre — never a guess about your site.** `Boot.addressing` is
-`.fragments` because that is `mount`'s own default in the live driver,
+`.one_page` because that is `mount`'s own default in the live driver,
 not because a site should prefer it. `Boot.driver_dir` — and
 `LocaleStub.driver_dir` beside it — is `/` because that is where
 installing `App.web` whole puts the driver set.

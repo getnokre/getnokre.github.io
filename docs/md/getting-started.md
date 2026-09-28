@@ -509,9 +509,10 @@ framework-enforced:
   `app.routeArg(0)`. The argument belongs to the stack entry, so two
   notes pushed in turn stay two notes when you pop. The route declared
   `.args = 1`, so a bare `note` is refused rather than built blank.
-- On the web the URL fragment is that reference — `#notes`, `#note~42` —
-  mirrored both ways with nothing to wire: navigating writes it, and a
-  typed or shared one puts the app there. See [routing.md](routing.md).
+- On the web the address bar is that reference as an address —
+  `/notes`, `/note/42` — mirrored both ways with nothing to wire:
+  navigating writes it, and a typed or shared one puts the app there.
+  See [routing.md](routing.md#the-address).
 
 `reload` is how a whole screen reacts to changed state — but it is the
 *deliberate* verb (retry, pull-to-refresh), and it takes an edit in
@@ -531,39 +532,12 @@ chip.
 ### Opening from a link (deep_link)
 
 Navigation also arrives from outside: a Universal Link tapped in Mail, an
-App Link from another app, a `#` fragment on the web. That is the
-`deep_link` service — Part 1's build.zig claimed the domains, which is
-what links it. It hands you the inbound URL and stops there, because
-*where* the URL goes is the router's job, which you already own.
-
-One handler, wired in `main` once the app exists:
-
-```zig
-    state.app = app;
-    h.services.deep_link.setHandler(app, .bind(onDeepLink, state));
-    try app.setNav(&nav_items);
-    try app.navigate("notes");
-```
-
-```zig
-/// The launch URL — if a link opened the app — is the first call, then
-/// every link that arrives while running. Route on it; that is all
-/// deep_link asks. The fragment is the web deep link and a fine
-/// cross-platform key: "https://notes.example.com/#settings" opens
-/// Settings.
-///
-/// The fragment is a stranger's bytes, so it is vetted at this door
-/// rather than handed to `navigate`: a typo in an address bar is not a
-/// programmer error and must not be recorded as one. An app that would
-/// rather show the reader the not-found screen says so here, by naming
-/// it — the decision belongs where the bytes were judged worth honoring.
-pub fn onDeepLink(ctx: ?*anyopaque, url: []const u8) void {
-    const state: *State = @ptrCast(@alignCast(ctx.?));
-    const target = h.services.deep_link.fragment(url) orelse "notes";
-    if (state.app.router.vet(target) != null) return;
-    state.app.navigate(target) catch {};
-}
-```
+App Link from another app, an address typed into a browser. Part 1's
+build.zig claimed the domains, which links the `deep_link` service, and
+that is all there is to wire: a link is an address, and nokre enters the
+screen it names — `https://notes.example.com/settings` opens Settings —
+with the same parser the web's address bar goes through. There is no
+handler, and your code never sees the URL.
 
 The test injects a link the way a shell would and asserts through the
 same a11y snapshot as any tap — `deliverDeepLink` is the launch URL as
@@ -574,10 +548,8 @@ test "a link routes the app to a section" {
     var state = app.State{};
     var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
-    state.app = &t.app;
-    nok.services.deep_link.setHandler(&t.app, .bind(app.onDeepLink, &state));
 
-    try t.deliverDeepLink("https://notes.example.com/#settings");
+    try t.deliverDeepLink("https://notes.example.com/settings");
     try t.expectRoute("settings");
 }
 ```
@@ -588,9 +560,8 @@ entitlement, the Android App-Links `intent-filter`, and the two
 `/.well-known/` files you host on each domain — all derived from the
 declaration, the two signing-time values (Apple Team ID, Android cert
 SHA-256) left as loud `REPLACE_…` placeholders, never fabricated
-([services.md](services.md)). Part 13 hosts them; routing a link to a
-specific note, rather than a section, is the same handler once Part 9's
-list exists.
+([services.md](services.md)). Part 13 hosts them; a link to a specific
+note, `/note/42`, opens it the same way once Part 9's list exists.
 
 ## Part 4 — The sign-in screen
 
@@ -2131,6 +2102,15 @@ so a driver that never takes a frame is not made to carry the archive.
 `nokre.linkSkia(nokre_dep, exe)` is that link on its own, for a binary
 neither call builds.
 
+### A scenario as a film
+
+A driver scenario can also be *watched*: `nokre.addPlays` films each play
+a file declares — the scenario, a finger or a pointer where each step
+lands, a caption under it — as one animated PNG in `zig-out/plays/`, and
+a `.store` play as a store preview at your declared store sizes.
+[testing.md](testing.md#a-scenario-as-a-film) has the declaration, the
+build line and the rules a film keeps.
+
 ## Part 13 — Every platform
 
 The Zig you wrote is finished — what remains is entry points and native
@@ -2482,7 +2462,12 @@ your Part 1 declaration produces. Half a site is not a smaller site — a missin
 a blank page in a browser rather than an error in a build — so there is
 nothing here to copy by hand and nothing that can fall behind the nokre
 you built against. Upload the directory to any static host and you have
-shipped; there is no server-side anything.
+shipped; there is no server-side anything but one rule. In the path form
+— the default — `/note/42` is a screen and not a file, so **the host
+answers every path that names no file with `index.html`**, status 200;
+the page is built to work at any depth, and nokre's `serve` step applies
+the same rule. A host that cannot is what `.address_form = .fragment` is
+for ([routing.md](routing.md#hosting-the-path-form)).
 
 The directory also carries its own file list as data: `site.manifest`,
 one relative path per line, sorted. If tooling of yours copies the site
@@ -2543,10 +2528,11 @@ covers every response rather than one document. One thing not to add:
 patches each frame in by parsing markup off-document.
 
 **Three other things on the page are yours: its language, its address
-and its sentence.** `web_origin` (scheme and host, no trailing slash)
-is where the site is published — declared, the page carries its
-canonical, `og:url` and the `og:image` a link preview fetches; unset,
-no absolute URL is guessed. `web_description` is the one sentence the
+and its sentence.** `web_origin` (scheme and host, nothing after) is
+where the site is published — declared, the page carries its
+canonical, `og:url` and the `og:image` a link preview fetches, and
+`app.routeLink` writes links to screens from it on every platform;
+unset, no absolute URL is guessed and `routeLink` does not compile. `web_description` is the one sentence the
 description tags carry. Both are [services.md](services.md)'s ("The
 head is the declaration's"). The language: the shell page has no prose
 in it — a title and an empty mount point — but its root element still

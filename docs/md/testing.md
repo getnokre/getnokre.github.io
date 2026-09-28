@@ -956,8 +956,10 @@ expectation can't be met there, a screen reader user can't meet it either.
   test names is not a mistake left behind, so it is consumed and the
   screen it landed on audits like any other; every refusal nobody names
   goes on failing. The navigation itself stays the app's own verb —
-  `harness.app.navigate`, `switchTo`, a delivered deep link — because
-  it is the app being asked for a screen it cannot give.
+  `harness.app.navigate`, `switchTo` — because it is the app being
+  asked for a screen it cannot give. The reference is named as the
+  record keeps it, secret arguments redacted to `*`
+  ([routing.md](routing.md#secret-arguments)).
 - `expectAbsent(label)`
 - `expectPresent(role, name)` — absence's positive twin, by semantic
   identity: presence claimed by role plus accessible name, and a miss
@@ -1487,9 +1489,10 @@ the driver keeps the example's own instance.
 ### The web's own gate
 
 `zig build test` builds `tests/web_services.zig` — an ordinary nokre app
-with deep_link, oauth, secure_store and roaming_store linked, a two-locale ARB bundle
+with oauth, secure_store and roaming_store linked, a two-locale ARB bundle
 behind its screens and a nav roster over them — into a site the same way
-`addApp` builds a consumer's, then boots that site in node against
+`addApp` builds a consumer's, twice, once per address form, then boots
+those sites in node against
 `tests/web_browser.mjs`, a browser stub carrying nothing but platform
 APIs (a document, a location, a session storage, a window that can open
 another and be posted to) — plus the one security model a *page* can
@@ -1500,10 +1503,14 @@ back what the *wasm app* recorded through probe exports. So the seam
 that breaks — bytes crossing between Zig and JavaScript — is executed
 rather than analyzed:
 
-- **deep_link** — a launch fragment reaches the handler the app
-  registered in its first `build`, exactly once; every later
-  `hashchange` reaches it too; and a percent-encoded payload with
-  multi-byte characters arrives byte for byte.
+- **the address**, in both forms — a link carrying a route's secret
+  opens the screen whole, and neither the bar nor any history entry's
+  URL or state holds the secret afterwards; a push adds one entry and a
+  pushed screen's secret stays out of it; Back and Forward within the
+  page's life bring the screen back whole, and a reload enters it
+  without the secret; a secret in the public part is refused and the
+  bar is put back. The stub keeps a real session history for this, and
+  the same scenarios were walked once in headless Chrome.
 - **oauth** — a press opens the popup with the app's authorize URL and
   the page's own address as the redirect; the popup's `postMessage` ends
   the flow and the callback URL lands whole; a message from another
@@ -2542,6 +2549,141 @@ frame rather than a trace.
 
 `tests/capture.zig` is the worked example and the gate, on every
 `zig build test -Dskia`.
+
+## A scenario as a film
+
+A trace answers a reader who already knows what to look for. A **play**
+is for one who does not: a driver scenario played back as one animated
+PNG, with a finger or a pointer showing where each step lands and a
+caption naming it, which opens in a browser, an image viewer or a phone
+with no player. It is not a second scenario language. A play *is* a
+driver scenario — a function over a `DriverApp`, written with the verbs
+above — so a scenario that runs as a check runs as a play unchanged, and
+whether it is filmed is decided when it is run, never in its code.
+
+```zig
+// src/plays.zig
+const nokre = @import("nokre");
+const DriverApp = nokre.testing.DriverApp;
+
+pub const plays = [_]nokre.testing.Play{
+    .{ .name = "sign-in", .scenario = signIn },
+    .{ .name = "sign-in-desk", .scenario = signIn, .size = .{ .w = 1024, .h = 720 } },
+    .{ .name = "store-sign-in", .scenario = signIn, .purpose = .store },
+};
+
+fn signIn(d: *DriverApp) DriverApp.Error!void {
+    try d.say("Signing in takes an email and nothing else.");
+    try d.typeInto("Email", "ada@example.com");
+    try d.press(.button, "Continue");
+    _ = try d.untilLabel("Welcome back");
+}
+```
+
+```zig
+// build.zig — the same AppOptions value addApp was given
+b.step("plays", "Film the plays into zig-out/plays/").dependOn(nokre.addPlays(b, nokre_dep, .{
+    .app = app_decl,
+    .root_source_file = b.path("src/plays.zig"),
+}));
+```
+
+`zig build plays` writes `zig-out/plays/<name>.png`. The app is stood up
+through its own `nokreWebBuild`, as the browser stands it up, drawn by
+the CPU raster the goldens are, and, where it links a store, over the
+dev file store: a film never reaches the login keychain.
+
+**Defaults, and the only choices.** Lamp dark, 390×844 points at 2x, and
+the locale a silent device leaves the app in. A play may name a `look`,
+an `appearance`, a `size` and a `locale` (the tag the device reports at
+boot, which reaches the screen wherever the app reads
+`services.locale.tag`), and that is all. Nothing about the film itself
+is an option: no frame rate, no pointer style, no caption font.
+
+**The honesty rule.** Every pixel inside the app's frame is a frame
+nokre really drew, for a state the app was really in. The theatre adds
+exactly two things, both its own: a mark over the frame — the finger or
+the pointer — and a caption in a strip *below* the frame, so no word
+ever covers the app. The app is drawn on a surface of its own size, so
+nothing the theatre draws can reach under it. A test holds this pixel by
+pixel against the same state drawn alone.
+
+**Time is counted in frames, never read.** nokre has no clock, so a
+film's time is its frame count at 30 a second. A step is: the caption
+appears; the hand goes to the middle of the node the step acts on, as
+the screen stood before the act; the press shows; the new screen
+appears and holds for a time that grows with the caption's length,
+between a floor and a ceiling. A wait on a real server that takes a
+minute is one step like any other — the film holds the frame it has.
+
+**A finger or a mouse.** A store film's device family decides, and
+every family a store takes is a phone or a tablet, so a finger; an
+explaining play is touched too, and a play made for a desktop says
+`.input = .mouse`. nokre keeps no desktop size to tell a window by — it
+refuses the breakpoint that would be (`layout.metrics.page_max_w`
+records why) — so the play states it. A finger appears where it lands —
+a disc a fingertip wide, half its pixels the app's — holds for the press
+(longer for a long press), and lifts off the screen the press produced;
+nothing travels between steps. A mouse's arrow travels there, eased, and
+a ring marks the click.
+
+**Gestures are real frames.** A `reveal` in a film is shown as the
+scroll it is: the window moved by the very function the app's reveal
+moves it with, in slices that add up to the one move, each slice a
+state the app was in and a frame of the film. A finger swipes against
+the content's motion, lifting and coming down again between swipes; a
+mouse's wheel turns under a still arrow. A `dragSelect` is filmed over
+real intermediate selections, the finger or the held-down pointer
+travelling from the anchor to the head. A reveal that also moves a
+scrolling region inside the page is shown as the app's own jump. Typing
+shows the field filling a few characters at a time, because `typeInto`
+dispatches one event per character anyway. Nothing is interpolated: a
+state the app never stood in is never drawn.
+
+**A hand is placed on a node, not at a point.** The film's timeline
+names what each act lands on by the node's document-order position in
+the screen it stood on, and where inside that node's box as a fraction
+of it; the film resolves that to points from the real layout. A screen
+laid out again at another size finds the same node and the same part of
+it — which is what a recorded play shown inside another app will need.
+
+**Captions** are the steps in a reader's words — "Pick Night bus",
+"Type ada@example.com into Email", "Wait for Welcome back". `say(words)`
+adds a line of the scenario's own before the next step; in a check it
+does nothing at all. A secret typed into an obscured field is never in a
+caption: it reads "Type a secret into Passphrase". Each caption line is a
+paragraph whose own first strong character decides its direction, as
+prose does everywhere in nokre: a Persian line runs right to left with
+its letters joined, and "Pick" before a Persian row's words stays an
+English sentence holding a Persian name.
+
+**Two purposes.** A play explains by default. `.purpose = .store` makes
+a store preview instead: the app's frames and the hand, no caption
+strip, one film per device family the app declares for its store
+screenshots (`AppOptions.store`), at that family's size and scale —
+`<name>-<family>.png`. A store play that names a size does not build.
+nokre calls no encoder; turning a film into the container a store takes
+is the caller's step.
+
+**Any driver scenario, not only a declared play.** The film is
+`render.skia.FilmSink`, an observer on the same seam as `PixelSink`, so
+a driver that already takes frames takes a film by putting it where the
+frames went, and deciding so in its own entry:
+
+```zig
+var film = skia.FilmSink.init(gpa, .{});        // .store = family for a store film
+var inst = try TraceInstruments.init(io, .cwd(), gpa, null, film.observer());
+try d.startTrace(inst.observer());
+// … the scenario, unchanged …
+try film.write(io, .cwd(), "zig-out/plays/e2e.png");
+```
+
+The same play on the same tree writes the same bytes, and a test holds
+that. The kitchen sink's own three — a ranking by finger, a sheet, a
+long page and a select by mouse, and the ranking as a store film — and
+a Persian ballot proving right-to-left captions (`tests/theatre_fa/`)
+are filmed on every `zig build test -Dskia`, and written out by
+`zig build plays -Dskia`.
 
 What nokre tests for *itself* — and the guarantees those tests prove on
 your behalf — is catalogued in

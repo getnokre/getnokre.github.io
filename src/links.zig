@@ -63,9 +63,9 @@ pub const Live = struct {
         _ = self.arena.reset(.retain_capacity);
         const gpa = self.arena.allocator();
 
-        const from = currentPage(em.app) orelse return dom.RefResolver.fragment(null, em, route);
+        const from = currentPage(em.app) orelse return dom.RefResolver.address(null, em, route);
         const target = resolve(gpa, route, baseOf(pages.all[from])) catch {
-            return dom.RefResolver.fragment(null, em, route);
+            return dom.RefResolver.address(null, em, route);
         };
         return destOf(gpa, localeOf(em.app), target);
     }

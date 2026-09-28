@@ -460,23 +460,20 @@ where the same services.js instance answers the boot-time
 twin: the OS hands the app a URL (iOS `scene:openURLContexts` /
 `continueUserActivity`, Android `onNewIntent`, macOS
 `application:openURLs:`), and the shell forwards it on the main thread to
-the ctx + callback the service installed, buffering a launch URL that
-arrives before install. The contract is
+the ctx + callback core installed, buffering a launch URL that
+arrives before install. The shell delivers the **whole** URL and decides
+nothing about it: the address in it is parsed by core with the parser
+the web's address bar goes through (`core/address.zig`), and the screen
+it names is entered. Core installs from the shell's `on_ready` — after
+the app's first build and before any event, so a launch link replaces
+the build's own landing rather than being replaced by it
+(`listen` in `services/deep_link/delivery.zig`, called from `c_shell`'s
+Runner and from `android.zig`). The contract is
 [src/services/deep_link/deep_link.h](../../src/services/deep_link/deep_link.h);
 it is wired on all five shells — macOS, iOS, Windows, Linux, and
-Android. The web has no C shell: the Zig side keeps the receiver and
-exports `nokre_deep_link_receive`
-([src/services/deep_link/web.zig](../../src/services/deep_link/web.zig)),
-and live.js calls it with `location.href` after boot when the page
-loaded with a fragment — by then the handler the app registered inside
-its first build is installed, which is the launch-URL contract — and on
-every `hashchange`. That delivery runs alongside the live driver's own
-reading of the fragment as route navigation, deliberately: the two
-answer different questions (*a URL arrived* versus *which screen is
-showing*, [docs/routing.md](../routing.md)), and an app that both links
-deep_link and routes on the fragment sees it twice — routing.md says to
-route on one or the other. The export exists only when the app linked
-the service, so a page that never claims a deep link pays nothing.
+Android. The web has no leg: a link into a web app is a page load at an
+address, or a history entry the reader walks onto, and live.js hands
+that address to core itself ([dom-substrate.md](dom-substrate.md)).
 
 notification's hooks
 ([src/services/notification/notification.h](../../src/services/notification/notification.h))
@@ -829,8 +826,8 @@ same contract with twists of its own:
   Universal Link arrives as a `NSUserActivityTypeBrowsingWeb` activity
   (`scene:continueUserActivity:`, plus the connection options at launch),
   a custom scheme as `scene:openURLContexts:`. The launch URL is buffered
-  until the app registers its handler — belt-and-braces, since on iOS the
-  app is built (and `setHandler` run) before `UIApplicationMain`.
+  until core installs the hook from `on_ready`, after the app's first
+  build — a cold launch's scene connection can deliver before that.
 - **Locale** ([services.md](../services.md)). macOS's `preferredLanguages`
   read and main-queue observer, verbatim. In practice the boot read is
   what runs: iOS terminates a backgrounded app when the display language
@@ -957,8 +954,8 @@ of the same contract — plain C, message loop, no framework. Its twists:
   posture services.md already states. That launches a fresh process with
   the URL on the command line; `nokre_shell_run` parses it off
   `GetCommandLineW` (`CommandLineToArgvW`, the first `://` argument) and
-  buffers it until the app's first build registers its handler, the macOS
-  launch-URL bargain. A link tapped while the app runs launches a *second*
+  buffers it until core installs the hook after the app's first build,
+  the macOS launch-URL bargain. A link tapped while the app runs launches a *second*
   process, which finds the running window by class **and** title and hands
   the URL over with `WM_COPYDATA` before exiting — Android's
   singleTask/onNewIntent, done with the tools an unpackaged app has —
@@ -1225,7 +1222,7 @@ shell.m. Its twists:
   while running — and hands it to `NokreView.deepLink`, which crosses JNI
   as standard-UTF-8 `byte[]` (the text path's rule) to
   `nokre_deep_link_install`'s callback on the UI thread. The launch URL is
-  buffered in C until the app boots and registers its handler. The
+  buffered in C until the app boots and core installs the hook. The
   generated manifest adds `android:launchMode="singleTask"` when
   deep_link is claimed, so a link routes to the one running instance
   rather than stacking a duplicate.
@@ -1393,7 +1390,7 @@ and one backend per platform is the charter. Its twists:
   app already runs, the new process forwards the URL over an abstract
   Unix socket named for the app and exits — the WM_COPYDATA / onNewIntent
   bargain — rather than stacking a duplicate. The launch URL is buffered
-  until the app's first build registers its handler.
+  until core installs the hook after the app's first build.
 - **Locale** ([services.md](../services.md)). POSIX keeps it in the
   environment, in the precedence `setlocale` itself obeys: `LC_ALL`, else
   `LC_MESSAGES` (the message-catalog category — the one that decides
