@@ -56,6 +56,8 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `ranking` control (framework) | `button` | Undo, Start over or Done by the framework's word, activatable, never a focus stop, present only while offered; edit's Start over too, where the app wired it |
 | `ranking` while picking | — | the prompt and the app's `picking_hint` as `static_text`; the choices as an unnamed `list` of `list_item`s named by their words, whose rank is the list's own position; each pool row a `button` named by its words, with no rank; the controls as above; and a polite `status` saying the state that now holds — the last choice with its rank, or the first prompt when none is chosen |
 | `dial` | `spin_button` | the label as the name, or the words of the node it is `named_by`; the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
+| `stage` | `figure` | the label as the name, or the words of the node it is `named_by`; the step it stands on as the description. One node whatever its window draws: nothing of the recorded screen enters the tree |
+| `stage` control (framework) | `button` | named by the framework ("Previous step" / "Play" or "Pause" / "Next step" in English — [localization.md](localization.md#the-frameworks-own-words)); Previous `disabled` on the first step and Next on the last. No Play under Reduce Motion |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | the label as the name, or the words of the node it is `named_by`; selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
@@ -491,6 +493,21 @@ There is no theme picker, and nokre offers none: the look is the app's
 decision and these two are the reader's. nokre persists neither, as it
 persists no `Scheme`; the element hands each flip to the app to keep,
 and the app restores both at boot through the setters.
+
+## Reduce Motion
+
+Nothing in nokre moves by itself but a playing [`stage`](elements.md#stage),
+so the platform's Reduce Motion is read for that and nothing else: the
+band at a scroll's wall keeps each platform's own answer. Each shell
+reports it beside the appearance — macOS and iOS through their
+accessibility display options, Windows as its animation effects,
+Android as its animator scale (read with the appearance and on resume,
+since Android announces no change), GNOME's `enable-animations`
+through the desktop portal, and the web's `prefers-reduced-motion`.
+While it is on, a stage offers no Play and draws no hand: it steps, and
+each step's screen stands whole. It is not a preference the app can
+override, and there is no row for it in `accessibility_toggles`: the
+setting is the platform's, and the stage is the only thing it changes.
 
 ## Enforcement
 

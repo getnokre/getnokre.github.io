@@ -198,6 +198,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.stage",
+        .title = .titleInternalsStage,
+        .blurb = .blurbInternalsStage,
+        .icon = .lucide_clapperboard,
+        .md = "internals/stage.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.dom-substrate",
         .title = .titleInternalsDomSubstrate,
         .blurb = .blurbInternalsDomSubstrate,

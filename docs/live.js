@@ -299,9 +299,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
 
   // ---- frame ------------------------------------------------------
 
-  // A frame renders when state changes, and otherwise nothing runs:
-  // there is no ticker here either. The string compare is what makes an
-  // event that changed nothing cost nothing.
+  // A frame renders when state changes, and otherwise nothing runs: the
+  // one ticker is a playing stage's, below, and it runs only while one
+  // plays. The string compare is what makes an event that changed
+  // nothing cost nothing.
   let painted = "";
   let painted_screen = "";
   const staging = document.createElement("template");
@@ -343,6 +344,28 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     syncAddressBar();
     syncRoot();
     syncBanner();
+    playOn();
+  }
+
+  // A playing stage's clock (shell.h's `wants_ticks`): the browser's
+  // animation frames, asked for only while one plays, each one's time
+  // handed to core before the frame that shows it. A hidden tab gets no
+  // animation frames, so a stage in one waits.
+  let playFrame = 0;
+  let playLast = 0;
+  function playOn() {
+    if (playFrame || !nk.nokre_dom_wants_ticks() || typeof requestAnimationFrame !== "function") return;
+    playLast = 0;
+    playFrame = requestAnimationFrame(playTick);
+  }
+  function playTick(now) {
+    playFrame = 0;
+    if (!nk.nokre_dom_wants_ticks()) return;
+    const since = playLast ? now - playLast : 16;
+    playLast = now;
+    nk.nokre_dom_tick(Math.min(1000, Math.round(since)));
+    frame();
+    if (!playFrame && nk.nokre_dom_wants_ticks()) playFrame = requestAnimationFrame(playTick);
   }
 
   // The page-level facts core owns and no markup carries: which ramp
@@ -367,6 +390,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const root = doc.documentElement;
   const dark = matchMedia("(prefers-color-scheme: dark)");
   const moreContrast = matchMedia("(prefers-contrast: more)");
+  const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const SHAPE = ["", "desk", "desk-narrow"];
   const THEME = ["", "depth", "depth"];
   let chromePair = null;
@@ -451,6 +475,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   });
   moreContrast.addEventListener("change", () => {
     nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
+    frame();
+  });
+  lessMotion.addEventListener("change", () => {
+    nk.nokre_dom_system_reduce_motion(lessMotion.matches ? 1 : 0);
     frame();
   });
 
@@ -1194,6 +1222,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // says so at length).
   nk.nokre_dom_system_appearance(dark.matches ? 1 : 0);
   nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
+  nk.nokre_dom_system_reduce_motion(lessMotion.matches ? 1 : 0);
   // The notification service's worker, and the cold-start tap it may
   // have carried. Registration is after boot deliberately — it is
   // asynchronous either way, and nothing in the first `build` can wait

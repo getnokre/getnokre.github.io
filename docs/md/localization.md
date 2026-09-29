@@ -476,6 +476,9 @@ English until an app says otherwise:
 | `ranking_start_over` | "Start over" | a ranking's control that clears the choices, from picking or from edit |
 | `ranking_done` | "Done" | a ranking's control that ends picking once the band's minimum is met |
 | `increase_contrast` / `reduce_transparency` | "Increase Contrast" / "Reduce Transparency" | the rows of [`accessibility_toggles`](elements.md#accessibility_toggles) |
+| `stage_play` / `stage_pause` | "Play" / "Pause" | a [`stage`](elements.md#stage)'s middle control, at rest and while it plays |
+| `stage_previous` / `stage_next` | "Previous step" / "Next step" | a stage's two steps, named apart from `back` |
+| `caption_press`, `caption_long_press`, `caption_scroll_to`, `caption_type`, `caption_type_secret`, `caption_submit`, `caption_clear`, `caption_replace`, `caption_replace_secret`, `caption_select_range`, `caption_drag_range`, `caption_choose`, `caption_pick`, `caption_swap`, `caption_turn_to`, `caption_turn_by`, `caption_go_to` | "Press $1", "Type $1 into $2", "Select $1 to $2 in $3", … | a film's captions and a recorded play's steps, one per driver verb ([testing.md](testing.md#a-scenario-as-a-film)). `$1`–`$3` stand where the names and numbers go, in the language's own order; a catalog's pattern that drops, repeats or invents one does not build |
 
 ```zig
 app.setChrome(L.chrome(loc)); // every word, from the catalog, or no build
@@ -512,6 +515,9 @@ plus the field camel-cased at its underscores:
 | `ranking_first_prompt` / `ranking_next_prompt` | `chromeRankingFirstPrompt` / `chromeRankingNextPrompt` |
 | `ranking_undo` / `ranking_start_over` / `ranking_done` | `chromeRankingUndo` / `chromeRankingStartOver` / `chromeRankingDone` |
 | `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` |
+| `stage_play` / `stage_pause` | `chromeStagePlay` / `chromeStagePause` |
+| `stage_previous` / `stage_next` | `chromeStagePrevious` / `chromeStageNext` |
+| `caption_press` … `caption_go_to` | `chromeCaptionPress` … `chromeCaptionGoTo` |
 
 A catalog missing one of them does not compile — the posture the rest
 of this document already holds, a catalog mistake is a build error,

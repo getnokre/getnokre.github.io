@@ -71,6 +71,7 @@
   "titleInternalsSubstrates": "Substrates",
   "titleInternalsDomSubstrate": "The DOM substrate",
   "titleInternalsLamp": "The lamp theme",
+  "titleInternalsStage": "The stage",
   "titleInternalsGpu": "The GPU reversal",
   "titleInternalsSkiaBuild": "Skia builds",
   "titleInternalsWorkers": "Workers",
@@ -109,6 +110,7 @@
   "blurbInternalsDomSubstrate": "The second renderer: the same tree walk written as markup, and what it keeps.",
   "blurbInternalsGpu": "Why the no-GPU refusal was reversed for the lamp theme alone, what stays on the CPU, and the proof it waits on.",
   "blurbInternalsLamp": "The third look: depth's bytes under one lamp fixed in the window, every filled box a plate, frosted chrome, and what holds by construction.",
+  "blurbInternalsStage": "A play recorded as the trees an app built, and shown inside another app: the recording, the ticks, and what stays inert.",
   "blurbInternalsSkiaBuild": "How Skia is pinned, built, and shrunk — and why each platform keeps the text scaler it has.",
   "blurbInternalsWorkers": "Long-lived compute actors off the UI thread: typed messages in, typed replies out.",
   "blurbInternalsHaptics": "The one knock nokre fires, why it is the framework's and not an app's.",
@@ -122,5 +124,89 @@
   "blurbGallery": "The closed set, drawn once each — the whole vocabulary on one screen.",
   "blurbPalette": "Thirteen grays, a ramp for each theme and appearance, six type scales — read out of nokre's own source.",
   "blurbNotfound": "No screen answers to that name.",
-  "blurbColophon": "This site is a nokre app. What that means, and where the substrate stops short."
+  "blurbColophon": "This site is a nokre app. What that means, and where the substrate stops short.",
+  "chromeStagePlay": "Play",
+  "@chromeStagePlay": {
+    "description": "nokre's chrome: the button on a stage that runs a recorded play by itself from where it stands"
+  },
+  "chromeStagePause": "Pause",
+  "@chromeStagePause": {
+    "description": "nokre's chrome: the same button while the play runs; pressing it stops the play where it stands"
+  },
+  "chromeStagePrevious": "Previous step",
+  "@chromeStagePrevious": {
+    "description": "nokre's chrome: the button on a stage that goes back one step of a recorded play. Named apart from the screen's own Back control, which may stand on the same screen"
+  },
+  "chromeStageNext": "Next step",
+  "@chromeStageNext": {
+    "description": "nokre's chrome: the button on a stage that goes forward one step of a recorded play"
+  },
+  "chromeCaptionPress": "Press $1",
+  "@chromeCaptionPress": {
+    "description": "nokre's chrome: a film's caption for a button or control pressed. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionLongPress": "Long-press $1",
+  "@chromeCaptionLongPress": {
+    "description": "nokre's chrome: a film's caption for a control held down. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionScrollTo": "Scroll to $1",
+  "@chromeCaptionScrollTo": {
+    "description": "nokre's chrome: a film's caption for the page scrolled until a control shows. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionType": "Type $1 into $2",
+  "@chromeCaptionType": {
+    "description": "nokre's chrome: a film's caption for text ($1) typed into a field ($2). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionTypeSecret": "Type a secret into $1",
+  "@chromeCaptionTypeSecret": {
+    "description": "nokre's chrome: a film's caption for something typed into an obscured field ($1), never shown. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionSubmit": "Submit $1",
+  "@chromeCaptionSubmit": {
+    "description": "nokre's chrome: a film's caption for a field ($1) submitted. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionClear": "Clear $1",
+  "@chromeCaptionClear": {
+    "description": "nokre's chrome: a film's caption for a field ($1) emptied. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionReplace": "Replace $1 with $2",
+  "@chromeCaptionReplace": {
+    "description": "nokre's chrome: a film's caption for a field's ($1) text replaced with new text ($2). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionReplaceSecret": "Replace $1 with a secret",
+  "@chromeCaptionReplaceSecret": {
+    "description": "nokre's chrome: a film's caption for an obscured field's ($1) text replaced. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionSelectRange": "Select $1 to $2 in $3",
+  "@chromeCaptionSelectRange": {
+    "description": "nokre's chrome: a film's caption for characters $1 to $2 selected in a field ($3). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionDragRange": "Drag across $1 to $2 in $3",
+  "@chromeCaptionDragRange": {
+    "description": "nokre's chrome: a film's caption for a drag across characters $1 to $2 in a field ($3). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionChoose": "Choose $1 in $2",
+  "@chromeCaptionChoose": {
+    "description": "nokre's chrome: a film's caption for an option ($1) chosen in a group ($2). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionPick": "Pick $1",
+  "@chromeCaptionPick": {
+    "description": "nokre's chrome: a film's caption for an option ($1) picked in a ranking. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionSwap": "Swap $1 and $2",
+  "@chromeCaptionSwap": {
+    "description": "nokre's chrome: a film's caption for two rows ($1, $2) swapping places. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionTurnTo": "Turn $1 to $2",
+  "@chromeCaptionTurnTo": {
+    "description": "nokre's chrome: a film's caption for a dial ($1) turned to a value ($2). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionTurnBy": "Turn $1 by $2",
+  "@chromeCaptionTurnBy": {
+    "description": "nokre's chrome: a film's caption for a dial ($1) turned by a number of steps ($2). $1, $2 and $3 stand where the names go, in this language's order, each once."
+  },
+  "chromeCaptionGoTo": "Go to $1",
+  "@chromeCaptionGoTo": {
+    "description": "nokre's chrome: a film's caption for a destination ($1) opened from the nav. $1, $2 and $3 stand where the names go, in this language's order, each once."
+  }
 }

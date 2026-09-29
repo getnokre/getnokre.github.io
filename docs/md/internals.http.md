@@ -54,6 +54,7 @@ the test's assertions, not the echo path.
 | mock | tests | parks in the app's mock, copies owned | the test's canned answer, delivered on the explicit pump |
 | thread | native | one detached `std.Thread` per request, blocking on `std.http.Client` | `deliverOneShot` → queue → wake → pump |
 | fetch | web | `nokre_http_js_send` → services.js → fetch on the main thread, beside the wasm instance | scratch → copy → `nokre_http_deliver` → queue → inline pump |
+| played | a play's device (`addPlays` only) | the play's handler asked as the request leaves, borrowing the app's slices | `deliverOneShot` → queue → the driver's pump; a declined request is never answered, and the play fails `NoHeldAnswer` |
 
 - **Native.** A thread you can see, like a worker — but one-shot and
   *detached*: a socket mid-read cannot be interrupted (the
@@ -125,6 +126,13 @@ the test's assertions, not the echo path.
   `ctrl.abort()`, the fetch rejects, and the one `"FetchFailed"`
   lands — a timeout is a failure reason, and the browser hides those;
   the timer is cleared on every completion path.
+- **Played.** A play is an executable, so the mock cannot be its
+  network; [played.zig](../../src/services/http/played.zig) is chosen by
+  build configuration instead (`nokre_declared_options.played`, which
+  only `addPlays` sets), refuses to compile for the web or outside
+  Debug, and names no `builtin.is_test`. It shares the mock's handler
+  type, not its state: the same fixture answers both
+  ([../testing.md](../testing.md#a-plays-device)).
 - **Mock.** Under `zig test` the transport is the app's mock
   (`app.services.http`, constructed with the app): `request` parks
   owned copies of everything the app sent in *that app's* pending

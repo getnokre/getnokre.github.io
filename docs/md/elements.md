@@ -2875,6 +2875,67 @@ node's value after their own increment gesture — on iOS from a fresh
 snapshot taken as the step is performed, because the element VoiceOver
 is holding was built before it.
 
+### `stage`
+A recorded play of an app, shown in this one: the screens the played app
+really built in a scenario, one after the other, with the hand and the
+words the film of it shows ([testing.md](testing.md#and-as-a-play-inside-an-app)).
+Fields: `play`, which play — a `nokre.PlayName`, with a member for each
+play the app's build declares it shows (`AppOptions.shows`) and no
+other, so a stage naming a play the build does not carry does not
+compile; and `label`, or `named_by` in its place
+([naming](#naming-a-device-without-drawing-its-label)). That is all a
+stage takes. There is no autoplay, no loop, no speed, no size and no
+look: a play is what it is, and the app it is shown in decides how it
+looks.
+
+**The window is the recording's, never scaled.** It is as wide as the
+window the play was run in, or the space the stage is given, whichever
+is narrower, centred, and as tall as the recording. Each recorded screen
+is laid out again by *this* app's layout at the window's width — the
+tree the played app built, not a picture of it — so its words are this
+app's own size, and a narrower window reflows them exactly as the played
+app would at that width. What runs past the window's bottom is clipped
+there, as the phone's window clipped it, at the scroll the recording
+stood at (kept as the node at the window's top, so a reflowed screen
+still shows the part it showed). It is drawn in this app's look and
+appearance, on a window of its own — its page, its lamp and its frost
+know only it — inside an edge in the look's rule.
+
+**Inert.** Nothing inside the window takes focus, a press, hover or a
+node of its own in the accessibility tree: the stage is one `figure`,
+named by its name and described by the step it stands on. Below the
+window stand the step's words, in their own direction, with room kept
+for the longest so a step never moves the page, and nokre's controls
+under them, real buttons in the app's words: **Previous step**, **Play**
+and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
+`stage_next`). Previous and Next rest on each step's last screen. Play
+runs the play by itself on the shell's frame ticks, with the moving
+hand; while it runs the same button says **Pause** (`stage_pause`) and
+stops it where it stands, and it stops by itself at the end, or when its
+window leaves the screen. The button is laid out at the wider of its two
+words, so pressing it moves nothing. Under the platform's **Reduce
+Motion** there is no Play: the stage steps, the scenes change on the
+step, and no hand is drawn ([accessibility.md](accessibility.md#reduce-motion)).
+An app appends nothing under a stage and sets none of its play
+(`error.StageControlsAreNokres`, `error.StageFieldIsNokres`).
+
+On the web the window holds the DOM substrate's own markup for each
+recorded tree, `inert`, with every id in it scoped to the stage; the hand
+is positioned elements nobody hears, and the step is a polite live
+region, so a screen reader hears each step as it arrives.
+
+**One language.** The stage shows the recording in the language the app
+stands in, and the build embeds one per language the app's catalogs
+declare (an app with no catalog is in English). A play not recorded in a
+language the app declares is refused at the build, by name, as are a play
+the recordings do not hold, a recording written by another nokre, and a
+glyph the recording draws that the app's icon face lacks. None of these
+can reach a reader.
+
+Reach for it to show what an app does — on its own welcome screen, or on
+another app's pages, which is what a marketing site is. The played app's
+code is never linked: its recordings are data.
+
 ### `copyable`
 A verbatim value the user carries away — a recovery code, an invite
 link — in `text_input`'s labeled-field clothing: `label` above, `value`

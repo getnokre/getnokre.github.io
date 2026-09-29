@@ -294,6 +294,7 @@
 :root[data-nokre-theme="depth"] .sheet, :root[data-nokre-theme="depth"] .notices-pane, :root[data-nokre-theme="depth"] .picker, :root[data-nokre-theme="depth"] .notice { border-color: transparent; }
 :root[data-nokre-theme="depth"] .tile > .icon.square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
 :root[data-nokre-theme="depth"] hr, :root[data-nokre-theme="depth"] tr + tr > th, :root[data-nokre-theme="depth"] tr + tr > td, :root[data-nokre-theme="depth"] .tiles > .tile.radio, :root[data-nokre-theme="depth"] .tiles > .tile + .tile:not(.radio)::before { border-top-color: var(--rule); }
+:root[data-nokre-theme="depth"] .stage-window { box-shadow: 0 0 0 1px var(--rule); }
 :root[data-nokre-theme="depth"]:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
 :root[data-nokre-theme="depth"] .seg input:checked + span, :root[data-nokre-theme="depth"] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
 :root[data-nokre-theme="depth"] .segmented[disabled] .seg input:checked + span, :root[data-nokre-theme="depth"] .segmented:has([aria-disabled="true"]) .seg input:checked + span, :root[data-nokre-theme="depth"] .ranking[disabled] .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .ranking.off .plate.lit:not([aria-pressed="true"]), :root[data-nokre-theme="depth"] .dial[disabled] .dial-plate.now, :root[data-nokre-theme="depth"] .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
@@ -1819,6 +1820,66 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .ranking-controls .btn { max-width: 100%; }
 .ranking-controls > .btn { margin-inline-start: auto; }
 .ranking-controls .absent { visibility: hidden; }
+
+/* The stage (elements.md, `stage`): the recorded window as wide as
+   the recording or the column, whichever is narrower, centred, and
+   as tall as the recording — never scaled. `--stage-w` and
+   `--stage-h` are the recording's, written by the serializer.
+   `contain` makes the window the scene's own viewport: its chrome,
+   pinned to the edges of a screen, pins to the window's. Its edge
+   is the look's rule, just outside it (`drawStage`). */
+.stage { display: flex; flex-direction: column; gap: var(--control-gap); margin: 0; }
+.stage > .field-label { margin: 0; }
+.stage-window {
+  position: relative;
+  width: min(100%, var(--stage-w));
+  height: var(--stage-h);
+  margin-inline: auto;
+  overflow: hidden;
+  contain: layout paint;
+  container-type: inline-size;
+  box-shadow: 0 0 0 1px var(--g10);
+  background: var(--paper);
+}
+.stage-window > .nokre { min-height: 100%; }
+.stage-step { margin: 0; width: min(100%, var(--stage-w)); margin-inline: auto; }
+.stage-controls { display: flex; flex-wrap: wrap; gap: var(--control-gap); width: min(100%, var(--stage-w)); margin-inline: auto; }
+/* The play's hand, as the film draws it (render/theatre.zig): a
+   fingertip is a disc of `mid` checkerboard inside an ink rim and a
+   paper one; a lifting finger its rim alone, widening and thinning
+   over `--ring` 1..2; the mouse an ink arrow on a paper rim, and a
+   click a ring around its tip growing over `--ring` 1..3. Nobody
+   hears any of it: the step's words carry the step. */
+.stage-mark { position: absolute; left: var(--x); top: var(--y); pointer-events: none; }
+.stage-mark.touch, .stage-mark.lift, .stage-mark.click::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+.stage-mark.touch {
+  width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border: 2px solid var(--ink);
+  box-shadow: inset 0 0 0 1px var(--paper);
+  background: repeating-conic-gradient(var(--mid) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
+}
+.stage-mark.lift {
+  --r: calc(20px + 4px * (var(--ring) - 1));
+  width: calc(2 * var(--r)); height: calc(2 * var(--r)); margin: calc(-1 * var(--r)) 0 0 calc(-1 * var(--r));
+  border: calc(3px - 1px * var(--ring)) solid var(--ink);
+}
+.stage-mark.arrow, .stage-mark.click {
+  width: 12px; height: 19px;
+  background: var(--ink);
+  clip-path: polygon(0 0, 0 94%, 27% 70%, 50% 100%, 67% 94%, 45% 63%, 92% 63%);
+  filter: drop-shadow(0 0 1px var(--paper));
+}
+.stage-mark.click::after {
+  --r: calc(6px + 5px * var(--ring));
+  left: calc(-1 * var(--r)); top: calc(-1 * var(--r));
+  width: calc(2 * var(--r)); height: calc(2 * var(--r));
+  border: 2px solid var(--ink);
+}
 
 /* The dial: one vertical column at the leading edge, a step button
    above and below it (`dialButtonRect`, `dialPlateRect`). Block

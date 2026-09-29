@@ -1856,7 +1856,10 @@ turned on, and deliberately not:
   if (is_test) Mock else PlatformService` is the roster's rule, not one
   service's. A `HarnessApp` that compiled in a release build would have to
   carry every mock into it, which is the exact thing that rule exists to
-  make unrepresentable. So the seam is one layer down.
+  make unrepresentable. So the seam is one layer down. A play, which
+  is a driver too, gets a device instead of the mocks: a build only
+  `addPlays` configures, whose network answers from the check's own
+  handler ([A play's device](#a-plays-device)).
 - **The driver layer already is that seam.** `testing.driver`,
   `testing.queries`, `testing.audit`, `testing.trace`, `testing.wait`,
   `testing.driver_app`, `testing.results`, `testing.entry` and
@@ -2582,16 +2585,36 @@ fn signIn(d: *DriverApp) DriverApp.Error!void {
 
 ```zig
 // build.zig — the same AppOptions value addApp was given
-b.step("plays", "Film the plays into zig-out/plays/").dependOn(nokre.addPlays(b, nokre_dep, .{
+const plays = nokre.addPlays(b, nokre_dep, .{
     .app = app_decl,
     .root_source_file = b.path("src/plays.zig"),
-}));
+});
+b.step("plays", "Film the plays into zig-out/plays/").dependOn(plays.install);
 ```
 
 `zig build plays` writes `zig-out/plays/<name>.png`. The app is stood up
 through its own `nokreWebBuild`, as the browser stands it up, drawn by
 the CPU raster the goldens are, and, where it links a store, over the
 dev file store: a film never reaches the login keychain.
+
+The plays run on a nokre module of their own, configured as the app
+is with each store swapped for its dev file store, and `Plays.nokre`
+hands it back — `Driver.nokre`'s counterpart. A library the app or the
+plays file imports binds its own `"nokre"` to that module, or the runner
+holds two copies of the framework and two unrelated `App` types. Give
+the plays their own instance of the library, since a module has one
+`"nokre"`:
+
+```zig
+// build.zig — the app's library, once more for its plays
+const shared_plays = b.createModule(.{ .root_source_file = b.path("src/shared.zig") });
+const plays = nokre.addPlays(b, nokre_dep, .{
+    .app = app_decl,
+    .root_source_file = b.path("src/plays.zig"),
+    .imports = &.{.{ .name = "shared", .module = shared_plays }},
+});
+shared_plays.addImport("nokre", plays.nokre);
+```
 
 **Defaults, and the only choices.** Lamp dark, 390×844 points at 2x, and
 the locale a silent device leaves the app in. A play may name a `look`,
@@ -2623,9 +2646,11 @@ explaining play is touched too, and a play made for a desktop says
 refuses the breakpoint that would be (`layout.metrics.page_max_w`
 records why) — so the play states it. A finger appears where it lands —
 a disc a fingertip wide, half its pixels the app's — holds for the press
-(longer for a long press), and lifts off the screen the press produced;
-nothing travels between steps. A mouse's arrow travels there, eased, and
-a ring marks the click.
+(longer for a long press), and lifts, all over the screen as it stood
+before the press, so a viewer sees the finger land on what was pressed
+and the screen the press produced appears with no hand on it; nothing
+travels between steps. A mouse's arrow travels there, eased, and a ring
+marks the click, on that same screen.
 
 **Gestures are real frames.** A `reveal` in a film is shown as the
 scroll it is: the window moved by the very function the app's reveal
@@ -2634,8 +2659,10 @@ state the app was in and a frame of the film. A finger swipes against
 the content's motion, lifting and coming down again between swipes; a
 mouse's wheel turns under a still arrow. A `dragSelect` is filmed over
 real intermediate selections, the finger or the held-down pointer
-travelling from the anchor to the head. A reveal that also moves a
-scrolling region inside the page is shown as the app's own jump. Typing
+travelling from the anchor to the head. A reveal that moves a
+scrolling region inside the page is filmed the same way, the region
+first and then the window, as the keyboard's reveal moves them, with
+the finger on the region it moves. Typing
 shows the field filling a few characters at a time, because `typeInto`
 dispatches one event per character anyway. Nothing is interpolated: a
 state the app never stood in is never drawn.
@@ -2648,14 +2675,20 @@ laid out again at another size finds the same node and the same part of
 it — which is what a recorded play shown inside another app will need.
 
 **Captions** are the steps in a reader's words — "Pick Night bus",
-"Type ada@example.com into Email", "Wait for Welcome back". `say(words)`
-adds a line of the scenario's own before the next step; in a check it
-does nothing at all. A secret typed into an obscured field is never in a
-caption: it reads "Type a secret into Passphrase". Each caption line is a
-paragraph whose own first strong character decides its direction, as
-prose does everywhere in nokre: a Persian line runs right to left with
-its letters joined, and "Pick" before a Persian row's words stays an
-English sentence holding a Persian name.
+"Type ada@example.com into Email". A wait is not a step a viewer is
+told about: it says nothing of its own, and the caption standing stays
+while the film holds the screen the wait brought. `say(words)` adds a
+line of the scenario's own before the next step — the way to put words
+over a wait — and in a check it does nothing at all. A secret typed into an obscured field is never in a
+caption: it reads "Type a secret into Passphrase". The words are the
+app's own, in the language it stands in: each verb's caption is a
+pattern among the framework's words (`App.Chrome.caption_press` and
+the rest, [localization.md](localization.md#the-frameworks-own-words)),
+with `$1`, `$2` and `$3` where the names and numbers go, in that
+language's order — so a Persian play says "اتوبوس شبانه را برگزینید",
+the verb last. Each caption line is a paragraph whose own first strong
+character decides its direction, as prose does everywhere in nokre: a
+Persian line runs right to left with its letters joined.
 
 **Two purposes.** A play explains by default. `.purpose = .store` makes
 a store preview instead: the app's frames and the hand, no caption
@@ -2676,7 +2709,15 @@ var inst = try TraceInstruments.init(io, .cwd(), gpa, null, film.observer());
 try d.startTrace(inst.observer());
 // … the scenario, unchanged …
 try film.write(io, .cwd(), "zig-out/plays/e2e.png");
+try film.writeRecording(io, .cwd(), "zig-out/plays/e2e"); // e2e/<tag>.nokreplay
 ```
+
+An explaining film is recorded as it is filmed, so a driver's own run
+gives a `stage` its recording as `addPlays` does:
+`writeRecording` writes `<dir>/<tag>.nokreplay`, named by the language
+the app stood in, the layout `AppOptions.shows` reads. A store film is
+not recorded, and a run that reached a stage is refused
+(`RecordingHoldsAStage`) with its film unharmed.
 
 The same play on the same tree writes the same bytes, and a test holds
 that. The kitchen sink's own three — a ranking by finger, a sheet, a
@@ -2684,6 +2725,128 @@ long page and a select by mouse, and the ranking as a store film — and
 a Persian ballot proving right-to-left captions (`tests/theatre_fa/`)
 are filmed on every `zig build test -Dskia`, and written out by
 `zig build plays -Dskia`.
+
+### A play's device
+
+A play is an executable, not a test, so it has none of the harness's
+mocks: they exist only under `builtin.is_test`
+([below](#driving-an-app-outside-zig-test)), and a play does not widen
+that. It runs instead on a **played** build, which only `addPlays`
+makes: its network and its clock are the play's device, its stores are
+the dev file store, and it compiles only for this machine and only in
+Debug, as the dev file store does. No declaration a shipped app writes
+can ask for one.
+
+The device starts empty for every play: the stores the app links are
+cleared, no answer is held and the clock reads the test clock's instant,
+so a film shows only what the play put there. A play sets its device up
+in `prepare`, which runs before the app is stood up, so what the app
+reads at boot is already there; and it walks to the screen it opens on
+in `before`, with the same verbs, before the film begins:
+
+```zig
+var server: fixture.Server = .{};
+
+fn prepare(s: *nokre.testing.Stagehand) anyerror!void {
+    server = .{};
+    s.onHttp(.bind(fixture.Server.answer, &server)); // the network's answers
+    s.clockAt(1_767_225_600_000);                     // the time, for the whole play
+    try nokre.services.secure_store.set(s.app, "session", "ada"); // the store, by its own calls
+}
+
+fn signIn(d: *DriverApp) DriverApp.Error!void { /* … the steps nobody watches … */ }
+
+pub const plays = [_]nokre.testing.Play{
+    .{ .name = "ballot", .scenario = ballot, .prepare = prepare, .before = signIn },
+};
+```
+
+**One fixture serves the check and the play.** `onHttp` takes the
+harness's own `http.Handler`, the one `HarnessApp.onHttp` installs: a
+function over the request that responds, fails it as the platform would
+(`.{ .fail = "TimedOut" }`), or declines it with `null`. So the fake
+server a check answers with is the one a play answers with, word for
+word. The one difference is when it is asked: a check settles when it
+says so (`settleHttp`), and a device answers each request as it leaves.
+A fixture that keeps its own count answers the same way in both — a
+first request that times out and an identical retry that is answered
+are two calls to one function:
+
+```zig
+pub const Server = struct {
+    asked: u32 = 0,
+    pub fn answer(self: *Server, req: http.PendingRequest) ?http.Outcome {
+        if (!std.mem.eql(u8, req.url, total_url)) return null;
+        self.asked += 1;
+        return if (self.asked == 1) .{ .fail = "TimedOut" } else .{ .respond = .{ .body = "41" } };
+    }
+};
+```
+
+A request the play's fixture declines fails the play by name,
+`NoHeldAnswer`, with the method and the path it asked for — never the
+query, the body or a header, which is where a secret travels. The wait
+that was waiting for its answer ends at once rather than at its
+deadline.
+
+### And as a play inside an app
+
+A film is pixels for a viewer with no app. A **recording** is the same
+run kept for an app: every screen the played app built in the scenario,
+as its tree, and the timeline a film of it shows — no pixels, no
+callbacks, no code. A [`stage`](elements.md#stage) in any nokre app
+plays it, laid out and drawn by that app, in that app's look, at the
+width the stage is given. So a marketing site shows what an app does
+with the app's own screens, in the reader's language, live text and
+all, where a video would be a picture of one language at one size.
+
+`zig build plays` writes each play's recordings beside its film:
+`zig-out/plays/<name>/<tag>.nokreplay`, one per language the app's
+catalogs declare. The plays step runs the scenario once per language,
+with the device reporting it, and refuses an app that does not stand up
+in the language it is asked for — so a scenario that finds its rows by
+their words finds them by the words of the language it runs in
+(`L.tr(L.resolve(d.app.locale()), …)` in the plays file, which imports
+the app's root as `"app"`). An app with no catalog is recorded once, in
+whatever it stands in. A store play is not recorded. Recording links no
+Skia: any build that shows a play makes its recordings, a web build
+included.
+
+An app shows a play by declaring it — the recordings, from `addPlays`
+on the played app in the same build graph, and the play's name:
+
+```zig
+// build.zig of the app that shows it — a marketing site, say
+const votes = nokre.addPlays(b, nokre_dep, .{ .app = votes_decl, .root_source_file = b.path("votes/plays.zig") });
+const site = nokre.addApp(nokre_dep, .{
+    // …
+    .shows = &.{.{ .recordings = votes.recordings, .play = "ranking" }},
+});
+```
+
+```zig
+// a screen of that app
+try b.stage(.{ .play = .ranking, .label = L.tr(loc, .votesPlayed) });
+```
+
+The build embeds the recording in each language the showing app
+declares, and refuses — by name, at the build — a play the recordings do
+not hold, a language the app declares that the play was not recorded
+in, a recording another nokre wrote, and a glyph the recording draws
+that the app's icon face lacks (the face's scan is fed the recordings'
+icons, so this one states the rule rather than catching a slip). A
+recording is nokre's own format, stamped with the revision and a digest
+of the shapes it is made of: it is not a contract, and a new nokre asks
+for the plays to be recorded again.
+
+**The honesty rule, for a stage.** Every tree a stage shows is one the
+played app really built in that scenario; the stage stands it up and
+never makes one. A recording holds no stage — a play of a play is a
+recording of a recording — and the recorder refuses one. What the stage
+adds is the theatre's alone: the hand over the window and the words
+below it. Tests hold every window pixel to the scene drawn alone, and a
+scene stood up narrower than it was recorded to the played app's own
+layout at that width.
 
 What nokre tests for *itself* — and the guarantees those tests prove on
 your behalf — is catalogued in

@@ -58,6 +58,11 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
 | [src/core/accessibility_toggles.zig](../../src/core/accessibility_toggles.zig) | the rows of `accessibility_toggles`: the reader's Increase Contrast and Reduce Transparency as `toggle`s nokre installs, keeps in step with the look, the medium and the words, and answers the press of ([../accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
 | [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control and its sheet |
+| [src/core/stage.zig](../../src/core/stage.zig) | the `stage`'s runtime: a player per node, its controls, stepping, the shell's ticks, Reduce Motion ([stage.md](stage.md)) |
+| [src/core/recorded_play.zig](../../src/core/recorded_play.zig) | a recorded play: the format, its stamp, and standing a scene up in a scene app ([stage.md](stage.md)) |
+| [src/core/shown_plays.zig](../../src/core/shown_plays.zig) | the plays an app's build declares it shows, and their embedded recordings |
+| [src/core/timeline.zig](../../src/core/timeline.zig) / [place.zig](../../src/core/place.zig) | a play's timeline, as data, and a hand's place on a node — read by a film and by a stage |
+| [src/emit_shown_plays.zig](../../src/emit_shown_plays.zig) | the build tool that gathers the recordings an app shows, in its languages, beside the module that embeds them — no nokre in it |
 | [src/core/qr.zig](../../src/core/qr.zig) | QR encoding over vendored qrcodegen |
 | [src/core/markdown.zig](../../src/core/markdown.zig) | the `document` element's parser: the Markdown subset, literal degradation of the rest ([../markdown.md](../markdown.md)) |
 | [src/l10n/l10n.zig](../../src/l10n/l10n.zig) | ARB catalogs compiled at comptime: `Bundle`, cross-locale validation, `tr`/`fmt`/`resolve` ([../localization.md](../localization.md)) |
@@ -99,6 +104,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/testing/queries.zig](../../src/testing/queries.zig) / [driver.zig](../../src/testing/driver.zig) | semantic queries — find by what users perceive, never by index — and the synthetic input driver, both through `App.dispatchInput` |
 | [src/testing/wait.zig](../../src/testing/wait.zig) / [driver_app.zig](../../src/testing/driver_app.zig) | the driver tier: deadline-bounded waits against a caller-injected clock, and `DriverApp` — the harness's verb names over a live `App`, no mock in reach ([testing.md](../testing.md#driving-an-app-outside-zig-test)) |
 | [src/testing/audit.zig](../../src/testing/audit.zig) | the accessibility audit: the whole-tree content rules construction-time validation cannot cover |
+| [src/testing/recorder.zig](../../src/testing/recorder.zig) | the recorder: a scenario's run kept as a recorded play, beside the film sink and on its seam ([stage.md](stage.md)) |
 | [src/testing/rubber_band_integrator.zig](../../src/testing/rubber_band_integrator.zig) | shell.h's band integrator over a live `App`, the one copy the canonical flick (`driver.scrollFling`) and the carry tests share |
 | [src/testing/trace.zig](../../src/testing/trace.zig) / [golden.zig](../../src/testing/golden.zig) / [diag.zig](../../src/testing/diag.zig) | per-step tracing (`TreeSink`, and `Tee` for fanning one step at both instruments), byte-exact PPM goldens, and the harness's one stderr gate |
 | [src/headless_shell.zig](../../src/headless_shell.zig) | the shell a binary with no window names instead of hand-exporting the C hooks a shell owes — a driver, nokre's own generators, a consumer's static-site generator ([internals/platform-shells.md](platform-shells.md), [static-sites.md](../static-sites.md)) |
