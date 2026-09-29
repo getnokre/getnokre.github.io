@@ -1096,6 +1096,30 @@ nokre's own `emit-css` and l10n tools have named it all along; it sits
 at the root rather than under `testing` because a generator is not a
 test, and the name a consumer writes should say which it is.
 
+### A generator's nokre is the app's
+
+A generator names what the app's declaration made: the plays it shows
+(`element.PlayName`), the apps it links into
+(`declared.LinkedAppName`), its address form and origin, its icon face.
+`Dependency.module("nokre")` is the unconfigured library and names none
+of it, and the web app's own `App.nokre` is built for the browser, which
+a generator cannot link. So `addApp` hands back the same configuration
+built for the machine running the build, and the generator imports that:
+
+```zig
+const site = nokre.addApp(nokre_dep, .{ .target = nokre.webTarget(b), .shows = …, .links_into = …, … });
+const gen = b.addExecutable(.{ .name = "gen", .root_module = b.createModule(.{
+    .root_source_file = b.path("gen/main.zig"),
+    .target = b.graph.host,
+    .imports = &.{.{ .name = "nokre", .module = site.tool_nokre }},
+}) });
+```
+
+Declaring the app a second time — an `addApp` for the host whose
+artifact nothing builds, only to take its `App.nokre` — was the
+workaround this replaces, as `addDevStoreDriver` replaced it for drivers.
+tests/stage_host/generator.zig is the one in this tree.
+
 ### Weak symbols were refused
 
 The obvious way to spare a generator the line is to ship weak

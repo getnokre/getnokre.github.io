@@ -1111,6 +1111,38 @@ plaintext` rule here, so a Persian paragraph reads right to left in an
 otherwise left-to-right screen and an app never has to call
 `setDirection` for RTL *text* to be right.
 
+Where a text *stands* is a second question with a second answer.
+`plaintext` places a paragraph with no strong character on the left
+whatever the element's `direction` (checked in Chrome: a `dir`
+attribute alone does not move it), where the rule puts it on the
+chrome's edge, so the serializer states the edge on the element as
+`data-stands` wherever the two differ (`serialize.stands`) and the sheet
+turns that into `text-align`. Placement only, and never `dir`: the
+`<input>`s, spans and `<code>` a value sits in keep `plaintext`'s order
+either way, but `dir` also sets the base direction wherever
+`plaintext` does not reach. One place it does not is a field's
+placeholder — `::placeholder` keeps the UA's `unicode-bidi: isolate`,
+which an author cannot set, so it is laid out in the field's
+`direction`, and under Persian chrome `(-) / +` read `+ / (-)` while the
+raster kept it. There `dir` states the placeholder's own order
+(`serialize.placeholderOrder`) and nothing else. A block has one
+alignment, so a text whose hard paragraphs stand on different edges —
+an English line and a line of digits under Persian chrome — states none
+and the line of digits stands left; every paragraph with a strong
+character is still right.
+
+That is prose and values. A row's words — a cell, a tile's words, a
+radio option, a ranking's row, a picker's row and a select's shown
+option, a chip, a notice's title and description, and nokre's own
+words written as a paragraph (`class_names.chrome_words`, the notices
+pane's group captions) — state nothing:
+one rule in the sheet over `class_names.row_words` aligns them to the
+chrome's edge, `left` or `right` rather than `start`, because they keep
+`plaintext` for the order inside and `start` would resolve against it.
+Words that stand bare beside a mark (the collapsed nav's section rows)
+or hug their chip (a segmented option) are a flex item as wide as
+themselves, which the row's flow already puts on the chrome's edge.
+
 ### A screen's shape is on the document root
 
 `data-nokre-shape` carries the screen's arrangement, and it has three states

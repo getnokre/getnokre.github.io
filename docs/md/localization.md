@@ -256,7 +256,62 @@ written. There is no `dir`
 attribute and no per-locale direction
 flag in ARB — a Persian string in an English locale and an English
 string in a Persian locale each lay out correctly on their own evidence.
-This never depends on the setting below.
+This never depends on the setting below, except where a text has no
+direction of its own to give.
+
+**Where text stands: three parts.** Where a block of text stands —
+against the left or the right of its box — is one question with three
+answers, each the same in both substrates (`wrap.RunAnchor` is where
+both ask it). Only the block moves: the order inside is always the
+text's own (`bidi.paragraphDirection`), so `0912 345 6789` reads left
+to right on either edge, `(-) / +` is never turned round, and the
+direction a shell maps its line keys by is the run's, not the edge's.
+
+1. **Prose stands where its text says**: on the edge its first strong
+   character gives it, per hard paragraph, and on the chrome's leading
+   edge when it has none (digits, Persian digits, punctuation, spaces,
+   or nothing at all), where P3 would have said left-to-right on its
+   behalf. Prose is a paragraph, a heading, a list item, a tile group's
+   caption, a field's problem, a quantity's caption, a stage's step,
+   and a sheet's title where it wraps (one that fits a line is
+   centred). Under Persian
+   chrome a date written `۱۴۰۳/۰۵/۱۲` as a paragraph stood on the left
+   beside Persian paragraphs standing right, and read as a mistake; it
+   stands on the right, while an English paragraph stands on the left.
+2. **A value in its field stands where its text says**, by the same
+   rule: a text field's and a text area's value and placeholder, and a
+   copyable's value. Under Persian chrome a phone number typed as
+   `0912 345 6789` stands on the right, having no direction of its own,
+   and an English note on the left. A masked field shows bullets, which
+   carry no direction, so it stands on the chrome's edge whatever its
+   secret is written in, and an empty field's caret waits where the
+   placeholder stands.
+3. **A row in a column of rows stands on the chrome's leading edge,
+   whatever its words**: a table cell (below), a tile's words and its
+   detail, a ranking's rows (counted and in the pool), a radio group's
+   options, a picker's rows and a select's *shown* option, the
+   collapsed nav's section rows, a segmented control's options, a
+   chip's words, and a notice's title and description, as the banner
+   and as a row of the notices pane. A column has one edge: a Persian settings list whose
+   one English entry, `Wi-Fi`, jumped to the left read as a fault, and
+   the platforms' own lists keep every row on the leading edge whatever
+   language its words are in. A select's shown option is the picker's
+   chosen row, not something a person typed, so it stands where that
+   row stands: under Persian chrome a select showing `English` stands
+   it on the right under its label, the chevron on the left, and the
+   word does not jump sides when the picker opens, as a native select
+   under a right-to-left page does not. One too long for the field
+   still ends with its ellipsis at the end of its own words. A notice's
+   two lines stand together on the chrome's edge whatever language each
+   is in, because a Persian title over an English description, each on
+   its own words' edge, read as two notices rather than one.
+
+Labels — a field's, a control's, the words nokre writes itself — are
+chrome, not text, and follow the setting below: they stand on the
+chrome's leading edge whatever language they are in, so the notices
+pane's group captions (`App.Chrome`'s `important` and `other`) stand on
+the right under Persian chrome even where the catalog left them in
+English.
 
 **Chrome is decided by you.** Whether the interface mirrors —
 navigation order, field labels, chevrons, toggle knobs, scrollbars,
@@ -286,7 +341,7 @@ blocks and tables snap to the right, horizontal stacks and nav slots run
 right-to-left, field labels and values lead from the right, the back and
 tile chevrons point the other way, toggle knobs travel the other way,
 and a vertical scroll bar moves to the left. Three things deliberately
-do *not* follow the chrome: paragraph text still aligns by its own
+do *not* follow the chrome: prose and values still stand by their own
 content (an English caption stays left-aligned inside a mirrored
 screen), a QR code's modules never mirror — a mirrored symbol does not
 scan — and a code block's lines, bar included, never mirror
@@ -294,8 +349,8 @@ scan — and a code block's lines, bar included, never mirror
 vertical axis is direction-blind throughout, so `↑`/`↓` in a radio group
 mean the same thing in both, while `←`/`→` swap with the layout.
 
-**A table cell is the one exception to the first of those.** A cell is
-a grid entry rather than a paragraph: its column already mirrors with
+**A table cell is a row, not a paragraph.** A cell is
+a grid entry: its column already mirrors with
 the chrome, and a column whose headings and whose figures stand on
 opposite edges is a column no eye reads down. That is what a mirrored
 result table drew — a run of digits carries no strong character at all,

@@ -37,7 +37,8 @@ icons travel by name, and a recording holds no stage.
 ## Standing a scene up
 
 A stage keeps a `Player` per node on the App (`App.staging`): the
-recording read once, and a scene app (`App.internal.initScene`) — an
+recording read once into an arena of its own, freed when the stage
+leaves the tree, and a scene app (`App.internal.initScene`) — an
 App with no services, no routes and no input — into which
 `recorded_play.stand` restores a scene (`Tree.internal.restore`, past
 the construction rules, since the tree was one the played app built)
@@ -64,15 +65,45 @@ timeline's rate, with the remainder carried in thousandths of a frame,
 and a late tick counts at most `stage.max_tick_ms`. A frame is owed only
 where the shot changed.
 
+## Loading
+
+A player is in one of four phases (`stage.Phase`). Where its recording
+is embedded it is read when the stage is first synced, and is loaded or
+failed at once. Where it is fetched (`shown_plays.on_demand`), it waits
+until layout has given the stage a box, then asks: `stage.takeAsks`
+hands the substrate each file under a ticket, and the substrate answers
+with `arrive` (the bytes, copied into the player's arena and read there)
+or `fail`. An answer under a ticket no stage still holds — the language
+changed, or Retry asked again — is dropped. Core fetches nothing itself,
+as it keeps no clock.
+
+On the web the live driver takes the asks after each layout and writes
+the ticket on the figure (`data-ask`); live.js fetches the file relative
+to the module's own URL once an `IntersectionObserver` sees the figure,
+and hands the bytes back through `nokre_dom_play_scratch` and
+`nokre_dom_play_arrived`, or reports `nokre_dom_play_failed`. A refused
+recording is said on the console by name (`nokre_log_refusal`). While a
+stage waits its window and its step carry `data-waiting`, and live.js's
+patch keeps whatever children the document holds there, so the first
+frame over a written page does not wipe the scene the page was written
+with; an empty waiting window is the sheet's stand-in.
+
 ## The build
 
 `AppOptions.shows` names plays by their recordings and names.
 `src/emit_shown_plays.zig` gathers, per play, the recording in each
-language the app's catalogs declare into a directory beside a generated
-module (`nokre_shown_plays`, read through `core/shown_plays.zig`), and
-lists their icons for the icon face's scan. The stamp is checked where
-the library is compiled (`core/stage.zig`), and the glyphs where the
-renderer is (`render/stage_glyphs.zig`).
+language the app's catalogs declare as `plays/<digest>.nokreplay` — the
+first 64 bits of the bytes' SHA-256 — beside a generated module
+(`nokre_shown_plays`, read through `core/shown_plays.zig`) that lists
+each by that name with the stamp, the icons and the window its head
+states, and embeds its bytes unless the app fetches them (a web app,
+`addWebApp`; its site copies the files and lists them in
+`site.manifest`). It lists the icons for the icon face's scan too. The
+stamp is checked where the library is compiled (`core/stage.zig`) and
+again where a fetched recording is read, and the glyphs where the
+renderer is (`render/stage_glyphs.zig`). A tool built on
+`App.tool_nokre` embeds them on every target: it writes a stage's first
+scene into a page at build time.
 
 A recording is made by a runner with no Skia (`recordPlays`), whose app
 declares the plays it shows by name alone: the names stand so the app

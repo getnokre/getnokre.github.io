@@ -41,7 +41,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `list` / `list_item` | `list` / `listitem` | —; the derived marker is presentation and is never announced |
 | `code_block` | `code` | content announced whole, focused |
 | `blockquote` | `blockquote` | —; the attribution is words inside it |
-| `table` / `row` / `cell` | `table` / `row` / `cell` | header rows; a table that scrolls sideways is also focused, and on the web a `region` named by its header row's words ([elements.md](elements.md#table--row--cell)) |
+| `table` / `row` / `cell` | `table` / `row` / `cell` | header rows; a table that scrolls sideways is also focused and named by the words of its header row or its first row that has any, derived (`semantics.tableName`) — on the web a `region` of that name ([elements.md](elements.md#table--row--cell)) |
 | `scroll_region` | `scroll_area` | focused |
 | `region` (`masthead`) | `banner` | its `label` as the name, focused. Deliberately not `status`: a polite live region re-announcing a queue count is what `notice` and `stand_in` exist to keep rare |
 | `region` (`roster`) | `navigation` | the same role a `nav` takes. Two navigation landmarks in one document is the ordinary shape and they are told apart by name — which is why a region's label is required |

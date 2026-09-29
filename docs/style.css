@@ -469,33 +469,46 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   direction: rtl;
 }
 
-/* The one place text *is* this question: a table cell. A cell is a
-   grid entry rather than a paragraph, and a column whose words and
-   whose figures stand on opposite edges is a column no eye reads
-   down — which is what a mirrored result table drew, because a run
-   of digits has no strong character and UAX #9 P3 answers
-   left-to-right on its behalf. The reference anchors a cell's run
-   to the chrome (`renderer.RunAnchor`), and this is the same
-   sentence.
+/* Where text *is* this question: a row, one of a column of rows —
+   a table cell, a tile's words and detail, a radio option, a
+   ranking's row, a picker's row, a select's shown option, which
+   is the picker's chosen row, and a notice's title and
+   description, which stand together. A column has one edge, and a
+   Persian list whose one English row stood on the left read as a
+   fault, as a column whose words and whose figures stand on
+   opposite edges is one no eye reads down. The reference anchors a
+   row's words to the chrome (`wrap.RunAnchor.chrome`), and this is
+   the same sentence; the ranking's line is a caption, centred.
 
-   Spelled `left`/`right` rather than `start`, alone in this sheet:
-   `start` is resolved against the *line box's* base direction, and
-   a cell carries `unicode-bidi: plaintext` above, so `start` would
-   be the content's answer again under another name. The rule above
-   is untouched — the order inside the cell is still the content's,
+   Spelled `left`/`right` rather than `start`: `start` is resolved
+   against the *line box's* base direction, and a row's words carry
+   `unicode-bidi: plaintext` above, so `start` would be the
+   content's answer again under another name. The rule above is
+   untouched — the order inside the row is still the content's,
    and only the block moves. */
-:root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td) {
-  text-align: right;
-}
+:is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td, .tile-label, .tile-detail, .plate:not(.cut) > .ranking-words, .picker-words, .select > .field-value, .notice-title, .notice-desc, .badge, .chrome-words) { text-align: left; }
+:root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) :is(th, td, .tile-label, .tile-detail, .plate:not(.cut) > .ranking-words, .picker-words, .select > .field-value, .notice-title, .notice-desc, .badge, .chrome-words) { text-align: right; }
 
 /* A field's label is the app's words in the chrome's language, so
    it stands on the chrome's leading edge whatever its first strong
    character — a Latin label in a Persian app on the right — as the
    reference places it (`drawSmallLabel`) and as localization.md
    lists it among what the chrome decides. Only the block moves, and
-   `left`/`right` for the reason the cells above give. */
+   `left`/`right` for the reason the rows above give. */
 :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) .field-label { text-align: left; }
 :root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) .field-label { text-align: right; }
+
+/* Where a text stands (`wrap.RunAnchor`): a hard paragraph on its
+   first strong character's edge, and on the chrome's where it has
+   none — digits, punctuation, nothing — where `plaintext` reads
+   P3's left-to-right whatever `direction` says. The serializer
+   states the edge on the element where the two differ
+   (`serialize.stands`) and this turns it into the alignment, which
+   is all it is: the base direction, and with it the order inside,
+   stays `plaintext`'s. `left`/`right` for the reason the cells
+   above give. */
+:is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) [data-stands="right"] { text-align: right; }
+:is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) [data-stands="left"] { text-align: left; }
 
 /* No transition and no animation, anywhere, ever. Motion is a
    vestibular hazard (WCAG 2.3.3), an untestable intermediate state,
@@ -1864,8 +1877,15 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   background: var(--paper);
 }
 .stage-window > .nokre { min-height: 100%; }
+/* Its recording not in hand and no written scene kept: the stand-in,
+   the window filled with the tone a missing value is drawn in
+   (`.pending`), at the size the build knew (`serialize.stage`). */
+.stage-window[data-waiting]:empty { background: var(--g10); }
 .stage-step { margin: 0; width: min(100%, var(--stage-w)); margin-inline: auto; }
 .stage-controls { display: flex; flex-wrap: wrap; gap: var(--control-gap); width: min(100%, var(--stage-w)); margin-inline: auto; }
+/* A file writes them `hidden` until the live driver can answer them
+   (`serialize.stage`); the UA's own `[hidden]` loses to the line above. */
+.stage-controls[hidden] { display: none; }
 /* The play's hand, as the film draws it (render/theatre.zig): a
    fingertip is a disc of `mid` checkerboard inside an ink rim and a
    paper one; a lifting finger its rim alone, widening and thinning
@@ -2710,11 +2730,10 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 }
 /* The current choice is a dim chip on paper, its state carried by
    the boundary as everywhere else — not by weight. */
-/* A row's words fill it, so `unicode-bidi: plaintext` puts them on
-   their own leading edge, where the reference draws an option
-   (`drawPickerItem`); a flex item as wide as its words would stand
-   on the chrome's. A section's row keeps its mark and words
-   together on the chrome's edge, as the nav row does. */
+/* A row's words fill it, so a long option wraps inside the row as
+   the reference wraps it (`drawPickerItem`), and stand on the
+   chrome's edge by the rows' rule. A section's row keeps its mark
+   and words together on the chrome's edge, as the nav row does. */
 .picker-item > .picker-words { flex: 1; min-width: 0; }
 .picker-item[aria-selected="true"] {
   background: var(--g11);

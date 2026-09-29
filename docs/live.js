@@ -193,10 +193,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // owes the same free functions. `onWork` is how anything that lands
   // asynchronously — a worker reply, a response — gets a frame: core
   // invalidates on its own, and this is the signal that it may have.
+  // The module's own address: a stage's recording is a file published
+  // beside it, whatever page the reader is on.
+  const wasmUrl = new URL(wasm, location.href);
   const env = appHooks({
     nk: () => nk,
     memory,
-    wasmUrl: new URL(wasm, location.href).href,
+    wasmUrl: wasmUrl.href,
+    onPlayAsked: (ticket, file) => plays.set(ticket, file),
     workerUrl: worker ? new URL(worker, location.href) : new URL("./live-worker.js", import.meta.url),
     onWork: () => frame(),
     // A width core was told is a width core decided from, so answers
@@ -340,12 +344,61 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // the function because the two mounts are two hydrations of one
     // frame, and the chrome's would otherwise be the only one.
     hydrating = false;
+    fetchPlays();
     syncTables();
     restoreFocus();
     syncAddressBar();
     syncRoot();
     syncBanner();
     playOn();
+  }
+
+  // ---- a stage's recording ---------------------------------------
+  //
+  // A stage asks for its recording once it is laid out, under a ticket
+  // its figure carries; the fetch waits until the figure is on screen,
+  // so a stage below the fold costs nothing until the reader reaches
+  // it, and a page with no stage fetches none. Until the answer the
+  // window keeps what the document holds (a written page's first scene)
+  // or stands as the stand-in; a failure is handed back, and the stage
+  // says so and offers Retry, which asks again under a new ticket.
+  const plays = new Map(); // ticket -> file, asked and not yet watched
+  const ASK = "data-ask";
+  function fetchPlays() {
+    for (const [ticket, file] of plays) {
+      plays.delete(ticket);
+      const figure = find(`figure[${ASK}="${ticket}"]`);
+      if (!figure || typeof IntersectionObserver !== "function") {
+        fetchPlay(ticket, file);
+        continue;
+      }
+      const watch = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        watch.disconnect();
+        fetchPlay(ticket, file);
+      });
+      watch.observe(figure);
+    }
+  }
+  async function fetchPlay(ticket, file) {
+    let got;
+    try {
+      const response = await fetch(new URL(file, wasmUrl));
+      if (!response.ok) throw new Error(`${response.status}`);
+      got = new Uint8Array(await response.arrayBuffer());
+    } catch {
+      nk.nokre_dom_play_failed(ticket);
+      frame();
+      return;
+    }
+    const ptr = nk.nokre_dom_play_scratch(got.length);
+    if (!ptr) {
+      nk.nokre_dom_play_failed(ticket);
+    } else {
+      memory().set(got, ptr);
+      nk.nokre_dom_play_arrived(ticket, got.length);
+    }
+    frame();
   }
 
   // A playing stage's clock (shell.h's `wants_ticks`): the browser's
@@ -438,9 +491,9 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // Whether it does is the real widths' answer, so it is read here —
   // after every frame, and whenever a wrap changes size without one: a
   // font arriving, a zoom. While it overflows the wrap is a tab stop
-  // and a named scrollable region, named by its header row's words,
-  // because a nokre table carries no name of its own; a wrap that fits
-  // again drops all three. They are this driver's attributes and not
+  // and a scrollable region named by the words core derived for it
+  // (`data-name`, `semantics.tableName`) — the name the native snapshot
+  // gives the same table; a wrap that fits again drops all three. They are this driver's attributes and not
   // the markup's, so a patch leaves them standing (`tableOwns`) — one
   // stripped and put back every frame would blur a focused wrap.
   const TABLE_OWN = ["tabindex", "role", "aria-label"];
@@ -472,13 +525,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       for (const name of TABLE_OWN) if (wrap.hasAttribute(name)) wrap.removeAttribute(name);
       return;
     }
-    const head = wrap.querySelector("tr.header");
-    const words = [...(head ? head.querySelectorAll("th") : [])]
-      .map((th) => th.textContent.trim())
-      .filter((w) => w !== "");
-    // A region with no name is no landmark, so a table with no header
-    // row is a stop and nothing more.
-    const own = { tabindex: "0", role: words.length ? "region" : "", "aria-label": words.join(", ") };
+    const name = wrap.getAttribute("data-name") ?? "";
+    // A region with no name is no landmark, so a table whose row has no
+    // words is a stop and nothing more — and the audit's finding.
+    const own = { tabindex: "0", role: name ? "region" : "", "aria-label": name };
     for (const name of TABLE_OWN) {
       if (own[name] === "") {
         if (wrap.hasAttribute(name)) wrap.removeAttribute(name);
@@ -595,6 +645,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // destroys exactly the mid-session identity this diff is for
   // (dom-substrate.md, "Node ids").
   let hydrating = true;
+  const WAITING = "data-waiting";
 
   function sameNode(a, b) {
     if (a.nodeType !== b.nodeType) return false;
@@ -641,6 +692,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     for (const attr of b.attributes) {
       if (a.getAttribute(attr.name) !== attr.value) a.setAttribute(attr.name, attr.value);
     }
+    // A stage waiting for its recording keeps what the document holds
+    // there: a written page's first scene and its step's words, which
+    // the frame, having no scene yet, would otherwise wipe.
+    if (b.hasAttribute(WAITING)) return;
     // Attributes are the markup's idea of a field; the property is the
     // browser's, and only the second one shows. The tree owns both —
     // except mid-composition, when the focused field is the IME's:

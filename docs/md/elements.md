@@ -2705,10 +2705,12 @@ value's own reading order, with an ellipsis. A text field may cut its
 value at the outline because editing scrolls it; nothing scrolls a
 select's option, so a cut would hide that there is more. A picker row
 whose option does not fit wraps to further lines, as a tile's words do,
-and the picker is sized to the rows as they wrap. The shown option and
-the picker's rows are values, so each reads in its own direction: a
-Latin option under Persian chrome stands on the left, beside the
-chevron, and a Persian one on the right under English chrome. Same fields as `radio_group` — `label`, `options` (2+),
+and the picker is sized to the rows as they wrap. The shown option
+and the picker's rows stand on the chrome's leading edge whatever their
+words, the edge the field's label stands on: the shown option is the
+picker's chosen row, not something a person typed, so a Latin option
+under Persian chrome stands on the right in the field as it does in the
+picker ([localization.md](localization.md), "Where text stands"). Same fields as `radio_group` — `label`, `options` (2+),
 `selected`, `on_select`, and `named_by` in the label's place
 ([naming](#naming-a-device-without-drawing-its-label)). Reach for it when the options are too many to
 lay out in place; for a handful, prefer `radio_group`, which shows
@@ -2969,6 +2971,10 @@ window leaves the screen. The button is laid out at the wider of its two
 words, so pressing it moves nothing. Under the platform's **Reduce
 Motion** there is no Play: the stage steps, the scenes change on the
 step, and no hand is drawn ([accessibility.md](accessibility.md#reduce-motion)).
+In a page written for the web the controls are written `hidden`, since
+only the live driver answers them and the page may be read with no
+script at all; the figure, its scene at rest and its step's words stand
+without them, and the driver's first frame shows them.
 An app appends nothing under a stage and sets none of its play
 (`error.StageControlsAreNokres`, `error.StageFieldIsNokres`).
 
@@ -2978,12 +2984,29 @@ is positioned elements nobody hears, and the step is a polite live
 region, so a screen reader hears each step as it arrives.
 
 **One language.** The stage shows the recording in the language the app
-stands in, and the build embeds one per language the app's catalogs
+stands in, and the build carries one per language the app's catalogs
 declare (an app with no catalog is in English). A play not recorded in a
 language the app declares is refused at the build, by name, as are a play
 the recordings do not hold, a recording written by another nokre, and a
 glyph the recording draws that the app's icon face lacks. None of these
-can reach a reader.
+can reach a reader. When the app's language changes, the stage stands on
+that language's recording, at rest.
+
+**Loaded when it is needed.** On the web a recording is a file beside
+the app's module, one per play per language, named by nokre from its
+bytes so a changed recording is never met by a stale cache; the stage
+fetches its own, in the app's language, when it first comes on screen,
+so a page with no stage fetches none. Until it arrives the stage keeps
+its box at the recording's size: in a page written for the web the first
+scene is already in the markup and stands at rest, and in a live page the
+window is a stand-in in the tone a missing value is drawn in. Play pressed
+meanwhile is busy, and plays when the recording lands. One that cannot be
+fetched — offline, not served, or another nokre's file a host serves
+stale, refused by name on the console — is said in the step's place
+(`App.Chrome`: `stage_unavailable`) with one control, **Retry**
+(`stage_retry`), which fetches it again. Every native shell carries its
+recordings in the app, since none has a bundled-file reader, and stands
+the stage on one at once.
 
 Reach for it to show what an app does — on its own welcome screen, or on
 another app's pages, which is what a marketing site is. The played app's
@@ -3320,17 +3343,44 @@ so a table inside a scroll region moves sideways and then the region
 moves down. Wheels, drags and a driver's `scrollX` scroll it where it
 stands. In a web build the browser scrolls the `.table-wrap`, and the
 live driver reads from the real widths whether it overflows: while it
-does the wrap takes `tabindex="0"` and is a `region` named by its header
-row's words, and when it fits again it drops all three. A nokre table
-has no name or caption of its own, which is why the header row names
-it, and why a table without one is a stop and no region; the native
-snapshot keeps the table's role and makes it focusable, with no name.
+does the wrap takes `tabindex="0"` and is a `region` named by the
+table's name, below, and when it fits again it drops all three. The
+native snapshot keeps the table's role and, while it scrolls, makes it
+focusable under the same name.
 
-**A cell's words stand on its column's leading edge, and that is the
-one place text follows the chrome.** Everywhere else a paragraph aligns
-by its own first strong character, so an English caption stays on the
-left inside a mirrored screen ([localization.md](localization.md)).
-A cell is a grid entry rather than a paragraph: its column already
+**A table that scrolls is named by its first row's words, and the app
+names nothing.** The name is the words of the header row, or — where
+it has none, or holds no words — of the first row that does: a Markdown
+table whose header line is blank (`| | |`) is named by the first row an
+author actually wrote. Each cell's words are taken as they would name
+its column, joined in reading order with nokre's own `, ` (ASCII in
+every language, as `diverging_meter`'s join is), and cut past 64 characters on a
+cluster boundary with `…` (`semantics.tableName`). One rule in the
+tree, so the browser's region and every native bridge's focused node say
+the same words; the markup carries them on the wrap as `data-name`. A
+table has no name field and gets none: Markdown has no caption syntax to
+fill one from, and a required caption would be a decision on every
+table for the rare one that scrolls. A table that fits is not a stop and
+is not named — it is heard as the table it is. A scrolling table with
+no words in any row is a stop nobody can name, and the audit reports it
+as `unlabeled_interactive`.
+
+This is a joined name, and "Every cell is heard with its column's
+name", above, refuses one. That refusal is about a cell, which has two
+slots — its column's words as
+the name and its own as the value — so a join would spend one slot and
+waste the other, and hand both runs the direction of whichever came
+first. A region has one slot, as a notice does (`Notice.reading`), so
+the choice there is a join or no name. The direction cost remains: a
+first row that mixes scripts is read with the first word's direction by
+a bridge that takes a label's direction from its first strong
+character.
+
+**A cell's words stand on its column's leading edge: a cell is a row,
+and a row's words follow the chrome.** A paragraph aligns by its own
+first strong character, so an English caption stays on the left inside
+a mirrored screen ([localization.md](localization.md), "Where text
+stands"). A cell is a grid entry rather than a paragraph: its column already
 mirrors with the chrome, and a column whose headings and whose figures
 stand on opposite edges is a column no eye reads down — which is
 exactly what a mirrored result table drew, because a run of digits has
@@ -4048,6 +4098,13 @@ states, all living in the bottom pane:
   the bar rather than to the pane: it rides at the trailing end of
   whatever the bar is centering — the row of destinations, or the
   collapsed chip — and centers alone when there is no nav.
+
+A notice is a row: its title and its description stand together on
+the chrome's leading edge whatever language each is in, as the banner
+and as a row of the pane, because a Persian title over an English
+description, each on its own words' edge, read as two notices rather
+than one; the order inside each line stays its own
+([localization.md](localization.md), "Where text stands").
 
 All controls are Lucide glyphs on 44px targets with accessible names.
 Notices never steal focus and **never time out** (WCAG 2.2.1 — there is

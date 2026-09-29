@@ -69,6 +69,8 @@ export function silentHooks() {
     nokre_dom_measure: () => 0,
     // Nor does it build a screen, so no builder of its can fail.
     nokre_log_refusal: () => {},
+    // Nor does it stand a stage, so it never asks for a recording.
+    nokre_dom_fetch_play: () => {},
   };
 }
 
@@ -205,7 +207,7 @@ function seedOne(nk, memory, scratch, seed) {
 /// narrower event: the answers this shell has been giving core about
 /// text width just changed, and every decision made from them is due
 /// again.
-export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics }) {
+export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, onPlayAsked }) {
   const utf8 = new TextDecoder();
   const bytes = new TextEncoder();
   const compute = new Map(); // slot -> Worker
@@ -405,6 +407,13 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics }) 
   return {
     ...silentHooks(),
     nokre_dom_measure: measure,
+
+    // A stage laid out wants its recording (core/stage.zig): the file's
+    // name, handed to the driver, which fetches it when the stage is on
+    // screen. Said mid-render, so nothing here calls back into wasm.
+    nokre_dom_fetch_play: (ticket, ptr, len) => {
+      onPlayAsked?.(ticket, utf8.decode(memory().subarray(ptr, ptr + len)));
+    },
 
     // A screen or sheet whose builder failed (router.zig's
     // `BuildRefusal`): the one line the native legs send to their log,

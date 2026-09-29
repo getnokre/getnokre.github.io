@@ -193,11 +193,11 @@ real server needs the same ones and can never hold a `HarnessApp`
 step and a re-audit around each; a driver adds a wait in front. The
 ladder itself is written once.
 
-- `press(role, label)` presses a control the way a user would: a tap
-  where a finger could land on it, Tab-and-Enter where a long screen
-  has pushed it past the fold (stepping is what scrolls it into view),
-  and
-  More-then-the-action where a narrow row folded it away
+- `press(role, label)` presses a control the way a user would: it
+  scrolls to the control first, as every acting verb of both tiers
+  does ([below](#driverapp-the-harnesss-verbs-over-a-live-app)), then
+  taps it, and presses More-then-the-action where a narrow row folded
+  it away
   ([elements.md](elements.md#the-folded-tail-more)). Not for text
   fields — the keyboard fallback's Enter in a field it just focused is
   a submit, not a focus; that is `typeInto`'s job. `tap`'s other
@@ -2070,10 +2070,10 @@ The rules the set follows, each of them a decision:
   so the two end in one state; a play films the scroll
   ([below](#a-scenario-as-a-film)). A target no hand can reach — under
   an open sheet, or in a region the desk is not showing — is not
-  scrolled to, and the verb refuses it by name as it always did. This
-  is the tier's own step and not the ladder's: a harness test drives a
-  tree with no one watching it, and its `press` still reaches a
-  control past the fold through the keyboard.
+  scrolled to, and the verb refuses it by name as it always did. The
+  harness's verbs make the same scroll from the same place
+  (`ladder.approach`), so a check ends where a driver does: two tiers,
+  one rule.
 - **Every acting verb re-audits**, exactly as the harness's do. That is
   what makes driving by accessible name safe: two live controls sharing
   a label fail at the audit rather than silently taking the first.
@@ -2833,6 +2833,16 @@ pub const plays = [_]nokre.testing.Play{
 };
 ```
 
+**The device already speaks the language being recorded when `prepare`
+runs.** A play is recorded once per language the app declares
+([below](#and-as-a-play-inside-an-app)), and a held answer often carries
+words a person wrote — a group's name, another ballot's question — which
+belong to that language. `s.app` reports the device's locale as the
+played app will, so a fixture chooses its words the way the app does,
+`L.resolve(nokre.services.locale.tag(s.app))`, and keeps the resolved
+locale rather than the tag, which goes with the device
+(`tests/plays_locale`).
+
 **One fixture serves the check and the play.** `onHttp` takes the
 harness's own `http.Handler`, the one `HarnessApp.onHttp` installs: a
 function over the request that responds, fails it as the platform would
@@ -2901,8 +2911,10 @@ const site = nokre.addApp(nokre_dep, .{
 try b.stage(.{ .play = .ranking, .label = L.tr(loc, .votesPlayed) });
 ```
 
-The build embeds the recording in each language the showing app
-declares, and refuses — by name, at the build — a play the recordings do
+The build carries the recording in each language the showing app
+declares (in a web app's site, as a file a stage fetches when it needs
+it: [elements.md](elements.md#stage)), and refuses — by name, at the
+build — a play the recordings do
 not hold, a language the app declares that the play was not recorded
 in, a recording another nokre wrote, and a glyph the recording draws
 that the app's icon face lacks (the face's scan is fed the recordings'
