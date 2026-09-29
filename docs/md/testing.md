@@ -220,9 +220,11 @@ ladder itself is written once.
   takes when Tab lands below the fold, so there is one answer to where
   a screen scrolls to show something. It is the verb the driver's
   refusals have always named ("scroll it into view first, like a user
-  would"). Explicit rather than folded into the verbs that need it: a
-  scroll is something the person did and the frame after one is a
-  different picture — and an assertion cannot do it at all, since
+  would"). Explicit rather than folded into the harness's verbs that
+  need it: a scroll is something the person did and the frame after
+  one is a different picture (a `DriverApp`'s acting verbs make it for
+  themselves, [below](#driverapp-the-harnesss-verbs-over-a-live-app))
+  — and an assertion cannot do it at all, since
   `expectInFrame` asks what the frame about to be taken shows and a
   check that scrolled first would move the screen it was asked about.
   It refuses a name nothing carries, and refuses a *folded* control
@@ -960,6 +962,12 @@ expectation can't be met there, a screen reader user can't meet it either.
   asked for a screen it cannot give. The reference is named as the
   record keeps it, secret arguments redacted to `*`
   ([routing.md](routing.md#secret-arguments)).
+- `expectBuildRefused(ref, err)` is the same door for a builder that
+  failed: it names the route (redacted, `""` for a `.build` fixture) and
+  what the builder returned, and takes the record — so a test *about*
+  a refusal can go on to assert the short screen. Every failure nobody
+  names goes on failing
+  ([A screen its builder left short](#a-screen-its-builder-left-short)).
 - `expectAbsent(label)`
 - `expectPresent(role, name)` — absence's positive twin, by semantic
   identity: presence claimed by role plus accessible name, and a miss
@@ -1061,6 +1069,36 @@ site); the audit covers whole-tree content rules and post-construction
 mutation. Diagnostics name the offending node; `collect()` returns
 violations programmatically. Call `t.audit()` manually only after
 mutating the tree by hand.
+
+## A screen its builder left short
+
+A builder that returns an error leaves standing what it had appended —
+for a refused element that is the screen up to that element
+([elements.md](elements.md#when-an-append-is-refused)). The router
+records it (`Router.build_refused`, a `router.BuildRefusal`) and prints
+its one line the moment it happens, through `testing.diag` under
+`zig test`. Where the error reaches the test — a harness boot, a
+`navigate` — the test fails with the refusal's own error and that line
+beside it. Where nothing could take the error — `refresh`, a press
+handler, a sheet's close, a reply landing — the record is what fails
+it, in every tier that looks at a screen:
+
+- **the audit** fails with `error.BuildRefused` and prints the line
+  (`testing.audit.expectBuilt` is the check on its own);
+- **every harness step** refuses before its trace step is written, so a
+  step trace never holds the short screen;
+- **a golden take** refuses before anything is drawn, and writes
+  nothing even under `-Dupdate-goldens` — a baseline of the short
+  screen is the defect;
+- **the driver tier** — `DriverApp`, and so every play, film and
+  recording — fails the step as `error.Refused` with
+  `RefusalLog.why` = `BuildRefused`, before the frame is kept, printing
+  the line and then the step that refused, as every driver refusal
+  does (`press "Translate" refused: BuildRefused`).
+
+The record stays until the next one, like a refused navigation's;
+`expectBuildRefused` is the one door that takes it. The same refusal
+again — a screen refreshing over a standing one — is said once.
 
 ## The audit matrix
 
@@ -1503,6 +1541,9 @@ back what the *wasm app* recorded through probe exports. So the seam
 that breaks — bytes crossing between Zig and JavaScript — is executed
 rather than analyzed:
 
+- **a screen cut short** — a pushed screen whose builder a refusal
+  stopped stands as far as it got, and the console carries its one
+  line, once, the key its reference carried redacted.
 - **the address**, in both forms — a link carrying a route's secret
   opens the screen whole, and neither the bar nor any history entry's
   URL or state holds the secret afterwards; a push adds one entry and a
@@ -2017,6 +2058,22 @@ try d.expectRoute("circles");
 
 The rules the set follows, each of them a decision:
 
+- **An acting verb scrolls to its target first.** A person cannot press
+  what they cannot see, so a verb whose target is not wholly inside the
+  window first makes the scroll `reveal` makes — the smallest that
+  brings it in, scrolling regions innermost first and then the window,
+  into the part of the window the nav or a banner does not cover —
+  and then acts on it where it stands; for an action its row folded
+  away, the target is the row's More, and for a ranking verb the row
+  or control it acts on, not the whole column, which may be taller
+  than the window. In a check and in a play alike,
+  so the two end in one state; a play films the scroll
+  ([below](#a-scenario-as-a-film)). A target no hand can reach — under
+  an open sheet, or in a region the desk is not showing — is not
+  scrolled to, and the verb refuses it by name as it always did. This
+  is the tier's own step and not the ladder's: a harness test drives a
+  tree with no one watching it, and its `press` still reaches a
+  control past the fold through the keyboard.
 - **Every acting verb re-audits**, exactly as the harness's do. That is
   what makes driving by accessible name safe: two live controls sharing
   a label fail at the audit rather than silently taking the first.
@@ -2593,9 +2650,20 @@ b.step("plays", "Film the plays into zig-out/plays/").dependOn(plays.install);
 ```
 
 `zig build plays` writes `zig-out/plays/<name>.png`. The app is stood up
-through its own `nokreWebBuild`, as the browser stands it up, drawn by
+through its own `nokreWebBuild`, as the browser stands it up — its
+workers through the `nokreWorkers` its root declares, with nothing to
+re-export, and a worker that registry lacks refused as the browser
+build refuses it — drawn by
 the CPU raster the goldens are, and, where it links a store, over the
-dev file store: a film never reaches the login keychain.
+dev file store: a film never reaches the login keychain. A build that
+wants the films elsewhere — copied into a store upload, listed for a
+page — takes them from `Plays.films`, the directory the run wrote them
+to, rather than from a prefix and a folder name:
+
+```zig
+const copy = b.addWriteFiles();
+_ = copy.addCopyDirectory(plays.films, "screenshots", .{});
+```
 
 The plays run on a nokre module of their own, configured as the app
 is with each store swapped for its dev file store, and `Plays.nokre`
@@ -2662,7 +2730,11 @@ real intermediate selections, the finger or the held-down pointer
 travelling from the anchor to the head. A reveal that moves a
 scrolling region inside the page is filmed the same way, the region
 first and then the window, as the keyboard's reveal moves them, with
-the finger on the region it moves. Typing
+the finger on the region it moves. Every other act on a target not
+wholly in the window is filmed after that same scroll, because the
+driver makes it before acting: the act's caption appears, stands over
+the scroll's slices, and the hand then goes to the target where the
+scroll left it — one step, one caption, none of the scroll's own. Typing
 shows the field filling a few characters at a time, because `typeInto`
 dispatches one event per character anyway. Nothing is interpolated: a
 state the app never stood in is never drawn.

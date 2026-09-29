@@ -79,6 +79,8 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/dwell.zig](../../src/dwell.zig) | how long a reader is with the device an app is for — the axis read *before* an app exists. A leaf, so `build.zig` names it without importing core |
 | [src/declared.zig](../../src/declared.zig) | what this app's own `addApp` call declared about where it runs (`dwell`, `mediums`) and which look it starts in (`theme`), read back out of the compiled app. It installs nothing ([../testing.md](../testing.md), "The audit matrix") |
 | [tests/declared_theme.zig](../../tests/declared_theme.zig) | the gate on that `theme` reaching a running `App`: its own test root over a module declared `.depth`, since every module in the library's binary reads the default |
+| [src/linked_app.zig](../../src/linked_app.zig) | the other apps of its family an app declares it links into (`AppOptions.links_into`), and the rules that declaration is held to — build.zig asks them, `declared.zig` reads the rows back, `App.routeLinkInto` writes from them ([../routing.md](../routing.md), "Links into another app") |
+| [tests/declared_links_into.zig](../../tests/declared_links_into.zig) | the gate on those links: its own test root over a module that declares two other apps, since every other module declares none |
 | [src/package_apps.zig](../../src/package_apps.zig) | whether two `addApp` declarations naming one package id can both stand — the rule alone, so `build.zig` holds only the roster and the sentences |
 | [src/workers/workers.zig](../../src/workers/workers.zig) | compute actors: registry, framing, UI-thread delivery ([workers.md](workers.md)) |
 | [src/workers/codec.zig](../../src/workers/codec.zig) | comptime-checked message codec |

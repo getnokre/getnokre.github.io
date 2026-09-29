@@ -168,7 +168,9 @@ owner-decided on the same terms. Two come from its frosted chrome
   on it. The bound is known and it is not enough: a `g0` label over a
   tint of 60% or more would clear AA at the worst case beneath it, and
   `ink` and `mid` do not. 1.4.3 still holds in every ramp and on every
-  opaque fill; a frosted fill is neither. An app whose chrome text must
+  opaque fill; a frosted fill is neither. A secondary button's `.g6`
+  stroke on it is waived with the text, for the same reason: 2.78:1 on
+  the brightest glass measured, and 3:1 on every opaque ground. An app whose chrome text must
   be gated declares `depth`, and a reader who needs it gated turns on
   Reduce Transparency or Increase Contrast
   ([accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)),

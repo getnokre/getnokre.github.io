@@ -340,6 +340,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // the function because the two mounts are two hydrations of one
     // frame, and the chrome's would otherwise be the only one.
     hydrating = false;
+    syncTables();
     restoreFocus();
     syncAddressBar();
     syncRoot();
@@ -430,6 +431,78 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     for (const meta of doc.querySelectorAll('meta[name="theme-color"]')) {
       meta.setAttribute("content", pair[/dark/.test(meta.getAttribute("media") ?? "") ? 1 : 0]);
     }
+  }
+
+  // A table whose columns' longest words do not fit scrolls sideways in
+  // its `.table-wrap` and breaks no word (docs/elements.md, `table`).
+  // Whether it does is the real widths' answer, so it is read here —
+  // after every frame, and whenever a wrap changes size without one: a
+  // font arriving, a zoom. While it overflows the wrap is a tab stop
+  // and a named scrollable region, named by its header row's words,
+  // because a nokre table carries no name of its own; a wrap that fits
+  // again drops all three. They are this driver's attributes and not
+  // the markup's, so a patch leaves them standing (`tableOwns`) — one
+  // stripped and put back every frame would blur a focused wrap.
+  const TABLE_OWN = ["tabindex", "role", "aria-label"];
+  const tableWatch = typeof ResizeObserver === "function"
+    ? new ResizeObserver((entries) => {
+      for (const entry of entries) syncTable(entry.target);
+    })
+    : null;
+  const watchedTables = new WeakSet();
+
+  function tableOwns(el, name) {
+    return TABLE_OWN.includes(name) && !!el.classList?.contains("table-wrap");
+  }
+
+  function syncTables() {
+    for (const host of roots) {
+      for (const wrap of host.querySelectorAll(".table-wrap")) {
+        syncTable(wrap);
+        if (tableWatch && !watchedTables.has(wrap)) {
+          watchedTables.add(wrap);
+          tableWatch.observe(wrap);
+        }
+      }
+    }
+  }
+
+  function syncTable(wrap) {
+    if (!(wrap.scrollWidth > wrap.clientWidth)) {
+      for (const name of TABLE_OWN) if (wrap.hasAttribute(name)) wrap.removeAttribute(name);
+      return;
+    }
+    const head = wrap.querySelector("tr.header");
+    const words = [...(head ? head.querySelectorAll("th") : [])]
+      .map((th) => th.textContent.trim())
+      .filter((w) => w !== "");
+    // A region with no name is no landmark, so a table with no header
+    // row is a stop and nothing more.
+    const own = { tabindex: "0", role: words.length ? "region" : "", "aria-label": words.join(", ") };
+    for (const name of TABLE_OWN) {
+      if (own[name] === "") {
+        if (wrap.hasAttribute(name)) wrap.removeAttribute(name);
+      } else if (wrap.getAttribute(name) !== own[name]) wrap.setAttribute(name, own[name]);
+    }
+  }
+
+  // Focus put on a control inside a scrolled table brings it into the
+  // wrap's view, as core's reveal walk does for the raster — the one
+  // scroll this driver makes, because `restoreFocus` focuses without
+  // letting the browser scroll the page. The leading end wins when the
+  // control is wider than the box.
+  function revealInTable(el) {
+    const wrap = el.closest?.(".table-wrap");
+    if (!wrap || wrap === el || !(wrap.scrollWidth > wrap.clientWidth)) return;
+    const box = wrap.getBoundingClientRect();
+    const at = el.getBoundingClientRect();
+    const before = at.left - box.left;
+    const after = at.right - box.right;
+    const rtl = root.getAttribute("data-nokre-direction") === "rtl";
+    let dx = 0;
+    if (rtl) dx = after > 0 ? after : before < 0 ? Math.max(before, after) : 0;
+    else dx = before < 0 ? before : after > 0 ? Math.min(after, before) : 0;
+    if (dx !== 0) wrap.scrollLeft += dx;
   }
 
   // The banner's height, which is the one length on the page the sheet
@@ -563,7 +636,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       return;
     }
     for (const attr of [...a.attributes]) {
-      if (!b.hasAttribute(attr.name)) a.removeAttribute(attr.name);
+      if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name)) a.removeAttribute(attr.name);
     }
     for (const attr of b.attributes) {
       if (a.getAttribute(attr.name) !== attr.value) a.setAttribute(attr.name, attr.value);
@@ -626,7 +699,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       find(`${selector}:is(a,button,input,select,textarea,[tabindex])`) ??
       find(selector);
     if (!el) return;
-    if (el !== document.activeElement) el.focus({ preventScroll: true });
+    if (el !== document.activeElement) {
+      el.focus({ preventScroll: true });
+      revealInTable(el);
+    }
 
     // The selection is restored on every frame, not only when focus
     // moved. `editing.zig` owns both of its ends, and writing a field's
@@ -971,6 +1047,11 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // `editing.zig` is what moves it — so they go through like any
     // other key. Space in a field is text, not activation.
     if (editable && e.key === " ") return;
+    // A scrolling table's and a code block's ←/→ are the browser's:
+    // scrolling is the browser's here, and the wrap and the `pre` are
+    // real scroll containers. Core's answer to the same keys is the
+    // raster's sideways scroll, which this substrate has no offset for.
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target.matches?.(".table-wrap, pre.code")) return;
     e.preventDefault();
     // Every key below acts on a *range* when there is one — Backspace
     // deletes it, a plain arrow collapses onto the end it points at,

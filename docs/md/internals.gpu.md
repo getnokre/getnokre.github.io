@@ -68,7 +68,7 @@ The reversal spends the promise for GPU-backed frames and nothing else:
 | On the GPU | On the CPU |
 | --- | --- |
 | rasterizing the op list into the drawable, in order, on one canvas | the tree, layout, shaping and every planner |
-| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, a ring's lift, frost blur | the op list itself and each planner's parameters |
+| lamp's ops as shaders: rim (with edge lights), face and sheen, shadow, frost blur | the op list itself and each planner's parameters |
 | a lit glyph's paint: the glyph's shader over its own ink box's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
 | presenting, paced by the display | goldens, proofs and the audit |
 
@@ -185,8 +185,8 @@ display's vsync), three images unless the surface demands more, an
 8-bit UNORM format, BGRA if offered and RGBA otherwise — never sRGB,
 whose encode would change the bytes — opaque alpha, pre-rotated to the
 display's turn (below), and images sampled and copyable,
-each wrapped once as an `SkSurface` texture for the frost's snapshot and
-a ring's lift blend. A frame acquires the next image on a fresh semaphore
+each wrapped once as an `SkSurface` texture for the frost's snapshot.
+A frame acquires the next image on a fresh semaphore
 Ganesh waits on, replays, flushes with the image's own semaphore
 signalled, submits, and presents. An out-of-date answer remakes the
 swapchain at the next acquire; a suboptimal one only asks, at the next
@@ -528,21 +528,19 @@ it is a float, floored where the CPU divides.
 | Frost | the frame drawn so far, snapshotted on the GPU beneath the plate; halved; three separable box-blur passes at both radii; sampled back and mixed per plate pixel | `FrostStyle`: radius, tint, gain |
 
 The CPU's comptime tables are their formulas again: the specular's
-falloff is `round(4096 · exp(−2.2 · i/64))`, a ring's lift is
-`lampRingByte`'s arithmetic on the byte beneath, and the face's
+falloff is `round(4096 · exp(−2.2 · i/64))`, and the face's
 `darkened` search is the inequality it solves, `under · c > 255 ·
 bytes − 128` (lamp_pixels.zig holds the two equal for every byte).
 
-**No readback in a frame.** A rim-only button's ring blends with the
-destination and the frost copies from it, both on the GPU, so a frame
-draws straight onto the drawable's texture — which is why the layer is
-not framebuffer-only — and the offscreen-then-copy path is gone. Ganesh
-on Metal has no framebuffer fetch, so a blend that reads the destination
-copies what it reads once per draw, and each copy ends the frame's
-render pass: that is why a ring is one rect over its box. The chrome's
-contact line took the same blend, one rect per plate, until it became
-a contact shadow (lamp.md, "Chrome edges are lights"): a plain
-composite, so a nav row no longer copies at all.
+**No readback in a frame.** The frost copies from the destination on
+the GPU, so a frame draws straight onto the drawable's texture — which
+is why the layer is not framebuffer-only — and the offscreen-then-copy
+path is gone. No op blends with the destination: Ganesh on Metal has no
+framebuffer fetch, so such a blend copies what it reads once per draw,
+and each copy ends the frame's render pass. The chrome's contact line
+took one until it became a contact shadow (lamp.md, "Chrome edges are
+lights"), and a secondary button's ring until it became a stroke
+(lamp.md, "Buttons under the lamp"): plain composites both.
 
 **The frost is the CPU's integers.** The snapshot is the plate out to
 its reach; the half frame is each 2×2 sum times 64, 8.8 fixed point in
@@ -618,7 +616,7 @@ an offscreen Metal surface, reads it back, and compares it with its
 committed golden (tests/gpu_accuracy.zig) — and then through each
 quarter turn a pre-rotated swapchain draws through
 (`hsk_surface_turn_gpu`), read back unturned, against the same targets
-([Android](#android)). Plates and rings land exactly where the unturned
+([Android](#android)). Plates land exactly where the unturned
 take does. Frost keeps the unturned take's maximum at every turn; its
 mean is the unturned one's where it lies over plates alone, and drifts
 by a few thousandths where it lies over scrolled text (page-scrolled
@@ -636,33 +634,32 @@ and frost's corner squares) are reported and not held, since Ganesh
 rasterises glyphs and curves its own way; a lit glyph's box, less the
 corner squares drawn through it (a focus ring's), is held to 2 bytes —
 Ganesh's glyph coverage under the glyph's shader, which lands within
-the tile's; what a frost covers is held to 4; a rim-only button's
-ring band, through its lift blend, to 2; the plates and the
+the tile's; what a frost covers is held to 4; the plates and the
 ground — the void, rims, faces, shadows,
 contact shadows over depth's fills — to 2.
 Max / mean byte difference on an M4:
 
-| Take | Plates + ground | Frost | Lit glyphs | Rings | Text + AA (max) |
-| --- | --- | --- | --- | --- | --- |
-| elements | 1 / 0.006 | — | — | — | 48 |
-| button-forms | 1 / 0.000 | — | — | 0 / 0.000 | 23 |
-| button-in-progress | 1 / 0.001 | — | — | 0 / 0.000 | 45 |
-| meter | 1 / 0.001 | — | — | — | 26 |
-| tiles | 1 / 0.024 | — | 1 / 0.354 | — | 36 |
-| accessibility-toggles | 1 / 0.005 | — | — | — | 13 |
-| dial | 1 / 0.000 | — | 1 / 0.006 | — | 8 |
-| select-picker | 1 / 0.004 | 1 / 0.008 | 1 / 0.435 | — | 24 |
-| nav-bottom | 1 / 0.000 | 1 / 0.013 | 1 / 0.031 | — | 7 |
-| sheet | 0 / 0 | 1 / 0.008 | 1 / 0.029 | — | 49 |
-| notice-banner | 0 / 0 | 1 / 0.007 | 1 / 0.022 | — | 1 |
-| notices-pane | 1 / 0.000 | 1 / 0.008 | 1 / 0.019 | — | 4 |
-| nav-with-indicator | 1 / 0.000 | 1 / 0.017 | 1 / 0.028 | — | 7 |
-| frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | — | 23 |
-| header-action-two | 0 / 0 | — | 1 / 0.000 | — | 1 |
-| page-scrolled | 1 / 0.008 | 1 / 0.095 | 1 / 0.037 | — | 43 |
-| sheet-over-scrolled | 1 / 0.008 | 1 / 0.043 | 1 / 0.027 | — | 46 |
+| Take | Plates + ground | Frost | Lit glyphs | Text + AA (max) |
+| --- | --- | --- | --- | --- |
+| elements | 1 / 0.006 | — | — | 48 |
+| button-forms | 1 / 0.000 | — | — | 27 |
+| button-in-progress | 1 / 0.001 | — | — | 45 |
+| meter | 1 / 0.001 | — | — | 26 |
+| tiles | 1 / 0.024 | — | 1 / 0.354 | 36 |
+| accessibility-toggles | 1 / 0.005 | — | — | 13 |
+| dial | 1 / 0.000 | — | 1 / 0.006 | 8 |
+| select-picker | 1 / 0.004 | 1 / 0.008 | 1 / 0.435 | 24 |
+| nav-bottom | 1 / 0.000 | 1 / 0.013 | 1 / 0.031 | 7 |
+| sheet | 0 / 0 | 1 / 0.008 | 1 / 0.029 | 49 |
+| notice-banner | 0 / 0 | 1 / 0.007 | 1 / 0.022 | 1 |
+| notices-pane | 1 / 0.000 | 1 / 0.008 | 1 / 0.019 | 4 |
+| nav-with-indicator | 1 / 0.000 | 1 / 0.017 | 1 / 0.028 | 7 |
+| frosted-chrome (2×) | 0 / 0 | 1 / 0.000 | — | 23 |
+| header-action-two | 0 / 0 | — | 1 / 0.000 | 1 |
+| page-scrolled | 1 / 0.008 | 1 / 0.095 | 1 / 0.037 | 43 |
+| sheet-over-scrolled | 1 / 0.008 | 1 / 0.043 | 1 / 0.027 | 46 |
 
-Every take meets all four targets.
+Every take meets all three targets.
 
 **Frames.** Measured as the proof was — the kitchen sink in
 `ReleaseFast`, a 5 s CGEvent wheel scroll at 120 Hz, median / p95 ms

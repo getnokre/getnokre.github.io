@@ -488,6 +488,15 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   text-align: right;
 }
 
+/* A field's label is the app's words in the chrome's language, so
+   it stands on the chrome's leading edge whatever its first strong
+   character — a Latin label in a Persian app on the right — as the
+   reference places it (`drawSmallLabel`) and as localization.md
+   lists it among what the chrome decides. Only the block moves, and
+   `left`/`right` for the reason the cells above give. */
+:is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) .field-label { text-align: left; }
+:root[data-nokre-direction="rtl"] :is(.nokre, .nav, .notice, .notices-pane, .sheet, .picker) .field-label { text-align: right; }
+
 /* No transition and no animation, anywhere, ever. Motion is a
    vestibular hazard (WCAG 2.3.3), an untestable intermediate state,
    and a tax on determinism; nokre has none to configure or to
@@ -990,14 +999,25 @@ ul.list, ol.list {
   display: flex;
   flex-direction: column;
   gap: var(--list-gap);
-  padding-inline-start: var(--list-gutter, calc(var(--quote-indent) + var(--list-marker-gap)));
+  padding-inline-start: calc(var(--list-gutter, calc(var(--quote-indent) + var(--list-marker-gap))) - var(--list-marker-gap));
 }
-ul.list { list-style: disc; }
-ol.list { list-style: decimal; }
-ol.list:lang(fa) { list-style-type: persian; }
-ol.list:lang(ar) { list-style-type: arabic-indic; }
+/* The gap is the item's, so it stands between the marker and the
+   words on whichever side the words are: an outside marker is
+   placed against the item's border edge, never inside its padding.
+   The marker's figures are proportional, as the gutter measured
+   them — the browser's own marker sets them tabular, which drew
+   `۱۰.` wider than its column and past the page's edge. */
+:is(ul.list, ol.list) > li { padding-inline-start: var(--list-marker-gap); }
+@counter-style nokre-decimal { system: extends decimal; suffix: "."; }
+@counter-style nokre-arabic-indic { system: extends arabic-indic; suffix: "."; }
+@counter-style nokre-persian { system: extends persian; suffix: "."; }
+@counter-style nokre-bullet { system: cyclic; symbols: "\2022"; suffix: ""; }
+ul.list { list-style-type: nokre-bullet; }
+ol.list { list-style-type: nokre-decimal; }
+ol.list:lang(fa) { list-style-type: nokre-persian; }
+ol.list:lang(ar) { list-style-type: nokre-arabic-indic; }
 li { display: list-item; }
-li::marker { color: var(--ink); }
+li::marker { color: var(--ink); font-variant-numeric: normal; }
 /* An item is a flow of its own at the list's gap (`layoutBlock`'s
    `list_item` arm), and block flow, so the gap is a margin between
    siblings — never before the first, which shares the marker's
@@ -1013,7 +1033,9 @@ li > * + * { margin-top: var(--list-gap); }
 /* No bleed: `layoutTable` never takes the advised margin. A table
    is an intrinsic-width block on the leading edge, and the one no
    shrinking can fit — every column already down to its longest
-   word — scrolls where it stands. */
+   word — scrolls where it stands and breaks no word, in both
+   substrates. While it does, the live driver makes the wrap a stop
+   (live.js, `syncTables`). */
 .table-wrap {
   overflow-x: auto;
   overflow-y: hidden;
@@ -2098,6 +2120,9 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   text-align: start;
 }
 .field-box input, .field-box textarea { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; appearance: none; }
+/* Elided at its own end: a select's option cannot be scrolled the
+   way a text field's value is, so a cut would hide that there is
+   more (`drawSelect`). `plaintext` makes the end the value's own. */
 .field-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .field-box input:focus, .field-box textarea:focus { outline: none; }
 /* The rows the `rows` attribute states, which core laid the field
@@ -2685,6 +2710,12 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 }
 /* The current choice is a dim chip on paper, its state carried by
    the boundary as everywhere else — not by weight. */
+/* A row's words fill it, so `unicode-bidi: plaintext` puts them on
+   their own leading edge, where the reference draws an option
+   (`drawPickerItem`); a flex item as wide as its words would stand
+   on the chrome's. A section's row keeps its mark and words
+   together on the chrome's edge, as the nav row does. */
+.picker-item > .picker-words { flex: 1; min-width: 0; }
 .picker-item[aria-selected="true"] {
   background: var(--g11);
   border-color: var(--g6);

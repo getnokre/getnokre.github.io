@@ -41,7 +41,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `list` / `list_item` | `list` / `listitem` | —; the derived marker is presentation and is never announced |
 | `code_block` | `code` | content announced whole, focused |
 | `blockquote` | `blockquote` | —; the attribution is words inside it |
-| `table` / `row` / `cell` | `table` / `row` / `cell` | header rows |
+| `table` / `row` / `cell` | `table` / `row` / `cell` | header rows; a table that scrolls sideways is also focused, and on the web a `region` named by its header row's words ([elements.md](elements.md#table--row--cell)) |
 | `scroll_region` | `scroll_area` | focused |
 | `region` (`masthead`) | `banner` | its `label` as the name, focused. Deliberately not `status`: a polite live region re-announcing a queue count is what `notice` and `stand_in` exist to keep rare |
 | `region` (`roster`) | `navigation` | the same role a `nav` takes. Two navigation landmarks in one document is the ordinary shape and they are told apart by name — which is why a region's label is required |
@@ -57,7 +57,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `ranking` while picking | — | the prompt and the app's `picking_hint` as `static_text`; the choices as an unnamed `list` of `list_item`s named by their words, whose rank is the list's own position; each pool row a `button` named by its words, with no rank; the controls as above; and a polite `status` saying the state that now holds — the last choice with its rank, or the first prompt when none is chosen |
 | `dial` | `spin_button` | the label as the name, or the words of the node it is `named_by`; the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
 | `stage` | `figure` | the label as the name, or the words of the node it is `named_by`; the step it stands on as the description. One node whatever its window draws: nothing of the recorded screen enters the tree |
-| `stage` control (framework) | `button` | named by the framework ("Previous step" / "Play" or "Pause" / "Next step" in English — [localization.md](localization.md#the-frameworks-own-words)); Previous `disabled` on the first step and Next on the last. No Play under Reduce Motion |
+| `stage` control (framework) | `button` | named by the framework ("Previous step" / "Play" or "Pause" / "Next step" in English — [localization.md](localization.md#the-frameworks-own-words)); Previous `disabled` on the first step and Next on the last, playing or not. No Play under Reduce Motion |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | the label as the name, or the words of the node it is `named_by`; selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |

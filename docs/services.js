@@ -67,6 +67,8 @@ export function silentHooks() {
     nokre_ss_mirror_del: () => {},
     // A compute instance lays nothing out, so it never asks.
     nokre_dom_measure: () => 0,
+    // Nor does it build a screen, so no builder of its can fail.
+    nokre_log_refusal: () => {},
   };
 }
 
@@ -403,6 +405,15 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics }) 
   return {
     ...silentHooks(),
     nokre_dom_measure: measure,
+
+    // A screen or sheet whose builder failed (router.zig's
+    // `BuildRefusal`): the one line the native legs send to their log,
+    // said once per distinct refusal. The console, because a
+    // developer is who can act on it — the reader sees the screen as
+    // far as it was built, exactly as before.
+    nokre_log_refusal: (ptr, len) => {
+      console.error("nokre: " + utf8.decode(memory().subarray(ptr, ptr + len)));
+    },
 
     nokre_shell_write_clipboard: (ptr, len) => {
       const text = utf8.decode(memory().subarray(ptr, ptr + len));

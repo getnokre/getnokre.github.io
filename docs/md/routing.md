@@ -1022,3 +1022,45 @@ with a path, a query, a fragment or a trailing slash fails the build
 that declared it. An app that declared no origin has no address to hand
 anyone, so `routeLink` does not compile in it. The reference is vetted
 as `routeRef` vets it, with the same errors.
+
+### Links into another app
+
+Apps of one family link to each other's screens — a room offering "open
+this in the other app". The link is written by the same writer, and
+the app states only what that writer needs and cannot see: the other
+app's route table is source in another build, so its builders and
+titles never reach this one. Declare each app this one links into, and
+each route of it this one links to:
+
+```zig
+.links_into = &.{.{
+    .name = "votes",
+    .web_origin = votes_origin,   // its own .web_origin
+    .address_form = .path,        // its own .address_form
+    .routes = &.{
+        .{ .name = "ballot", .args = 2, .secret_args = 1 },
+        .{ .name = "publications" },
+    },
+}},
+```
+
+```zig
+const link = try app.routeLinkInto(gpa, .votes, "ballot", &.{ id, key });
+defer gpa.free(link);   // https://votes.example.com/ballot/b7#a2V5
+```
+
+The origin and the form are the other app's own declarations. Where
+both apps are built in one build graph, read them off its `AppOptions`
+— `.web_origin = votes_decl.web_origin` — rather than typing them a
+second time; each route's counts are its `RouteDef`'s. `.votes` is a
+member of `nokre.declared.LinkedAppName` exactly when it is declared, so
+a link into an app this one never named does not compile. The rest is
+`routeLink`'s: the route and its arguments are vetted against what was
+declared, with the same errors, and a secret argument rides the
+fragment. A link into another app's front door names its route
+(`/publications`, never `/`); every app reads that back as the screen
+`/` is. The build refuses, by name, an origin of the wrong shape, an app
+named twice or by something that is not an identifier, an app at this
+app's own origin (that link is `routeLink`), an app with no route, a
+route named outside the charset or twice, and more secret arguments
+than arguments.

@@ -171,7 +171,7 @@ table.
 | `box` (bordered or filled), `tile_group`, `radio_group` | the card | card |
 | the collapsed nav's section list | the card, on the dim | card |
 | `button`, filled (primary) | the pill, a `.g9` plate | cta |
-| `button`, secondary | no plate: its ring alone, no fill ([below](#buttons-under-the-lamp)) | none; the ring answers the lamp itself |
+| `button`, secondary | no plate: its stroke alone, no fill ([below](#buttons-under-the-lamp)) | none: a `.g6` stroke, lit on its own, as a pool row is |
 | `button`, waiting on its words | the pill | plate |
 | `tile` | the mark's well | plate |
 | `segmented`, `dial` | the lit plate | knob |
@@ -319,7 +319,7 @@ A white fill in a lit dark scene is a second lamp. Depth dark's
 primary is an `ink` pill, `0xBD`, and under the lamp it read as a
 light source rather than as a lit object; so the owner (2026-09-27)
 stepped the forms down one each, paint only, in lamp dark only: the
-primary is a filled plate, the secondary its lit boundary alone, and a
+primary is a filled plate, the secondary its stroke alone, and a
 link stays words.
 
 - **Filled.** A `cta` plate in `.g9`, `0x3B`, the chosen plate's tone,
@@ -328,50 +328,28 @@ link stays words.
   weight at the page's ×0.5 gain says it can be taken now. Disabled, the
   plate is the off well's `.g11` with `disabled_ink`, and lies flat, as
   it does working. Working, its inner track is depth's, inside the plate.
-- **Rim-only.** No fill: the box is transparent over what it stands on
-  — the void, a card, a sheet's glass — and a **ring** is the whole of
-  it. No face, since a face darkens a fill, and no shadow, since nothing
-  is filled to cast one. The words are `ink`, which clears every ground
-  already.
+- **Secondary.** Its `.g6` stroke alone, 1 point at the pill's
+  corner, over no fill: the pool row's drawing, from the one function
+  (the renderer's `drawStrokeFace`), and eink's. It is lit on its own —
+  one tone all the way round, wherever the button stands — and nothing
+  the lamp answers: no face, no well, no shadow. The words are `ink`,
+  which clears every ground already. `.g6` is 4.12:1 on the void, 3.34:1
+  on paper and 3.01:1 on a `.g11` well (color.zig proves all three). On
+  the brightest frosted glass measured, `0x2B`, it is 2.78:1: glass is no
+  opaque ground, and the stroke on it joins the waiver for text on a
+  frosted fill
+  ([pixel-model.md](pixel-model.md#what-lamp-waives-beside-it)).
 
-  The ring is not a plate's rim. A rim is a plate's lit edge and holds
-  under a boundary's 3:1 on every fill; with nothing else drawn, the
-  ring *is* the control's boundary, and a one-device-pixel rim read as
-  nothing past its lit end (`0x07` at its far side on the owner's
-  phone). So, as the owner tuned it (2026-09-27): **one logical pixel
-  plus the rim's one device pixel** wide — 2 device px at 1×, 3 at 2×,
-  4 at 3× — inside the box's edge. It lifts what is beneath toward
-  white, from `color.lamp_ring_floor_byte`'s lift at the box's farthest
-  point from the lamp (`0x1D` on the void) to
-  `color.lamp_ring_peak_byte`'s at its nearest (`0x66`), by the larger
-  of `t²` and the specular — `t` running over the box's own nearest and
-  farthest points, not the rim's bounds around it, so the far side lands
-  on the floor. A chrome edge reaching it adds a card's light. Over
-  paper the floor is `0x36`, 1.41:1.
-
-  **`0x66` is a clamp on the byte, on every ground** — the void, a card,
-  a sheet's frost — never exceeded whatever is beneath, and never
-  darkening what is already brighter. Focus on this form is the
-  in-place 2 px `ink` edge over the ring, and `ink` over `0x66` is
-  3.05:1 (2.4.13 on the same pixels); from `0x68` it would fail. It is
-  the rim's cap on paper, byte for byte; a rim over the void reaches
-  only `0x53`, and the ring may reach `0x66` there because it is the
-  boundary a finger looks for: its lit end is 3.66:1 over the void. A
-  clamp over an unknown byte is not a white composite at a coverage, so
-  the ring is the one lamp op a byte table writes: on the CPU the shim
-  writes each pixel from `lamp.ring_bytes` (`color.lampRingByte` per
-  byte beneath and coverage, the band's anti-aliased edge scaling the
-  coverage), and on the GPU a runtime blend that reads the destination
-  lifts it by the same rule, white for the tone and the peak for the
-  ceiling. It is left undithered: along a 135 px pill's top edge its
-  bytes step one at a time, the longest run six pixels.
-
-  Disabled, the ring lifts **half** as far — floor, peak and lights —
-  `0x0F` to `0x33` on the void, with `disabled_ink` words. Working with
-  a percentage, the ring's interior fills in the ambient track's `.g10`
-  from the leading edge up to it, and the ring lifts over it — the
-  ring's own interior, so it takes no rim of its own. Focus is the
-  in-place 2 px `ink` edge, as in depth, drawn over the ring.
+  Until 2026-09-29 this form was a reflective ring, lifting what was
+  beneath toward white by where it stood under the lamp; the owner asked
+  for a solid stroke instead, and the ring, its shaders and its byte
+  table went with it. Disabled, the stroke is `.g10`, with
+  `disabled_ink` words, as the pool row's. Working with a percentage,
+  the stroke's interior fills in the ambient track's `.g10` from the
+  leading edge up to it, a flat fill, and the stroke lies over it. Focus
+  is the in-place 2 px `ink` edge, as in depth: a change of width from 1
+  to 2 points as well as of tone, since `ink` over `.g6` is 2.71:1, as it
+  is on the pool row.
 - **The vendor pills** are the exception, as everywhere: Apple's and
   Google's keep their store-facing fills, pinned to eink's light ramp.
 
@@ -702,10 +680,8 @@ the build:
   mask capped once. The golden suite checks it too, over every
   lamp-dark take against depth dark's bytes pixel for pixel, the boxes
   lamp repaints ([above](#buttons-under-the-lamp)) set aside, and a
-  rim-only button's ring held to its own peak instead.
-- A rim-only button's ring never leaves a byte past `0x66` over any
-  byte under it, at any coverage, and never darkens; `ink` over `0x66`
-  is 3:1, and its floor stands 1.1:1 off the void and off paper.
+  bare stroke — a secondary button's, a pool row's — held to its own
+  tone instead.
 - Every word on a well — `ink` and `dark` over `g10` and `g11` — keeps
   its text band over the darkest byte its face leaves.
 - A face on `paper` only darkens, by at most twelve bytes — the full twelve

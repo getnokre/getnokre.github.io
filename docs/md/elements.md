@@ -35,6 +35,48 @@ own id is `b.at`). A sheet builder starts from
 `app.at(try app.presentSheet(title))`, the cursor standing on the node
 the framework handed back.
 
+### When an append is refused
+
+An element that breaks a rule is refused at the append, as an error
+naming the rule (`error.NameOmitsVisibleLabel`,
+`error.InvalidListItemChild`, …), and nothing is added. A builder that
+passes the error on — every `try` does — stops there, and **the screen
+stands as far as it got**: every element appended before the refusal,
+none after — and it is that screen the address bar, the nav's current
+section and the accessibility tree name, as they would a whole one.
+A sheet's builder is the exception, because a half-built
+dialog has nothing to offer: its sheet comes down whole. Neither is
+drawn any differently for the refusal, so it would be easy to miss, and
+two real ones were — a review whose translated "Change" button stated a
+name without its drawn words, and a result list whose rows carried a
+badge a list item refuses, both ending the screen at that element in a
+shipped app and in goldens that photographed the short screen.
+
+So the refusal is written down and said. The line names the part, the
+route, the refused element's kind and drawn words, and the rule —
+
+```
+screen "review" was cut short: button "Değiştir" refused (NameOmitsVisibleLabel)
+```
+
+— with the route's secret arguments redacted as every reference nokre
+prints is. A builder that navigated first — a guard that redirected —
+and then failed is named with the screen that stands instead:
+
+```
+screen "guard~7" navigated to "library", which stands, then failed: its builder returned GuardFailed
+```
+
+A running app says it once per distinct refusal: to logcat under the
+tag `nokre` on Android, on the console on the web, and on standard
+error on every other native target, where the shells' frame log goes
+too — a terminal or Xcode's console shows it, an app opened from the
+Finder or the home screen has no one reading. What a user sees
+does not change. Every test tier fails on it instead
+([testing.md](testing.md#a-screen-its-builder-left-short)). A builder
+that *catches* a refusal and carries on has built a whole screen of its
+own choosing; only a refusal the builder returns counts.
+
 ### Patching one node instead of rebuilding
 
 Most screens are rebuilt from state: `app.reload()` for a gesture the
@@ -1434,8 +1476,8 @@ the same WCAG 1.4.11 carrier on a curve. Under
 [`depth`](getting-started.md#a-theme) the secondary is a `.g10` well
 with no border rather than an outline. Under
 [`lamp`](internals/lamp.md#buttons-under-the-lamp) dark the primary is a
-filled gray plate and the secondary its lit ring alone, with no fill —
-paint, not a form change.
+filled gray plate and the secondary its `.g6` stroke alone, lit on its
+own as eink's is — paint, not a form change.
 
 **The label wraps inside the pill, and the pill grows to hold it.** A
 button asks for the width its words want and takes what it is offered;
@@ -2658,7 +2700,15 @@ way. Semantics: a multiline text field carrying the value.
 An exclusive choice among many options, in `text_input`'s clothing: the
 same labeled-field geometry, showing the current option with a chevron
 affordance at the trailing edge; an option longer than the field is
-cut where the chevron's slot begins, never drawn under it. Same fields as `radio_group` — `label`, `options` (2+),
+never drawn under the chevron's slot: it elides at its own end, in the
+value's own reading order, with an ellipsis. A text field may cut its
+value at the outline because editing scrolls it; nothing scrolls a
+select's option, so a cut would hide that there is more. A picker row
+whose option does not fit wraps to further lines, as a tile's words do,
+and the picker is sized to the rows as they wrap. The shown option and
+the picker's rows are values, so each reads in its own direction: a
+Latin option under Persian chrome stands on the left, beside the
+chevron, and a Persian one on the right under English chrome. Same fields as `radio_group` — `label`, `options` (2+),
 `selected`, `on_select`, and `named_by` in the label's place
 ([naming](#naming-a-device-without-drawing-its-label)). Reach for it when the options are too many to
 lay out in place; for a handful, prefer `radio_group`, which shows
@@ -2908,7 +2958,10 @@ window stand the step's words, in their own direction, with room kept
 for the longest so a step never moves the page, and nokre's controls
 under them, real buttons in the app's words: **Previous step**, **Play**
 and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
-`stage_next`). Previous and Next rest on each step's last screen. Play
+`stage_next`). Previous and Next rest on each step's last screen;
+Previous is on wherever a step stands before the current one and Next
+wherever one stands after, playing or not, and either pressed while
+the play runs pauses it and steps. Play
 runs the play by itself on the shell's frame ticks, with the moving
 hand; while it runs the same button says **Pause** (`stage_pause`) and
 stops it where it stands, and it stops by itself at the end, or when its
@@ -3092,7 +3145,10 @@ sits in a leading band sized for the widest marker in the list and
 right-aligned inside it, so every item's words start on the same column
 even when the count crosses into double digits; a wrapped line hangs
 under those words, never back under the marker. The band is leading, so
-it mirrors under `App.setDirection(.rtl)`.
+it mirrors under `App.setDirection(.rtl)`, and the marker stands the
+same gap clear of the words on either side. A marker is chrome and reads
+in the chrome's direction: mirrored, `۱۰.` keeps its figures in order
+and puts its stop on their left, between the number and the words.
 
 A `list_item` holds document blocks — `text` and nested lists — not
 arbitrary content. A `heading` inside one would claim an outline
@@ -3151,7 +3207,9 @@ quiet at rest and emphasized while the block is engaged — over the last
 line's leading, or in a strip below the lines where the presentation is
 interactive.
 Focusable, because it scrolls: ←/→ walk it four mono advances at a time
-(a code indent), and every other key falls through to the page. A
+(a code indent), and every other key falls through to the page. In a web
+build the browser scrolls the `pre` itself, so there ←/→ are the
+browser's and walk it by the browser's own step. A
 horizontal wheel or drag over it scrolls it; vertical delta belongs to
 the page — a code block scrolls one axis and the other is not its
 business.
@@ -3238,14 +3296,35 @@ any wider column still has slack — CSS calls that floor min-content,
 and this is CSS auto table layout, which is what the browser is already
 doing to the same table in a web build.
 
-A table whose longest words *alone* do not fit the span is the one
-place a table cell breaks a word: the cap goes below the floors and the
-widest columns break rather than any column standing off the side of
-the frame. Five columns of word headers do not fit a 360px phone
-whatever is done with them; a table meant for one is a table with fewer
-columns. The rect always reports the width the columns came to, fitted
-or not, because hit testing, focus reveal and the a11y snapshot all
-read it.
+**A table never breaks a word; one whose longest words alone do not
+fit scrolls sideways in its own box.** Every column stays at the longest
+word it holds, the columns run past the span, and the table becomes a
+horizontal scroller the way an overflowing `code_block` is one: its
+rect is the span it was given and no wider — it takes no bleed into the
+margin, as the browser's `.table-wrap` takes none — its rows and cells
+stand at their places less the offset and are clipped to the box, and a
+bar strip is kept below them. Under a mirrored chrome it rests at its
+leading edge, the right, and scrolls the other way. The offset and the
+columns' width are layout's and input's to write, on
+`Table.scrolled`, and a table appended with any of it set is refused
+(`error.LayoutOwnedField`). Breaking the widest columns' words to fit
+was the rule before, and the two substrates disagreed: the browser
+already scrolled the same table and broke nothing.
+
+A table that scrolls is a **focus stop while it scrolls, and only
+then** — a table that fits adds none. ←/→ scroll it a body line at a
+time, and every other key is the page's. A control inside a cell that
+is scrolled out of the box is brought back into it by the same reveal
+that brings a focused control out of a scroll region, innermost first,
+so a table inside a scroll region moves sideways and then the region
+moves down. Wheels, drags and a driver's `scrollX` scroll it where it
+stands. In a web build the browser scrolls the `.table-wrap`, and the
+live driver reads from the real widths whether it overflows: while it
+does the wrap takes `tabindex="0"` and is a `region` named by its header
+row's words, and when it fits again it drops all three. A nokre table
+has no name or caption of its own, which is why the header row names
+it, and why a table without one is a stop and no region; the native
+snapshot keeps the table's role and makes it focusable, with no name.
 
 **A cell's words stand on its column's leading edge, and that is the
 one place text follows the chrome.** Everywhere else a paragraph aligns

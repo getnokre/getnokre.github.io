@@ -1677,14 +1677,27 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   `<li>` derives its own marker and nokre's never reaches the markup,
   which is why a Persian page cannot be fixed by emitting a shaped
   digit: the fix is a `list-style-type`. One
-  `ol.list:lang(fa) { list-style-type: persian; }` rule per language
-  that does not number in ASCII, generated in `stylesheet.zig` from the
-  same `lang.digit_langs` the other substrate shapes its ordinals from,
-  through a switch with no `else`. A row added to that table is a
-  compile error until the counter style is named — two substrates of one
-  document cannot number it differently. `:lang()` and not
-  `[lang|=…]`, because the selector matches an *inherited* language and
-  `<html lang="fa-IR">` is the only place the page says so.
+  `ol.list:lang(fa) { list-style-type: nokre-persian; }` rule per
+  language that does not number in ASCII, generated in `stylesheet.zig`
+  from the same `lang.digit_langs` the other substrate shapes its
+  ordinals from, through a switch with no `else`. A row added to that
+  table is a compile error until the counter style is named — two
+  substrates of one document cannot number it differently. `:lang()`
+  and not `[lang|=…]`, because the selector matches an *inherited*
+  language and `<html lang="fa-IR">` is the only place the page says so.
+
+- **The gap after a marker is the item's padding, not the marker's.**
+  Every counter style is nokre's own `@counter-style`, extending the
+  built-in one with `layout.list_ordinal_suffix` alone: a built-in
+  suffix is a stop *and a space*, which added a browser's blank to the
+  gap and made `۱۰.` overrun a gutter measured without it, and a `disc`
+  is a shape the browser spaces itself, where the reference draws
+  `element.list_bullet`. The gap is `padding-inline-start` on the item,
+  because an outside marker stands against the item's border edge — so
+  it falls between marker and words in either direction, where the
+  reference mirrored the band and left the gap on the far side of it.
+  `font-variant-numeric: normal` on `::marker` undoes the browser's
+  tabular figures, which the gutter was never measured in.
 
 Roles come from `semantics.roleOf`, never a second table. An element
 whose HTML tag already carries the right implicit role gets no ARIA;
