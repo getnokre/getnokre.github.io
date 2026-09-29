@@ -489,37 +489,47 @@ reach for the moment a second language exists. It reads one **reserved
 key per `Chrome` field**, the name derived from the field's — `chrome`
 plus the field camel-cased at its underscores:
 
-| Field | Reserved key |
-| --- | --- |
-| `back` | `chromeBack` |
-| `close` | `chromeClose` |
-| `section` | `chromeSection` |
-| `current_screen` | `chromeCurrentScreen` |
-| `sections` | `chromeSections` |
-| `notices` | `chromeNotices` |
-| `show_notices` | `chromeShowNotices` |
-| `show_all_notices` | `chromeShowAllNotices` |
-| `minimize_notices` | `chromeMinimizeNotices` |
-| `dismiss_all_notices` | `chromeDismissAllNotices` |
-| `open_prefix` | `chromeOpenPrefix` |
-| `dismiss_prefix` | `chromeDismissPrefix` |
-| `important` / `other` | `chromeImportant` / `chromeOther` |
-| `copied` | `chromeCopied` |
-| `more` | `chromeMore` |
-| `cut` / `copy` | `chromeCut` / `chromeCopy` |
-| `paste` / `select_all` | `chromePaste` / `chromeSelectAll` |
-| `regions` | `chromeRegions` |
-| `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` |
-| `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` |
-| `ranking_in` / `ranking_out` / `ranking_here` | `chromeRankingIn` / `chromeRankingOut` / `chromeRankingHere` |
-| `ranking_first_prompt` / `ranking_next_prompt` | `chromeRankingFirstPrompt` / `chromeRankingNextPrompt` |
-| `ranking_undo` / `ranking_start_over` / `ranking_done` | `chromeRankingUndo` / `chromeRankingStartOver` / `chromeRankingDone` |
-| `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` |
-| `stage_play` / `stage_pause` | `chromeStagePlay` / `chromeStagePause` |
-| `stage_previous` / `stage_next` | `chromeStagePrevious` / `chromeStageNext` |
-| `caption_press` … `caption_go_to` | `chromeCaptionPress` … `chromeCaptionGoTo` |
+| Field | Reserved key | Asked of |
+| --- | --- | --- |
+| `back` | `chromeBack` | every localized app |
+| `close` | `chromeClose` | every localized app |
+| `section` | `chromeSection` | every localized app |
+| `current_screen` | `chromeCurrentScreen` | every localized app |
+| `sections` | `chromeSections` | every localized app |
+| `notices` | `chromeNotices` | every localized app |
+| `show_notices` | `chromeShowNotices` | every localized app |
+| `show_all_notices` | `chromeShowAllNotices` | every localized app |
+| `minimize_notices` | `chromeMinimizeNotices` | every localized app |
+| `dismiss_all_notices` | `chromeDismissAllNotices` | every localized app |
+| `open_prefix` | `chromeOpenPrefix` | every localized app |
+| `dismiss_prefix` | `chromeDismissPrefix` | every localized app |
+| `important` / `other` | `chromeImportant` / `chromeOther` | every localized app |
+| `copied` | `chromeCopied` | every localized app |
+| `more` | `chromeMore` | every localized app |
+| `cut` / `copy` | `chromeCut` / `chromeCopy` | every localized app |
+| `paste` / `select_all` | `chromePaste` / `chromeSelectAll` | every localized app |
+| `regions` | `chromeRegions` | every localized app |
+| `dial_increase` / `dial_decrease` | `chromeDialIncrease` / `chromeDialDecrease` | every localized app |
+| `ranking_move` / `ranking_swap` / `ranking_cancel` | `chromeRankingMove` / `chromeRankingSwap` / `chromeRankingCancel` | every localized app |
+| `ranking_in` / `ranking_out` / `ranking_here` | `chromeRankingIn` / `chromeRankingOut` / `chromeRankingHere` | every localized app |
+| `ranking_first_prompt` / `ranking_next_prompt` | `chromeRankingFirstPrompt` / `chromeRankingNextPrompt` | every localized app |
+| `ranking_undo` / `ranking_start_over` / `ranking_done` | `chromeRankingUndo` / `chromeRankingStartOver` / `chromeRankingDone` | every localized app |
+| `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` | every localized app |
+| `stage_play` / `stage_pause` | `chromeStagePlay` / `chromeStagePause` | an app that shows a play (`AppOptions.shows`) |
+| `stage_previous` / `stage_next` | `chromeStagePrevious` / `chromeStageNext` | an app that shows a play (`AppOptions.shows`) |
+| `caption_press` … `caption_go_to` | `chromeCaptionPress` … `chromeCaptionGoTo` | a build that films or records the app's plays (`addPlays`) |
 
-A catalog missing one of them does not compile — the posture the rest
+**A word is asked of an app that can show it.** A stage's four words
+are asked of an app that shows a play: it can draw a stage, and no other
+app can. The caption patterns are asked of the build that films or
+records the app's own plays, which is where a caption is written; a
+stage shows a recording's captions as the text they were recorded in,
+so an app that only shows another's play is asked for none. An app not
+asked for a word may still say it, and it is used — a caption pattern
+held to its slots as always; one it does not say stays English, on a
+screen that never shows it.
+
+A catalog missing a word it is asked for does not compile — the posture the rest
 of this document already holds, a catalog mistake is a build error,
 extended to the one place it could not reach: a bare `Chrome` literal
 compiles with a field missing, and the miss ships as English in the
@@ -528,10 +538,10 @@ language hears it. The bare literal stays for what its defaults are
 for: the zero-config app, or one saying a word or two. Nothing to
 re-declare when nokre grows a chrome string, either — the key is
 derived from the field, so the new field simply stops every opted-in
-app compiling until its catalogs say the new word, in every locale
+app that can show it compiling until its catalogs say the new word, in every locale
 they carry (key parity does the fanning out). The reserved keys are
-ordinary messages otherwise — placeholder-free, required, translated
-where every other word lives.
+ordinary messages otherwise — placeholder-free, translated where every
+other word lives.
 
 One struct and one call, not a setter per control: these are one fact —
 what nokre calls its own chrome — and a locale changes every one of them
