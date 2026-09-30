@@ -247,24 +247,27 @@ text-bearing node's line box against every chrome shadow's coverage.
 
 ### The one colored artwork
 
-One thing on any nokre screen is not gray: the multicolour G on the
+Two things on a nokre screen are not gray. The multicolour G on the
 Google sign-in button, drawn because Google's branding rules refuse a
-gray variant of their trademark. This is an *infrastructure* fact, not
-an API one — the four colour values live in `element.google_g_rgb`,
-reach pixels through the renderer's `google_g` table and the canvas's
-single rgb operation (`drawTextRgb`), and are not reachable from any element: no element
-carries a colour, no consumer call accepts one, and the palette an app
-authors in remains the thirteen grays above. The colours resolve
+gray variant of their trademark: an *infrastructure* fact, not an API
+one — the four colour values live in `element.google_g_rgb`, reach
+pixels through the renderer's `google_g` table and the canvas's
+`drawTextRgb`, and are not reachable from any element. And a
+[`picture`](../elements.md#picture), content the build declared, drawn
+in its own colour by `drawPicture` because a picture shows something in
+the world and is not the interface. No element carries a colour of its
+own, no consumer call accepts one, and the palette an app authors its
+interface in remains the thirteen grays above. The colours resolve
 through no ramp and follow no appearance — a trademark has no dark
 mode. The decision record (this was a refusal for a long time, and the
 reversal was the owner's) is in [oauth.md](oauth.md).
 
 Surfaces are `kRGB_888x` — rgb with no alpha channel: the frame is
 opaque, and the only blending in it is nokre's own (below). No canvas
-operation except `drawTextRgb` can make r, g and b differ — every other
-op paints a gray, or composites a gray over a pixel at one coverage
-for all three channels alike — so the frame is grayscale by
-construction everywhere that one mark is not. `on_frame` hands shells
+operation except `drawTextRgb` and `drawPicture` can make r, g and b
+differ — every other op paints a gray, or composites a gray over a
+pixel at one coverage for all three channels alike — so the frame is
+grayscale by construction everywhere that mark and a picture are not. `on_frame` hands shells
 tightly packed RGBX (4 bytes per pixel; the padding byte is outside the
 promise and readers ignore it). Anti-aliased text and rounded corners
 produce intermediate bytes; square-cornered geometry never does.

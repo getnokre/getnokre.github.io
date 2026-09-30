@@ -949,6 +949,66 @@ deliberately light tile. Never interactive; put a `copyable` beside it
 carrying the same value for the clipboard path. Semantics: an image
 named by the label, carrying the value.
 
+### `picture`
+A picture shows something in the world that the words are about: a
+team photo on a welcome screen, a map of the venue beside its address.
+It is the one element in its own color. The interface stays gray; the
+picture is the world's. Two fields: `shows`, a member of
+`nokre.declared.PictureName`, and `description`, what the picture shows
+in words.
+
+```zig
+// build.zig
+.pictures = &.{.{ .name = "landscape", .png = b.path("pictures/landscape.png") }},
+
+// a screen
+try b.picture(.{ .shows = .landscape, .description = tr(.landscapeDescription) });
+```
+
+- **It names only a picture the build declared.** `.shows = .harbour`
+  does not compile if `AppOptions.pictures` has no entry named
+  `harbour`. The build reads each file's header and refuses, by name
+  and file, an animated PNG (it carries `acTL`), a 16-bit one, an
+  interlaced one, a file over 8 MiB, one over 2280 pixels wide and one
+  over 2048 by 2048 pixels.
+- **The description is its name, and it is mandatory.** A reader hears
+  "A yellow sun over a green field, image". An empty description is
+  refused at append (`error.UndescribedPicture`): there is no
+  decorative form. The description is words, so it comes from the
+  catalog like any label.
+- **It is read at three pixels per point.** Its own size is its pixel
+  size divided by 3, rounded up: a 240 by 144 file stands 80 by 48.
+- **It draws at its own size or the width it is given, never
+  enlarged.** If its own width fits, it draws at its own size at the
+  start edge. If not, it draws at the width given and its height keeps
+  the ratio, rounded to the nearest point: a 1200 by 800 picture in a
+  350 wide column draws 350 by 233. Height is never a limit. There are
+  no width, height, crop or fit fields.
+- **In a row it keeps its own width** beside its neighbours, as an icon
+  does, and the row wraps as any row wraps.
+- **It keeps its own color in every look.** A red logo is red in `eink`
+  light, in `depth` dark and in `lamp` dark, and under Increase
+  Contrast. No look decorates it: no plate, no rim, no shadow.
+- **It never mirrors.** A car facing right still faces right in
+  Persian. Its place mirrors: in a right-to-left screen it stands at
+  the right.
+- **It is never a background and never a control.** Nothing is drawn
+  over it, it takes no focus and no press, and a page holding one
+  needs nothing running behind it.
+
+Each platform's own decoder reads the pixels, and nokre resamples them
+to the device's pixels in integers. On the web the page carries an
+`<img>` of the file, published beside the page under `pictures/`.
+
+What this is not: an `icon` is a general symbol, the same in every app;
+an `app_mark` is an app's identity; a `qr` is a value for a camera; a
+`stage` is another app's screens at work. A picture is none of these:
+it is something particular that the words beside it are about.
+
+Today a picture is declared by the build and nothing else. A picture
+from data (bytes an app fetched), a picture in a Markdown document, and
+a picture that is a link follow.
+
 ### `quantity`
 The one number a screen is about. `value` (mandatory) is the number as
 the app already formatted it, `unit` is what it counts, and `caption`

@@ -1052,6 +1052,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    half is not legacy: Safari still wants it. */
 .icon,
 .app-mark,
+.picture,
 .badge,
 .btn,
 .ctl,
@@ -1826,6 +1827,16 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
 .app-mark.s-h3 { font-size: var(--lh-h3); line-height: var(--lh-h3); height: var(--lh-h3); }
 .app-mark.s-h2 { font-size: var(--lh-h2); line-height: var(--lh-h2); height: var(--lh-h2); }
 .app-mark.s-h1 { font-size: var(--lh-h1); line-height: var(--lh-h1); height: var(--lh-h1); }
+
+/* A picture (`picture`): its own size, the attributes', or the width
+   it is given with its shape kept, never enlarged, at the start
+   edge. Its pixels never mirror, and no look decorates it. */
+.picture {
+  display: block;
+  flex: none;
+  max-width: 100%;
+  height: auto;
+}
 
 /* ---- links and controls ------------------------------------------ */
 

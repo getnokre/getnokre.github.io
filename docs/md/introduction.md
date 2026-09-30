@@ -26,7 +26,7 @@ derived rather than authored, and a toolchain that covers an app's whole
 life rather than stopping at the window.
 
 What the trade costs is expressiveness. The drawing is text, lines and
-boxes, grayscale only, rasterized on the CPU by Skia, and about as
+boxes, grayscale only but for a declared picture, rasterized on the CPU by Skia, and about as
 expressive as Markdown — literally: a `document` element takes a
 Markdown source and expands it into ordinary elements
 ([markdown.md](markdown.md)) — plus actions and navigation. Think: apps
@@ -89,7 +89,7 @@ buffer for a safe area it derives rather than asks for
 
 ## The tree travels; the drawing is local
 
-An app authors no pictures. It appends semantic elements — a heading is
+An app authors no drawing. It appends semantic elements — a heading is
 structure, a button is a button — and what turns that tree into something
 you can see is a *substrate*: the Skia one rasterizes grayscale frames,
 the DOM one hands the tree to the browser and lets it wrap where the
@@ -220,7 +220,9 @@ framework cannot express them.
   multicolour G — a trademark whose owner refuses a gray variant. The
   framework paints it from its own renderer; there is no way for an app
   to color anything, no element that takes a color, and nothing else on
-  any screen that is not gray. The refusal an app builds against is
+  any screen that is not gray but a `picture`, which shows something in
+  the world in its own color and is not the interface
+  ([elements.md](elements.md#picture)). The refusal an app builds against is
   intact — *your* information still has to survive grayscale, because
   grayscale is still all you can author.
   [internals/oauth.md](internals/oauth.md) records why this one mark
@@ -340,8 +342,8 @@ forms — apps whose value is *what they say and do*, and which would
 rather inherit accessibility, pixel-exact repeatability, real e2e tests
 and a tooled path to the store than decide each of them themselves.
 
-If the product needs color, motion, media, custom visual identity, or
-free-form canvases, nokre is the wrong framework — and will not grow the
+If the product needs a colored interface, motion, video or sound, custom
+visual identity, or free-form canvases, nokre is the wrong framework — and will not grow the
 features to become the right one.
 
 ## Where next

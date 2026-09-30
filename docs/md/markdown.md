@@ -92,9 +92,10 @@ What the table above leaves out is refused, not pending. Like the
 element set, the subset is closed on purpose, and additions are argued
 on semantics — the table is the whole of it:
 
-- **Images.** nokre draws text, lines, and boxes. A picture is not a
-  thing this library can render, so there is nothing for the syntax to
-  produce.
+- **Images**, for now. A `picture` is declared by the build
+  ([elements.md](elements.md#picture)), and the form that names a
+  declared one from Markdown follows; until then the syntax has nothing
+  to produce.
 - **Task lists, footnotes, definition lists.** Each wants an element the
   set does not have, and each is argued on presentation rather than
   meaning. A checklist is `checkbox`es; a footnote is a `link` to a

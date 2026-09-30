@@ -446,8 +446,9 @@ What shipped is option **A**'s frame with "the part that looked cheap"'s
 canvas — and deliberately not A's moral: the surface is
 `kRGB_888x` (rgb, no alpha — the frame is opaque), `on_frame`
 hands shells RGBX they blit without interpreting, goldens are PPM, and
-no op but one can make r, g and b differ, so the frame is gray by
-construction everywhere the mark is not. The canvas gained exactly one
+no op but one could make r, g and b differ, so the frame was gray by
+construction everywhere the mark was not (a `picture` joined it on
+2026-09-30, by the owner's decision; [pixel-model.md](pixel-model.md)). The canvas gained exactly one
 operation (`drawTextRgb`), the brand face gained the four arc glyphs on
 one shared advance, and `element.zig`'s `google_g_rgb` is the only
 place the four colour values exist — both substrates derive their
