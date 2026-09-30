@@ -1073,6 +1073,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
 .app-mark,
 .picture,
 .picture-unshown,
+.store-badge,
 .badge,
 .btn,
 .ctl,
@@ -1900,6 +1901,20 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   max-width: 100%;
   aspect-ratio: var(--pic-ratio);
 }
+.store-badge {
+  display: block;
+  position: relative;
+  flex: none;
+  width: fit-content;
+  margin: 10px;
+}
+.store-badge > img { display: block; width: auto; height: 40px; max-width: none; }
+.store-badge::before {
+  content: "";
+  position: absolute;
+  inset: min(0px, calc(50% - var(--touch) / 2));
+}
+.stack.row > .store-badge + .store-badge { margin-inline-start: calc(max(var(--gap), 10px) - 20px - var(--gap)); }
 
 /* ---- links and controls ------------------------------------------ */
 

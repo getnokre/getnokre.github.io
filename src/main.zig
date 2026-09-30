@@ -28,6 +28,7 @@ const std = @import("std");
 const nok = @import("nokre");
 const opts = @import("site_options");
 const web_assets = @import("web_assets");
+const site_tree = @import("site_tree");
 
 const content = @import("content.zig");
 const icons = @import("icons.zig");
@@ -52,7 +53,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 180;
+const nokre_revision = 181;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -366,6 +367,7 @@ pub fn main(init: std.process.Init) !void {
         });
     }
 
+    try writePlays(gpa, io, cwd, out_dir);
     try writeExtras(gpa, io, cwd, out_dir, alternates);
     try failOnStale(gpa, io, cwd, out_dir);
 
@@ -654,6 +656,25 @@ const shell_css =
     \\   depth's ground gradient, not `paper`. */
     \\html { overflow-x: clip; }
 ++ external_mark_css;
+
+/// The recordings the site's stages fetch, copied from the assembled
+/// web tree by its manifest: every entry under `plays/`, at the same
+/// path, since the live driver asks for a play by the name the
+/// gathering tool gave it and nothing else knows that name.
+fn writePlays(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
+    const manifest = try cwd.readFileAlloc(io, try std.fs.path.join(gpa, &.{ site_tree.dir, "site.manifest" }), gpa, .limited(1 << 20));
+    var copied: usize = 0;
+    var lines = std.mem.splitScalar(u8, manifest, '\n');
+    while (lines.next()) |rel| {
+        if (!std.mem.startsWith(u8, rel, "plays/")) continue;
+        const bytes = try cwd.readFileAlloc(io, try std.fs.path.join(gpa, &.{ site_tree.dir, rel }), gpa, .limited(64 << 20));
+        const path = try std.fs.path.join(gpa, &.{ out_dir, rel });
+        if (std.fs.path.dirname(path)) |dir| try cwd.createDirPath(io, dir);
+        try cwd.writeFile(io, .{ .sub_path = path, .data = bytes });
+        copied += 1;
+    }
+    if (copied == 0) return error.NoPlaysToPublish;
+}
 
 fn writeExtras(
     gpa: std.mem.Allocator,

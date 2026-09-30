@@ -952,8 +952,8 @@ named by the label, carrying the value.
 ### `picture`
 A picture shows something in the world that the words are about: a
 team photo on a welcome screen, a map of the venue beside its address.
-It is the one element in its own color. The interface stays gray; the
-picture is the world's. Two fields: `shows`, where its pixels come
+It is in its own color, as only a [`store_badge`](#store_badge) is
+besides. The interface stays gray; the picture is the world's. Two fields: `shows`, where its pixels come
 from, and `description`, what the picture shows in words. `shows` is
 one of two: `.declared`, a member of `nokre.declared.PictureName`, or
 `.data`, the bytes of a PNG the app was handed.
@@ -1065,7 +1065,8 @@ in its Content-Security-Policy. One that cannot be shown is its box's
 words, named by its description.
 
 What this is not: an `icon` is a general symbol, the same in every app;
-an `app_mark` is an app's identity; a `qr` is a value for a camera; a
+an `app_mark` is an app's identity; a `store_badge` is an app in a
+store, in the vendor's artwork; a `qr` is a value for a camera; a
 `stage` is another app's screens at work. A picture is none of these:
 it is something particular that the words beside it are about.
 
@@ -1131,6 +1132,237 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name, .e
   destination is never lost.
 - **Markdown cannot make one yet**: `[![…](name)](venue)` stays its
   source text.
+
+### `store_badge`
+A store badge says: this app, in that store. It shows the vendor's own
+badge, the "Download on the App Store" or "Get it on Google Play"
+artwork, and it goes to the app's page in that store. Two fields:
+`store`, `.apple` (the App Store for iPhone and iPad) or `.google`
+(Google Play), and `whose`, a member of `nokre.declared.BadgedApp`:
+`.own` by default, or an app this one links into and took the badges
+of. Nothing else is written at the call: the file, its words, the
+address and the size all come from the build.
+
+```zig
+try row.storeBadge(.{ .store = .apple });                    // this app, in the App Store
+try row.storeBadge(.{ .store = .google });                   // this app, in Google Play
+try b.storeBadge(.{ .store = .google, .whose = .votes });    // the votes app, in Google Play
+```
+
+#### The badge is declared
+
+nokre ships no badge file. Each vendor licenses its artwork to the
+developer whose app is in its store, and to no one else, so nokre has
+no right to hand the files on. Download each badge, per language, from
+the vendor's page while signed in to your developer account, and
+declare it beside the file:
+
+```zig
+.store = &.{ .iphone_6_9, .play_phone },   // the stores the app is in, as for its screenshots
+.app_store_id = 6_451_234_567,              // the number App Store Connect gave the app
+.store_badges = &.{
+    .{ .store = .apple,  .locale = "en", .png = b.path("badges/apple-en.png"),  .words = "Download on the App Store" },
+    .{ .store = .apple,  .locale = "de", .png = b.path("badges/apple-de.png"),  .words = "Laden im App Store" },
+    .{ .store = .google, .locale = "en", .png = b.path("badges/google-en.png"), .words = "Get it on Google Play" },
+},
+```
+
+- **`words` are the words printed on that file.** A reader hears them,
+  so a German badge is named in German. They belong to the file, not to
+  the catalog: they are the vendor's, and a translation of them would be
+  words the reader cannot see.
+- **One file per store and language.** A language is spelled as a
+  catalog's locale is (`en`, `pt_BR`). Every store with a badge has an
+  `en` file, since every other language falls back to it.
+- **The address is derived, not typed.** Google Play's page is written
+  from `pkg.id`, which is already the Android application id:
+  `https://play.google.com/store/apps/details?id=<pkg.id>`. The App
+  Store's page needs the one fact nokre cannot know, `app_store_id`:
+  `https://apps.apple.com/app/id<app_store_id>`.
+- **A file is taken as the vendor ships it.** Palette PNGs and 1-, 2-
+  and 4-bit files are read, because re-exporting the artwork to suit
+  nokre is the alteration both vendors forbid. A transparent margin the
+  vendor drew into the file for clear space is cropped away at build
+  time. That changes no pixel of the badge: it only moves empty margin
+  out of the file, because nokre lays the clear space out itself and
+  would otherwise count it twice.
+
+The build cannot prove a file is the vendor's, so it refuses what a
+wrong file would get wrong, each by name and file:
+
+- **Everything a declared `picture` refuses** ([`picture`](#picture)):
+  animated, 16-bit, interlaced, too large. A 16-bit file stays refused
+  because the frame holds 8 bits a channel, so the other eight would
+  never be shown.
+- **Under 120 pixels high once cropped.** A badge is drawn 40 points
+  high at three pixels a point, and a shorter file would be enlarged.
+- **Not between twice and five times as wide as high once cropped**,
+  which no badge is. A badge with its clear space then fits a column of
+  320.
+- **An App Store badge that is not the black one.** Apple asks for the
+  black badge wherever another store's stands beside it, so the white
+  one is refused.
+- **A file with nothing painted**, or one whose pixels cannot be
+  decoded.
+- **A badge for a store `.store` does not name.** Whether the app is in
+  a store is said once, by `.store`.
+- **An `.apple` badge without `app_store_id`, a `.google` badge without
+  `.pkg`**, a store with no `en` file, two files for one store and
+  language, a locale not spelled as a catalog's, and empty `words` or
+  words holding a control character.
+
+`nokre.declared.StoreBadgeName` has one member for each app and store
+the build carries: `own_apple`, `votes_google`.
+
+#### A linked app's badges
+
+The address and the files live with the app that is in the store. An
+app that links into it takes them, as it takes that app's mark:
+`addApp` returns `App.offered_store_badges`, the package hands it on
+under a name, and the linking app's entry in `.links_into` takes it
+([routing.md](routing.md#links-into-another-app)):
+
+```zig
+// votes' package
+if (app.offered_store_badges) |d| b.addNamedLazyPath("offered_store_badges", d);
+
+// the linking app
+.links_into = &.{.{ .name = "votes", …, .offered_store_badges = votes_dep.namedLazyPath("offered_store_badges") }},
+```
+
+`.votes` is then a member of `BadgedApp`. The linking app never states
+the other app's address, words or name: each would be a second place
+for them to be wrong.
+
+#### What the element refuses
+
+- **A badge the build does not carry does not compile.**
+  `.{ .store = .google, .whose = .teams }` fails, naming the app and the
+  store, when this app does not take teams' badges or teams declared no
+  Google Play badge. The raw append refuses the same pair
+  (`error.StoreBadgeNotDeclared`).
+- **A second App Store badge on a screen** is
+  `error.SecondAppleBadge`, whoever's it is: Apple asks for one App
+  Store badge per layout.
+- **An App Store badge after another store's badge in its row** is
+  `error.AppleBadgeFirst`: Apple asks for its badge first in the lineup.
+  First is reading order, so under right-to-left it stands at the
+  right.
+- Both rules hold on every target, an absent badge's included, so a
+  screen that builds on one builds on all.
+
+#### Layout
+
+- **Every badge is 40 points high.** That is Apple's floor on a screen,
+  above Google's, and one height for all keeps Google's rule that its
+  badge be no smaller than another beside it. The width follows the
+  file's shape: a 360 by 120 file stands 120 by 40. The file is only
+  ever read down, never enlarged, and a badge is never narrowed. There
+  is no size field.
+- **Clear space is 10 points on every side**, a quarter of the height,
+  as both vendors ask. Nothing else stands in it.
+- **Two badges in a row stand 10 points apart**, or the row's gap where
+  that is wider: each clear space only asks that nothing *else* enter
+  it, so the two may overlap. A row of badges is an ordinary horizontal
+  `stack` and wraps as any row wraps.
+- **It is pressed as a picture link is**: on the artwork, and in the 44
+  by 44 box about it, which lies inside the clear space. Its focus ring
+  stands outside the artwork, inside the clear space.
+- **It never mirrors.** Under right-to-left its place moves with its
+  row; the artwork does not flip.
+
+#### Which build shows which store
+
+- **A native build shows no other platform's store.** An iOS or macOS
+  build shows no Google Play badge, and an Android build no App Store
+  badge, since each store's review forbids another platform's. The
+  web, Windows and Linux show every badge.
+- **Absent, not refused.** The same screen code runs on every target,
+  and nokre never makes an app branch on the device. So on those
+  builds the badge stands as nothing: not drawn, not announced, no
+  space and no focus stop, and a recording leaves it out.
+- **The page a DOM substrate writes is the web's**, on whatever machine
+  wrote it, so it shows every badge (the `reflows` medium,
+  `App.setMedium`).
+
+#### Accessibility, looks and the web
+
+- **A reader hears a link named by the words on the file shown**:
+  "Download on the App Store, link". A badge taken from another app
+  adds a dash and that app's declared name — "Get it on Google Play —
+  Votes, link" — because two apps' badges of one store say the same
+  words, and two links with one name cannot be told apart by voice.
+- **It opens its store's page** as an external link does: in the
+  system browser on a native build, beside the page on the web.
+- **It keeps its own color in every look**, as a picture does, with no
+  plate, rim or shadow. Under `lamp`'s frosted chrome it shows through
+  as its luminance ([lamp.md](internals/lamp.md#frosted-chrome)).
+- **In the browser it is the picture link's anchor**, `<a href><img
+  alt></a>` opening beside the page, the `alt` the name above. The
+  build publishes each file beside the site's pictures
+  (`Emitter.Options.pictures_dir`), a linked app's included. A page
+  holding one needs nothing running behind it.
+- **A file that fails to decode where it is drawn** stands, from the
+  next frame, as a box saying its name at the badge's size, still a
+  link to its store.
+
+#### The credit line
+
+Both vendors ask for a credit wherever their badge stands. A screen
+that shows a badge ends with one, on every platform:
+
+- **Once per screen, after its last content**, in small muted text:
+  Apple's sentence, then Google's, for the stores whose badges the
+  screen shows, and nothing for a store whose badge is absent there.
+- **The words are the app's.** They are two chrome words,
+  `store_credit_apple` and `store_credit_google`
+  ([localization.md](localization.md#the-frameworks-own-words)), with
+  no English of nokre's: each is the vendor's own legal line, from
+  Apple's marketing guidelines and Google's legal line generator, and
+  nokre does not word a claim about a mark it does not own.
+- **An app that shows a badge declares a catalog.** One whose sources
+  name the element, that carries a badge, and that declares no `.l10n`
+  does not build, since the credit could come from nowhere else.
+
+#### Recordings and stages
+
+A recording carries a badge as a picture: its name, its size and its
+store's address, never the vendor's pixels. A [`stage`](#stage) draws
+it as a picture's box at the badge's size with the name inside, so a
+film of an app never ships the artwork. This is also how nokre's own
+examples show one: neither is in a store, so the kitchen sink's details
+screen plays the recorded screen of a fixture app
+(`tests/store_badge_site`), and nokre's build hands that recording to a
+site as `store_badge_plays`.
+
+#### What the vendors ask
+
+The build and the element hold the rules above; the vendors' pages
+state them, and are the ones to read:
+
+- Apple's marketing guidelines, <https://developer.apple.com/app-store/marketing/guidelines/>:
+  the size and clear space, one App Store badge per layout and first in
+  the lineup, the black badge beside other stores', no altering or
+  translating the badge, the credit, and the licence, which runs to the
+  developer of an app on the App Store only.
+- Apple's App Review guidelines, <https://developer.apple.com/app-store/review/guidelines/>,
+  guideline 2.3.10, on other platforms' names and imagery in an app.
+- Google Play's badge guidelines, <https://partnermarketinghub.withgoogle.com/brands/google-play/google-play/lockups-icons-badges/>:
+  the minimum size, clear space, no altering, the localized badge, and
+  a badge no smaller than another beside it.
+- Google's attribution rules, <https://partnermarketinghub.withgoogle.com/brands/google-play/legal-and-trademarks/legal-requirements/>,
+  which point at its legal line generator.
+
+**Which stores.** `.apple` and `.google`, the stores `.store` already
+names. The Mac App Store has a badge file of its own and comes when an
+app ships there. The Microsoft Store's badge is a script the vendor
+runs, and nokre's pages admit no vendor script, so it waits until its
+rules can be read and met.
+
+Reach for `store_badge` to send a reader to install the app. Reach for
+a [`picture`](#picture) link for any other artwork that goes somewhere,
+and for [`linkedApps`](#the-family) to open another app's front door
+rather than its store page.
 
 ### `quantity`
 The one number a screen is about. `value` (mandatory) is the number as

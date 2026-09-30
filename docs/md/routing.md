@@ -1111,6 +1111,14 @@ that app's package offers
 without it links as before and names no mark; an app named `own` that
 offers one is refused, since `.own` is this app's own mark.
 
+An app in a store offers its store badges the same way, with the
+address, the files and their words:
+`.offered_store_badges = votes_dep.namedLazyPath("offered_store_badges")`.
+Then `.votes` is a member of `nokre.declared.BadgedApp`, and
+`store_badge` shows votes' badge and goes to votes' page in that store
+([elements.md](elements.md#a-linked-apps-badges)). An app named `own`
+that offers badges is refused, for the mark's reason.
+
 Every app this one links into, as one group of rows each opening that
 app's front door, is `Cursor.linkedApps`
 ([elements.md](elements.md#the-family)).

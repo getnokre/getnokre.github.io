@@ -80,6 +80,11 @@ pub fn build(b: *std.Build) void {
         // can show, and published under `pictures_dir` by the
         // generator (src/main.zig).
         .pictures = &.{.{ .name = "hills", .png = b.path("assets/pictures/hills.png") }},
+        // The gallery's store_badge specimen: this site is in no store,
+        // so it shows another app's recorded badge screen on a stage
+        // (docs/elements.md, "store_badge"). nokre's build records the
+        // fixture's play and offers it under this name.
+        .shows = &.{.{ .recordings = dep.namedLazyPath("store_badge_plays"), .play = "store-badges" }},
         .theme = .lamp,
         // The key rule only. This site's catalog gives nokre's chrome
         // its words; its prose is English by decision, written in the
@@ -96,6 +101,14 @@ pub fn build(b: *std.Build) void {
     // pair honest — the screen the browser rebuilds says what the file
     // said — at the same cost: none, on the same two clean commits.
     live.module.addImport("site_options", options.createModule());
+    // The recordings a stage fetches live in the assembled site under
+    // `plays/`, named only by the gathering tool that wrote them, so the
+    // generator copies them out of that tree by its manifest rather than
+    // knowing their names. Its own options module rather than a field
+    // on `site_options`: the live half imports that one, and the
+    // assembled tree holds the live half, so the pair would be a loop.
+    const site_tree = b.addOptions();
+    site_tree.addOptionPath("dir", live.web.?);
 
     // ---- the generator, the other half of the pair -------------------
     //
@@ -114,6 +127,7 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "nokre", .module = live.tool_nokre },
             .{ .name = "site_options", .module = options.createModule() },
+            .{ .name = "site_tree", .module = site_tree.createModule() },
         },
     });
     // The derived identity set — favicon.ico, the adaptive favicon.svg,

@@ -2209,7 +2209,10 @@ derives from that one file:
 ```
 
 `.silhouette` is the other form and PNG works for either
-([services.md](services.md), "The mark is declared").
+([services.md](services.md), "The mark is declared"). Once the app is
+in a store, the vendors' badges that send a reader there are declared
+here too, as `.store_badges`
+([elements.md](elements.md#the-badge-is-declared)).
 Real art for Apple's platforms is one more line in the same
 declaration:
 

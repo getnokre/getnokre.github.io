@@ -26,7 +26,7 @@ derived rather than authored, and a toolchain that covers an app's whole
 life rather than stopping at the window.
 
 What the trade costs is expressiveness. The drawing is text, lines and
-boxes, grayscale only but for a declared picture, rasterized on the CPU by Skia, and about as
+boxes, grayscale only but for a declared picture or a store badge, rasterized on the CPU by Skia, and about as
 expressive as Markdown — literally: a `document` element takes a
 Markdown source and expands it into ordinary elements
 ([markdown.md](markdown.md)) — plus actions and navigation. Think: apps
@@ -222,7 +222,9 @@ framework cannot express them.
   to color anything, no element that takes a color, and nothing else on
   any screen that is not gray but a `picture`, which shows something in
   the world in its own color and is not the interface
-  ([elements.md](elements.md#picture)). The refusal an app builds against is
+  ([elements.md](elements.md#picture)), and a `store_badge`, the
+  vendor's own artwork for the store an app is in
+  ([elements.md](elements.md#store_badge)). The refusal an app builds against is
   intact — *your* information still has to survive grayscale, because
   grayscale is still all you can author.
   [internals/oauth.md](internals/oauth.md) records why this one mark

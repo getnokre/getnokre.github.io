@@ -519,6 +519,10 @@ fn gallery(app: *App) !void {
     try b.picture(.{ .shows = .{ .declared = .hills }, .description = "The same hills, as a link to the routing contract", .route = "routing" });
     try b.styled("A picture that goes is a link named by its description. Its focus ring stands outside the picture, clear of its corners; nothing is drawn over it. A picture cannot be a background and cannot carry a press of its own: the only control it can be is this one.", .{ .ink = .mid, .scale = .small });
 
+    try b.heading(.h3, "store_badge");
+    try b.stage(.{ .play = .@"store-badges", .label = "A store badge, played" });
+    try b.styled("This site is in no store, so it shows no badge of its own: this is another app's screen, recorded. A store badge is the vendor's own artwork, declared by the app that is in that store and leading to its page there; a recording carries it as its words, size and address, never the artwork, so a stage draws it as a box. Under the badge stands the credit line the vendor requires, drawn by nokre on every platform once per screen.", .{ .ink = .mid, .scale = .small });
+
     try b.heading(.h3, "qr");
     try b.qr(.{
         .label = "This site",
