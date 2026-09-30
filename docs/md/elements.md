@@ -695,20 +695,27 @@ renders outside the process and has to make that check itself
 ([static-sites.md](static-sites.md)).
 
 ### `app_mark`
-An app mark says whose thing this is. It draws the app's own mark, the
-silhouette its build declared ([services.md](services.md#the-mark-is-declared)),
-and it is announced as an image named by the app's declared name. One
-field: `scale` (the six text scales, `.body` by default).
+An app mark says whose thing this is. It draws an app's mark, the
+silhouette that app's build declared ([services.md](services.md#the-mark-is-declared)),
+and it is announced as an image named by that app's declared name. Two
+fields: `scale` (the six text scales, `.body` by default) and `whose`,
+a member of `nokre.declared.MarkedApp`: `.own` by default, or an app
+this one links into and took the mark of
+([routing.md](routing.md#links-into-another-app)).
 
 ```zig
 try row.appMark(.{ .scale = .h2 });
 try row.styled("Kitchen sink", .{ .scale = .h2 });
+try row.appMark(.{ .whose = .votes });   // the votes app's mark, named "Votes"
 ```
 
 - **Nothing about it is written at the call.** The drawing is the
   declared silhouette, and the name is the declared package name. If the
   app is called "Harbour", a reader hears "Harbour, image". The name is
   one string, not one per language.
+- **It names only an app whose mark was taken.** `.whose = .teams` does
+  not compile if this app does not link into "teams", or links into it
+  without taking its `offered_mark`.
 - **Its box is its scale's line box.** It is as tall as a line of text
   at its scale, and the mark fills that height top to bottom. It is as
   wide as the mark is, so a mark that is taller than wide stands
@@ -721,27 +728,31 @@ try row.styled("Kitchen sink", .{ .scale = .h2 });
 - **It is never a control.** It takes no focus and no press, and a page
   holding one needs nothing running behind it.
 - **It is refused when there is nothing to draw.** An app that declared
-  no silhouette gets `error.AppMarkNotDeclared` at append. An app whose
+  no silhouette gets `error.AppMarkNotDeclared` at append. A mark whose
   silhouette the build could not make a glyph of (a PNG, a translucent
-  fill), or that declared no name, gets `error.AppMarkRefused`, and the
-  line that reports the refused screen carries the build's own sentence
-  saying why.
+  fill), or whose app declared no name, gets `error.AppMarkRefused`, and
+  the line that reports the refused screen carries the build's own
+  sentence saying why. A linked app's mark is refused the same way.
 
-**A stage cannot show another app's mark yet.** Inside a recorded play
-an `app_mark` is the played app's mark, never the mark of the app
-showing it, and an app's face holds only its own. So a play whose
-recording draws one is refused at the showing app's build, by name, and
-a recording fetched at run time that draws one leaves the stage saying
-it is unavailable. Record plays on screens without the mark until a
-face can hold the marks of other apps.
+**A stage shows a played app's mark only if the showing app took it.**
+Inside a recorded play an `app_mark` is the played app's mark, never
+the mark of the app showing it. The recording names that mark by the
+played app's declared name. If the showing app took the mark of exactly
+one linked app with that name, the stage draws that mark: a host
+linking into "votes" and taking its mark shows a votes play that draws
+"Votes". Otherwise the play is refused at the showing app's build, by
+name, and a recording fetched at run time leaves the stage saying it is
+unavailable. That includes a name the showing app's own mark also has,
+or two linked apps share: a stage never guesses whose mark it draws, and
+never draws the showing app's own.
 
 Reach for `icon` when the glyph is a general symbol: an icon's set is
 Lucide's, the same for every app, and a label is optional. Reach for
-`app_mark` when the picture is the app itself: its set is the one mark
-the build declared. A `qr` also stands for something outside the screen,
-but it encodes a value for a camera and is named by its label. A `stage`
-shows another app's screens whole; an app mark shows this app's
-identity in a line of its own.
+`app_mark` when the picture is an app itself: its set is the mark the
+build declared and the marks it took. A `qr` also stands for something
+outside the screen, but it encodes a value for a camera and is named by
+its label. A `stage` shows another app's screens whole; an app mark
+shows an app's identity in a line of its own.
 
 ### `divider`
 A 1px horizontal rule across the parent width.
@@ -1072,6 +1083,11 @@ no way to be handed the wrong one:
   the live driver, with or without a runtime. The same three buttons on
   a phone's browser take a second line, and no `More` is ever drawn
   there.
+- **A row of boxes with words wraps one to a line.** Two or more boxes
+  alone in a row share the line evenly where they all fit; where they
+  do not, each takes a line of its own, never two and one, on every
+  surface. A strip of boxes too small to hold words wraps as any row
+  does ([`box`](#box)).
 - **Every other row wraps, on every surface.** Children flow along the
   line and break onto a new one when the next will not fit — greedy,
   first-fit, in document order, each line `gap` below the last and
@@ -1194,10 +1210,35 @@ nothing ever bleeds across a border. Under [`depth`](getting-started.md#a-theme)
 a raised card: paper that casts a shadow in place of its border in
 light, and a lighter fill alone in dark.
 
-In vertical flow a box takes the full width. Unstretched — as a child of
-a horizontal `stack`, or inside a table cell — it hugs its widest child
-plus its own padding, so a row of small boxes stays a row instead of
-running off the edge after two.
+In vertical flow a box takes the full width; inside a table cell it
+hugs its widest child plus its own padding. In a row, what else is on
+the row decides (`layout.boxRow`):
+
+- **Two or more boxes alone in a row share the line where all fit**,
+  evenly, each as tall as the tallest. Three plans on a wide screen are
+  three equal cards, the two that say less drawn down to the edge of
+  the one that says most.
+- **Below that width, boxes that hold words stand one per line**, each
+  the full width, never two and one. The same three plans on a phone
+  are three full-width cards. This is the all-or-one a desk folds by
+  ([`region`](#region)): two on a line and one under them would pair
+  two peers against the third, so the row would mean one thing at one
+  width and another at the next.
+- **Boxes all narrower than the row's floor wrap at their own widths.**
+  The floor is a field's, ten body ems (160px). A strip of palette
+  swatches shares the line where they all fit and breaks onto more
+  lines, each swatch at its own width, where they do not.
+- **A lone box in a row hugs** its widest child plus its own padding.
+- **A box beside anything else is a row like any other.** A box beside
+  a badge hugs, and the row wraps as
+  [any row does](#a-row-too-narrow-for-its-children).
+
+A row of boxes is for a few peers the reader takes each whole — plans,
+promises, three ways to answer. A [`table`](#table--row--cell) is read
+cell by cell under a column's name; reach for one when the reader
+compares the same fact across things. A [`tile_group`](#tile_group--tile)
+is a list of destinations, each tile one place to go; reach for one when
+the boxes would be pressed.
 
 ### `stand_in`
 A scope whose content has not arrived. Lays out exactly as the `stack`

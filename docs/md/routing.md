@@ -1064,3 +1064,12 @@ named twice or by something that is not an identifier, an app at this
 app's own origin (that link is `routeLink`), an app with no route, a
 route named outside the charset or twice, and more secret arguments
 than arguments.
+
+If this app draws the other app's mark, the entry also takes the mark
+that app's package offers
+([services.md](services.md#the-mark-is-declared)):
+`.offered_mark = votes_dep.namedLazyPath("offered_mark")`. Then
+`.votes` is a member of `nokre.declared.MarkedApp` as well, and
+`app_mark` draws it ([elements.md](elements.md#app_mark)). An entry
+without it links as before and names no mark; an app named `own` that
+offers one is refused, since `.own` is this app's own mark.

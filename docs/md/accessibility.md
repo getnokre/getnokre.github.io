@@ -17,7 +17,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | span with a destination (`route` or `external`) | `link` | a link child of its paragraph, named by its own words, focusable |
 | `heading` | `heading` | level 1–6; spans invisible as on `text` |
 | `icon` (labeled) | `image` | label as name; decorative icons are omitted |
-| `app_mark` | `image` | the app's declared name as name, never a label at the call |
+| `app_mark` | `image` | the declared name of the app whose mark it is, never a label at the call |
 | `badge`, `meter` | `static_text` | the words carry all state; a badge's leading mark is decorative and is never announced |
 | `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets |
 | `qr` | `image` | label as name, encoded value carried |

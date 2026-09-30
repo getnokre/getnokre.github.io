@@ -206,8 +206,8 @@ to `'unsafe-inline'` for scripts nokre had written itself.
 
 **One loosening stayed, and it is `style-src`'s.** The serializer writes
 inline style *attributes* on element after element — a list's measured
-gutter, a QR's whole-pixel side, a track's bleed, a container's own gap
-and padding — and every one of them is a number layout just computed,
+gutter, a QR's whole-pixel side, a track's bleed, a row of boxes'
+fitting width, a container's own gap and padding — and every one of them is a number layout just computed,
 so none can be hashed and none can be a stylesheet's guess (the four
 seams above say why each is measured). Nor can they move into script:
 the static driver writes pages that run none, and they must render
@@ -1710,6 +1710,24 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   column and scale the symbol to a fraction of a module, which is what
   stops one scanning. The gutter is measured in the digits that will
   actually be drawn, which in a Persian page are Persian ones.
+
+- **Where a row of boxes breaks is a number too.** Boxes alone in a
+  row share the line from a width up and stand one per line (or wrap,
+  for boxes too small to hold words) below it
+  ([../elements.md](../elements.md#box)). CSS cannot ask whether a
+  row's children fit, and a written page runs nothing that could, so
+  the serializer asks `layout.boxRow` and writes the answer: the
+  `peers` class, one of `narrow-stack` or `narrow-wrap`, and the
+  fitting width as `--fit`, which the sheet holds against the row's
+  content box. `fit_w` is a function of the tree alone, never of the
+  span, which is what lets a generator that has no window write it. A
+  stand-in writes the same classes as the stack it stands for, because
+  core lays both out through `layoutStack`. The browser keeps three
+  differences from core, all where the reader's own engine decides: a
+  line's odd pixels become fractions, where core gives one each to the
+  leading boxes; on a wrapped strip each box stretches to its line's
+  tallest, where core centres it on the line; and a box wider than its
+  share keeps its width, where core squeezes it to the share.
 
 - **The browser draws the ordinal, so the numbering system is CSS.**
   `<li>` derives its own marker and nokre's never reaches the markup,

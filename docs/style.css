@@ -778,6 +778,15 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    whole line. `min-width: 0` so a long label or value never widens
    the basis core broke the line at. */
 .stack.row > :is(.field, .field-group) { flex: 1 0 min(var(--row-field-min), 100%); min-width: 0; }
+/* A row of boxes (`layout.BoxRow`) shares its line evenly and
+   stretches each box to the tallest where the content box is at
+   least `--fit` wide. Below it, a `narrow-stack` row's bases exceed
+   the line, so each box wraps alone at `max-width: 100%`; a
+   `narrow-wrap` row's cap drops to zero and `min-width` wins, so
+   each keeps its own width and the row wraps as any row does. */
+.stack.row.peers > * { align-self: stretch; }
+.stack.row.peers.narrow-stack > * { flex: 1 1 calc((var(--fit) - 100%) * 999); }
+.stack.row.peers.narrow-wrap > * { flex: 1 1 0; min-width: max-content; max-width: max(0px, calc((100% - var(--fit) + 1px) * 999)); }
 /* A row holding a field lines its children up on the field's box
    (`layout.fieldRowBands`, written onto the row): each child's
    margins pad it to the label band above and the problem band

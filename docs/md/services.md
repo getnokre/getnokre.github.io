@@ -678,6 +678,24 @@ reason instead, and a screen that appends an `app_mark` is refused with
 that sentence. An app that declared no name gets the same refusal: a
 mark on a screen is an image, and an image is named.
 
+**A package offers its mark to the apps that link into it.** If an app
+declared a silhouette, `addApp` hands it back as `App.offered_mark`: a
+directory of nokre's own holding the file and the app's declared name,
+so the app that takes it states neither again. The package passes it on
+under a name, the way it passes on its recordings, and an app that
+links into it takes it in `LinkedApp.offered_mark`
+([routing.md](routing.md#links-into-another-app)):
+
+```zig
+if (votes.offered_mark) |m| b.addNamedLazyPath("offered_mark", m);
+```
+
+If the app declared a master, or no mark, `offered_mark` is null: a
+master has no outline to set as a glyph. A silhouette the taking app's
+face cannot make a glyph of, or one offered by an app that declared no
+name, is refused at that app's append with the sentence above, as its
+own mark would be.
+
 The declared mark and `apple_icon` are independent, and the bundle
 wins: with both, every launcher and tab shows the bundle drawn flat and
 the Dock actool's render of it ("The Apple icon is rendered", above),
