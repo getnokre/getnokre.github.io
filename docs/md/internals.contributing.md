@@ -136,7 +136,10 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    nobody asked would quietly become selectable chrome. A depth
    decoration from step 3 is a rule in `writeDepth` too, spending the
    tokens `writeDepthTokens` sets and moving no box — nothing forces
-   this one.
+   this one. Nor the next: a plate the renderer draws under lamp dark is
+   an entry in [lamp_plates.zig](../../src/render/dom/lamp_plates.zig),
+   and a glyph it lights on one a row of its `glyphs`
+   ([dom-substrate.md](dom-substrate.md#the-plate-table)).
 5. A11y mapping in [semantics.zig](../../src/a11y/semantics.zig), and its
    row in the table in [accessibility.md](../accessibility.md). A new
    `A11yRole` **appends** — the enum's ordinals are a wire contract that

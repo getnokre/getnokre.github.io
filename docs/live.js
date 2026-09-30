@@ -328,6 +328,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // string index would put the cut somewhere else the moment a screen
     // holds a character that is not ASCII, which most of them do.
     const cut = content ? nk.nokre_dom_chrome_len() : len;
+    const [was, wasScreen] = [painted, painted_screen];
     painted = paint(into, read(ptr, cut), painted);
     if (content) {
       painted_screen = paint(content, read(ptr + cut, len - cut), painted_screen);
@@ -350,6 +351,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     syncAddressBar();
     syncRoot();
     syncBanner();
+    // `paint` hands back what it was given when nothing moved, so an
+    // unchanged frame compares a reference and measures nothing.
+    framed = true;
+    syncLamp(painted !== was || painted_screen !== wasScreen);
     playOn();
   }
 
@@ -444,9 +449,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const root = doc.documentElement;
   const dark = matchMedia("(prefers-color-scheme: dark)");
   const moreContrast = matchMedia("(prefers-contrast: more)");
+  const lessTransparency = matchMedia("(prefers-reduced-transparency: reduce)");
   const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const SHAPE = ["", "desk", "desk-narrow"];
-  const THEME = ["", "depth", "depth"];
+  const THEME = ["", "depth", "lamp"];
   let chromePair = null;
 
   function syncRoot() {
@@ -573,6 +579,8 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       for (const entry of entries) {
         root.style.setProperty("--notice-banner-height", `${entry.borderBoxSize[0].blockSize}px`);
       }
+      // The reserve moved the page's plates without a frame.
+      lampAgain();
     })
     : null;
   let watchedBanner = null;
@@ -592,12 +600,193 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     else root.style.removeProperty("--notice-banner-height");
   }
 
+  // ---- the lamp's numbers -----------------------------------------
+  //
+  // Lamp's light is a function of where each plate stands in its window,
+  // and CSS cannot read an element's own box as numbers. So under lamp
+  // this driver measures and publishes them as custom properties the
+  // sheet spends (class_names.zig, `lamp_plate` and the groups after it;
+  // lamp_plates.zig names the boxes). A page with no runtime publishes
+  // nothing, and its plates draw unlit.
+  //
+  // Measured after a frame that changed the document, on a resize, when
+  // the faces finish loading and when the banner's reserve moves — never
+  // on a scroll: every number is the box *at rest*, and the sheet places
+  // it under a scroll itself.
+  const LAMP_PLATE = ["--lamp-plate-left", "--lamp-plate-top", "--lamp-plate-width", "--lamp-plate-height"];
+  const LAMP_WINDOW_SIZE = ["--lamp-window-width", "--lamp-window-height"];
+  const LAMP_SCROLLPORT = ["--lamp-scrollport-top", "--lamp-scrollport-height"];
+  const LAMP_SIDEWAYS = ["--lamp-sideways-top"];
+  const LAMP_EDGE_BAR = ["--lamp-edge-bar-left", "--lamp-edge-bar-top", "--lamp-edge-bar-width"];
+  const LAMP_EDGE_CHOSEN = ["--lamp-edge-chosen-left", "--lamp-edge-chosen-top", "--lamp-edge-chosen-width"];
+  const LAMP_EDGE_SHEET = ["--lamp-edge-sheet-left", "--lamp-edge-sheet-top", "--lamp-edge-sheet-width"];
+  const LAMP_PLATES = '.box:not(.bare), .tiles, .box.bare[style*="background:"], .picker.above-nav, .tile > .icon.square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tiles .tile > .icon:not(.square), .field-box.select > .icon, .dial-step > .icon';
+  const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
+  const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
+  const LAMP_WINDOW = '.stage-window';
+  const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
+  const LAMP_EDGE_CHOSEN_PLATES = '.chip.current';
+  const LAMP_EDGE_SHEET_PLATES = '.sheet, .notices-pane, .picker:not(.above-nav)';
+
+  // A plate's numbers ride its `style` attribute *behind* the markup's
+  // own declarations, written as text: the patcher makes every other
+  // attribute the frame's, and gives this one the frame's text with
+  // these appended (`writeStyle`), so a frame that moved nothing writes
+  // nothing. Not the CSSOM: a CSSOM write re-spells the whole attribute,
+  // and the sheet reads a box's fill out of the markup's spelling of it
+  // (`[style*="background:"]`, stylesheet.zig).
+  const lampOwn = new WeakMap(); // element -> the declarations it carries
+  let lampOwners = new Set();
+  let lampRoot = new Map(); // property -> value, on the document root
+  let lampDirty = true;
+  let framed = false;
+
+  function writeStyle(el, markup) {
+    const own = lampOwn.get(el);
+    const want = own === undefined ? markup : (markup ?? "") + own;
+    if (want === null) {
+      if (el.hasAttribute("style")) el.removeAttribute("style");
+    } else if (el.getAttribute("style") !== want) el.setAttribute("style", want);
+  }
+
+  // The markup's part of an element's style: what it carries without
+  // the declarations appended here, and null for no attribute.
+  function markupStyle(el) {
+    const style = el.getAttribute("style");
+    const own = lampOwn.get(el);
+    if (own === undefined || style === null || !style.endsWith(own)) return style;
+    return style === own ? null : style.slice(0, style.length - own.length);
+  }
+
+  function setOwn(el, own) {
+    if (lampOwn.get(el) === own) return;
+    const markup = markupStyle(el);
+    if (own === undefined) lampOwn.delete(el);
+    else lampOwn.set(el, own);
+    writeStyle(el, markup);
+  }
+
+  function lampAgain() {
+    lampDirty = true;
+    if (framed) syncLamp(false);
+  }
+
+  function syncLamp(committed) {
+    if (root.getAttribute("data-nokre-theme") !== "lamp") {
+      if (lampOwners.size || lampRoot.size) publishLamp(false);
+      lampDirty = true;
+      return;
+    }
+    if (!committed && !lampDirty) return;
+    lampDirty = false;
+    publishLamp(true);
+  }
+
+  const parentOf = (el) => (el.parentNode?.nodeType === Node.ELEMENT_NODE ? el.parentNode : null);
+
+  // Every rect is read before anything is written, so the pass lays the
+  // page out once.
+  function publishLamp(lit) {
+    const writes = new Map();
+    const onRoot = new Map();
+    const put = (to, el, names, values) => {
+      let own = to.get(el) ?? "";
+      for (let i = 0; i < names.length; i++) own += `;${names[i]}:${Math.round(values[i])}`;
+      to.set(el, own);
+    };
+    const toRoot = (names, values) => names.forEach((name, i) => onRoot.set(name, String(Math.round(values[i]))));
+
+    const fixed = new Map();
+    const isFixed = (el) => {
+      if (!fixed.has(el)) fixed.set(el, typeof getComputedStyle === "function" && getComputedStyle(el).position === "fixed");
+      return fixed.get(el);
+    };
+    const pinned = (el) => {
+      for (let at = el; at; at = parentOf(at)) if (isFixed(at)) return true;
+      return false;
+    };
+    // How far the scrollers between an element and its window have
+    // carried it, which is what puts it back at rest. A fixed box stands
+    // where its window puts it, so nothing above one moves it; a stage's
+    // window is where the walk ends.
+    const shifts = new Map();
+    const shift = (el, win) => {
+      let s = shifts.get(el);
+      if (s) return s;
+      const up = parentOf(el);
+      if (!up || up === win || isFixed(el)) s = [0, 0];
+      else {
+        const above = shift(up, win);
+        s = [above[0] + (up.scrollLeft || 0), above[1] + (up.scrollTop || 0)];
+      }
+      shifts.set(el, s);
+      return s;
+    };
+    // Left, top, width and height in the element's lamp window at rest.
+    // The scrollers above a stage move the stage and its plates alike,
+    // so its window's own rect is the origin as it stands.
+    const atRest = (el) => {
+      const r = el.getBoundingClientRect();
+      const win = el.closest(LAMP_WINDOW);
+      const [sx, sy] = shift(el, win);
+      const o = win ? win.getBoundingClientRect() : { left: 0, top: 0 };
+      return [r.left + sx - o.left, r.top + sy - o.top, r.width, r.height];
+    };
+    // One chrome edge over the page: the union of what the selector
+    // finds on screen, or the last of it — the top of the stack.
+    const edge = (names, selector, union) => {
+      let box = null;
+      for (const el of into.querySelectorAll(selector)) {
+        if (el.closest(LAMP_WINDOW) || !pinned(el)) continue;
+        const r = el.getBoundingClientRect();
+        if (!(r.width > 0)) continue;
+        box = union && box
+          ? [Math.min(box[0], r.left), Math.min(box[1], r.top), Math.max(box[2], r.right)]
+          : [r.left, r.top, r.right];
+      }
+      if (box) toRoot(names, [box[0], box[1], box[2] - box[0]]);
+    };
+
+    if (lit) {
+      for (const host of roots) {
+        for (const win of host.querySelectorAll(LAMP_WINDOW)) {
+          const r = win.getBoundingClientRect();
+          put(writes, win, LAMP_WINDOW_SIZE, [r.width, r.height]);
+        }
+        for (const el of host.querySelectorAll(LAMP_PLATES)) put(writes, el, LAMP_PLATE, atRest(el));
+        for (const el of host.querySelectorAll(LAMP_SCROLLPORTS)) {
+          const [, top, , height] = atRest(el);
+          put(writes, el, LAMP_SCROLLPORT, [top, height]);
+        }
+        for (const el of host.querySelectorAll(LAMP_SIDEWAYS_SCROLLERS)) put(writes, el, LAMP_SIDEWAYS, [atRest(el)[1]]);
+      }
+      toRoot(LAMP_WINDOW_SIZE, [root.clientWidth || innerWidth, root.clientHeight || innerHeight]);
+      edge(LAMP_EDGE_BAR, LAMP_EDGE_BAR_PLATES, true);
+      edge(LAMP_EDGE_CHOSEN, LAMP_EDGE_CHOSEN_PLATES, true);
+      edge(LAMP_EDGE_SHEET, LAMP_EDGE_SHEET_PLATES, false);
+    }
+
+    for (const el of lampOwners) if (!writes.has(el)) setOwn(el, undefined);
+    for (const [el, own] of writes) setOwn(el, own);
+    lampOwners = new Set(writes.keys());
+    for (const name of lampRoot.keys()) if (!onRoot.has(name)) root.style.removeProperty(name);
+    for (const [name, value] of onRoot) if (lampRoot.get(name) !== value) root.style.setProperty(name, value);
+    lampRoot = onRoot;
+  }
+
+  doc.fonts?.addEventListener?.("loadingdone", lampAgain);
+  doc.fonts?.ready?.then(lampAgain);
+
   dark.addEventListener("change", () => {
     nk.nokre_dom_system_appearance(dark.matches ? 1 : 0);
     frame();
   });
   moreContrast.addEventListener("change", () => {
     nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
+    frame();
+  });
+  lessTransparency.addEventListener("change", () => {
+    nk.nokre_dom_system_transparency(lessTransparency.matches ? 1 : 0);
     frame();
   });
   lessMotion.addEventListener("change", () => {
@@ -687,11 +876,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       return;
     }
     for (const attr of [...a.attributes]) {
+      if (attr.name === "style") continue;
       if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name)) a.removeAttribute(attr.name);
     }
     for (const attr of b.attributes) {
+      if (attr.name === "style") continue;
       if (a.getAttribute(attr.name) !== attr.value) a.setAttribute(attr.name, attr.value);
     }
+    writeStyle(a, b.getAttribute("style"));
     // A stage waiting for its recording keeps what the document holds
     // there: a written page's first scene and its step's words, which
     // the frame, having no scene yet, would otherwise wipe.
@@ -1269,6 +1461,8 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   function remeasure() {
     if (!nk) return; // the faces beat the module; boot reports it itself
     nk.nokre_dom_resize(screen.clientWidth, innerHeight);
+    // The window moved every plate's light, whether or not a byte did.
+    lampDirty = true;
     frame();
   }
 
@@ -1358,6 +1552,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // says so at length).
   nk.nokre_dom_system_appearance(dark.matches ? 1 : 0);
   nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
+  nk.nokre_dom_system_transparency(lessTransparency.matches ? 1 : 0);
   nk.nokre_dom_system_reduce_motion(lessMotion.matches ? 1 : 0);
   // The notification service's worker, and the cold-start tap it may
   // have carried. Registration is after boot deliberately — it is

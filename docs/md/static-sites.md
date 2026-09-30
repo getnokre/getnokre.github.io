@@ -1004,11 +1004,16 @@ would be granted to nobody.
 an assumption. Publish your stylesheet, your wasm module, your driver
 directory or a page's seed somewhere else and the build fails
 (`error.AssetOffOrigin`) rather than shipping a page a browser will
-refuse to boot. The one asset no `Document` can see is where you
-published the faces — `stylesheet.Options.fonts`, a different call,
-whose default is a rooted path — so if you serve nokre's fonts from
-another origin, `font-src 'self'` is the directive that will not cover
-them, and the policy is not one your site can carry.
+refuse to boot. The assets no `Document` can see are where you
+published the faces and lamp's grain tiles — `stylesheet.Options.fonts`
+and `.lamp_grain`, a different call, whose defaults are rooted paths —
+so if you serve them from another origin, `font-src 'self'` and
+`img-src 'self'` are the directives that will not cover them, and the
+policy is not one your site can carry. The tiles are
+`stylesheet.lamp_grain_files`, each one's bytes
+`stylesheet.lampGrainTile`. A generator that writes the sheet itself
+writes the tiles too, where `.lamp_grain` says: the sheet names them
+whatever the look, and without them a lamp app's frost has no grain.
 
 **Your head seam is the one thing on the page nokre cannot read**, so
 what the policy grants it is the narrowest set a head actually spends:

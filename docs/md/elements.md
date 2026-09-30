@@ -2068,8 +2068,7 @@ try b.accessibilityToggles(.{
 
 **The rows are the ones that can change something.** Increase Contrast
 is there unless the app's look is `eink`; Reduce Transparency only when
-the look is `lamp` and the substrate is Skia — so on the DOM substrate,
-and under a `depth` look, it is never there. Under an `eink` look the
+the look is `lamp`, on every substrate. Under an `eink` look the
 element holds no rows and draws nothing, so a screen places it without
 asking the look first. Which look each row draws, the OS signal each
 follows and why Reduce Transparency stays shown while Increase Contrast

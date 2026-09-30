@@ -1743,6 +1743,17 @@ rather than analyzed:
   replaced region is one a reader stops hearing), the cursor is stated
   where the reference says it stands, and Done leaves edit's line in
   place of the picking markup.
+- **lamp's numbers**: under lamp a plate carries its box as four
+  numbers on its `style` attribute and the root carries the window's
+  size; a frame that patches the plate keeps them and, having moved
+  nothing, writes nothing; a frame that changed no byte measures
+  nothing; a sideways scroller carries its top; and a depth page
+  carries none of it. Beside it, `prefers-reduced-transparency: reduce`
+  at boot and on change draws depth over a lamp look, and the site's
+  own listing holds every image the sheet names to a file under
+  `lamp-grain/`, with no `data:` image in the sheet. What a browser
+  draws from those numbers is a gate of its own,
+  [Lamp on the web, drawn](#lamp-on-the-web-drawn).
 
 What that gate is **not** is a browser. Layout, styling, the real event
 loop, a real popup's window management and a real storage's quota
@@ -1827,6 +1838,69 @@ spinning the browser.
 Practically, for your app: an integration bug in nokre's shell or in a
 native service backend will not fail your test suite. Everything above
 `App.dispatchInput` will.
+
+### Lamp on the web, drawn
+
+The web draws lamp dark in CSS from numbers the live driver publishes,
+and every number in the sheet is held by string; the web's own gate
+runs the driver against a stub that draws nothing. So the one claim no
+test above can reach — that a browser *draws* what the library computes
+— has a gate of its own, and nokre's tests are its only proof: a
+consumer keeps no goldens for a look.
+
+`zig build check-web-lamp` builds the kitchen sink's site and
+`tests/web_lamp_reference.zig`, a host program that answers, for a
+plate's box, material and fill in a window at a scale, what `lamp.Face`,
+`lamp.Rim`, `lamp.Glyph` and the frost put at a device pixel. Then
+`tests/web_lamp.mjs` serves the site, drives headless Chrome over the
+DevTools protocol (node's own `WebSocket`, no package), chooses each
+look through the page's own control, and holds five facts at a phone's
+390x844 at scale 2 and 3, and at a desk's 1024x700 at scale 2:
+
+- **Nothing moved.** Every element's box is the same with every
+  `:root[data-nokre-theme="lamp"]` rule deleted from the live sheet, at
+  rest and scrolled.
+- **The drawing is the library's.** A card, a field, a meter's track
+  and fill and a switch off and on are each scrolled to a place in the
+  window and drawn alone — every other element hidden, which moves
+  nothing, so no neighbour's shadow or child's text is in the pixels —
+  and read against the reference at the same device pixels: faces within
+  2 bytes, rims within 8 at the outermost device pixel along each
+  straight edge (the web's rim is a CSS pixel wide). Three lit glyphs are
+  read where they cover a pixel whole, found by drawing each once in
+  plain white, their brightest stroke within 12. The nav plate's rim is
+  held within 10 over the frost beneath it, read with the rim hidden.
+- **Frost is there.** With the nav plate over the QR code, its pixels
+  are at least eight times smoother than the page beneath it, and their
+  mean is within 6 of the library's frost of that same page — the
+  screenshot without the nav, blurred by `lamp.frostBlur` and composited
+  by `lamp.frostByte` under the glass face — and far from both the tint
+  alone and the page's own mean.
+- **Depth is depth.** A depth page publishes no lamp number, and
+  deleting the lamp's rules changes no computed paint on any element or
+  pseudo-element and no pixel by more than a byte (Chrome dithers a
+  gradient anew each time it rasterizes one).
+- **No console error**, through all of it.
+
+What each compared plate *is* — its material and fill — is written in
+the script, not read from the sheet, which is what is under test. The
+tolerances are measured, and each says why it is not zero: the web
+joins a rim's lights with `lighten` where native sums them (7 at worst,
+on a field's bottom edge straight under the lamp), composites a glass
+rim's specular over the lamp's white (8, on a nav plate's top edge),
+and reads the plate's own shadows beneath the frost as one factor (4.6
+on mean). A glyph is lit over its em square on the web, since CSS has
+no ink box to read, and over its ink box natively; the gate holds the
+web to the library over the em square and prints what the ink box
+would have given — 31 to 42 bytes brighter on the chevrons, the cost of
+that choice. Shadows, the sheet's and pane's glass, and browsers other
+than Chrome are not looked at. A pass takes about 25 seconds.
+
+Chrome is `NOKRE_CHROME` when set, else the first of `google-chrome`,
+`google-chrome-stable`, `chromium` and `chromium-browser` on PATH, else
+Chrome or Chromium under `/Applications`. With none, the step fails and
+says so; it never stands aside. Nor is it on `test`: like `check-gpu`,
+it needs a tool the build does not.
 
 ### Seeing the web beside the reference
 

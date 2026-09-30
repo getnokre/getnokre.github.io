@@ -52,7 +52,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 171;
+const nokre_revision = 172;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -307,6 +307,20 @@ pub fn main(init: std.process.Init) !void {
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "assets/fonts", "lucide.ttf" }),
         .data = nok.render.icon_face.bytes,
     });
+
+    // Lamp's grain tiles, which the generated stylesheet names whatever
+    // the look, under the path `stylesheet.Options.lamp_grain` defaults
+    // to (../nokre/docs/static-sites.md): a generator that writes the
+    // sheet itself writes the tiles too.
+    const grain_dir = try std.fs.path.join(gpa, &.{ out_dir, "assets", "lamp-grain" });
+    try cwd.createDirPath(io, grain_dir);
+    for (nok.render.dom.stylesheet.lamp_grain_files) |f| {
+        const tile = try nok.render.dom.stylesheet.lampGrainTile(gpa, f);
+        try cwd.writeFile(io, .{
+            .sub_path = try std.fs.path.join(gpa, &.{ grain_dir, f }),
+            .data = tile,
+        });
+    }
 
     var script_bytes: usize = 0;
     for (driver_sources) |src| {

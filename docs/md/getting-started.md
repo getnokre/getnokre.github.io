@@ -1538,9 +1538,12 @@ a lit rim, a face and a directional shadow on every filled box, the
 icon glyphs on them lit as their surface, buttons stepped down a fill
 (no white pill: the primary a gray plate, the secondary its stroke
 alone), a black ground, and frosted
-glass for the nav and sheets, in the dark appearance and the Skia
-substrate only. In light, and everywhere else — the web's DOM
-substrate and packaging included — a lamp app is drawn as depth. It
+glass for the nav and sheets, in the dark appearance only. In light a
+lamp app is drawn as depth. On the web the browser draws lamp dark in
+CSS, close to native and not its bytes: a page that runs no script of
+nokre's draws its plates unlit, and a browser that cannot frost draws
+depth's chrome ([internals/dom-substrate.md](internals/dom-substrate.md#lamp-dark-on-the-web)).
+It
 waives what depth waives, and the contrast of text and a secondary's
 stroke on its frosted chrome and
 the icon floor for its lit glyphs besides; the design and its numbers

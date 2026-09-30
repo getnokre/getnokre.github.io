@@ -443,11 +443,11 @@ override from inside the app.
 | Preference | On the `App` | Draws, when on | OS signal |
 | --- | --- | --- | --- |
 | Increase Contrast | `contrast`, `setContrast` | `eink` | iOS and macOS Increase Contrast; Windows high contrast; the web's `prefers-contrast: more` |
-| Reduce Transparency | `transparency`, `setTransparency` | `depth` in place of `lamp` | iOS and macOS Reduce Transparency |
+| Reduce Transparency | `transparency`, `setTransparency` | `depth` in place of `lamp` | iOS and macOS Reduce Transparency; the web's `prefers-reduced-transparency: reduce` |
 
-Android and Linux report neither signal, and Windows and the web no
-Reduce Transparency — the web draws lamp as depth already — so `auto`
-there means off. A
+Android and Linux report neither signal, Windows no Reduce
+Transparency, and a browser that does not know the query answers no
+match, so `auto` there means off. A
 shell reports what its OS says through `setSystemContrast(bool)` and
 `setSystemTransparency(bool)`, the way it reports the appearance.
 
@@ -474,17 +474,14 @@ layout, focus and scroll stand where they were.
 **Where the rows are shown.** An app places one
 [`accessibility_toggles`](elements.md#accessibility_toggles) in its
 settings, and nokre fills it with the rows that can change something —
-which depends on the look and the substrate, never on the preferences,
+which depends on the look alone, never on the preferences or the substrate,
 so a flip never moves a row while a `setTheme` that changes the set
 relays the screen out:
 
 - **Increase Contrast** unless the look is `eink`, where it would draw
   the frame already drawn.
-- **Reduce Transparency** only when the look is `lamp` *and* the
-  substrate is Skia. On the DOM substrate lamp is already drawn as
-  depth ([internals/lamp.md](internals/lamp.md#skia-only)), so nokre
-  emits no Reduce Transparency row at all: a switch that does nothing
-  is worse than none.
+- **Reduce Transparency** only when the look is `lamp`, the one look it
+  changes.
 
 While Increase Contrast is on, Reduce Transparency stays shown — not
 hidden, not disabled. It is still the reader's setting, and it decides

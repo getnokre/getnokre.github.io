@@ -123,6 +123,7 @@ What it writes:
 | `live.js`, `live-boot.js`, `live-worker.js`, `services.js`, `locale-stub.js`, `sw.js` | `src/render/dom`, copied by the build graph; the set is also exported as data for a generator that publishes the driver itself — `dom.driver_files` for the names, `dom.driver_sources` for the names *and* the embedded bytes, so such a generator writes files it never had to locate |
 | `style.css` | *generated*, by running `emit_css.zig` on the host |
 | `fonts/*.ttf` | `src/assets/fonts` — except `fonts/lucide.ttf`, which is *generated*: the icon face subset to what this app's sources spell, served in the full face's place and never beside it ([../elements.md](../elements.md#icon)) |
+| `lamp-grain/*.png` | *generated*, by the same run of `emit_css.zig`: lamp's frost grain tiles the sheet names by URL (`stylesheet.lampGrainTile`; the names are `driver_files.lamp_grain_files`) |
 | `index.html`, `page.css`, `boot.js`, `manifest.webmanifest`, `icon-*.png`, `favicon.ico` | the packaging tree's `web/` corner (packaging.zig) |
 | `site.manifest` | *generated*: every row above as data — one path per line, sorted |
 
@@ -417,11 +418,13 @@ and then read off the `Document`:
 `img-src 'self'` and `font-src 'self'` are on all three, and the second
 of those is the interesting one: nokre's own markup spends neither. The
 faces are the *stylesheet's*, fetched through its `@font-face` block,
-and the icon is the head seam's — which is the one place a policy here
+as are lamp's grain tiles, which it names by URL because a `data:`
+image is one `img-src 'self'` refuses; and the icon is the head seam's — which is the one place a policy here
 cannot see what it is granting, and is therefore granted the narrowest
 thing that works. The one input to the whole derivation that no page can
-see is where a driver published the faces (`stylesheet.Options.fonts`, a
-different call, with a rooted default); that is stated in
+see is where a driver published the faces and lamp's grain tiles
+(`stylesheet.Options.fonts` and `.lamp_grain`, a different call, with
+rooted defaults); that is stated in
 [static-sites.md](../static-sites.md) rather than guessed at.
 
 **Every source but the declared hosts is `'self'`, so the assets have to
@@ -1089,16 +1092,11 @@ eink app no `data-nokre-theme` (`class_names.theme_attr`), so the
 sheet's unkeyed rules are eink's and depth's (`writeDepth`) carry one
 attribute test more.
 
-A third theme resolves before it reaches the attribute: `lamp` is drawn
-by nokre's own arithmetic over a frame only the Skia substrate owns
-([lamp.md](lamp.md#skia-only)), so here it is depth, explicitly —
-`class_names.themeValue(.lamp)` spells `depth`, and the sheet has no
-lamp block for the attribute to select. For the same reason this
-substrate emits no Reduce Transparency row in
-[`accessibility_toggles`](../elements.md#accessibility_toggles): its
-only effect is lamp to depth, which has already happened. Whether the
-browser could draw lamp its own way is
-[../explorations/frosted-dom.md](../explorations/frosted-dom.md).
+A lamp page says `lamp`, and every rule depth writes is scoped by
+`class_names.depth_or_lamp_attr`, one `:is()` over both spellings, so a
+lamp page gets all of depth and lamp dark paints over it
+([Lamp dark on the web](#lamp-dark-on-the-web)). When Reduce
+Transparency resolves on, the root says `depth`.
 
 Each is read back out of core rather than decided here. The OS
 appearance goes *in* through `nokre_dom_system_appearance`, the same
@@ -1106,7 +1104,11 @@ report `on_appearance` makes on every native shell, and what comes back
 is `App.appearance()` — which already contains the system's answer,
 because that is what `Scheme.auto` resolves through. So the media query
 in the sheet stands down the moment the attribute appears: an app pinned
-to light must stay light on a dark desktop.
+to light must stay light on a dark desktop. The browser's
+`prefers-contrast: more` and `prefers-reduced-transparency: reduce` go
+in the same way, through `nokre_dom_system_contrast` and
+`nokre_dom_system_transparency`, and what comes back is the resolved
+look.
 
 Direction is the mirroring only. Text takes its base direction from its
 own first strong character in both substrates — UAX #9 P2/P3, which is
@@ -1759,6 +1761,197 @@ Roles come from `semantics.roleOf`, never a second table. An element
 whose HTML tag already carries the right implicit role gets no ARIA;
 everything else states what that function returns. Two substrates that
 ask one function cannot disagree about what an element *is*.
+
+## Lamp dark on the web
+
+The owner decided on 2026-09-30 that the web draws lamp in CSS, on
+this substrate as it is: no canvas, no WebGL, and no new markup. The
+bar is a page that reads as the lamp, not byte identity with native.
+So the sheet paints lamp dark on the elements depth already styles and
+their pseudo-elements, from lamp.zig's numbers and from boxes the live
+driver measures. What lamp is, op by op, is [lamp.md](lamp.md); this
+section is how the web says it, and what that costs.
+
+Lamp exists in dark alone. In light a lamp page is depth light, so
+every lamp rule is written under both dark scopes the ramps use: the
+system query while no appearance is stamped, and the stamped attribute
+after. The ground is `color.pageGround`'s void, and the dim under a
+sheet is lamp's veil (`writeLampGround`).
+
+### The plate table
+
+`src/render/dom/lamp_plates.zig` names every plate the renderer draws
+under lamp dark as the DOM spells it. The sheet reads it for each
+plate's light and the live driver for which boxes to measure. An entry
+of `plates` is a `Plate`:
+
+| Field | What it says |
+| --- | --- |
+| `host` | the element's selector, with no theme scope |
+| `pseudo` | where the plate is a pseudo-element of `host`: the switch's knob, or a stand-in the sheet adds where the host has no border to hold a rim or its plate is larger than the element; its box is derived from the host's |
+| `face`, `matte` | an opaque plate: one `State` per state its fill or material moves in, each with the ancestor or state that says it, the surface it stands on where that moves it, its `lamp.Material`, its fill (a tone, or the box's own inline fill) and its caster, null where it lies flat |
+| `face`, `glass` | frosted chrome: its `lamp.Glass` and caster, its corner, where its layers stand (in the bar's row, or a fixed layer of its own) and at which widths it is glass |
+
+`glyphs` names each icon glyph that stands on a plate, or on the
+ground, and the em it is set at. The lists the driver reads are derived
+from both tables: `measured`, the three chrome edges, the scroll
+containers other than the page, the sideways scrollers, and a stage's
+window. A secondary button, its progress track and a ranking's pool
+row are left out on purpose: lamp dark draws them as a stroke over no
+plate.
+
+A test holds every class the table names to one the sheet spells.
+live.js carries its own copy of the derived lists, held to the table by
+`class_names.zig`'s comptime check.
+
+### The numbers the live driver publishes
+
+A plate's light is a function of its box in its window, and CSS cannot
+read an element's own box as numbers. So under lamp the live driver
+measures and publishes, each a whole number of CSS pixels:
+
+| Names (`class_names`) | On | What |
+| --- | --- | --- |
+| `lamp_plate` | every box `measured` matches | its border box in its lamp window, with every scroller between them at rest |
+| `lamp_window` | the document root, and each stage's window | the window's size |
+| `lamp_scrollport` | each scroll container other than the page | its top in the window at rest, and its height |
+| `lamp_sideways` | each scroller that scrolls sideways alone | its top in the window at rest |
+| `lamp_edge_bar`, `lamp_edge_chosen`, `lamp_edge_sheet` | the document root | the bar as one edge over all its plates, the chosen plate, and the modal pane on top; each absent while its chrome is off screen |
+
+It measures after a frame that changed the document, on a resize, when
+the faces finish loading and when the banner's reserve moves. It never
+measures on a scroll: every number is the box at rest, and the sheet
+places it under a scroll itself. A frame that changed no byte measures
+nothing. Every rect is read before anything is written, so a pass lays
+the page out once.
+
+The numbers ride a plate's `style` attribute as text, behind the
+markup's own declarations. The patcher makes every other attribute the
+frame's, and writes `style` as the frame's text with these appended
+(`writeStyle`), so a frame that moved nothing writes nothing. Not the
+CSSOM: a CSSOM write re-spells the whole attribute, and the sheet reads
+a box's fill out of the markup's spelling of it
+(`[style*="background:"]`). The sheet finds a published plate by
+`[style*="--lamp-plate-top:"]`. A look without the lamp carries none of
+the numbers.
+
+A page with no runtime publishes nothing, so no lamp paint matches its
+plates: they draw depth's dark fills and chrome, unlit, on the void.
+
+### Following the scroll
+
+Where the browser has view timelines (`@supports (animation-timeline:
+view())`), each published plate animates a registered number along
+`view(block)` and reads from it where its top stands now. A scroller
+in the page names a timeline its plates read where it stands now, and
+a sideways scroller names the timeline its plates are placed by,
+measuring from the top it published. A timeline driven by the scroll
+position is no motion, so it stands past the sheet's guard against
+animation. Fixed chrome, the modal panes and a stage keep the top they
+were measured at.
+
+Where the browser has none, a plate's top is the one measured at rest:
+the light is the page's at rest, and does not follow a scroll.
+
+### What the sheet paints
+
+**Registered numbers.** Every intermediate is an `@property` of syntax
+`<number>`, computed once per plate. Spelled out inside every gradient
+stop instead, the same sheet cost four times as much. A distance a stop
+subtracts from is a property, never an inline `hypot()`: Firefox adds
+there instead of subtracting.
+
+**Face.** A radial gradient of black about the lamp, its alpha linear
+in squared distance, seven stops, clipped to the padding box. A well's
+reaches over its ring.
+
+**Rim.** The plate's transparent border is the ring: depth's own, one
+lamp adds out of a box's padding without moving a child
+(`lamp_rim_borders`), or a stand-in's. Rim layers are opaque grays
+over the border box, joined by `background-blend-mode: lighten`, each
+capped at the rim cap on its own, so the cap holds by construction.
+The lamp's layer, nine stops about the lamp, carries the face's
+darkening too. The specular and each chrome edge carry the lamp's own
+light where they stand, faded out as their own light fades, which is
+how layers joined by the brightest come near native's sum. The chrome
+edges light only plates on the page.
+
+**Shadow.** Two `box-shadow`s, cast away from the lamp, each pass its
+share of the reach. A plate that does not cast, or has no published
+box, has no shadow: never depth's.
+
+**Frost.** Glass is drawn only where the browser has `backdrop-filter`.
+The host's own `box-shadow` carries its contact shadow and cast passes.
+Its `::before` is the frost: `backdrop-filter: blur() brightness()` on
+a box larger than the plate by the frost's reach, so the blur reads
+what stands beside it, trimmed back to the plate's shape by a mask. A
+rounded `clip-path` or an `overflow` wrapper lost its corners inside a
+composited frame in Chrome; the mask kept them. Over the frost, in the
+same pseudo-element, the tint, the grain and the glass face: a white
+sheen under two black linear gradients, one across and one down, whose
+black over black multiplies to native's product form. Its `::after` is
+the rim: white at each light's coverage, masked to the ring. Not grays
+blended onto the glass as a matte rim is: a blended layer makes its
+stacking context a group of its own, and Chrome then frosts nothing
+inside it.
+
+**Grain.** One tile per glass tint, 32 device pixels a side, drawn by
+`stylesheet.lampGrainTile` from `lamp.frostGrain` and laid one tile
+pixel to one device pixel at 2, 3 and 4 dppx. The sheet names the tiles
+by URL under `stylesheet.Options.lamp_grain`, since the page's policy
+loads no `data:` image, and the web build writes them beside the faces
+(`lamp-grain/`, in the site table above). A site that writes the sheet
+itself writes them too
+([static-sites.md](../static-sites.md#and-the-page-can-now-say-so-itself)).
+
+**Lit glyphs.** A glyph on a plate is filled by a gradient through
+`background-clip: text`, its own color transparent, lit over its em
+square centred in its element: CSS has no ink box to read. Its layers,
+a field about the lamp, a specular, and on the page each chrome edge,
+are each capped at the glyph's peak and joined by `lighten`.
+
+### What a browser cannot, and what it draws instead
+
+| Where | What the page draws |
+| --- | --- |
+| no runtime | plates and chrome as depth dark, unlit, on the void |
+| no view timelines (Firefox today) | each plate lit where it stands at rest |
+| no `backdrop-filter` | chrome as depth dark |
+| forced colors, and print | a lit glyph keeps its ink: it is drawn only under `@media screen and (forced-colors: none)`, since a text clipped to a background the browser drops would be nothing |
+| `prefers-reduced-transparency: reduce` | depth, through Reduce Transparency ([accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
+
+### Where the web differs from native, and by how much
+
+No lamp effect is reduced for the web without the owner's word, so
+every difference is recorded here, measured against native goldens in
+Chrome.
+
+| Effect | On the web, and by how much |
+| --- | --- |
+| Rim width | one CSS pixel, not one device pixel |
+| Joining a rim's lights | the brightest, with the lamp's light folded into each, not the sum: about 0.7 to 0.8 bytes off on unlit rims, about 4 where the nav lights them, 7 on a field's bottom edge under the lamp |
+| The nav's light on the page | the bar lights rims as one edge and the chosen plate as a second, joined by the brighter: never brighter than native near the nav, and the gaps between plates are lit where native dims them |
+| Rounding | no dither: bands about five times longer than native's |
+| Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |
+| A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |
+| Frost | one Gaussian at 0.76 of the radius, not native's two-scale mix: 2.1 bytes off on mean on nav plates, 3.5 on a sheet |
+| What the frost reads under the chrome's own shadows | a flat darkening |
+| Grain | a 32 px tile anchored to the plate |
+| Rim over frost | two whites composited, not summed and capped; the cap holds |
+| A lit glyph | lit over its em square, which fitted the golden best |
+| A glyph on frost | lit over the tint's byte: +5 to +12 toward its dim end |
+| A glyph's layers | joined by the brighter |
+| No runtime | plates unlit |
+| No `backdrop-filter` | chrome as depth |
+
+What the gate holds of all this, and at which tolerances, is
+[testing.md](../testing.md#lamp-on-the-web-drawn).
+
+### What it costs
+
+The stylesheet grew from about 153 KB to about 454 KB raw, and from
+42.5 KB to 65 KB gzipped. Most of the raw growth is every lamp rule
+written twice, once under each dark scope.
 
 ## What replaces the golden
 

@@ -4,8 +4,9 @@
 under one light. Its thirteen ramp bytes are depth's in both
 appearances, every rect and metric is depth's, and what it changes is
 paint alone, in the dark appearance alone — in light it is depth light,
-byte for byte ([below](#the-light-appearance)) — on the Skia substrate
-alone. This page is the design
+byte for byte ([below](#the-light-appearance)). The Skia renderer draws
+every op below; the web draws them in CSS, close and not byte for byte
+([below](#the-web-and-packaging)). This page is the design
 record — what each op draws, the numbers it draws with, what holds by
 construction, and what it costs. The palette it paints over is
 [pixel-model.md](pixel-model.md); how an app declares a look, and what
@@ -795,19 +796,26 @@ the element that carries the rows is
 resolved look is a change of theme: one whole frame, and nothing
 reflows ([pixel-model.md](pixel-model.md#partial-frames)).
 
-## Skia only
+## The web, and packaging
 
 Every op above is nokre's own arithmetic over a frame nokre owns, and
-only the Skia substrate owns its frame. On the DOM substrate `lamp`
-resolves to `depth`: the document root says `depth`, and the page never
-offers Reduce Transparency, because there is nothing for it to reduce
-([dom-substrate.md](dom-substrate.md#the-four-facts-no-markup-carries)).
-The same holds everywhere outside the Skia renderer that switches on a
-theme — packaging's launch screens and window backgrounds, the
-`theme-color` metas, the share card and the store shots: to them lamp
-*is* depth. Whether the browser could draw the theme its own way is
-[../explorations/frosted-dom.md](../explorations/frosted-dom.md), and
-parked.
+only the Skia substrate owns its frame. The DOM substrate draws lamp
+dark too, in the browser's own terms: the document root says `lamp`,
+every depth rule reaches the page, and the stylesheet paints each
+plate's face, rim and shadow, the frosted chrome and the lit glyphs
+over depth's surfaces, from this page's numbers and the boxes the live
+driver measures. It reads as the lamp and is not these bytes. How it
+draws each op, what it does without a runtime or in an older browser,
+and where it differs from native and by how much are
+[dom-substrate.md](dom-substrate.md#lamp-dark-on-the-web).
+
+Outside the two renderers, whatever takes one flat colour for a theme
+reads `color.pageGround`, which for lamp is depth light's ground in
+light and the void in dark: the `theme-color` metas, iOS's launch
+colour set and Android's window background. Where one value must serve
+both appearances, the web manifest's `theme_color` and the share card,
+it is the light one, where lamp is depth. The store shots are frames of
+the Skia renderer, so they are lamp.
 
 ## Implementation order
 
