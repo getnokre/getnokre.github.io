@@ -1039,15 +1039,16 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   }
 
   // The address the bar holds now, as core reads it: the path, and the
-  // fragment without its `#`, in one scratch.
-  function arrive() {
+  // fragment without its `#`, in one scratch. `atLoad` is the page
+  // load's own arrival, right after the build (`address.When`).
+  function arrive(atLoad) {
     const path = bytes.encode(location.pathname);
     const fragment = bytes.encode(location.hash.slice(1));
     const ptr = nk.nokre_dom_scratch(path.length + fragment.length);
     if (!ptr) return 0;
     memory().set(path, ptr);
     memory().set(fragment, ptr + path.length);
-    return nk.nokre_dom_arrive(path.length, fragment.length);
+    return nk.nokre_dom_arrive(path.length, fragment.length, atLoad ? 1 : 0);
   }
 
   // ---- events -----------------------------------------------------
@@ -1432,7 +1433,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     if (documents) return;
     const whole = kept.get(e.state?.nokre);
     if (whole === shown) return;
-    const entered = whole === undefined ? arrive() : nk.nokre_dom_navigate(put(whole));
+    const entered = whole === undefined ? arrive(false) : nk.nokre_dom_navigate(put(whole));
     if (!entered) {
       // The entry now shows the screen the reader is still on, so it
       // keeps that screen whole too.
@@ -1583,13 +1584,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     }
   }
 
-  // The address the page was loaded at. An arrival that names no screen
-  // leaves the app where its build put it, and the first frame writes
-  // that screen's address over the one that named nothing; one that
+  // The address the page was loaded at. An arrival that names no screen,
+  // or only the front (`/`), leaves the app where its build put it, and
+  // the first frame writes that screen's address over it; one that
   // does is written back without its secrets. A page that states the
   // screen it is (`route`, above) was written for that screen, and its
   // own statement outranks the address it was served at.
-  if (!documents && !route) arrive();
+  if (!documents && !route) arrive(true);
   frame();
   return nk;
 }

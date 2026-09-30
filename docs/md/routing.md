@@ -906,7 +906,13 @@ const app = nokre.addApp(nokre_dep, .{
 crawler and a link preview all expect. Its public part is the path and
 its secrets are the fragment, the one part of a URL no request carries.
 The first route of the table, when it takes no arguments, is the front
-door, `/`. **The fragment form** is the hash router: the whole reference
+door, `/`. When a page loads at `/`, though, the front is whatever
+screen your build left standing: an app whose first route is a splash
+that restores the session and moves on to `sign_in` at build stays on
+`sign_in`, rather than being sent back to a splash with nothing left to
+move it. Only the page load yields this way; `/` arriving later — Back
+after a reload, a link — enters the first route, and `/boot` typed out
+always does. **The fragment form** is the hash router: the whole reference
 in the fragment, secrets last — for a host that cannot answer every
 path with the app's page, and for an app served below the root of its
 origin, which the path form does not support.
@@ -988,6 +994,15 @@ at any depth: it names every file it loads from the site root
 otherwise ask for `/ballot/style.css`, and a `<base>` is refused by the
 page's own `base-uri 'none'`. nokre's own `serve` step applies the same
 rewrite, so a developer's browser meets the site a reader's will.
+
+What "names a file in the site" means is stated as data: the site's
+`site.manifest` lists every file the build wrote, one path per line
+([internals/dom-substrate.md](internals/dom-substrate.md#the-unit-is-the-site-and-there-is-one-assembler)
+lists it). A host that decides by that list needs nothing more. A host
+that decides by directory instead must pass through every directory
+the manifest holds, not only `fonts/`: lamp's frost grain lives in
+`lamp-grain/`, and a directory it does not know is answered with the
+page, which is the one file the site must never hand back for an image.
 
 The fragment form needs nothing: every address is the page itself, the
 page names its files relative to itself, and the site works below the
