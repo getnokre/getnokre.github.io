@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
     // and to everything packaging draws, and the generator reads it back
     // out of `site_options`, because the `nokre` module it imports is
     // the dependency's and was never told what this app declared.
-    const theme = .depth;
+    const theme = .lamp;
 
     const options = b.addOptions();
     options.addOption([]const u8, "theme", @tagName(theme));

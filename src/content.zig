@@ -66,14 +66,11 @@ fn footer(app: *App) !void {
     });
     try f.segmented(.{
         .label = loc.tr(.footerTheme),
-        .options = &.{ loc.tr(.footerThemeEink), loc.tr(.footerThemeDepth) },
+        .options = &.{ loc.tr(.footerThemeEink), loc.tr(.footerThemeDepth), loc.tr(.footerThemeLamp) },
         // The look the site declared and this switch sets, not the one
-        // drawn: on the DOM substrate lamp is drawn as depth, and it is
-        // not offered here (nokre's docs/internals/lamp.md, "Skia only").
-        .selected = switch (app.look) {
-            .eink => 0,
-            .depth, .lamp => 1,
-        },
+        // drawn: a reader's Increase Contrast or Reduce Transparency
+        // resolves the drawn one, and the switch keeps showing the look.
+        .selected = @intFromEnum(app.look),
         .on_select = .bind(selectTheme, app),
     });
     try f.link(.{ .label = loc.tr(.footerSource), .external = links.repo_url });
@@ -81,10 +78,7 @@ fn footer(app: *App) !void {
 }
 
 fn selectTheme(app: *App, selected: usize) void {
-    app.setTheme(switch (selected) {
-        0 => .eink,
-        else => .depth,
-    });
+    app.setTheme(@enumFromInt(selected));
 }
 
 /// The one place this site quotes a nokre document word for word, and so
@@ -988,6 +982,7 @@ test "the footer's theme switch is the app's setTheme, and shows the theme it is
     for ([_]struct { []const u8, nok.color.Theme }{
         .{ L.tr(L.default_locale, .footerThemeDepth), .depth },
         .{ L.tr(L.default_locale, .footerThemeEink), .eink },
+        .{ L.tr(L.default_locale, .footerThemeLamp), .lamp },
     }) |step| {
         try drive.selectOption(&app, q.queryByLabel(&app.tree, theme).?, step[0]);
         try testing.expectEqual(step[1], app.theme);
