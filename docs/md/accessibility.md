@@ -32,7 +32,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `button` / `link` (folded) | — | absent: the row folded it away and its `more` speaks for it |
 | `sheet_close`, `back`, `icon_button`, `more` | `button` | focused |
 | `link` | `link` | focused |
-| `tile` | `link` (route) / `button` (action) | detail and `badge` joined as the value, focused, `disabled`; its leading mark is decorative and its chip is not — a glyph's meaning is a guess and a word is not, so the label is the name and the chip is announced |
+| `tile` | `link` (`route` or `external`) / `button` (action) | detail and `badge` joined as the value, focused, `disabled`; its leading mark is decorative and its chip is not — a glyph's meaning is a guess and a word is not, so the label is the name and the chip is announced |
 | `toggle` | `switch` | on (carried as checked), focused, `disabled`; `in_progress`: disabled *and* busy, the value still carried, still a focus stop |
 | `checkbox` | `checkbox` | checked, focused, `disabled`; `in_progress` as `toggle` |
 | `copyable` | `button` | copied value carried, focused; a `status` child while acknowledged |

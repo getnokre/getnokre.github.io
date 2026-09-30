@@ -464,8 +464,8 @@ So nokre derives it. `Element.needsRuntime` is exhaustive over a closed
 element set, which makes the derivation total rather than a heuristic,
 and it draws one line: **a link is answered by the browser and a control
 is answered by an app.** Prose, headings, images, tables, code blocks,
-QR codes, `link`, `nav_item`, the roster's own row, a `tile` that
-navigates and a `button` that goes publish and work with nothing
+QR codes, `link`, `nav_item`, the roster's own row, and a `tile` or
+`button` that goes (a `route` or an `external`) publish and work with nothing
 running. A `button` that acts, an `icon_button`, `more`, `back` or a
 `tile` that acts; a `toggle`,
 `checkbox`, `text_input`, `text_area`, `segmented`, `radio_group` or
@@ -595,10 +595,11 @@ published the module and reported it rather than gut its main navigation
 surface into plain links, which is exactly right and is what a floor
 should cost when the floor is wrong.
 
-So the census asks the **element**. `Tile.route` decides it, for the
+So the census asks the **element**. `Tile.goes` — a `route` or an
+`external` — decides it, for the
 same reason it decides the tag, and it decides it *totally*: a tile
 carries exactly one destination or it does not enter the tree
-(`TileHasOneDestination`, `TileNeedsDestination`), so route-or-press is
+(`TileHasOneDestination`, `TileNeedsDestination`), so go-or-press is
 a partition rather than a guess. `Span.route` was the precedent and it
 is the same precedent it always was — a field that says whether a thing
 navigates or acts, read by whoever needs to know.

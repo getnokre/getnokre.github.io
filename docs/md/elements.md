@@ -1449,11 +1449,11 @@ Off is four statements together, and no kind keeps only some of them:
   the platform's own `disabled` attribute rather than `aria-disabled`,
   because markup that only *said* disabled would leave a keyboard user
   Tabbing into a control core has no stop for. The two with nowhere
-  to put the attribute are a navigating `tile` and a `button` that goes,
+  to put the attribute are a `tile` and a `button` that go,
   both anchors, which drop their destination instead — and drop the stop
   with it.
-- **It takes no press and no keystroke.** A `route` tile or a button that
-  goes navigates nowhere; a `select` opens no picker; a field takes no caret.
+- **It takes no press and no keystroke.** A tile or a button that
+  goes goes nowhere; a `select` opens no picker; a field takes no caret.
 - **Assistive tech is told**, and everything a reader needs is still
   announced: the name, and the value in whichever slot the kind carries
   it — a switch's position, a box's tick, a chosen option, a row's
@@ -3231,18 +3231,29 @@ wrapped at the group width: the group-level counterpart of a tile's
 one of them. Assistive tech hears it as the group's value.
 
 Each `tile` is its own tab stop carrying `label`, an optional dimmed
-`detail` line beneath it, and
-either a `route` or an `on_press`: a `route` tile renders a trailing
-chevron and navigates like a `link`; an `on_press` tile acts like a
-`button`. Its accessible role follows the same split. Exactly one of
-the two, held at `append` the way a `link`'s destinations are: setting
-both, or neither, is rejected — with both the route wins and the press
-is never called, and with neither the row is a tab stop that answers
-nothing. Focus is the picker's pattern — a heavier stroke hugging the
+`detail` line beneath it, and exactly one of three destinations:
+
+- **A `route` goes there.** The row draws a trailing chevron and
+  navigates as a [`link`](#link) with that route does.
+- **An `external` opens that address**, as a
+  [button that goes](#a-button-that-acts-and-a-button-that-goes) does:
+  in the system browser on native, and beside the page in a browser,
+  held to the link's scheme allowlist at `append`
+  (`error.UnsupportedScheme`). It is drawn and announced as a routed
+  row, chevron included. A row that opens another app's front door:
+  `.{ .label = "Open Votes", .mark = .votes, .external = "https://votes.example.com/" }`.
+- **A wired `on_press` acts**, as a `button` does, with no chevron.
+
+Its accessible role follows the same split: link for a row that goes,
+button for one that acts. More than one of the three is
+`error.TileHasOneDestination` and none is `error.TileNeedsDestination`
+— with a destination and a press the press would never be called, and
+with nothing the row is a tab stop that answers nothing. Focus is the
+picker's pattern — a heavier stroke hugging the
 row — because an outset ring would collide with the separators.
 
 `disabled` is per row, and off on whichever half the row wired: a
-`route` tile navigates nowhere and an `on_press` one runs nothing. The
+tile that goes goes nowhere and an `on_press` one runs nothing. The
 whole row recedes together — label, detail, leading mark, trailing chip
 and chevron. **The chevron stays**: it says where the row would go,
 which is still true of a row that is not going there now. The group's
@@ -3265,11 +3276,11 @@ second one — there the chevron is a `flex: none` sibling with the row's
 gap in front of it — which is why the two substrates had to be measured
 against each other rather than argued about.
 
-Because exactly one of the two is set, the split is total, and it
-reaches further than the chevron: **a routed tile is answered by the
+Because exactly one destination is set, the split is total, and it
+reaches further than the chevron: **a tile that goes is answered by the
 browser, so a page made of them publishes as a file with nothing running
 behind it** ([static-sites.md](static-sites.md), "Whether a page needs a
-runtime is derived"). A hub or a section index built out of routed rows
+runtime is derived"). A hub or a section index built out of routed or external rows
 costs its readers no module. One `on_press` row on the same page is a
 control, and then the page needs an app.
 
