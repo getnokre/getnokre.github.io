@@ -2405,7 +2405,10 @@ reaches both of its `zig build` calls as above. The raster needs no
 edit: the CMakeLists `include()`s the tree's `android/raster.cmake`,
 which names the Skia archive, the shim's Vulkan half and its defines,
 and `minSdk` reads the same properties' `min_sdk` — 30 for the GPU, 26
-otherwise ([internals/gpu.md](internals/gpu.md#consumers)). The copied
+otherwise ([internals/gpu.md](internals/gpu.md#consumers)). A CMakeLists
+of your own lists the template's C sources, the picture decoder's
+`src/image/decode_android.c` and `jnigraphics` among them
+([elements.md](elements.md), "picture"). The copied
 `res/values*/styles.xml` set `android:windowBackground` to
 `@color/nokre_window_background`, which the generated res tree carries
 as the top of your declared theme's page per appearance; a style of

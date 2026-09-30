@@ -517,6 +517,17 @@ at the pane's corner (`layout.modal_pane_radius`), twice a card's in
 every look ([elements.md](../elements.md#sheet), the owner's decision
 of 2026-09-27), so every effect follows the larger arc.
 
+- **What it reads.** Each device pixel beneath as one byte: its
+  luminance, `(77·r + 150·g + 29·b) >> 8`. The weights sum to 256, so
+  wherever r = g = b the byte is r exactly, and a gray frame reads as
+  it always did. A `picture` is the one colored thing on a page
+  ([elements.md](../elements.md#picture)); the glass is the
+  interface's, so it stays gray over one, and a blue logo passing
+  beneath shows as the gray its brightness is rather than as its red
+  channel. The GPU's `frameByte` is the same integers, each channel's
+  byte first ([gpu.md](gpu.md)); the web puts `grayscale(1)` before its
+  blur, CSS's own weights
+  ([dom-substrate.md](dom-substrate.md#lamp-dark-on-the-web)).
 - **Blur.** The frame beneath the plate blurred by three passes of a
   separable integer box blur — close to a Gaussian, deterministic, and
   nokre's own arithmetic rather than Skia's, whose blur would be its
@@ -561,6 +572,8 @@ of 2026-09-27), so every effect follows the larger arc.
   grain = g · 2.5 / 2040                            (±2.5 bytes)
   frost = tint · 0.58 + seen · 0.42 + grain
   ```
+
+  `seen` is the blurred, gained luminance above.
 
   The reference wrote `(hash − mean₃ₓ₃) · 1.5 · 5` and called it
   "about ±2.5"; its extremes are ±6.7 bytes. nokre takes the stated

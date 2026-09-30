@@ -1016,7 +1016,9 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
   does, and the row wraps as any row wraps.
 - **It keeps its own color in every look.** A red logo is red in `eink`
   light, in `depth` dark and in `lamp` dark, and under Increase
-  Contrast. No look decorates it: no plate, no rim, no shadow.
+  Contrast. No look decorates it: no plate, no rim, no shadow. Under
+  `lamp`'s frosted chrome it shows through as its luminance: the glass
+  never colors ([lamp.md](internals/lamp.md#frosted-chrome)).
 - **It never mirrors.** A car facing right still faces right in
   Persian. Its place mirrors: in a right-to-left screen it stands at
   the right.
@@ -1030,8 +1032,12 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
 Each platform's own decoder reads the pixels, and nokre resamples them
 to the device's pixels in integers. macOS and iOS decode with ImageIO,
 so an Xcode project that links nokre's library links ImageIO too.
-Android, Windows and Linux have no decoder yet: every picture there
-draws a fixed pattern in its place, not itself. On the web the page carries an
+Android decodes with BitmapFactory, so an Android project's CMakeLists
+compiles `src/image/decode_android.c` beside the shell and links
+`jnigraphics` too. Windows decodes with WIC, the Windows Imaging
+Component, which nokre's build links for you. Linux decodes with the
+libpng that nokre's own Skia archive carries, so it adds no system
+library. On the web the page carries an
 `<img>` of a declared picture's file, published by the site in the
 directory a generator states (`Emitter.Options.pictures_dir`,
 [static-sites.md](static-sites.md#a-generators-nokre-is-the-apps)). A picture from data has no file: the live driver hands its

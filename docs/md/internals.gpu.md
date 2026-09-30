@@ -544,7 +544,10 @@ lights"), and a secondary button's ring until it became a stroke
 (lamp.md, "Buttons under the lamp"): plain composites both.
 
 **The frost is the CPU's integers.** The snapshot is the plate out to
-its reach; the half frame is each 2×2 sum times 64, 8.8 fixed point in
+its reach; each pixel is read as the CPU's luminance, every channel
+rounded to its byte and then `(77·r + 150·g + 29·b) / 256` in ints, not
+a float dot product, so a gray pixel reads its own byte; the half frame
+is each 2×2 sum times 64, 8.8 fixed point in
 two bytes of an RGBA8 texture; a sum across is written in three bytes
 and a sum down divides by `(2r+1)²` once, rounding — so every value the
 CPU holds, the GPU holds, and the grain is the same 32-bit wrapping
@@ -618,6 +621,10 @@ committed golden file (tests/gpu_accuracy.zig). It draws nothing on the
 CPU and asserts nothing the `-Dgolden` gate asserts: the CPU's bytes are
 the file on disk, and what the check builds on the CPU is only the
 scene and its recorded ops, which say which effect drew each pixel.
+A pixel's difference is its most distant channel of the three: a lamp
+take is gray but for a `picture`, and `picture-under-glass-lamp-dark`
+puts pictures under the nav plates, so the frost's read of a colored
+frame (`frameByte` against the CPU's `luma`) is held there.
 Only the tests whose names say "lamp dark" are compiled, and the
 suite's last test fails naming any lamp-dark golden no take drew, so a
 take in a test named otherwise is not skipped in silence. Then one take per

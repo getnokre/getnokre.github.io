@@ -1899,7 +1899,8 @@ box, has no shadow: never depth's.
 
 **Frost.** Glass is drawn only where the browser has `backdrop-filter`.
 The host's own `box-shadow` carries its contact shadow and cast passes.
-Its `::before` is the frost: `backdrop-filter: blur() brightness()` on
+Its `::before` is the frost: `backdrop-filter: grayscale(1) blur()
+brightness()` on
 a box larger than the plate by the frost's reach, so the blur reads
 what stands beside it, trimmed back to the plate's shape by a mask. A
 rounded `clip-path` or an `overflow` wrapper lost its corners inside a
@@ -1953,6 +1954,7 @@ Chrome.
 | A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |
 | Frost | one Gaussian at 0.76 of the radius, not native's two-scale mix: 2.1 bytes off on mean on nav plates, 3.5 on a sheet |
 | What the frost reads under the chrome's own shadows | a flat darkening |
+| What the frost reads of a `picture` | `grayscale(1)`'s luminance, CSS's weights, not native's 77/150/29 |
 | Grain | a 32 px tile anchored to the plate |
 | Rim over frost | two whites composited, not summed and capped; the cap holds |
 | A lit glyph | lit over its em square, which fitted the golden best |
