@@ -1072,13 +1072,35 @@ member of `nokre.declared.LinkedAppName` exactly when it is declared, so
 a link into an app this one never named does not compile. The rest is
 `routeLink`'s: the route and its arguments are vetted against what was
 declared, with the same errors, and a secret argument rides the
-fragment. A link into another app's front door names its route
+fragment. A route link into another app's first route names it
 (`/publications`, never `/`); every app reads that back as the screen
 `/` is. The build refuses, by name, an origin of the wrong shape, an app
 named twice or by something that is not an identifier, an app at this
-app's own origin (that link is `routeLink`), an app with no route, a
-route named outside the charset or twice, and more secret arguments
-than arguments.
+app's own origin (that link is `routeLink`), a route named outside the
+charset or twice, and more secret arguments than arguments.
+
+The link to another app's **front door** is `App.frontDoorInto`, and it
+names no route: it is the app's origin and `/`, in either form. In the
+path form `/` is the front door; in the fragment form the empty
+fragment names no screen, so a page loaded there opens on the front its
+build left standing, while a running app handed it by a deep link stays
+where it is. An entry declared with **no routes** is door-only: the
+build accepts it, `frontDoorInto` is the one link into it, every route
+named on it through `routeLinkInto` is `error.UnknownRoute` as any
+undeclared route is, and it may still take the app's mark. A company's
+site that links to each product's front door declares each of them so:
+
+```zig
+.links_into = &.{
+    .{ .name = "votes", .web_origin = votes_origin, .address_form = .path, .routes = &.{} },
+    .{ .name = "teams", .web_origin = teams_origin, .address_form = .fragment, .routes = &.{} },
+},
+```
+
+```zig
+const door = try app.frontDoorInto(gpa, .votes);
+defer gpa.free(door);   // https://votes.example.com/
+```
 
 If this app draws the other app's mark, the entry also takes the mark
 that app's package offers

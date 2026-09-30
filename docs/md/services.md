@@ -678,6 +678,12 @@ reason instead, and a screen that appends an `app_mark` is refused with
 that sentence. An app that declared no name gets the same refusal: a
 mark on a screen is an image, and an image is named.
 
+A silhouette is authored in the shade it is drawn with in the light
+appearance. The share card and the favicon composite it as drawn, and
+the adaptive favicon flips that shade for a dark tab
+([The tab glyph](#the-tab-glyph)); an `app_mark` on a screen sets its
+outline alone, in the text's ink, whatever shade the file carries.
+
 **A package offers its mark to the apps that link into it.** If an app
 declared a silhouette, `addApp` hands it back as `App.offered_mark`: a
 directory of nokre's own holding the file and the app's declared name,
