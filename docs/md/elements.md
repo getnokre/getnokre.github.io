@@ -1021,23 +1021,35 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
   Persian. Its place mirrors: in a right-to-left screen it stands at
   the right.
 - **It is never a background and never a control.** Nothing is drawn
-  over it, it takes no focus and no press, and a page holding one
-  needs nothing running behind it.
+  over it, it takes no focus and no press, and a page holding a
+  declared one needs nothing running behind it. A page holding a
+  picture from data that can be shown does (`Element.needsRuntime`):
+  only a running app can hand the browser its bytes.
 
 Each platform's own decoder reads the pixels, and nokre resamples them
 to the device's pixels in integers. On the web the page carries an
 `<img>` of a declared picture's file, published beside the page under
-`pictures/`. A picture from data is an `<img>` with no file yet, its
-`alt` standing where its pixels will be; one that cannot be shown is
-its box's words, named by its description.
+`pictures/`. A picture from data has no file: the live driver hands its
+bytes to the browser once, when the picture first appears, and the
+`<img>` takes a blob URL of them as its `src`, shared by every picture
+of the same bytes and revoked when a rebuild no longer shows them. The
+browser decodes; bytes it cannot decode draw the could-not-show box
+from the next frame, as a decoder's failure does on every other
+platform. A page a static generator writes has no app behind it yet to
+hand the bytes over, so its `<img>` carries no `src` and the box's
+words as its `alt`, which the browser draws in the picture's place
+until the live driver boots and fills the `src`; a reader hears the
+description alone either way. Only a page showing such a picture, or
+the app shell of an app whose sources name one, admits `blob:` images
+in its Content-Security-Policy. One that cannot be shown is its box's
+words, named by its description.
 
 What this is not: an `icon` is a general symbol, the same in every app;
 an `app_mark` is an app's identity; a `qr` is a value for a camera; a
 `stage` is another app's screens at work. A picture is none of these:
 it is something particular that the words beside it are about.
 
-A picture from data's pixels in a browser, a picture in a Markdown
-document, and a picture that is a link follow.
+A picture in a Markdown document and a picture that is a link follow.
 
 ### `quantity`
 The one number a screen is about. `value` (mandatory) is the number as

@@ -71,6 +71,9 @@ export function silentHooks() {
     nokre_log_refusal: () => {},
     // Nor does it stand a stage, so it never asks for a recording.
     nokre_dom_fetch_play: () => {},
+    // Nor does it show a picture.
+    nokre_dom_show_picture: () => {},
+    nokre_dom_drop_picture: () => {},
   };
 }
 
@@ -207,7 +210,7 @@ function seedOne(nk, memory, scratch, seed) {
 /// narrower event: the answers this shell has been giving core about
 /// text width just changed, and every decision made from them is due
 /// again.
-export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, onPlayAsked }) {
+export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, onPlayAsked, onPictureShown, onPictureDropped }) {
   const utf8 = new TextDecoder();
   const bytes = new TextEncoder();
   const compute = new Map(); // slot -> Worker
@@ -417,6 +420,14 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
     // screen. Said mid-render, so nothing here calls back into wasm.
     nokre_dom_fetch_play: (ticket, ptr, len) => {
       onPlayAsked?.(ticket, utf8.decode(memory().subarray(ptr, ptr + len)));
+    },
+    // A picture from data's bytes, borrowed for the call: copied out
+    // here, before anything can grow the heap under them.
+    nokre_dom_show_picture: (ticket, ptr, len) => {
+      onPictureShown?.(ticket, memory().slice(ptr, ptr + len));
+    },
+    nokre_dom_drop_picture: (ticket) => {
+      onPictureDropped?.(ticket);
     },
 
     // A screen or sheet whose builder failed (router.zig's

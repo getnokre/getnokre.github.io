@@ -201,6 +201,8 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     memory,
     wasmUrl: wasmUrl.href,
     onPlayAsked: (ticket, file) => plays.set(ticket, file),
+    onPictureShown: (ticket, got) => showPicture(ticket, got),
+    onPictureDropped: (ticket) => dropPicture(ticket),
     workerUrl: worker ? new URL(worker, location.href) : new URL("./live-worker.js", import.meta.url),
     onWork: () => frame(),
     // A width core was told is a width core decided from, so answers
@@ -346,6 +348,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // frame, and the chrome's would otherwise be the only one.
     hydrating = false;
     fetchPlays();
+    syncPictures();
     syncTables();
     restoreFocus();
     syncAddressBar();
@@ -404,6 +407,47 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       nk.nokre_dom_play_arrived(ticket, got.length);
     }
     frame();
+  }
+
+  // ---- a picture from data ----------------------------------------
+  //
+  // Its bytes cross once per entry, when wasm hands them over under a
+  // ticket (live.zig's `handOverPictures`): the browser gets a blob URL
+  // of them, which every `<img>` naming that ticket takes as its `src`,
+  // and the URL is revoked when the entry is swept. The browser
+  // decodes; an image it cannot decode is reported, and the picture
+  // stands its could-not-show box from the next frame. The `src` is
+  // this driver's and not the markup's, so a patch leaves it standing
+  // (`pictureOwns`).
+  const pictureUrls = new Map(); // ticket -> blob URL
+  const PICTURE = "data-picture";
+  // A u32 crosses into JavaScript as a signed i32; the markup writes it
+  // unsigned, so every key here is the unsigned reading.
+  function showPicture(ticket, got) {
+    pictureUrls.set(ticket >>> 0, URL.createObjectURL(new Blob([got], { type: "image/png" })));
+  }
+  function dropPicture(ticket) {
+    const url = pictureUrls.get(ticket >>> 0);
+    if (url === undefined) return;
+    pictureUrls.delete(ticket >>> 0);
+    URL.revokeObjectURL(url);
+  }
+  function pictureOwns(next, name) {
+    return name === "src" && next.nodeName === "IMG" && next.hasAttribute(PICTURE);
+  }
+  function syncPictures() {
+    for (const host of roots) {
+      for (const img of host.querySelectorAll(`img[${PICTURE}]`)) {
+        const ticket = Number(img.getAttribute(PICTURE));
+        const url = pictureUrls.get(ticket);
+        if (url === undefined || img.getAttribute("src") === url) continue;
+        img.onerror = () => {
+          nk.nokre_dom_picture_failed(ticket);
+          frame();
+        };
+        img.setAttribute("src", url);
+      }
+    }
   }
 
   // A playing stage's clock (shell.h's `wants_ticks`): the browser's
@@ -877,7 +921,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     }
     for (const attr of [...a.attributes]) {
       if (attr.name === "style") continue;
-      if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name)) a.removeAttribute(attr.name);
+      if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name) && !pictureOwns(b, attr.name)) a.removeAttribute(attr.name);
     }
     for (const attr of b.attributes) {
       if (attr.name === "style") continue;

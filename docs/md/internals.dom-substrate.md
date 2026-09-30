@@ -415,6 +415,23 @@ and then read off the `Document`:
 | a document with no boot | the `style-src` pair and nothing executable — `default-src 'none'` answers for every absence |
 | a locale stub | `script-src 'self'` for its chooser, and an undivided `style-src 'self'`: its markup is written in document.zig and carries no style attribute |
 
+A document whose screen shows a picture from data that can be shown
+adds `blob:` to `img-src`, and no other page does
+(`csp.Needs.data_pictures`). No file on the site holds those bytes: the
+live driver hands them over after layout (`PictureStore.takeHandOvers`,
+the stage's asks' shape), each entry once under a ticket, through
+`nokre_dom_show_picture`; live.js makes one blob URL of them and sets it
+as the `src` of every `<img>` whose `data-picture` names that ticket,
+a `src` its patch leaves standing because the markup never carries it.
+An `error` on the image is `nokre_dom_picture_failed`, and the next frame
+stands the could-not-show box. When a sweep frees the entry, the next
+frame calls `nokre_dom_drop_picture` and live.js revokes the URL. The
+shell page (`webIndexHtml`) is written before any screen is built, so
+it cannot ask a tree: it admits `blob:` exactly when the app's own
+sources name the `picture` element, which build.zig reads off the trees
+the icon face is scanned from, by the scan's own rule
+(src/names_picture.zig, the fact that also decides the chrome word).
+
 `img-src 'self'` and `font-src 'self'` are on all three, and the second
 of those is the interesting one: nokre's own markup spends neither. The
 faces are the *stylesheet's*, fetched through its `@font-face` block,
