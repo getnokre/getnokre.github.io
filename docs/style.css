@@ -293,7 +293,7 @@
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .scrim { background: var(--scrim-veil); }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .sheet, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .notices-pane, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .picker:not(.above-nav) { box-shadow: var(--modal-shadow); }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .sheet, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .notices-pane, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .picker, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .notice { border-color: transparent; }
-:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .tile > .icon.square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .tile > .square { background: var(--g11); border-radius: 4px; box-shadow: 0 0 0 4px var(--g11); }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) hr, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) tr + tr > th, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) tr + tr > td, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .tiles > .tile.radio, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .tiles > .tile + .tile:not(.radio)::before { border-top-color: var(--rule); }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .stage-window { box-shadow: 0 0 0 1px var(--rule); }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
@@ -1817,6 +1817,9 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   vertical-align: bottom;
   white-space: nowrap;
 }
+/* A tile's leading app mark stands in the icon's square, at its
+   centre (`drawLeadingAppMark`). */
+.app-mark.square { width: var(--lh-body); text-align: center; }
 .app-mark.s-small { font-size: var(--lh-small); line-height: var(--lh-small); height: var(--lh-small); }
 .app-mark { font-size: var(--lh-body); line-height: var(--lh-body); height: var(--lh-body); }
 .app-mark.s-h4 { font-size: var(--lh-h4); line-height: var(--lh-h4); height: var(--lh-h4); }
@@ -3319,7 +3322,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 
 .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); border-top: var(--border) solid var(--g10); }
-.tiles > .tile:has(> .icon.square) + .tile:not(.radio)::before { inset-inline-start: 44px; }
+.tiles > .tile:has(> .square) + .tile:not(.radio)::before { inset-inline-start: 44px; }
 .tiles > .tile + .tile:focus-visible::before, .tiles > .tile:focus-visible + .tile::before { content: none; }
 
 input.check::after { content: "\e06c"; }

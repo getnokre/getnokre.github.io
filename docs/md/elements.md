@@ -754,6 +754,10 @@ outside the screen, but it encodes a value for a camera and is named by
 its label. A `stage` shows another app's screens whole; an app mark
 shows an app's identity in a line of its own.
 
+A `tile` can lead with an app's mark too, as decoration beside the
+row's label rather than as an image of its own ([`tile_group` /
+`tile`](#tile_group--tile)).
+
 ### `divider`
 A 1px horizontal rule across the parent width.
 
@@ -3282,7 +3286,7 @@ so a mark adds no styling surface and nothing new for the contrast gate
 to prove.
 
 **All the rows of a group carry one or none**; a mixed group is rejected
-at `append` (`TileGroupMixedIcons`), beside the destination rule. The
+at `append` (`TileGroupMixedLeadingMarks`), beside the destination rule. The
 mark takes a fixed leading band — a `lineHeight` square plus the icon
 gap, the same box whatever glyph it holds — so a group's words start on
 one column, exactly as a `list`'s marker band makes its items do. Give
@@ -3290,6 +3294,32 @@ the band to some rows and not others and the column goes ragged, with
 the rows that stepped in reading as subordinate to the ones that did
 not. A `list` cannot have that bug because its markers are derived; a
 tile group's are authored, so the check has to exist.
+
+A row can lead with an app's mark instead: `mark`, a member of
+`nokre.declared.MarkedApp`, as [`app_mark`](#app_mark) takes. For
+example, a product index whose rows lead with each product's mark,
+each row labeled with the product's name.
+
+- **If a row leads with a mark, it is decorative, as an icon is.** The
+  label is the row's name and the mark's own name is not announced: a
+  row labeled "Votes" that also said the mark's "Votes" would say its
+  name twice.
+- **If a row leads with a mark, it takes the icon's band.** The words
+  start on the column an icon's rows start on. The mark is as tall as
+  the square; a mark wider than tall is set smaller until it fits
+  across it. A narrower mark is centred in the square. The square moves
+  to the other end of the row under right-to-left; the mark is never
+  flipped.
+- **If a row leads with a mark, it is drawn in the row's ink** and dims
+  on an off row. Depth seats it on the icon's well, and lamp lights it
+  on that well as it lights a tile's icon.
+- **If a row sets both `icon` and `mark`, it is refused** at `append`
+  (`TileHasOneLeadingMark`): the band holds one glyph.
+- **If one row leads with an icon and another with a mark, the group
+  is refused** (`TileGroupMixedLeadingMarks`): the rows of a group lead
+  with icons, with marks, or with nothing.
+- **If the mark cannot be drawn, the row is refused** with the errors
+  and the build's sentence an `app_mark` gets.
 
 Reach for tiles where a screen is a list of destinations or row-shaped
 actions (settings screens, detail screens). For an exclusive choice

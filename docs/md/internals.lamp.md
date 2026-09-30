@@ -411,9 +411,9 @@ the box's centre, so its far corner is the lit one.
   surface is a plate: an icon button's (on its bar plate, its notice or
   its pane), a sheet's close (on the sheet's glass), a nav item's,
   marker's and collapsed chip's glyph and the chip's chevron (on the
-  nav plate), the dial's step glyphs (on their buttons), a tile's mark
-  (on its well) and chevron (on its group's card), and a select's
-  chevron (on its field). The back control and a header action stand
+  nav plate), the dial's step glyphs (on their buttons), a tile's
+  leading mark, an icon or an app's (on its well), and its chevron (on
+  its group's card), and a select's chevron (on its field). The back control and a header action stand
   on the page ground, on no plate: each answers as a `plate` standing
   on its own target, and is lit over its ink box as every other is. A
   disabled one is lit too: its plate and its words carry the state.
