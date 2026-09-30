@@ -997,8 +997,17 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
 - **The same bytes decode once.** Two pictures of one logo on a screen,
   or the same logo after a rebuild, share one decode; bytes no screen
   shows any more are freed after the rebuild that dropped them.
-- **A recording holds no picture**, declared or from data
-  (`error.RecordingHoldsAPicture` when a scenario is recorded).
+- **A recording carries a picture's description and its own size,
+  never its pixels.** Its destination rides too, as a link's does.
+  Bytes would make a recording as large as its pictures, and a declared
+  name would be one the showing app must also declare. So a
+  [`stage`](#stage) draws a played app's picture as the could-not-show
+  box at the size the picture stood at, narrowed as a picture is, with
+  the description inside it and not "could not be shown": the picture
+  is no failure of the showing app. Its height is never a limit here
+  either: the box is at least the picture's height and grows downward
+  where its words need more. In the browser it is the box's `<p>` at
+  that width.
 - **The description is its name, and it is mandatory.** A reader hears
   "A yellow sun over a green field, image". An empty description is
   refused at append (`error.UndescribedPicture`): there is no
@@ -1155,6 +1164,8 @@ a consumer that had to state it would be measuring text, which is the
 thing layout exists to do. Both substrates answer it the same way, layout
 by `quantityRow` and the browser by the same gap and the same two
 scales. The caption wraps as prose under both, in the small muted ink.
+Quantities alone in a row are peers ([`box`](#box) has the rule), and
+the span a peer answers the unit's question in is its share.
 
 Never interactive, never animated. `append` rejects an empty `value` —
 an element whose whole content is one number cannot have none — and a
@@ -1261,11 +1272,11 @@ no way to be handed the wrong one:
   the live driver, with or without a runtime. The same three buttons on
   a phone's browser take a second line, and no `More` is ever drawn
   there.
-- **A row of boxes with words wraps one to a line.** Two or more boxes
-  alone in a row share the line evenly where they all fit; where they
-  do not, each takes a line of its own, never two and one, on every
-  surface. A strip of boxes too small to hold words wraps as any row
-  does ([`box`](#box)).
+- **A row of blocks with words wraps one to a line.** Two or more
+  blocks — boxes, groups, quantities — alone in a row share the line
+  evenly where they all fit; where they do not, each takes a line of
+  its own, never two and one, on every surface. A strip of boxes too
+  small to hold words wraps as any row does ([`box`](#box)).
 - **Every other row wraps, on every surface.** Children flow along the
   line and break onto a new one when the next will not fit — greedy,
   first-fit, in document order, each line `gap` below the last and
@@ -1352,7 +1363,8 @@ first block in a flow asks nothing. So:
   followed by a group holding another gets the full 24;
 - a flow whose own gap is past 24 keeps it, since that is the larger
   ask;
-- rows never spend it: a horizontal stack's children keep its gap.
+- rows never spend it: a horizontal stack's children keep its gap,
+  groups alone in a row included ([`box`](#box) has the peers rule).
 
 Every heading level asks the same one number. A per-level table was
 proposed and rejected: the air marks a change of subject, and how deep
@@ -1390,29 +1402,50 @@ light, and a lighter fill alone in dark.
 
 In vertical flow a box takes the full width; inside a table cell it
 hugs its widest child plus its own padding. In a row, what else is on
-the row decides (`layout.boxRow`):
+the row decides (`layout.boxRow`). The rule is the same for three
+elements, the **blocks**: a `box`, a [`group`](#group) and a
+[`quantity`](#quantity). No other element is one.
 
-- **Two or more boxes alone in a row share the line where all fit**,
-  evenly, each as tall as the tallest. Three plans on a wide screen are
-  three equal cards, the two that say less drawn down to the edge of
-  the one that says most.
-- **Below that width, boxes that hold words stand one per line**, each
-  the full width, never two and one. The same three plans on a phone
-  are three full-width cards. This is the all-or-one a desk folds by
+- **If two or more blocks are alone in a row, they share the line where
+  all fit**, evenly, each as tall as the tallest. Three plans on a wide
+  screen are three equal cards, the two that say less drawn down to the
+  edge of the one that says most; four quantities across a dashboard at
+  760 are four equal columns.
+- **If they do not all fit and any of them holds words, they stand one
+  per line**, each the full width, never two and one. A group and a
+  quantity always hold words; a box does when it hugs at least the
+  row's floor, a field's ten body ems (160px). The same three plans on
+  a phone are three full-width cards, and the four quantities at 400
+  stand figure under figure. This is the all-or-one a desk folds by
   ([`region`](#region)): two on a line and one under them would pair
   two peers against the third, so the row would mean one thing at one
   width and another at the next.
-- **Boxes all narrower than the row's floor wrap at their own widths.**
-  The floor is a field's, ten body ems (160px). A strip of palette
-  swatches shares the line where they all fit and breaks onto more
-  lines, each swatch at its own width, where they do not.
-- **A lone box in a row hugs** its widest child plus its own padding.
-- **A box beside anything else is a row like any other.** A box beside
-  a badge hugs, and the row wraps as
+- **If every block is a box narrower than the floor, they wrap at their
+  own widths.** A strip of palette swatches shares the line where they
+  all fit and breaks onto more lines, each swatch at its own width,
+  where they do not.
+- **If a block is alone in a row, it is not a peer.** A lone box hugs
+  its widest child plus its own padding.
+- **If a row mixes blocks with anything else — a control, a badge, a
+  run of words — it is a row like any other.** A quantity beside a
+  badge and two links hugs, and the row wraps as
   [any row does](#a-row-too-narrow-for-its-children).
+- **If a row holds a [`picture`](#picture) or a [`stage`](#stage), it is
+  not a row of peers**, pictures alone included: each keeps its own
+  size, which is the picture's rule.
 
-A row of boxes is for a few peers the reader takes each whole — plans,
-promises, three ways to answer. A [`table`](#table--row--cell) is read
+A peer is laid out in its share as it would be in a column that wide.
+A quantity's unit takes a line under its figure where the share is too
+narrow for both, as it does in a narrow column. A group's own air
+([`group`](#group)) is spent inside it as ever, but between two peer
+groups the row's `gap` is the space, on a line and one per line alike:
+the boundary air is a vertical flow's, and a row asks none. Three
+groups of links under a page are a footer's columns at 760 and three
+lists one under the next at 400, `gap` apart.
+
+A row of blocks is for a few peers the reader takes each whole — plans,
+promises, three ways to answer, the figures of a dashboard, the columns
+of a footer. A [`table`](#table--row--cell) is read
 cell by cell under a column's name; reach for one when the reader
 compares the same fact across things. A [`tile_group`](#tile_group--tile)
 is a list of destinations, each tile one place to go; reach for one when
@@ -3287,6 +3320,10 @@ stood at (kept as the node at the window's top, so a reflowed screen
 still shows the part it showed). It is drawn in this app's look and
 appearance, on a window of its own — its page, its lamp and its frost
 know only it — inside an edge in the look's rule.
+
+**A picture is its box.** Inside a recorded play a
+[`picture`](#picture) is the box that says its description, at the
+size the picture stood at: a recording carries no picture's pixels.
 
 **Inert.** Nothing inside the window takes focus, a press, hover or a
 node of its own in the accessibility tree: the stage is one `figure`,

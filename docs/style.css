@@ -1276,10 +1276,11 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    whole line. `min-width: 0` so a long label or value never widens
    the basis core broke the line at. */
 .stack.row > :is(.field, .field-group) { flex: 1 0 min(var(--row-field-min), 100%); min-width: 0; }
-/* A row of boxes (`layout.BoxRow`) shares its line evenly and
-   stretches each box to the tallest where the content box is at
-   least `--fit` wide. Below it, a `narrow-stack` row's bases exceed
-   the line, so each box wraps alone at `max-width: 100%`; a
+/* A row of peers (`layout.BoxRow`: boxes, groups, quantities)
+   shares its line evenly and stretches each to the tallest where
+   the content box is at least `--fit` wide. Below it, a
+   `narrow-stack` row's bases exceed the line, so each peer wraps
+   alone at `max-width: 100%`, the row's gap between; a
    `narrow-wrap` row's cap drops to zero and `min-width` wins, so
    each keeps its own width and the row wraps as any row does. */
 .stack.row.peers > * { align-self: stretch; }
@@ -1887,6 +1888,17 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   font-size: var(--px-small);
   line-height: var(--lh-small);
   color: var(--dark);
+}
+/* A recorded one (`picture`): the box at the picture's width and
+   at least its height, its shape kept where it is narrowed, and
+   taller where its words need it: with no overflow clip, the
+   ratio's automatic minimum is the words' height
+   (`layout.pictureRecordedSize`). */
+.picture-unshown.sized {
+  flex: none;
+  width: var(--pic-w);
+  max-width: 100%;
+  aspect-ratio: var(--pic-ratio);
 }
 
 /* ---- links and controls ------------------------------------------ */

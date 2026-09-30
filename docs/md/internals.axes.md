@@ -106,7 +106,7 @@ nokre derives it and offers no knob for it.
 | Nav shape — a row of destinations or one chip | nokre's (`layout.navCollapses`) |
 | Folding an overflowing row of actions, where the surface clips | nokre's (`layout.rowOverflow`, `overflow.syncOverflowChrome`) |
 | Where a row wraps | nokre's |
-| A row of boxes: side by side or one per line | nokre's (`layout.boxRow`) |
+| A row of blocks: side by side or one per line | nokre's (`layout.boxRow`) |
 | Page width | nokre's, derived from the shape |
 | Which screens exist at each dwell | yours |
 | In what order things appear on a screen | yours |

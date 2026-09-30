@@ -207,7 +207,7 @@ to `'unsafe-inline'` for scripts nokre had written itself.
 
 **One loosening stayed, and it is `style-src`'s.** The serializer writes
 inline style *attributes* on element after element — a list's measured
-gutter, a QR's whole-pixel side, a track's bleed, a row of boxes'
+gutter, a QR's whole-pixel side, a track's bleed, a row of peers'
 fitting width, a container's own gap and padding — and every one of them is a number layout just computed,
 so none can be hashed and none can be a stylesheet's guess (the four
 seams above say why each is measured). Nor can they move into script:
@@ -1730,10 +1730,11 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   stops one scanning. The gutter is measured in the digits that will
   actually be drawn, which in a Persian page are Persian ones.
 
-- **Where a row of boxes breaks is a number too.** Boxes alone in a
+- **Where a row of peers breaks is a number too.** Blocks alone in a
   row share the line from a width up and stand one per line (or wrap,
   for boxes too small to hold words) below it
-  ([../elements.md](../elements.md#box)). CSS cannot ask whether a
+  ([../elements.md](../elements.md#box); a block is a box, a group
+  or a quantity). CSS cannot ask whether a
   row's children fit, and a written page runs nothing that could, so
   the serializer asks `layout.boxRow` and writes the answer: the
   `peers` class, one of `narrow-stack` or `narrow-wrap`, and the

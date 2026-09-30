@@ -31,8 +31,10 @@ build's gathering tool, which links no nokre, can read them.
 The codec is generic over the element set, and so is the stamp's
 digest (`shapeDigest`): a field added anywhere in `Element`,
 `SceneState` or the timeline's types changes it, and a reader refuses
-any other stamp. `IconName` and `PlayName` are digested by name alone —
-icons travel by name, and a recording holds no stage.
+any other stamp. `IconName`, `PlayName` and `PictureName` are digested
+by name alone — icons travel by name, a recording holds no stage, and a
+picture travels as its description, destination and own size, stood up
+with `Picture.held.recorded` set so it draws its box.
 
 ## Standing a scene up
 

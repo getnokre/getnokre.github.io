@@ -552,6 +552,21 @@ fn gallery(app: *App) !void {
         try plan.styled(words[1], .{ .scale = .small, .ink = .mid });
     }
     try b.styled("Boxes alone in a row are peers the reader takes each whole. Where all fit they share the line evenly, each as tall as the tallest; below that width, boxes that hold words stand one per line at the full width — never two and one, which would pair two peers against the third. The library decides the fold from the width it has; the screen states three boxes and nothing about columns.", .{ .ink = .mid, .scale = .small });
+    const figures = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+    try figures.quantity(.{ .value = "38", .unit = "elements" });
+    try figures.quantity(.{ .value = "5", .unit = "shells", .caption = "One codebase, every platform" });
+    try figures.quantity(.{ .value = "0", .unit = "styling hooks" });
+    const columns = try b.stack(.{ .axis = .horizontal, .gap = 16 });
+    for ([_]struct { []const u8, []const [2][]const u8 }{
+        .{ "Read", &.{ .{ "Introduction", "introduction" }, .{ "Getting started", "getting-started" } } },
+        .{ "Contract", &.{ .{ "Elements", "elements" }, .{ "Routing", "routing" }, .{ "Services", "services" } } },
+        .{ "Inside", &.{ .{ "Internals", "internals" }, .{ "Testing", "testing" } } },
+    }) |column| {
+        const g = try columns.group();
+        try g.heading(.h4, column[0]);
+        for (column[1]) |item| try g.link(.{ .label = item[0], .route = item[1] });
+    }
+    try b.styled("A group and a quantity are blocks too, and a row of blocks is a row of peers: three figures across a wide screen stand figure under figure on a phone, and three columns of links — the shape of a footer — become three stacked lists. A row that mixes a block with a control or a run of words stays a row like any other.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "stand_in");
     const waiting = try b.standIn(.{ .label = "Loading the roster" });
