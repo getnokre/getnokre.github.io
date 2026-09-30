@@ -337,9 +337,11 @@ fn palette(site: *Site, app: *App) !void {
     try b.text("Thirteen steps, a ramp for each theme in each appearance, six " ++
         "type scales. A step is a semantic position rather than a byte: " ++
         "each ramp supplies its own bytes, and a dark one is deliberately " ++
-        "not its light one reversed. Everything on this page is read out " ++
-        "of nokre's source at build time, so it cannot drift from the " ++
-        "library.");
+        "not its light one reversed. Two ramps are tabled below, not " ++
+        "three: lamp paints depth's bytes under one light, so its ramps " ++
+        "are depth's and what it adds is bounded by caps of its own. " ++
+        "Everything on this page is read out of nokre's source at build " ++
+        "time, so it cannot drift from the library.");
 
     try b.heading(.h2, "The ramps");
     const strip = try b.stack(.{ .axis = .horizontal, .gap = 4 });
