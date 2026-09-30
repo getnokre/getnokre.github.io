@@ -953,24 +953,52 @@ named by the label, carrying the value.
 A picture shows something in the world that the words are about: a
 team photo on a welcome screen, a map of the venue beside its address.
 It is the one element in its own color. The interface stays gray; the
-picture is the world's. Two fields: `shows`, a member of
-`nokre.declared.PictureName`, and `description`, what the picture shows
-in words.
+picture is the world's. Two fields: `shows`, where its pixels come
+from, and `description`, what the picture shows in words. `shows` is
+one of two: `.declared`, a member of `nokre.declared.PictureName`, or
+`.data`, the bytes of a PNG the app was handed.
 
 ```zig
 // build.zig
 .pictures = &.{.{ .name = "landscape", .png = b.path("pictures/landscape.png") }},
 
 // a screen
-try b.picture(.{ .shows = .landscape, .description = tr(.landscapeDescription) });
+try b.picture(.{ .shows = .{ .declared = .landscape }, .description = tr(.landscapeDescription) });
+try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
 ```
 
-- **It names only a picture the build declared.** `.shows = .harbour`
-  does not compile if `AppOptions.pictures` has no entry named
-  `harbour`. The build reads each file's header and refuses, by name
-  and file, an animated PNG (it carries `acTL`), a 16-bit one, an
-  interlaced one, a file over 8 MiB, one over 2280 pixels wide and one
-  over 2048 by 2048 pixels.
+- **A declared picture names only a picture the build declared.**
+  `.shows = .{ .declared = .harbour }` does not compile if
+  `AppOptions.pictures` has no entry named `harbour`. The build reads
+  each file's header and refuses, by name and file, an animated PNG (it
+  carries `acTL`), a 16-bit one, an interlaced one, a file over 8 MiB,
+  one over 2280 pixels wide and one over 2048 by 2048 pixels.
+- **A picture from data is bytes the app did not write**: an
+  organization's logo from its server, a receipt. The tree copies them
+  at append, as it copies a document's source, so the app may free its
+  buffer as soon as `picture` returns. The copy costs the bytes' length
+  again, in the tree's memory, until the next rebuild.
+- **Bytes that cannot be shown never refuse the append.** If the bytes
+  are not a PNG, or are animated, 16-bit, interlaced or over the
+  build's limits above, the picture still stands and draws its
+  could-not-show box: the words "This picture could not be shown."
+  (`App.Chrome.picture_unavailable`) before its description, small and
+  muted inside a box's edge, across the width it is given. A server
+  that sends a broken logo leaves a settings screen whole. So does a
+  PNG whose pixels the platform then fails to decode: the frame that
+  finds out draws nothing there, and the next draws the box. There is
+  no Retry, because the same bytes decode the same way; new bytes are
+  the app's next rebuild. Empty bytes are the app's own mistake and are
+  refused (`error.EmptyPicture`).
+- **A reader hears the description alone**, shown or not: "Logo of
+  Harbour FC, image". The words "could not be shown" are drawn only,
+  because the description is all the picture is to a reader who cannot
+  see it, and a failure they can do nothing about adds nothing.
+- **The same bytes decode once.** Two pictures of one logo on a screen,
+  or the same logo after a rebuild, share one decode; bytes no screen
+  shows any more are freed after the rebuild that dropped them.
+- **A recording holds no picture**, declared or from data
+  (`error.RecordingHoldsAPicture` when a scenario is recorded).
 - **The description is its name, and it is mandatory.** A reader hears
   "A yellow sun over a green field, image". An empty description is
   refused at append (`error.UndescribedPicture`): there is no
@@ -998,16 +1026,18 @@ try b.picture(.{ .shows = .landscape, .description = tr(.landscapeDescription) }
 
 Each platform's own decoder reads the pixels, and nokre resamples them
 to the device's pixels in integers. On the web the page carries an
-`<img>` of the file, published beside the page under `pictures/`.
+`<img>` of a declared picture's file, published beside the page under
+`pictures/`. A picture from data is an `<img>` with no file yet, its
+`alt` standing where its pixels will be; one that cannot be shown is
+its box's words, named by its description.
 
 What this is not: an `icon` is a general symbol, the same in every app;
 an `app_mark` is an app's identity; a `qr` is a value for a camera; a
 `stage` is another app's screens at work. A picture is none of these:
 it is something particular that the words beside it are about.
 
-Today a picture is declared by the build and nothing else. A picture
-from data (bytes an app fetched), a picture in a Markdown document, and
-a picture that is a link follow.
+A picture from data's pixels in a browser, a picture in a Markdown
+document, and a picture that is a link follow.
 
 ### `quantity`
 The one number a screen is about. `value` (mandatory) is the number as

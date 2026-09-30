@@ -572,6 +572,7 @@ plus the field camel-cased at its underscores:
 | `increase_contrast` / `reduce_transparency` | `chromeIncreaseContrast` / `chromeReduceTransparency` | every localized app |
 | `stage_play` / `stage_pause` | `chromeStagePlay` / `chromeStagePause` | an app that shows a play (`AppOptions.shows`) |
 | `stage_previous` / `stage_next` | `chromeStagePrevious` / `chromeStageNext` | an app that shows a play (`AppOptions.shows`) |
+| `picture_unavailable` | `chromePictureUnavailable` | an app whose own sources show a picture (`b.picture(` or `.picture =`) |
 | `caption_press` … `caption_go_to` | `chromeCaptionPress` … `chromeCaptionGoTo` | a build that films or records the app's plays (`addPlays`) |
 
 **A word is asked of an app that can show it.** A stage's four words
@@ -579,7 +580,11 @@ are asked of an app that shows a play: it can draw a stage, and no other
 app can. The caption patterns are asked of the build that films or
 records the app's own plays, which is where a caption is written; a
 stage shows a recording's captions as the text they were recorded in,
-so an app that only shows another's play is asked for none. An app not
+so an app that only shows another's play is asked for none. A
+picture's word is asked of an app whose own sources name the `picture`
+element, in code rather than a comment or a string: a picture from data
+is declared nowhere, so the build reads the sources, in the same pass
+that picks the icon face's glyphs. An app not
 asked for a word may still say it, and it is used — a caption pattern
 held to its slots as always; one it does not say stays English, on a
 screen that never shows it.
