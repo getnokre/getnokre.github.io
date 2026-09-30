@@ -367,7 +367,11 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
   // available, which is precisely when these answers went stale — and
   // it fires however the faces arrive, including the ordinary case
   // where nothing requests one until a first frame paints with it.
-  const FAMILIES = ["mono", "prose", "icons", "brand"];
+  //
+  // Indexed by `text.Family`'s ordinal, and a name only: nothing here
+  // loads a face. `marks` is declared by the stylesheet only on a page
+  // whose app holds a mark, so a page without one never asks for it.
+  const FAMILIES = ["mono", "prose", "icons", "brand", "marks"];
   const ruler = document.createElement("canvas").getContext("2d");
   const widths = new Map();
 

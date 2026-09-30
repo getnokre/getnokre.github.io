@@ -694,6 +694,55 @@ blank box. The face states what it maps as data —
 renders outside the process and has to make that check itself
 ([static-sites.md](static-sites.md)).
 
+### `app_mark`
+An app mark says whose thing this is. It draws the app's own mark, the
+silhouette its build declared ([services.md](services.md#the-mark-is-declared)),
+and it is announced as an image named by the app's declared name. One
+field: `scale` (the six text scales, `.body` by default).
+
+```zig
+try row.appMark(.{ .scale = .h2 });
+try row.styled("Kitchen sink", .{ .scale = .h2 });
+```
+
+- **Nothing about it is written at the call.** The drawing is the
+  declared silhouette, and the name is the declared package name. If the
+  app is called "Harbour", a reader hears "Harbour, image". The name is
+  one string, not one per language.
+- **Its box is its scale's line box.** It is as tall as a line of text
+  at its scale, and the mark fills that height top to bottom. It is as
+  wide as the mark is, so a mark that is taller than wide stands
+  narrower than an `icon` of the same scale.
+- **It is always ink.** It turns with the appearance as text does, and
+  in lamp it stays ink, as a glyph in reading text does.
+- **It never mirrors.** An identity is not a direction: under
+  right-to-left, a mark in a row moves to the row's other end with its
+  row, and the drawing itself is not flipped.
+- **It is never a control.** It takes no focus and no press, and a page
+  holding one needs nothing running behind it.
+- **It is refused when there is nothing to draw.** An app that declared
+  no silhouette gets `error.AppMarkNotDeclared` at append. An app whose
+  silhouette the build could not make a glyph of (a PNG, a translucent
+  fill), or that declared no name, gets `error.AppMarkRefused`, and the
+  line that reports the refused screen carries the build's own sentence
+  saying why.
+
+**A stage cannot show another app's mark yet.** Inside a recorded play
+an `app_mark` is the played app's mark, never the mark of the app
+showing it, and an app's face holds only its own. So a play whose
+recording draws one is refused at the showing app's build, by name, and
+a recording fetched at run time that draws one leaves the stage saying
+it is unavailable. Record plays on screens without the mark until a
+face can hold the marks of other apps.
+
+Reach for `icon` when the glyph is a general symbol: an icon's set is
+Lucide's, the same for every app, and a label is optional. Reach for
+`app_mark` when the picture is the app itself: its set is the one mark
+the build declared. A `qr` also stands for something outside the screen,
+but it encodes a value for a camera and is named by its label. A `stage`
+shows another app's screens whole; an app mark shows this app's
+identity in a line of its own.
+
 ### `divider`
 A 1px horizontal rule across the parent width.
 

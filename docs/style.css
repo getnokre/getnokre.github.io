@@ -12,6 +12,7 @@
 @font-face { font-family: mono; font-style: normal; font-weight: 700; font-display: swap; src: url(/assets/fonts/arabic-bold.woff2) format("woff2"); unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFF; }
 @font-face { font-family: icons; font-weight: 400; font-display: block; src: url(/assets/fonts/lucide.ttf) format("truetype"); }
 @font-face { font-family: brand; font-weight: 400; font-display: block; src: url(/assets/fonts/brand.woff2) format("woff2"); }
+@font-face { font-family: marks; font-weight: 400; font-display: block; src: url(/assets/fonts/marks.ttf) format("truetype"); }
 
 :root {
   color-scheme: light dark;
@@ -573,6 +574,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
    so what the fence costs is a drag nobody meant. The `-webkit-`
    half is not legacy: Safari still wants it. */
 .icon,
+.app-mark,
 .badge,
 .btn,
 .ctl,
@@ -1314,6 +1316,25 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
    standing on its own it is a block in the flow rather than a mark
    in a run. */
 .icon.square { width: 1lh; }
+
+/* The app's own mark (`app_mark`): an icon's line box, the glyph set
+   at the box's height so the mark's em fills it top to bottom, and
+   as wide as the mark's advance, which the face already says. */
+.app-mark {
+  font-family: marks;
+  font-style: normal;
+  font-weight: 400;
+  display: inline-block;
+  flex: none;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+.app-mark.s-small { font-size: var(--lh-small); line-height: var(--lh-small); height: var(--lh-small); }
+.app-mark { font-size: var(--lh-body); line-height: var(--lh-body); height: var(--lh-body); }
+.app-mark.s-h4 { font-size: var(--lh-h4); line-height: var(--lh-h4); height: var(--lh-h4); }
+.app-mark.s-h3 { font-size: var(--lh-h3); line-height: var(--lh-h3); height: var(--lh-h3); }
+.app-mark.s-h2 { font-size: var(--lh-h2); line-height: var(--lh-h2); height: var(--lh-h2); }
+.app-mark.s-h1 { font-size: var(--lh-h1); line-height: var(--lh-h1); height: var(--lh-h1); }
 
 /* ---- links and controls ------------------------------------------ */
 

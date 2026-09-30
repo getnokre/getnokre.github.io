@@ -667,6 +667,17 @@ shade — the adaptive favicon flips one fill, and a two-tone mark cannot
 ride that: flatten it, or declare a `.png` silhouette, which states up
 front that it carries no adaptive favicon.
 
+An SVG silhouette can also be drawn on a screen, by the
+[`app_mark`](elements.md#app_mark) element: the build turns it into a
+glyph in a face of its own, named by the app's declared name (`.pkg`'s
+`name`). A `.png` silhouette cannot, because a picture has no outline to
+set as a glyph, and neither can a translucent fill, because a glyph is
+one ink at full strength. Neither stops the build, since the launchers
+and the web still draw their icons from the file. The face records the
+reason instead, and a screen that appends an `app_mark` is refused with
+that sentence. An app that declared no name gets the same refusal: a
+mark on a screen is an image, and an image is named.
+
 The declared mark and `apple_icon` are independent, and the bundle
 wins: with both, every launcher and tab shows the bundle drawn flat and
 the Dock actool's render of it ("The Apple icon is rendered", above),
