@@ -1110,3 +1110,7 @@ that app's package offers
 `app_mark` draws it ([elements.md](elements.md#app_mark)). An entry
 without it links as before and names no mark; an app named `own` that
 offers one is refused, since `.own` is this app's own mark.
+
+Every app this one links into, as one group of rows each opening that
+app's front door, is `Cursor.linkedApps`
+([elements.md](elements.md#the-family)).

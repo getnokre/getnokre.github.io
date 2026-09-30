@@ -3412,6 +3412,56 @@ group reads as a column because every line of every row starts and ends
 on one pair of x's, and letting a second line run under the chip to buy
 back twenty pixels would cost that.
 
+#### The family
+
+The way between a company's apps is one call: `try b.linkedApps(.{})`
+appends a `tile_group` holding one row per app this build links into
+([routing.md](routing.md#links-into-another-app)). It is a tile group
+and nothing else, so every rule above holds for it.
+
+- **Each row is one linked app**, in the order `.links_into` declares
+  them. It leads with that app's mark (`mark`), is labelled with the
+  mark's display name, and opens that app's front door
+  (`App.frontDoorInto`) as its `external`. Nobody types the name: it is
+  the one the app's package offered with its mark. There is no `detail`
+  and no `badge`.
+- **If a linked app did not offer its mark, the call does not
+  compile**, naming the app: `linkedApps: "teams" is linked into without
+  its mark, and a tile_group's rows lead with marks or with none`. One
+  markless row would be the mixed group `TileGroupMixedLeadingMarks`
+  refuses.
+- **If the build links into no app, the call does not compile either.**
+  An empty family is nothing to show.
+- **It needs no runtime.** Every row is external, so a page holding the
+  family publishes with nothing running.
+- **On the web, a sibling opens beside the page**, as every external
+  row does. That is the owner's rule for a sibling and not a default to
+  work around: each app has its own sign-in, state and history, so
+  opening one in this page's place would end this app's session to show
+  another's.
+- **Where it stands is yours.** It is content, not chrome: Settings in
+  a product app, the hub on a company's site, the masthead in a desk.
+
+A company's site declares its six products door-only, each taking its
+mark, and calls it on its hub; each product declares its siblings the
+same way and calls it at the foot of Settings:
+
+```zig
+.links_into = &.{
+    .{ .name = "votes", .web_origin = votes_origin, .address_form = .path, .routes = &.{}, .offered_mark = votes_dep.namedLazyPath("offered_mark") },
+    // … five more
+},
+```
+
+```zig
+try b.heading(.h2, tr(.ourApps));
+try b.linkedApps(.{});
+```
+
+Assistive tech hears a group of links, each named by its app. The
+family is not the nav's roster: the roster is this app's own places, and
+the family is the other apps, each one a way out of this one.
+
 ### `list` / `list_item`
 An ordered or unordered sequence of peer items. `list` children must be
 `list_item`s; a `list_item` outside a list is rejected at `append`.
