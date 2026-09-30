@@ -2,14 +2,15 @@ const std = @import("std");
 const nokre_build = @import("nokre");
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
+    // No target option: the generator runs on the machine building it
+    // and the app is built for the browser, so neither is the reader's
+    // to choose.
     const optimize = b.standardOptimizeOption(.{});
 
     const dep = b.dependency("nokre", .{
-        .target = target,
+        .target = b.graph.host,
         .optimize = optimize,
     });
-    const nokre = dep.module("nokre");
 
     // Where nokre's own tree lives, and where the site lands. Options
     // rather than constants so CI can point at a checkout.
@@ -34,14 +35,7 @@ pub fn build(b: *std.Build) void {
     const nokre_git = gitState(b, repo);
     const site_git = gitState(b, ".");
 
-    // The site's look, stated once: `addApp` hands it to the live half
-    // and to everything packaging draws, and the generator reads it back
-    // out of `site_options`, because the `nokre` module it imports is
-    // the dependency's and was never told what this app declared.
-    const theme = .lamp;
-
     const options = b.addOptions();
-    options.addOption([]const u8, "theme", @tagName(theme));
     options.addOption([]const u8, "repo_dir", repo);
     options.addOption([]const u8, "docs_dir", b.pathJoin(&.{ repo, "docs" }));
     options.addOption([]const u8, "out_dir", out);
@@ -55,29 +49,16 @@ pub fn build(b: *std.Build) void {
     // so dirt there is a genuine finding.
     options.addOption([]const u8, "site_rev", site_git.rev);
 
-    const mod = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{
-            .{ .name = "nokre", .module = nokre },
-            .{ .name = "site_options", .module = options.createModule() },
-        },
-    });
-
-    const gen = b.addExecutable(.{ .name = "generate", .root_module = mod });
-
-    const run = b.addRunArtifact(gen);
-    if (b.args) |args| run.addArgs(args);
-
-    // ---- the other half of the pair --------------------------------
+    // ---- the app, declared once ------------------------------------
     //
-    // The same app, for the browser: nokre's own consumer path
-    // (`addApp` on a wasm target) over `src/web.zig`, which is the
-    // route table this generator walks with three decls around it. The
-    // module lands in the published tree beside the pages, because that
-    // tree *is* the site — there is no CI and no server, so a build
-    // artifact is committed like everything else here.
+    // nokre's own consumer path (`addApp` on a wasm target) over
+    // `src/web.zig`, which is the route table this generator walks with
+    // three decls around it. The declaration here is the site's whole
+    // identity: page, manifest, icons, share card, the mark, the
+    // pictures, the look. The module lands in the published tree
+    // beside the pages, because that tree *is* the site — there is no
+    // CI and no server, so a build artifact is committed like
+    // everything else here.
     //
     // The driver's own files are not this graph's business: the
     // generator writes them, and `dom.driver_sources` hands it their
@@ -94,7 +75,12 @@ pub fn build(b: *std.Build) void {
         // the set derives from.
         .pkg = .{ .name = "nokre", .id = "io.github.getnokre", .version = "0.1.0", .build = 1 },
         .mark = .{ .silhouette = b.path("assets/mark.svg") },
-        .theme = theme,
+        // The gallery's declared picture (docs/elements.md, "picture"):
+        // read at build time, refused there if it is not a PNG nokre
+        // can show, and published under `pictures_dir` by the
+        // generator (src/main.zig).
+        .pictures = &.{.{ .name = "hills", .png = b.path("assets/pictures/hills.png") }},
+        .theme = .lamp,
         // The key rule only. This site's catalog gives nokre's chrome
         // its words; its prose is English by decision, written in the
         // route builders and in docs/ (AppOptions.L10n).
@@ -110,17 +96,37 @@ pub fn build(b: *std.Build) void {
     // pair honest — the screen the browser rebuilds says what the file
     // said — at the same cost: none, on the same two clean commits.
     live.module.addImport("site_options", options.createModule());
+
+    // ---- the generator, the other half of the pair -------------------
+    //
+    // A tool the build runs on this machine, importing the app's own
+    // configured nokre (`App.tool_nokre`) rather than the dependency's
+    // unconfigured module: the mark face the pages draw, the picture
+    // names they spell, the declared look and address form all live in
+    // the declaration above, and only that module carries them
+    // (../nokre/docs/static-sites.md, "A generator's nokre is the
+    // app's"). The two halves are one tree: the face and the mark the
+    // generator writes are the ones the wasm module draws from.
+    const mod = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = b.graph.host,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "nokre", .module = live.tool_nokre },
+            .{ .name = "site_options", .module = options.createModule() },
+        },
+    });
     // The derived identity set — favicon.ico, the adaptive favicon.svg,
     // the touch icons, share-card.png — as bytes the generator writes
     // into its own tree, read out of the assembled site so the two
     // trees cannot disagree.
     mod.addImport("web_assets", nokre_build.webAssets(live, b));
-    // The icon face, likewise read out of the assembled half rather than
-    // derived twice: the two halves here are one tree, so the live app's
-    // face is the generator's face, and the file it writes is the file
-    // the wasm module draws from (`App.icon_face` says why the dependency
-    // module's own face cannot stand in).
-    nokre.addImport("nokre_icon_face", live.icon_face);
+
+    const gen = b.addExecutable(.{ .name = "generate", .root_module = mod });
+
+    const run = b.addRunArtifact(gen);
+    if (b.args) |args| run.addArgs(args);
+
     const publish = b.addUpdateSourceFiles();
     publish.addCopyFileToSource(live.artifact.getEmittedBin(), b.pathJoin(&.{ out, "app.wasm" }));
 

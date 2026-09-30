@@ -31,8 +31,19 @@ fn scanEntities(gpa: std.mem.Allocator, out: *std.ArrayList(u21), bytes: []const
         const end = std.mem.indexOfScalarPos(u8, bytes, start, ';') orelse continue;
         const cp = std.fmt.parseInt(u21, bytes[start..end], 16) catch continue;
         i = end + 1;
+        if (inAppMark(bytes, at)) continue;
         if (isIconCodepoint(cp)) try appendUnique(gpa, out, cp);
     }
+}
+
+/// Whether the entity at `at` is the glyph of an `app_mark` — the one
+/// private-use codepoint on a page that is in the mark face rather
+/// than the icon face, so the icon face rightly has no outline for it.
+/// The writer puts it as the whole content of its span, so the tag that
+/// opens just before it is the tell.
+fn inAppMark(bytes: []const u8, at: usize) bool {
+    const open = std.mem.lastIndexOfScalar(u8, bytes[0..at], '<') orelse return false;
+    return std.mem.startsWith(u8, bytes[open..], "<span class=\"app-mark");
 }
 
 fn scanCssEscapes(gpa: std.mem.Allocator, out: *std.ArrayList(u21), css: []const u8) !void {
@@ -55,6 +66,17 @@ fn appendUnique(gpa: std.mem.Allocator, out: *std.ArrayList(u21), cp: u21) !void
         if (seen == cp) return;
     }
     try out.append(gpa, cp);
+}
+
+test "a mark's glyph is the mark face's, not a missing icon" {
+    const gpa = std.testing.allocator;
+    const emitted = try collectEmitted(gpa, &.{
+        "<span class=\"app-mark\" role=\"img\" aria-label=\"nokre\">&#xE000;</span>" ++
+            "<span class=\"app-mark square\" aria-hidden=\"true\">&#xE000;</span>" ++
+            "<span class=\"icon\">&#xE06C;</span>",
+    }, "");
+    defer gpa.free(emitted);
+    try std.testing.expectEqualSlices(u21, &.{0xE06C}, emitted);
 }
 
 test "the scans read the two spellings icons ship in" {

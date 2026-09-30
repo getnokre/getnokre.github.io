@@ -1150,6 +1150,15 @@ artifact nothing builds, only to take its `App.nokre` — was the
 workaround this replaces, as `addDevStoreDriver` replaced it for drivers.
 tests/stage_host/generator.zig is the one in this tree.
 
+What that declaration puts on a page, the generator then publishes
+beside it. `dom.site_files` hands over the files: the mark face, under
+the name the generated sheet asks for inside its `fonts` directory, and
+each declared picture, under the name its `<img>` asks for inside
+`Emitter.Options.pictures_dir`. The bytes are the ones the library draws
+from, so a file written from them is the file the page names. The
+pictures' bytes are in the generator's module and not in the web app's,
+which is one more reason a generator imports `tool_nokre`.
+
 ### Weak symbols were refused
 
 The obvious way to spare a generator the line is to ship weak

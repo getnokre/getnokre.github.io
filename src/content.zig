@@ -500,6 +500,23 @@ fn gallery(app: *App) !void {
     });
     try b.styled("Two arms from one centre, where meter has one fill and a whole. Both side labels are mandatory: they are the reading, and the arms only restate it. The centre tick stands proud of the track because two full arms would swallow one drawn inside it, and nothing else tells the arms apart — no hatch, no texture, no hue. A shared max is what makes two rows comparable; the diverging_group these two sit in is what makes the comparison visible — it takes the widest words on each side and hands every row one flank width, so one track, one starting x, and one stack-or-flank answer down the whole column. Left to themselves the rows answer that separately, and a row whose words happen to be short keeps flanking a floor-width track while its wider neighbours stack.", .{ .ink = .mid, .scale = .small });
 
+    try b.heading(.h3, "app_mark");
+    const mark_row = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+    try mark_row.appMark(.{});
+    try mark_row.text("beside a line of body text");
+    const large_mark_row = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+    try large_mark_row.appMark(.{ .scale = .h2 });
+    try large_mark_row.styled("and at the h2 scale", .{ .scale = .h2 });
+    try b.styled("Whose thing this is: the silhouette this site's build declared, drawn as ink at a text scale and announced by the declared name — nothing about it is written at the call, so a screen cannot spell the mark wrong. It is as tall as a line at its scale and as wide as the mark is. It is never a control, and it never mirrors: an identity is not a direction.", .{ .ink = .mid, .scale = .small });
+
+    try b.heading(.h3, "picture");
+    try b.picture(.{ .shows = .{ .declared = .hills }, .description = "An orange sun setting behind green hills under a blue sky" });
+    try b.styled("The one element in its own color. A picture shows something in the world the words are about, and the interface around it stays gray. This one is declared: a PNG the build was handed under a name, refused at build time if it is animated, 16-bit, interlaced or over the size limits, and read at three pixels per point, so it is never enlarged. It draws at its own size where that fits and at the width it is given where it does not. The description is its name and is mandatory: there is no decorative picture.", .{ .ink = .mid, .scale = .small });
+    try b.picture(.{ .shows = .{ .data = &squares_png }, .description = "Four squares: red, green, blue and yellow" });
+    try b.styled("And one from data: bytes the app was handed rather than declared, as a logo from a server would be. Bytes that cannot be shown never refuse the screen; the picture stands and says so in its box, and a reader hears the description alone either way. On this substrate the file the generator wrote has no bytes to give the browser, so until the app boots over the page the box is what stands here.", .{ .ink = .mid, .scale = .small });
+    try b.picture(.{ .shows = .{ .declared = .hills }, .description = "The same hills, as a link to the routing contract", .route = "routing" });
+    try b.styled("A picture that goes is a link named by its description. Its focus ring stands outside the picture, clear of its corners; nothing is drawn over it. A picture cannot be a background and cannot carry a press of its own: the only control it can be is this one.", .{ .ink = .mid, .scale = .small });
+
     try b.heading(.h3, "qr");
     try b.qr(.{
         .label = "This site",
@@ -524,6 +541,17 @@ fn gallery(app: *App) !void {
     try outer.text("Grouping container: an optional 1px border, a padding, an optional fill. Boxes group; they do not decorate.");
     const inner = try outer.box(.{ .fill = .g11 });
     try inner.text("A box's edge is a wall: the margin advice stops at it, so nothing ever bleeds across a border.");
+    const plans = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+    for ([_][2][]const u8{
+        .{ "Semantic", "A closed set of elements, each carrying its role, label and state." },
+        .{ "Derived", "Accessibility, layout and every look come from the tree, never from annotations." },
+        .{ "Refused", "What the library will not do is a guarantee, checked before the app builds." },
+    }) |words| {
+        const plan = try plans.box(.{});
+        try plan.styled(words[0], .{ .scale = .h3 });
+        try plan.styled(words[1], .{ .scale = .small, .ink = .mid });
+    }
+    try b.styled("Boxes alone in a row are peers the reader takes each whole. Where all fit they share the line evenly, each as tall as the tallest; below that width, boxes that hold words stand one per line at the full width — never two and one, which would pair two peers against the third. The library decides the fold from the width it has; the screen states three boxes and nothing about columns.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "stand_in");
     const waiting = try b.standIn(.{ .label = "Loading the roster" });
@@ -565,6 +593,12 @@ fn gallery(app: *App) !void {
     try buttons.button(.{ .label = "Delete", .disabled = true });
     try buttons.button(.{ .label = "Publishing", .in_progress = true });
     try b.styled("The fourth has been pressed and the work it started has not come back. Its words stand down for an hourglass — an ellipsis meant three things on one glyph (elision, a More control, waiting) and a reader had to be told which. It stops activating, so a second press cannot start the work twice, but unlike disabled it keeps its focus stop: taking the stop out from under the keyboard the user just pressed it with is the loss WCAG 3.2.2 is about. Nothing clears it for you.", .{ .ink = .mid, .scale = .small });
+
+    try b.heading(.h3, "a button that goes");
+    const going = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+    try going.button(.{ .label = "Get started", .route = "getting-started" });
+    try going.button(.{ .label = "Read the source", .form = .{ .secondary = null }, .external = "https://github.com/getnokre/nokre" });
+    try b.styled("A button either acts or goes, the split a tile has, and which one follows from the field set: a route navigates as a link with that route does, an external address opens beside the page here and in the system browser on native. It is drawn as the button it is and announced as the link it is. A going button takes no progress, because a destination starts no work, and only the filled and secondary faces may go.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "button.accessible_name");
     const named = try b.stack(.{ .axis = .horizontal, .gap = 8 });
@@ -660,6 +694,20 @@ fn gallery(app: *App) !void {
         .route = "static-sites",
     });
     try b.styled("The third row carries a badge: a short status word, drawn as the chip the badge element draws, on the row's first line and inboard of the chevron. Unlike the leading mark it is announced — a glyph's meaning is a guess and a word is not — so it reaches assistive tech as the row's value after detail. Its width comes off the row's whole text column rather than the first line alone, which is what keeps every row in a group starting and ending on one pair of x's.", .{ .ink = .mid, .scale = .small });
+    const doors = try b.tileGroup(.{});
+    try doors.tile(.{
+        .label = "This site",
+        .detail = "A row led by the app's own mark",
+        .mark = .own,
+        .route = "home",
+    });
+    try doors.tile(.{
+        .label = "nokre on GitHub",
+        .detail = "A row that opens an address beside the page",
+        .mark = .own,
+        .external = "https://github.com/getnokre/nokre",
+    });
+    try b.styled("A row may lead with an app mark as it leads with an icon — the mark is decorative there, and the label is the row's name — which is how a hub lists the apps a family is made of. A group leads every row the same way or none: one row with a mark beside rows with icons is refused, because a column whose leading glyphs mean two different things reads as neither. The second row opens an external address: drawn and announced as a routed row, chevron included, held to the same scheme allowlist a link is.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "list and list_item");
     const facts = try b.list(.{});
@@ -798,7 +846,7 @@ fn colophon(app: *App) !void {
         },
         &.{
             .{ .text = "The refusals. ", .strong = true },
-            .{ .text = "No animation, no transition, no hover rule anywhere in the stylesheet, and no color. The appearance follows the system, and the theme is one nokre owns — this site declares depth, and the switch at the foot of every page is the app's own call to change it, not a stylesheet of this site's." },
+            .{ .text = "No animation, no transition, no hover rule anywhere in the stylesheet, and no color. The appearance follows the system, and the theme is one nokre owns — this site declares lamp, and the switch at the foot of every page is the app's own call to change it, not a stylesheet of this site's." },
         },
     }) |item| {
         try (try kept.listItem()).spanned(item);
@@ -851,7 +899,7 @@ fn colophon(app: *App) !void {
         .{ "With it off", "The same page, wrapped for a 1280-pixel window." },
         .{ "Requests", "One document, one stylesheet, one favicon, the faces the page uses, the boot module the page names, the live driver that module imports, the services module the driver imports, the service worker it registers, one wasm module, and — on a documentation page — its Markdown." },
         .{ "Trackers, cookies, consent", "None, so no banner asking about any." },
-        .{ "Appearance", "Follows the system, both ramps generated for every theme. The page is written in depth; the theme switch at its foot is the app's, so it answers once the script runs and not before." },
+        .{ "Appearance", "Follows the system, both ramps generated for every theme. The page is written in lamp; the theme switch at its foot is the app's, so it answers once the script runs and not before." },
         .{ "Print", "Chrome drops out; the content is the page." },
     }) |cells| {
         const row = try costs.row(.{});
@@ -882,6 +930,28 @@ fn notFound(app: *App) !void {
     });
     try pageTiles(app, b, &.{ "home", "docs", "internals" });
 }
+
+/// The gallery's picture from data: a 96 by 96 PNG of four colored
+/// squares, as bytes rather than a declared file, because that is what
+/// the specimen is about — a picture the app was handed, not one its
+/// build knew. Inline so the page's source is the whole of it.
+const squares_png = [_]u8{
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x60, 0x08, 0x02, 0x00, 0x00, 0x00, 0x6d, 0xfa, 0xe0,
+    0x6f, 0x00, 0x00, 0x00, 0xa9, 0x49, 0x44, 0x41, 0x54, 0x78, 0xda, 0xed, 0xd3, 0x41, 0x0d, 0x80,
+    0x40, 0x0c, 0x45, 0xc1, 0x2e, 0x59, 0x09, 0x88, 0xa8, 0x0e, 0xce, 0x15, 0x84, 0xb0, 0x15, 0x81,
+    0x88, 0x15, 0x83, 0x06, 0x6e, 0x25, 0x99, 0xa7, 0xe0, 0x67, 0xd2, 0x8e, 0x9d, 0x19, 0x9d, 0xaa,
+    0xfb, 0x6c, 0xb5, 0xe7, 0x08, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x00, 0x09, 0x10,
+    0x20, 0x40, 0x80, 0x00, 0x01, 0x02, 0x04, 0x48, 0x80, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
+    0x40, 0x80, 0x10, 0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x00, 0x09, 0x10, 0x20, 0x40,
+    0x80, 0x00, 0x01, 0x02, 0x04, 0x48, 0x80, 0x00, 0x01, 0x02, 0x04, 0xe8, 0x17, 0xcd, 0xca, 0xd5,
+    0x6a, 0xd0, 0x93, 0x97, 0x0b, 0xf2, 0x62, 0x80, 0x00, 0x09, 0x10, 0x20, 0x40, 0x80, 0x00, 0x01,
+    0x02, 0x04, 0x08, 0x90, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x04, 0x08, 0x10,
+    0x20, 0x40, 0x80, 0x00, 0x01, 0x02, 0x24, 0x40, 0x80, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
+    0x40, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x00, 0x01, 0x12, 0xa0, 0xef, 0xbd, 0x44, 0x6c,
+    0x05, 0x20, 0xe0, 0x59, 0x2f, 0x07, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42,
+    0x60, 0x82,
+};
 
 fn stamp(comptime rev: []const u8, comptime dirty: bool) []const Span {
     return if (dirty)

@@ -21,7 +21,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `badge`, `meter` | `static_text` | the words carry all state; a badge's leading mark is decorative and is never announced |
 | `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets |
 | `qr` | `image` | label as name, encoded value carried |
-| `picture` | `image` | description as name; never decorative, an empty one is refused |
+| `picture` | `link` (`route` or `external`) / `image` | description as name; never decorative, an empty one is refused; a link is focused, and its could-not-show box is the link too |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
 | `stack`, `box`, `group` | `group` | — |
 | `accessibility_toggles` | `group` | — ; its rows are the `toggle`s nokre installs, below |

@@ -1020,16 +1020,21 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name });
 - **It never mirrors.** A car facing right still faces right in
   Persian. Its place mirrors: in a right-to-left screen it stands at
   the right.
-- **It is never a background and never a control.** Nothing is drawn
-  over it, it takes no focus and no press, and a page holding a
-  declared one needs nothing running behind it. A page holding a
-  picture from data that can be shown does (`Element.needsRuntime`):
-  only a running app can hand the browser its bytes.
+- **It is never a background, and a control only as a link.** Nothing
+  is drawn over it. With no `route` or `external` it takes no focus and
+  no press; with one it is a link (below). A page holding a declared
+  one needs nothing running behind it. A page holding a picture from
+  data that can be shown does (`Element.needsRuntime`): only a running
+  app can hand the browser its bytes.
 
 Each platform's own decoder reads the pixels, and nokre resamples them
-to the device's pixels in integers. On the web the page carries an
-`<img>` of a declared picture's file, published beside the page under
-`pictures/`. A picture from data has no file: the live driver hands its
+to the device's pixels in integers. macOS and iOS decode with ImageIO,
+so an Xcode project that links nokre's library links ImageIO too.
+Android, Windows and Linux have no decoder yet: every picture there
+draws a fixed pattern in its place, not itself. On the web the page carries an
+`<img>` of a declared picture's file, published by the site in the
+directory a generator states (`Emitter.Options.pictures_dir`,
+[static-sites.md](static-sites.md#a-generators-nokre-is-the-apps)). A picture from data has no file: the live driver hands its
 bytes to the browser once, when the picture first appears, and the
 `<img>` takes a blob URL of them as its `src`, shared by every picture
 of the same bytes and revoked when a rebuild no longer shows them. The
@@ -1049,7 +1054,68 @@ an `app_mark` is an app's identity; a `qr` is a value for a camera; a
 `stage` is another app's screens at work. A picture is none of these:
 it is something particular that the words beside it are about.
 
-A picture in a Markdown document and a picture that is a link follow.
+#### A picture in a Markdown document
+
+A `document`'s Markdown shows a picture only by the name the build
+declared it under, on a line of its own:
+
+```markdown
+Our first season.
+
+![The team in Hamburg](team_hamburg)
+```
+
+- **If the name is a declared picture and the description is not
+  empty**, the line becomes a `picture` of it, described by those words:
+  the element `.{ .picture = .{ .shows = .{ .declared = .team_hamburg },
+  .description = "The team in Hamburg" } }`.
+- **Anything else comes through as its source text**, as every
+  construct outside the subset does: a name the build does not declare,
+  a file name or an address, an empty description, an image sharing its
+  line with words, an image inside a list item or a blockquote, and an
+  image inside a link. So bytes nobody reviewed cannot bring in a
+  picture nobody declared and cannot cut a screen short
+  ([markdown.md](markdown.md), "The subset is closed").
+- **A document holding one still needs nothing running**: a declared
+  picture is a file beside the page.
+- **An app whose build declares a picture says the could-not-show word**
+  (`chromePictureUnavailable`) whether or not its code spells `picture`:
+  a Markdown source can name any declared picture, and a platform
+  decoder can still fail on its pixels.
+
+#### A picture that is a link
+
+A picture goes where its `route` or its `external` says, spelled as a
+`link`'s:
+
+```zig
+try b.picture(.{ .shows = .{ .declared = .harbour_map }, .description = tr(.harbourMapDescription), .route = "venue" });
+try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name, .external = org.site });
+```
+
+- **At most one destination.** Both is `error.PictureHasOneDestination`;
+  an `external` outside open_url's schemes (`https`, `http`, `mailto`)
+  is `error.UnsupportedScheme`. Neither leaves it an image.
+- **A reader hears a link named by its description**: "Map of the
+  harbour, link". It is a focus stop, and a tap, Enter and Space press
+  it, as they press any link.
+- **Its focus ring stands outside the picture**, clear of its corners,
+  as a link's ring stands outside its words. Nothing is drawn over the
+  picture, focused or not, and nothing else about it changes.
+- **A picture smaller than 44 by 44 points still takes a 44 by 44
+  press.** The target is the 44 box about the picture's centre on each
+  axis it is short; the picture is drawn at its own size and nothing
+  beside it moves. A press there that lands on another control's own
+  rect is that control's. A 30 by 20 logo takes presses 7 points to
+  either side of it and 12 above and below.
+- **In the browser it is `<a href><img></a>`**, the anchor a routed
+  `tile` is, opening beside the page when external, and it needs
+  nothing running behind it, as a `link` does.
+- **A picture that goes and cannot be shown still goes.** Its
+  could-not-show box is the link, named by the description, so the
+  destination is never lost.
+- **Markdown cannot make one yet**: `[![…](name)](venue)` stays its
+  source text.
 
 ### `quantity`
 The one number a screen is about. `value` (mandatory) is the number as

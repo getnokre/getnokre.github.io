@@ -1868,8 +1868,12 @@ look through the page's own control, and holds five facts at a phone's
   2 bytes, rims within 8 at the outermost device pixel along each
   straight edge (the web's rim is a CSS pixel wide). Three lit glyphs are
   read where they cover a pixel whole, found by drawing each once in
-  plain white, their brightest stroke within 12. The nav plate's rim is
-  held within 10 over the frost beneath it, read with the rim hidden.
+  plain white, their brightest stroke within 12. Then the Details
+  screen, reached through the page's own link: a tile led by the app's
+  mark, its well's face and its lit mark. Every one of them must be a
+  box the live driver measured, or the gate names the missing
+  `lamp_plates` entry. The nav plate's rim is held within 10 over the
+  frost beneath it, read with the rim hidden.
 - **Frost is there.** With the nav plate over the QR code, its pixels
   are at least eight times smoother than the page beneath it, and their
   mean is within 6 of the library's frost of that same page — the
@@ -1883,14 +1887,23 @@ look through the page's own control, and holds five facts at a phone's
 - **No console error**, through all of it.
 
 What each compared plate *is* — its material and fill — is written in
-the script, not read from the sheet, which is what is under test. The
-tolerances are measured, and each says why it is not zero: the web
-joins a rim's lights with `lighten` where native sums them (7 at worst,
-on a field's bottom edge straight under the lamp), composites a glass
+the script, not read from the sheet, which is what is under test. So
+is *which* plates are compared: the gate reads the boxes it names on
+the screens it visits and walks no table, so an element whose entry
+`lamp_plates` lacks passes until the gate names one of its boxes. A
+tile led by an app mark went unplated and unlit on the web that way:
+the gate stood on the home screen alone, whose tiles lead with icons,
+and a box no entry names is drawn by depth's rules, which the gate
+does not look at under lamp. The tolerances are measured, and each
+says why it is not zero: the web joins a rim's lights with `lighten`
+where native sums them (7 at worst, on a field's bottom edge straight
+under the lamp), composites a glass
 rim's specular over the lamp's white (8, on a nav plate's top edge),
 and reads the plate's own shadows beneath the frost as one factor (4.6
-on mean). A glyph is lit over its em square on the web, since CSS has
-no ink box to read, and over its ink box natively; the gate holds the
+on mean). A tile's well — the icon's and the mark's alike — draws its
+rim 9 to 24 bytes over the library's, so its face alone is held. A
+glyph is lit over its em square on the web, since CSS has no ink box
+to read, and over its ink box natively; the gate holds the
 web to the library over the em square and prints what the ink box
 would have given — 31 to 42 bytes brighter on the chevrons, the cost of
 that choice. Shadows, the sheet's and pane's glass, and browsers other

@@ -52,7 +52,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 178;
+const nokre_revision = 180;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -65,6 +65,12 @@ const origin = "https://getnokre.github.io";
 const viewport: nok.Size = .{ .w = 1280, .h = 1024 };
 
 const driver_sources = dom.driver_sources;
+
+/// Where the declared pictures are published: the directory every
+/// page's `<img>` names from the site root, which is
+/// `dom.Emitter.Options.pictures_dir`'s default and so the live
+/// driver's too (`src/web.zig` states nothing).
+const pictures_dir = (dom.Emitter.Options{}).pictures_dir;
 
 const font_files = [_][]const u8{
     "prose.woff2",        "prose-bold.woff2",
@@ -105,7 +111,6 @@ pub fn main(init: std.process.Init) !void {
         .ctx = &site,
     });
     defer app.deinit();
-    app.setTheme(@field(nok.color.Theme, opts.theme));
 
     var destinations: [pages.destinations.len]nok.Destination = undefined;
     for (pages.destinations, 0..) |name, i| {
@@ -307,6 +312,27 @@ pub fn main(init: std.process.Init) !void {
         .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "assets/fonts", "lucide.ttf" }),
         .data = nok.render.icon_face.bytes,
     });
+
+    // The files this site's declaration asks for beside its pages
+    // (`dom.site_files`): the mark face under the name the sheet's
+    // @font-face asks for, beside the other faces, and each declared
+    // picture under `pictures_dir`, where its `<img>` names it. The
+    // bytes are the ones the app draws from, so the file written is the
+    // file the page names.
+    if (dom.site_files.mark_face) |face| {
+        try cwd.writeFile(io, .{
+            .sub_path = try std.fs.path.join(gpa, &.{ out_dir, "assets/fonts", face.name }),
+            .data = face.bytes,
+        });
+    }
+    const pictures_out = try std.fs.path.join(gpa, &.{ out_dir, pictures_dir[1..] });
+    try cwd.createDirPath(io, pictures_out);
+    for (dom.site_files.pictures) |picture| {
+        try cwd.writeFile(io, .{
+            .sub_path = try std.fs.path.join(gpa, &.{ pictures_out, picture.name }),
+            .data = picture.bytes,
+        });
+    }
 
     // Lamp's grain tiles, which the generated stylesheet names whatever
     // the look, under the path `stylesheet.Options.lamp_grain` defaults

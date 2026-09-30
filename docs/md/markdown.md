@@ -21,7 +21,7 @@ Nothing else in nokre learns about Markdown.
 `document` is a regular element that expands into children, not a
 renderer with private drawing rules. The expansion produces only
 elements the framework already knows — `heading`, `text`, `list`,
-`code_block`, `blockquote`, `table`, `divider` — so the element set
+`code_block`, `blockquote`, `table`, `divider`, `picture` — so the element set
 stays closed, and every append-time gate (contrast, structure, labels)
 applies to parsed content for free. **The parser's error path is
 `append`'s.** A document the tree refuses fails at the call site, whole,
@@ -51,6 +51,7 @@ the moment `append` returns.
 | ` ``` ` / `~~~` fences | `code_block` |
 | `> ` | `blockquote` |
 | GFM tables | `table` / `row` / `cell` |
+| `![description](name)` alone on its line | a `picture` of the declared picture `name` (below) |
 
 ## The two emphasis markers are not interchangeable
 
@@ -92,10 +93,26 @@ What the table above leaves out is refused, not pending. Like the
 element set, the subset is closed on purpose, and additions are argued
 on semantics — the table is the whole of it:
 
-- **Images**, for now. A `picture` is declared by the build
-  ([elements.md](elements.md#picture)), and the form that names a
-  declared one from Markdown follows; until then the syntax has nothing
-  to produce.
+- **Images, except a declared picture named on a line of its own.**
+  `![The team in Hamburg](team_hamburg)` alone on its line is a
+  `picture` of `team_hamburg` described as "The team in Hamburg", if
+  the build declares a picture of that name
+  ([elements.md](elements.md#a-picture-in-a-markdown-document)). The
+  words may be indented and trailed by spaces, and the line may follow
+  a paragraph's last line directly. Everything else stays its source
+  text, markers included:
+  - a name the build does not declare, a file name, or an address
+    (`![The team](https://example.com/team.png)`): bytes nobody
+    reviewed cannot bring in a picture nobody declared;
+  - an empty description (`![](team_hamburg)`), or one with markup in
+    it, by the link label's rule below: a picture's description is
+    mandatory, and a document never raises;
+  - an image sharing its line with words (`Our team: ![…](team_hamburg)
+    today`): a picture is a block, never a run inside a sentence;
+  - an image inside a list item or a blockquote, which hold no heading
+    or table either (the document block set);
+  - an image inside a link (`[![…](team_hamburg)](about)`), for now: a
+    picture that goes is built in code (`Picture.route`).
 - **Task lists, footnotes, definition lists.** Each wants an element the
   set does not have, and each is argued on presentation rather than
   meaning. A checklist is `checkbox`es; a footnote is a `link` to a

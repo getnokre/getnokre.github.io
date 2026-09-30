@@ -139,7 +139,10 @@ doesn't go in. When one does, it is a cross-cutting commitment:
    this one. Nor the next: a plate the renderer draws under lamp dark is
    an entry in [lamp_plates.zig](../../src/render/dom/lamp_plates.zig),
    and a glyph it lights on one a row of its `glyphs`
-   ([dom-substrate.md](dom-substrate.md#the-plate-table)).
+   ([dom-substrate.md](dom-substrate.md#the-plate-table)); then name
+   one of its boxes in `tests/web_lamp.mjs`, on the kitchen sink screen
+   that shows it, since that gate compares only the boxes it names
+   ([testing.md](../testing.md#lamp-on-the-web-drawn)).
 5. A11y mapping in [semantics.zig](../../src/a11y/semantics.zig), and its
    row in the table in [accessibility.md](../accessibility.md). A new
    `A11yRole` **appends** — the enum's ordinals are a wire contract that

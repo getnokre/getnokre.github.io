@@ -50,6 +50,7 @@
   "chromeRankingDone": "Done",
   "chromeIncreaseContrast": "Increase Contrast",
   "chromeReduceTransparency": "Reduce Transparency",
+  "chromePictureUnavailable": "This picture could not be shown.",
   "titleHome": "Home",
   "titleDocs": "Docs",
   "titleInternals": "Internals",
