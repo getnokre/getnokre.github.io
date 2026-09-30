@@ -1005,19 +1005,37 @@ bounded by an edge instead of a number.
 
 #### A row too narrow for its children
 
-A horizontal stack that runs out of line does one of exactly two things,
-and **the row's own children pick which**. There is no field, no wrapper
-and nothing to opt into, so there is no way to be handed the wrong one:
+A horizontal stack that runs out of line does one of exactly two things.
+**The row's own children and the surface's medium pick which.** The
+medium says whether the surface clips a row too wide for it or reflows
+it, and the driver that draws the app declares it; your code never
+does. There is no field, no wrapper and nothing to opt into, so there is
+no way to be handed the wrong one:
 
-- **A row of actions folds.** Every child a `button` or a `link`, two or
-  more of them: the tail collapses into a `More` control and the row
-  stays one line. [The folded tail](#the-folded-tail-more) has the
-  mechanics.
-- **Every other row wraps.** Children flow along the line and break onto
-  a new one when the next will not fit — greedy, first-fit, in document
-  order, each line `gap` below the last and centered on its own tallest.
+- **Where the surface clips, a row of actions folds.** Every native
+  window clips. A row whose every child is a `button` or a `link`, two
+  or more of them, collapses its tail into a `More` control and stays
+  one line. For example, Publish, Save draft and Archive in a narrow
+  macOS window show as Publish and More.
+  [The folded tail](#the-folded-tail-more) has the mechanics.
+- **Where the surface reflows, every row wraps, a row of actions
+  included.** The browser reflows, both on a generated page and under
+  the live driver, with or without a runtime. The same three buttons on
+  a phone's browser take a second line, and no `More` is ever drawn
+  there.
+- **Every other row wraps, on every surface.** Children flow along the
+  line and break onto a new one when the next will not fit — greedy,
+  first-fit, in document order, each line `gap` below the last and
+  centered on its own tallest.
 
-The split is what the row *is*. Actions have to stay reachable and a user
+The browser wraps rows of actions because a fold there is one nothing
+can perform. A page of links needs no runtime, so none loads to open a
+`More`
+([static-sites.md](static-sites.md#a-row-of-links-folded-where-nothing-could-unfold-it)
+records what that did to published pages). A row that reflows cannot
+fail to fit, so there is nothing to fold for.
+
+On a surface that clips, the split is what the row *is*. Actions have to stay reachable and a user
 needs all of them, so one row plus a control that opens the rest is the
 honest shape; folding three status chips behind `More` would hide state
 behind a press, and clipping them would hide it outright. Wrapping is
@@ -1027,10 +1045,10 @@ stands changes nothing: a row of actions inside a sheet folds like a
 screen's, its tail opening as a sheet stacked over the one it is in
 (since 2026-09-09, when sheets began to stack).
 
-Width is not an input to the choice. A row is a row of actions or it
-isn't, at every viewport, so resizing the window can change where a line
-breaks or how deep a tail folds, but never which of the two the reader is
-looking at.
+Width is not an input to the choice. The row's children and the medium
+are, and resizing a window changes neither, so it can change where a
+line breaks or how deep a tail folds, but never which of the two the
+reader is looking at.
 
 Wrapping bounds the problem the way shortening the words never could:
 **a row can always fit, as long as each child fits a line on its own.**
@@ -1336,11 +1354,12 @@ Off is four statements together, and no kind keeps only some of them:
 - **It leaves the focus order.** Tab runs past it, and on the web that is
   the platform's own `disabled` attribute rather than `aria-disabled`,
   because markup that only *said* disabled would leave a keyboard user
-  Tabbing into a control core has no stop for. The one kind with nowhere
-  to put the attribute is a navigating `tile`, an anchor, which drops its
-  destination instead — and drops the stop with it.
-- **It takes no press and no keystroke.** A `route` tile navigates
-  nowhere; a `select` opens no picker; a field takes no caret.
+  Tabbing into a control core has no stop for. The two with nowhere
+  to put the attribute are a navigating `tile` and a `button` that goes,
+  both anchors, which drop their destination instead — and drop the stop
+  with it.
+- **It takes no press and no keystroke.** A `route` tile or a button that
+  goes navigates nowhere; a `select` opens no picker; a field takes no caret.
 - **Assistive tech is told**, and everything a reader needs is still
   announced: the name, and the value in whichever slot the kind carries
   it — a switch's position, a box's tick, a chosen option, a row's
@@ -1443,8 +1462,8 @@ beside the control, the only thing saying what it switches. A `meter` or
 label: it is already the name alone.
 
 ### `button`
-`label`, `on_press`, `disabled`, `in_progress`, `form`,
-`accessible_name`. A filled pill —
+`label`, `on_press` or `route` or `external`, `disabled`,
+`in_progress`, `form`, `accessible_name`. A filled pill —
 ink fill, paper text — ringed on keyboard-origin focus
 ([accessibility.md](accessibility.md#focus)). Activated by tap, Enter,
 or Space.
@@ -1712,6 +1731,50 @@ The marks themselves are not nokre's work and are not covered by its
 license — see
 [LICENSE-Brand.txt](../src/assets/fonts/LICENSE-Brand.txt).
 
+#### A button that acts, and a button that goes
+
+**A button either acts or goes**, the split a [`tile`](#tile_group--tile)
+has. Which one it is follows from the field you set:
+
+- **A wired `on_press` acts.** `.on_press = .bind(save, state)` runs
+  `save` on the press.
+- **A `route` goes there.** `.route = "members"` navigates as a
+  [`link`](#link) with that route does, and takes the same references
+  ([routing.md](routing.md)).
+- **An `external` opens that address**: in the system browser on
+  native, and beside the page in a browser. It is held to the link's
+  scheme allowlist at `append` (`error.UnsupportedScheme`).
+  `.external = "https://example.com/help"` opens that page.
+- **More than one of the three is refused.** A press and a route
+  together is `error.ButtonHasOneDestination`.
+- **None of the three is a button that is not wired yet.**
+  `.{ .label = "Save" }` draws, takes the stop and does nothing when
+  pressed, which is how a button is built before its action exists. A
+  tile is refused without a destination; a button is not.
+- **A button that goes takes no progress.** A destination starts no
+  work, so `in_progress` or `progress_percent` on one is
+  `error.GoingButtonHasNoProgress`.
+- **Only `.filled` and `.secondary` may go.** A sign-in button's press
+  is the sign-in (`error.AuthButtonHasNoDestination`), and a `.glyph`
+  button is shaped like the chrome's Back and close, so a destination
+  behind one reads as either (`error.GlyphButtonHasNoDestination`).
+- **`disabled` goes nowhere.** A going button with `.disabled = true`
+  refuses the press and leaves the focus order, as an off routed tile
+  does; in a browser its anchor loses its `href`.
+
+```zig
+try row.button(.{ .label = tr(.see_members), .route = "members" });
+try row.button(.{ .label = tr(.help), .form = .{ .secondary = null }, .external = help_url });
+```
+
+A button that goes is drawn exactly as a button that acts, in every
+look. What changes is what it is: it is pressed the way a link is
+pressed, assistive tech is told it is a link on every platform, and in the
+browser it is an anchor in the pill's classes, so a page whose only
+controls go needs nothing running behind it
+([static-sites.md](static-sites.md), "Whether a page needs a runtime is
+derived"). `Button.goes` answers which kind a button is.
+
 #### The folded tail (`More`)
 
 Put actions in a horizontal `stack` and nokre shows as many as fit. When
@@ -1719,11 +1782,13 @@ they don't all fit, the row **folds**: the last completely visible one
 gives up its slot to a control labelled "More" (the framework's own word,
 `App.Chrome.more` — see [localization.md](localization.md)), and pressing
 that opens a sheet holding it and everything after it, in the row's own
-order.
+order. This is what a surface that clips does, which is every native
+window. In a browser the same row wraps instead
+([A row too narrow for its children](#a-row-too-narrow-for-its-children)).
 
 This is not opt-in and takes no setup — no flag on the stack, no wrapper,
 no width to declare. Any row of actions you have already written folds
-the moment it runs out of room.
+the moment it runs out of room in a native window.
 
 ```zig
 const row = try b.stack(.{ .axis = .horizontal, .gap = 8 });
@@ -1806,7 +1871,10 @@ Details worth knowing:
 ### `link`
 `label` + exactly one destination: `route` or `external`. Underlined.
 Links never carry arbitrary actions; if you want an action, use a
-button. The `route` is a reference: a route name, optionally with
+button. A button may also go, and the choice between the two is not
+where they lead: a link is words in the flow of reading, and a
+[button that goes](#a-button-that-acts-and-a-button-that-goes) is the
+act a screen is for. The `route` is a reference: a route name, optionally with
 arguments (`note~42`, see [routing.md](routing.md)) — same for every
 other `route` field below. `external` is a URL handed to the system
 browser on activation, held to the [open_url](services.md) scheme

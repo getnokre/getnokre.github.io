@@ -209,9 +209,9 @@ ground, shadows, the frost's plate, the lamp's fields — returns to that
 base rather than to identity, and the frost's snapshot is taken through
 the turn and sampled back through its inverse. A turn takes each pixel's
 centre onto a pixel's centre, so every effect that reads the frame reads
-the pixel it reads unturned: `check-gpu` holds every lamp-dark take at
-all four turns to the same targets ([What the shaders
-measure](#what-the-shaders-measure)). What moves is text: Ganesh
+the pixel it reads unturned: `check-gpu` holds a take per effect at
+all four turns to the same targets, and `check-gpu-sweep` every take
+([What the shaders measure](#what-the-shaders-measure)). What moves is text: Ganesh
 rasterises a glyph under the turn in the turned space, so a turned
 frame's plain text differs from the unturned one's at glyph edges —
 the class the reversal already reports and does not hold. Windows and
@@ -315,7 +315,8 @@ region, three wide radii past the plate on each side, where the plate
 reads only its own span: each sum is now drawn over the span grown by
 the radius once per sum still to come along its axis, and nothing else
 changes (`blurs`). The frosts' phase fell to 0.8 ms and the frame to
-4.2; `check-gpu` reads back the same bytes at all four turns with the
+4.2; the accuracy check, every take at all four turns (now
+`check-gpu-sweep`), reads back the same bytes with the
 working surfaces cleared to a colour first, so no pixel outside the
 cones is read. The scroll in the two large windows, before and after,
 two rounds each (median / p95 interval; late share):
@@ -610,13 +611,61 @@ Zig record's tile fills are most of that.
 
 ### What the shaders measure
 
-**Accuracy.** `zig build check-gpu -Dskia -Dgpu` runs the golden suite
-with the GPU shim linked and draws every lamp-dark take a second time on
+**Accuracy.** `zig build check-gpu -Dskia -Dgpu` builds the golden
+suite's lamp-dark scenes with the GPU shim linked, draws each take on
 an offscreen Metal surface, reads it back, and compares it with its
-committed golden (tests/gpu_accuracy.zig) — and then through each
-quarter turn a pre-rotated swapchain draws through
+committed golden file (tests/gpu_accuracy.zig). It draws nothing on the
+CPU and asserts nothing the `-Dgolden` gate asserts: the CPU's bytes are
+the file on disk, and what the check builds on the CPU is only the
+scene and its recorded ops, which say which effect drew each pixel.
+Only the tests whose names say "lamp dark" are compiled, and the
+suite's last test fails naming any lamp-dark golden no take drew, so a
+take in a test named otherwise is not skipped in silence. Then one take per
+effect through each quarter turn a pre-rotated swapchain draws through
 (`hsk_surface_turn_gpu`), read back unturned, against the same targets
-([Android](#android)). Plates land exactly where the unturned
+([Android](#android)). `zig build check-gpu-sweep -Dskia -Dgpu` turns
+every take instead, and is run before a release rather than with the
+gates; both judge by the same targets and print the same table.
+
+The turn is one matrix whatever is drawn, so what it does is proven
+once, by unit tests of the shim's maps in the same file, with no
+device: the base matrix at each turn, a pixel and a rect through it at
+odd frame sizes, the extent a quarter turn swaps, the frame's corners
+onto the image's, and every pixel back through the inverse — each held
+to the turned readback, which reads the image pixel a display shows
+(`shownAt`) on integers and not through that matrix. What only a
+render shows is an effect surviving it: one that places itself by
+device pixels, reads the frame drawn so far, or has a shader of its
+own. So each route by which an op reaches the device is turned once,
+by the take that draws it (`turned_takes`), and a turned take must
+still draw every effect it is named for. The offscreen image starts
+mid-gray on this surface alone, because lamp dark's void is 0x00, which
+a new texture may already hold, and a ground placed off the turned
+image passed for it.
+
+| Effect | What it proves under the turn | Turned take |
+| --- | --- | --- |
+| ground | the void's tile, drawn in device space | sheet-over-scrolled |
+| rim | `RimField` over device-space pieces | sheet-over-scrolled |
+| face and sheen | `FaceField`'s three draws, matte and glass | sheet-over-scrolled |
+| shadow | `MaskField`, both passes | sheet-over-scrolled |
+| contact shadow | `MaskField`, chrome's edge | sheet-over-scrolled |
+| frost | the snapshot through the turn, sampled back through its inverse | sheet-over-scrolled |
+| lit glyphs | the glyph's shader under its own local matrix | sheet-over-scrolled |
+| fills, stroke, line, text | Ganesh's own geometry through the matrix | sheet-over-scrolled |
+| veil | a one-byte tile's shader | sheet-over-scrolled |
+| clip | a scroll region's clip through the turn | sheet-over-scrolled |
+| dither | a tiled pattern's shader | stage-touch |
+| window | a window's CPU raster, put down whole at device pixels | stage-touch |
+
+Each was broken once and restored: a wrong constant in the rim's
+shader fails 30 unturned takes by name; a wrong translation in the
+three-quarter turn's matrix fails every turn unit test but the
+extent's, and both turned takes at 270°; and placing the frost's
+snapshot, a window's raster, the ground, or the lamp's pieces without
+the turn fails a turned take at 90° while every unturned take passes.
+
+In the sweep, plates land at every turn exactly where the unturned
 take does. Frost keeps the unturned take's maximum at every turn; its
 mean is the unturned one's where it lies over plates alone, and drifts
 by a few thousandths where it lies over scrolled text (page-scrolled
@@ -637,7 +686,9 @@ Ganesh's glyph coverage under the glyph's shader, which lands within
 the tile's; what a frost covers is held to 4; the plates and the
 ground — the void, rims, faces, shadows,
 contact shadows over depth's fills — to 2.
-Max / mean byte difference on an M4:
+Max / mean byte difference on an M4, unturned (every take's first
+line in `check-gpu` and `check-gpu-sweep` alike); the turned figures
+above are `check-gpu-sweep`'s:
 
 | Take | Plates + ground | Frost | Lit glyphs | Text + AA (max) |
 | --- | --- | --- | --- | --- |

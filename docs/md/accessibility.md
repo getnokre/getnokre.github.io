@@ -27,7 +27,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `tile_group` | `group` | description as value |
 | `divider` | `separator` | — |
 | `stand_in` | `status` | label as name, polite; its subtree is announced as itself, every control there disabled and not busy, focus stops kept (below) |
-| `button` | `button` | focused, disabled, busy (`in_progress`: disabled *and* busy, and still a focus stop); `progress_percent` as the value; `accessible_name` as the name where it is stated, the words otherwise |
+| `button` | `link` (`route` or `external`) / `button` (action) | focused, disabled, busy (`in_progress`: disabled *and* busy, and still a focus stop); `progress_percent` as the value; `accessible_name` as the name where it is stated, the words otherwise |
 | `button` / `link` (folded) | — | absent: the row folded it away and its `more` speaks for it |
 | `sheet_close`, `back`, `icon_button`, `more` | `button` | focused |
 | `link` | `link` | focused |

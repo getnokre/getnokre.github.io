@@ -431,6 +431,27 @@ shape depends on. `no-boot` is gone, nothing in the sheet asks whether
 anything is running, and one markup takes the band at a phone's width
 whoever published it.
 
+### A row of links folded where nothing could unfold it
+
+The band was not the only row that needed an answer nobody had to run.
+A row of links in a page's content counted as a row of actions, and a
+row of actions folded its tail into `More` on every medium. In a
+browser that fold was one nothing could perform. A page of links loads
+no runtime, so the row stayed on one line and ran past a narrow
+reader's edge. Where the generator's own column was too narrow for it,
+the page shipped a `More` with nothing behind it and the folded links
+missing from the markup.
+
+The answer is the one the header already had: a row that reflows has no
+width at which it fails. So the medium now decides this too. Where it
+reflows, every row wraps, a row of buttons included, with or without a
+runtime; where it clips, a row of actions folds as it always did. The
+rule is stated once, in
+[elements.md](elements.md#a-row-too-narrow-for-its-children).
+`dom.document` lays the page out before its checks, so a fold a
+clipping layout left in the tree is gone before the runtime check reads
+it.
+
 ### Whether a page needs a runtime is derived, and `boot` is a floor
 
 `Document.boot` was a driver's declaration, and the failure a
@@ -443,9 +464,10 @@ So nokre derives it. `Element.needsRuntime` is exhaustive over a closed
 element set, which makes the derivation total rather than a heuristic,
 and it draws one line: **a link is answered by the browser and a control
 is answered by an app.** Prose, headings, images, tables, code blocks,
-QR codes, `link`, `nav_item`, the roster's own row and a `tile` that
-navigates publish and work with nothing running. A `button`,
-`icon_button`, `more`, `back` or a `tile` that acts; a `toggle`,
+QR codes, `link`, `nav_item`, the roster's own row, a `tile` that
+navigates and a `button` that goes publish and work with nothing
+running. A `button` that acts, an `icon_button`, `more`, `back` or a
+`tile` that acts; a `toggle`,
 `checkbox`, `text_input`, `text_area`, `segmented`, `radio_group` or
 `select`, every one of which keeps its state in the tree and only
 mirrors it into the DOM; a `copyable`, whose press writes the clipboard;
@@ -589,7 +611,9 @@ It is worth saying which nearly did:
   its dismiss and expand controls beside that one, so the *layer* needs
   an app whatever the row links to.
 - **`button`** could have read `Action.wired` and answered "no" for an
-  unwired one. It does not. An unwired button is inert with or without a
+  unwired one. It does not. It reads its destination as a tile does, so
+  a button that goes needs nothing and every other button needs an app,
+  wired or not. An unwired button is inert with or without a
   runtime, and deriving "this page needs nothing" from it would turn
   *you forgot to wire it* into a published page of dead controls — the
   silent direction, which is the whole reason this derivation exists.

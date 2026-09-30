@@ -354,8 +354,8 @@ screen on top, `router.currentRef()` gives its full reference, and
 
 ## References
 
-What a `link`, a route-carrying `tile`, a `nav_item`, a `notice`, a
-Markdown `[label](destination)` span and `App.navigate` all carry is a
+What a `link`, a route-carrying `tile` or `button`, a `nav_item`, a
+`notice`, a Markdown `[label](destination)` span and `App.navigate` all carry is a
 **reference**: a route name, optionally followed by positional arguments.
 
 ```
@@ -685,7 +685,7 @@ Every one of these is a programmer error, and nothing at an
 *activation* can do about one but drop it — so that path raises no
 error. The record is how the mistake still surfaces there: the test
 harness checks it after every action (and audits every route a `link`,
-`tile`, span or `notice` carries — the `unresolvable_route` rule), so a
+`tile`, `button`, span or `notice` carries — the `unresolvable_route` rule), so a
 mistyped reference fails the first test that shows or presses it, with
 the reference in the diagnostic.
 

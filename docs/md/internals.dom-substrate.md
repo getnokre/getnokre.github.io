@@ -291,20 +291,24 @@ table, re-rendering the same screen.
 It is not an optimization. A generated page is a screen measured with a
 ruler that is not the reader's — a build has no font metrics and no
 window, so `text.Measurer.fixed` answers every measured question against
-whatever viewport the generator declared. Prose wraps somewhere else, a
-row of actions never folds its tail, and `navCollapses` is asked about a
+whatever viewport the generator declared. Prose wraps somewhere else,
+and `navCollapses` is asked about a
 window nobody is looking at, so a roster that cannot fit a phone runs off
 the edge of one instead of collapsing. Those answers cannot be fixed by
 CSS, because they are not style: they are decisions core made from a
 number. The only repair is to ask again with the right number, which is
 what booting does.
 
-A **wrapping** row is the one that comes out right anyway, for a reason
+A **row** is the one thing that comes out right anyway, for a reason
 worth naming. *Which* rows wrap is `layout.rowOverflow`, a question about
-the children and not about a width, so the serializer answers it with no
-ruler at all; *where* the lines then break is `flex-wrap`'s, which is the
-reader's own metrics in the reader's own window. The fold needs a
-measurement a generator does not have. Wrapping needs none.
+the children and the medium and not about a width, so the serializer
+answers it with no ruler at all. On this substrate the medium is
+`reflows`, and the answer is wrap for every row, a row of actions
+included ([../elements.md](../elements.md#a-row-too-narrow-for-its-children)).
+*Where* the lines then break is `flex-wrap`'s, which is the reader's own
+metrics in the reader's own window. A fold would need a measurement a
+generator does not have, and a runtime a page of links does not load.
+Wrapping needs neither.
 
 #### Neither script on a generated page is an inline one
 
@@ -1306,8 +1310,7 @@ retaken rather than kept.
 element the app is mounted in, and core measuring against `innerWidth`
 instead would answer every
 measured question against a width nobody is looking at: prose wrapped
-somewhere else, a row of actions that never folded its tail because it
-had room to spare, a track that fitted in a column it overflows. The
+somewhere else, a track that fitted in a column it overflows. The
 height stays the window's, which is what "how much is visible" means.
 
 The reading column is **core's** now (`layout.screenColumn`), and this
@@ -1452,9 +1455,10 @@ var out: std.ArrayList(u8) = .empty;
 var em: dom.Emitter = .{ .gpa = gpa, .app = &app, .out = &out };
 defer em.deinit();
 app.performLayout();    // layout first, though no rect is read here:
-                        // the pass is where a too-wide row folds its
-                        // tail and gains its `more` control (live.zig
-                        // documents the bug of skipping it)
+                        // the pass is where a narrow desk folds its
+                        // regions, and where a `more` control a layout
+                        // under `clips` installed is taken away again
+                        // (`dom.document` says why)
 try dom.content(&em);   // the screen
 try dom.chrome(&em);    // notice, nav, sheet, picker
 ```
@@ -1649,7 +1653,9 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   a row that wraps has no width at which it fails, so
   `layout.navCollapses` declines before it measures, on the one input
   core cannot see: `layout.Medium`, `reflows` here and `clips` on every
-  rastering substrate. The driver installs it, beside the measurer and for
+  rastering substrate. `layout.rowOverflow` asks the same input, and
+  under `reflows` a row of actions wraps rather than folding its tail
+  into a `more` control. The driver installs it, beside the measurer and for
   the same reason (`live.zig`'s boot, `document.zig`'s first line).
   Below the cap the band is one line by construction, the measurement is
   live again, and the chip is what a narrow window gets.

@@ -45,7 +45,9 @@ keep a second one possible, and what it owes the first:
 *tree* question rather than a drawing one: whether a row too wide for
 its space is clipped or reflowed. Core has to know, because the two
 answers are different nodes — `nav.syncNavChrome` builds a row of links
-or a chip, and that is decided before either renderer sees the tree. The
+or a chip, a row of actions folds its tail into a `more` control only
+where the surface clips (`layout.rowOverflow`), and both are decided
+before either renderer sees the tree. The
 driver declares it through `App.setMedium`, and the default is `clips`,
 the cautious answer. The test anything wanting to join the enum has to
 pass is stated on the enum itself.
@@ -102,7 +104,7 @@ nokre derives it and offers no knob for it.
 | Decision | Whose |
 | --- | --- |
 | Nav shape — a row of destinations or one chip | nokre's (`layout.navCollapses`) |
-| Folding an overflowing row of actions | nokre's (`overflow.syncOverflowChrome`) |
+| Folding an overflowing row of actions, where the surface clips | nokre's (`layout.rowOverflow`, `overflow.syncOverflowChrome`) |
 | Where a row wraps | nokre's |
 | Page width | nokre's, derived from the shape |
 | Which screens exist at each dwell | yours |

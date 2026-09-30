@@ -2564,8 +2564,11 @@ web's price rather than a gap to be closed
 
 - **No pixel goldens.** Part 12's screenshot tests cover the five native
   shells and stop at the browser, because the browser owns text metrics:
-  it measures the runs, so it decides where your prose wraps and whether
-  a row of actions folds its tail. Your web build's frames are not its
+  it measures the runs, so it decides where your prose and your rows
+  wrap. A row of actions wraps there too, where a native window folds
+  its tail
+  ([elements.md](elements.md#a-row-too-narrow-for-its-children)). Your
+  web build's frames are not its
   macOS sibling's, and the assertions that do hold there are the
   semantic ones — the tree, the roles, the labels — which is what the
   harness checks anyway.

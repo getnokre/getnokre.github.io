@@ -334,6 +334,10 @@ for the full list. The ones that don't have a `docs/testing.md` page:
   frame source a shell installs is driven through scroll sequences in
   [src/skia_test.zig](../../src/skia_test.zig), its kept buffer held to
   a whole raster after every step ([pixel-model.md](pixel-model.md#partial-frames)).
+- **The GPU against the CPU** — `zig build check-gpu -Dskia -Dgpu`, one
+  of the gates, and `zig build check-gpu-sweep -Dskia -Dgpu`, run
+  before a release and not with them
+  ([gpu.md](gpu.md#what-the-shaders-measure)).
 
 Goldens are byte-exact. CI never creates goldens ([testing.md](../testing.md)
 has the workflow).

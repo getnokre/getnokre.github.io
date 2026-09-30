@@ -1355,6 +1355,11 @@ a.link.block {
   border-radius: var(--radius);
   background: var(--ink);
   color: var(--paper);
+  /* A button that goes is an `<a>`, which the engine underlines;
+     the pill is its whole affordance, as the other substrate draws
+     it. The rest of an anchor's defaults are already the ones this
+     rule and `button, input, …` above leave a `<button>` with. */
+  text-decoration: none;
   /* `anywhere` and not the tile's `break-word`, because the pill is
      sized by its own content: `break-word` leaves min-content at
      the longest word, so a compound wider than the column keeps the

@@ -1299,7 +1299,12 @@ nokre's own corpus names the look the way it names the appearance:
 suffix. What a theme may not change is not left to pictures:
 `src/render/paint_only_test.zig` stands every element kind under all
 four looks and fails where geometry, text positions, the accessibility
-tree, focus order or scroll extents differ.
+tree, focus order or scroll extents differ. Lamp dark's takes are also
+drawn on the GPU and held to their CPU goldens within stated targets:
+`zig build check-gpu -Dskia -Dgpu` with the gates, every take unturned
+and one take per effect through each turn, and
+`zig build check-gpu-sweep -Dskia -Dgpu`, every take through each turn,
+before a release ([internals/gpu.md](internals/gpu.md#what-the-shaders-measure)).
 
 ## The revision's own gate
 
