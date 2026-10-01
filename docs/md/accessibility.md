@@ -385,7 +385,9 @@ one. Its counterpart is the exception that proves it: a row of actions
 that *folds* does change what is announced, because a folded action is
 not on the screen at all (see [elements](elements.md#the-folded-tail-more)),
 and that is exactly why folding is reserved for the rows where a control
-stands in for what it hid.
+stands in for what it hid — named with how many it hid ("3 more"), so a
+reader hears what is behind it before pressing, and renamed whenever the
+fold moves.
 
 ## Focus
 

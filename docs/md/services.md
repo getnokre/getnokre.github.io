@@ -687,7 +687,7 @@ outline alone, in the text's ink, whatever shade the file carries.
 **A package offers its mark to the apps that link into it.** If an app
 declared a silhouette, `addApp` hands it back as `App.offered_mark`: a
 directory of nokre's own holding the file and the app's declared name,
-so the app that takes it states neither again. The package passes it on
+so the app that takes it need state neither again. The package passes it on
 under a name, the way it passes on its recordings, and an app that
 links into it takes it in `LinkedApp.offered_mark`
 ([routing.md](routing.md#links-into-another-app)):
@@ -701,6 +701,39 @@ master has no outline to set as a glyph. A silhouette the taking app's
 face cannot make a glyph of, or one offered by an app that declared no
 name, is refused at that app's append with the sentence above, as its
 own mark would be.
+
+**A sibling in the same repository offers it through `nokre.offerMark`.**
+A package can take a sibling's `offered_mark` only where the sibling is
+its dependency, and two apps that link into each other cannot each be
+the other's: that is a cycle no build graph holds. There,
+`nokre.offerMark(nokre_dep, silhouette, display_name)` makes the
+directory `addApp` makes — the same writer, so the same bytes — and the
+entry takes it in `.offered_mark` exactly as it would take a package's.
+It takes a silhouette alone, since a master offers nothing. So the two
+fit two cases: a sibling's own output fits a sibling in another
+repository, and `offerMark` fits siblings in one.
+
+Its two arguments are best kept out of the build files: let them come
+out of one registry every app in the repository imports, with each
+app's own `addApp` declaration reading its `mark` and its `pkg` name
+from the same entry:
+
+```zig
+const family = @import("family");   // the repository's own registry
+// votes' build.zig
+.mark = .{ .silhouette = family.votes.silhouette(b) },
+.pkg = .{ .name = family.votes.name, … },
+// every sibling's build.zig
+.offered_mark = nokre.offerMark(nokre_dep, family.votes.silhouette(b), family.votes.name),
+```
+
+The offer carries the name so a sibling need not restate it: a second
+copy of another app's name is a second place for it to be wrong. A
+repository that declares each name once, in a registry both builds
+read, keeps that guarantee itself — the app's own declaration reads the
+same entry, so the mark it draws and the mark its siblings draw cannot
+disagree. nokre cannot tell a registry from a string typed at the call,
+so keeping to it is the repository's work.
 
 The declared mark and `apple_icon` are independent, and the bundle
 wins: with both, every launcher and tab shows the bundle drawn flat and
@@ -875,6 +908,28 @@ library's frames are RGB for one sanctioned reason, the Google sign-in
 mark, and its own PNG decoder refuses a non-grayscale image — so a scan
 built on the written file would fail every sign-in screenshot for a
 reason that has nothing to do with margins.
+
+**The verdict is the caller's, and an escape leaves a record.**
+`render.skia.captureForStore` writes the frame whichever way the verdict
+goes and returns the verdict; it prints nothing and raises nothing for
+one, so a walk decides whether to stop or to photograph its remaining
+screens and fail at the end, and `shots.message` is the sentence a
+caller prints. On `.escaped` it also writes `<frame>.escaped`
+(`shots.escaped_record_suffix`) beside the frame: one JSON line,
+`shots.EscapedRecord` —
+
+```json
+{"side":"leading","at":3,"allowed":45,"sha256":"<64 lowercase hex>"}
+```
+
+`side` is `leading` or `trailing`, `at` the ink's distance from that edge
+and `allowed` the safe area less its overhang, both in the frame's own
+pixels, and `sha256` is the digest of the PNG bytes written. It is there
+for tooling that clears a refused frame by its exact bytes: a frame that
+changes changes its hash, and the clearance lapses. Every other verdict
+removes a record left by an earlier run, so a record beside a frame is
+always that frame's; `.no_page_tone` and `.empty` leave none, because a
+frame nobody could measure is not one a person clears.
 
 Two things it refuses rather than reports: an eink frame whose
 commonest tone covers under half of it, which has no page to measure

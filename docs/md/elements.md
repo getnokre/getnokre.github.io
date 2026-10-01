@@ -1497,7 +1497,7 @@ no way to be handed the wrong one:
   window clips. A row whose every child is a `button` or a `link`, two
   or more of them, collapses its tail into a `More` control and stays
   one line. For example, Publish, Save draft and Archive in a narrow
-  macOS window show as Publish and More.
+  macOS window show as Publish and "2 more".
   [The folded tail](#the-folded-tail-more) has the mechanics.
 - **Where the surface reflows, every row wraps, a row of actions
   included.** The browser reflows, both on a generated page and under
@@ -2312,10 +2312,11 @@ derived"). `Button.goes` answers which kind a button is.
 
 Put actions in a horizontal `stack` and nokre shows as many as fit. When
 they don't all fit, the row **folds**: the last completely visible one
-gives up its slot to a control labelled "More" (the framework's own word,
-`App.Chrome.more` — see [localization.md](localization.md)), and pressing
-that opens a sheet holding it and everything after it, in the row's own
-order. This is what a surface that clips does, which is every native
+gives up its slot to a control that says how many it hides — "3 more"
+(the framework's own counted word, `App.Chrome.more_count` — see
+[localization.md](localization.md)) — and pressing that opens a sheet,
+titled with the plain word "More" (`App.Chrome.more`), holding it and
+everything after it, in the row's own order. This is what a surface that clips does, which is every native
 window. In a browser the same row wraps instead
 ([A row too narrow for its children](#a-row-too-narrow-for-its-children)).
 
@@ -2329,7 +2330,7 @@ try row.button(.{ .label = "Publish", .on_press = ... });
 try row.button(.{ .label = "Save draft", .on_press = ... });
 try row.button(.{ .label = "Archive", .on_press = ... });
 try row.link(.{ .label = "More details", .route = "details" });
-// Narrow enough, this renders: Publish · More
+// Narrow enough, this renders: Publish · 3 more
 ```
 
 There is no API for it — no `overflow` knob, no "collapse at" width, no
@@ -2361,7 +2362,16 @@ Details worth knowing:
 
 - **Folded is gone, not dimmed.** A folded action draws nothing, takes no
   tap, keeps no focus stop, and is invisible to assistive tech. Tab goes
-  from the last standing one to More.
+  from the last standing one to the control.
+- **The count is always the tail's.** The control's words and its
+  accessible name are one string, said with the number of actions
+  behind it, in the locale's digits and plural category. When the
+  window narrows or widens and the row folds deeper or shallower, the
+  control already standing says the new count; it is not rebuilt.
+  Deciding the fold reserves room for the widest caption any count
+  that row could fold would say, so the count never feeds back into
+  how many fold, and a row never reshapes because its own number
+  changed width.
 - **Your nodes survive.** The actions stay in the tree with their ids and
   their state; a wider viewport puts them straight back. Mutating a
   folded button (`in_progress`, `disabled`) is fine and shows up when it
@@ -2398,8 +2408,8 @@ Details worth knowing:
   `refresh` under it — and the sheet with the row answers the state.
 - **In tests**, a folded action is not addressable by its words:
   `getByLabel` reports it as folded, and `tap` on a node id you kept
-  fails with `error.Folded`. Reach it the way a user does — `tapLabel("More")`,
-  then the action.
+  fails with `error.Folded`. Reach it the way a user does — tap the
+  control by its words (`tapLabel("3 more")`), then the action.
 
 ### `link`
 `label` + exactly one destination: `route` or `external`. Underlined.
@@ -3805,9 +3815,14 @@ and nothing else, so every rule above holds for it.
 - **Each row is one linked app**, in the order `.links_into` declares
   them. It leads with that app's mark (`mark`), is labelled with the
   mark's display name, and opens that app's front door
-  (`App.frontDoorInto`) as its `external`. Nobody types the name: it is
-  the one the app's package offered with its mark. There is no `detail`
-  and no `badge`.
+  (`App.frontDoorInto`) as its `external`. The name is the one the
+  app's package offered with its mark, so the linking build need not
+  restate it; for a sibling in the same repository it is the one
+  `nokre.offerMark` wrote, and a repository that reads it from a
+  registry both builds read keeps that guarantee itself — nokre cannot
+  tell a registry from a name typed at the call
+  ([services.md](services.md#the-mark-is-declared)). There is no
+  `detail` and no `badge`.
 - **If a linked app did not offer its mark, the call does not
   compile**, naming the app: `linkedApps: "teams" is linked into without
   its mark, and a tile_group's rows lead with marks or with none`. One
@@ -3835,6 +3850,11 @@ same way and calls it at the foot of Settings:
     // … five more
 },
 ```
+
+Products built in one repository cannot be each other's dependencies,
+so each takes its siblings' marks through `nokre.offerMark` from the
+repository's registry instead of `namedLazyPath`
+([services.md](services.md#the-mark-is-declared)).
 
 ```zig
 try b.heading(.h2, tr(.ourApps));

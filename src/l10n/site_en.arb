@@ -30,6 +30,7 @@
   "chromeOther": "Other",
   "chromeCopied": "Copied",
   "chromeMore": "More",
+  "chromeMoreCount": "{count, plural, one{# more} other{# more}}",
   "chromeRegions": "Regions",
   "chromeCut": "Cut",
   "chromeCopy": "Copy",

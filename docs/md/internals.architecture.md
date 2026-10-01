@@ -32,6 +32,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/color.zig](../../src/core/color.zig) | `Gray`: the thirteen permitted steps, and the four ramps (`Theme` × `Appearance`, lamp reading depth's) that give them bytes; depth's page ground, drop shadow and scrim veil, which no element authors ([pixel-model.md](pixel-model.md)) |
 | [src/core/text.zig](../../src/core/text.zig) | families, type scale, `Measurer` interface |
 | [src/core/lang.zig](../../src/core/lang.zig) | what a BCP 47 tag decides with no catalog in reach: the language subtag, and the digit shapes a language numbers in (`digit_langs`) — below `l10n` because layout numbers ordered lists from it too |
+| [src/core/plural.zig](../../src/core/plural.zig) | CLDR integer plural arithmetic as data (`PluralArithmetic`, `Category`) — below `l10n` because a counted chrome word (`element.CountedChromeWord`) says its count in core, and a recording carries the arithmetic by name where it could not carry a function |
 | [src/core/bidi.zig](../../src/core/bidi.zig) | UAX #9 in full: paragraph direction, embedding levels, visual run order — pure integer Zig, UCD-validated |
 | [src/core/bidi_tables.zig](../../src/core/bidi_tables.zig) | its generated UCD bidi-class tables (`tools/gen-bidi-tables.py`) — regenerated, never edited |
 | [src/core/icon_names.zig](../../src/core/icon_names.zig) | the generated icon-name table from lucide-static (`tools/gen-icon-names.py`), every field `lucide_`-prefixed so a source scan for a name is exact, regenerated only with the face itself |
@@ -57,7 +58,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/desk.zig](../../src/core/desk.zig) | a desk's own chrome: the region switcher a window too narrow to stand the band offers instead ([../elements.md](../elements.md)) |
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
 | [src/core/accessibility_toggles.zig](../../src/core/accessibility_toggles.zig) | the rows of `accessibility_toggles`: the reader's Increase Contrast and Reduce Transparency as `toggle`s nokre installs, keeps in step with the look, the medium and the words, and answers the press of ([../accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
-| [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control and its sheet |
+| [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control, the count it says, and its sheet |
 | [src/core/stage.zig](../../src/core/stage.zig) | the `stage`'s runtime: a player per node, its controls, stepping, the shell's ticks, Reduce Motion ([stage.md](stage.md)) |
 | [src/core/recorded_play.zig](../../src/core/recorded_play.zig) | a recorded play: the format, its stamp, and standing a scene up in a scene app ([stage.md](stage.md)) |
 | [src/core/shown_plays.zig](../../src/core/shown_plays.zig) | the plays an app's build declares it shows, and their embedded recordings |

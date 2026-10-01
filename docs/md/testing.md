@@ -413,7 +413,7 @@ that silently lands elsewhere is a lie, not a test:
   (scrolled out of view or clipped — scroll first, like a user would),
   `error.Obscured` (the tap would land on another element, which the
   diagnostic names), or `error.Folded` (its row ran out of width and
-  folded it behind "More" — press More first, like a user would; see
+  folded it behind its control, "3 more" — press that first, like a user would; see
   [elements.md](elements.md#the-folded-tail-more)). A folded action is
   off the screen, so `getByLabel` does not return it either — the
   listing that comes back says where it went.
@@ -2200,7 +2200,7 @@ The rules the set follows, each of them a decision:
   should report rather than sit through.
 - **`press` checks the fold without waiting.** A control its row folded
   away is invisible to every query, so waiting a full deadline to
-  discover that — and another for a "More" that is not there either —
+  discover that — and another for a control that is not there either —
   is how one missing label costs an hour. Folded first, then the wait.
 - **`expectAbsent` never waits, `expectGone` does.** A label that is
   *going* to appear would satisfy a waiting absence check for as long

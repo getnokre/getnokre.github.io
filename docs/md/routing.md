@@ -1110,6 +1110,10 @@ that app's package offers
 `app_mark` draws it ([elements.md](elements.md#app_mark)). An entry
 without it links as before and names no mark; an app named `own` that
 offers one is refused, since `.own` is this app's own mark.
+A sibling built in the same repository is not a dependency of an app it
+links back into, so its offer is made with `nokre.offerMark` from the
+registry both builds read, and goes in the same field
+([services.md](services.md#the-mark-is-declared)).
 
 An app in a store offers its store badges the same way, with the
 address, the files and their words:

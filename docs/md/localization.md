@@ -519,7 +519,8 @@ English until an app says otherwise:
 | `dismiss_prefix` | "Dismiss: " | joined the same way, on its dismiss control |
 | `important` / `other` | "Important" / "Other" | the pane's two group captions |
 | `copied` | "Copied" | the live region an acknowledged `copyable` grows |
-| `more` | "More" | the control an overflowing row of actions folds into |
+| `more` | "More" | the title of the sheet that control opens |
+| `more_count` | "3 more" | the control an overflowing row of actions folds into, saying how many it hides (a counted word) |
 | `regions` | "Regions" | the region switcher's *name* on a desk too narrow to stand its regions side by side; the chips are the regions' own labels |
 | `ranking_move` | "Move" | a ranking row's verb at rest, on every row that takes a press |
 | `ranking_swap` | "Swap" | a ranking's other item rows while an item is armed |
@@ -563,6 +564,7 @@ plus the field camel-cased at its underscores:
 | `important` / `other` | `chromeImportant` / `chromeOther` | every localized app |
 | `copied` | `chromeCopied` | every localized app |
 | `more` | `chromeMore` | every localized app |
+| `more_count` | `chromeMoreCount` | every localized app |
 | `cut` / `copy` | `chromeCut` / `chromeCopy` | every localized app |
 | `paste` / `select_all` | `chromePaste` / `chromeSelectAll` | every localized app |
 | `regions` | `chromeRegions` | every localized app |
@@ -608,7 +610,12 @@ derived from the field, so the new field simply stops every opted-in
 app that can show it compiling until its catalogs say the new word, in every locale
 they carry (key parity does the fanning out). The reserved keys are
 ordinary messages otherwise — placeholder-free, translated where every
-other word lives.
+other word lives — all but one. `chromeMoreCount`, the folded tail's
+"3 more", is a counted word: exactly one plural over one count,
+categories only (an `=N` branch is refused), words and `#` in each
+branch, with `other`. nokre says it with the count in the locale's
+digits and plural category (`CountedChromeWord.say`); the catalog
+supplies the words, never the number.
 
 One struct and one call, not a setter per control: these are one fact —
 what nokre calls its own chrome — and a locale changes every one of them
@@ -714,7 +721,8 @@ than because some call site happens to mention it.
 - **Reserved keys.** A message using `{…, date, MMM}` requires
   `monthJan`…`monthDec`; an app calling `chrome(locale)` requires one
   `chrome…` key per `App.Chrome` field. Both are ordinary messages —
-  required placeholder-free, translated everywhere by key parity — and
+  required placeholder-free (but `chromeMoreCount`, one counted plural),
+  translated everywhere by key parity — and
   a miss is a build error naming the key. A bare `{when}` reference to
   a date placeholder, and an unknown date skeleton, fail the same way.
 - **Call sites.** `fmt` args are matched against the message: missing
