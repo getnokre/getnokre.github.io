@@ -1316,7 +1316,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
   gap: var(--gap);
   border: var(--border) solid var(--g10);
   border-radius: var(--radius-card);
-  padding: calc(var(--pad) - var(--border));
+  padding: var(--pad);
 }
 /* Borderless, the padding is the whole inset again — less the ring
    a look may add to hold a plate's rim (`--rim-border`, lamp dark),
@@ -1444,8 +1444,12 @@ s { text-decoration-thickness: var(--border); }
    line would break the uniform line box, which is why `scale`
    stays element-level in the element set. `font-size: inherit`
    is the one that matters — a UA shrinks `code` to a fraction of
-   its parent, and the reference draws it at the run's own size. */
+   its parent, and the reference draws it at the run's own size.
+   In a run it takes no line height of its own: the mono face's
+   ascent and descent are not prose's, and a box of the line's
+   height on that baseline reaches past the line's and grows it. */
 code { font-family: mono; font-size: inherit; }
+:is(p, h1, h2, h3, h4, h5, h6) code { line-height: 0; }
 
 .mono { font-family: mono; }
 .s-small { font-size: var(--px-small); line-height: var(--lh-small); }
@@ -1891,7 +1895,7 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   margin: 0;
   border: var(--border) solid var(--g10);
   border-radius: var(--radius-card);
-  padding: calc(var(--pad) - var(--border));
+  padding: var(--pad);
   font-size: var(--px-small);
   line-height: var(--lh-small);
   color: var(--dark);
@@ -2587,7 +2591,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   align-items: center;
   justify-content: center;
   min-height: calc(var(--lh-h3) + 2 * var(--tile-pad-v));
-  padding: var(--tile-pad-v) var(--tile-pad-h);
+  padding: calc(var(--tile-pad-v) - var(--border)) calc(var(--tile-pad-h) - var(--border));
   border: var(--border) solid transparent;
   border-radius: var(--radius);
   font-family: mono;
