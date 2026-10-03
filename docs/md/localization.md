@@ -271,8 +271,8 @@ direction a shell maps its line keys by is the run's, not the edge's.
    character gives it, per hard paragraph, and on the chrome's leading
    edge when it has none (digits, Persian digits, punctuation, spaces,
    or nothing at all), where P3 would have said left-to-right on its
-   behalf. Prose is a paragraph, a heading, a list item, a tile group's
-   caption, a field's problem, a quantity's caption, a stage's step,
+   behalf. Prose is a paragraph, a heading below the screen's title,
+   a list item, a tile group's caption, a field's problem, a quantity's caption, a stage's step,
    and a sheet's title where it wraps (one that fits a line is
    centred). Under Persian
    chrome a date written `۱۴۰۳/۰۵/۱۲` as a paragraph stood on the left
@@ -312,6 +312,24 @@ chrome's leading edge whatever language they are in, so the notices
 pane's group captions (`App.Chrome`'s `important` and `other`) stand on
 the right under Persian chrome even where the catalog left them in
 English.
+
+**A screen's title is a label of the page, not prose**, and stands on
+the chrome's leading edge whatever it is written in — on both
+substrates, by the third part's anchor (`wrap.isScreenTitle`). Under
+Persian chrome the title `Rokovski Ties` stood on the left while every
+other word on the page stood on the right, and three things nokre
+already does said it was wrong. The same words label the screen's nav
+item and its row in the section picker (`RouteDef.title`, below), which
+are rows and stood on the right: one name, two edges. The title shares
+its line with the back control at the leading edge and the header's
+actions at the trailing one, so a Latin title on its own edge sat
+against the actions and a whole line away from the chevron it is read
+with. And a reader of a right-to-left page finds what the page is
+called where every platform puts it, on the leading edge, as the sheet
+title above has its own placement rather than its words'. Only the
+block moves: `Rokovski Ties` still reads left to right inside it. A
+title the screen states from a load (`App.setTitle`) is the same label
+and stands the same way; a heading below it is a section's, and prose.
 
 **Chrome is decided by you.** Whether the interface mirrors —
 navigation order, field labels, chevrons, toggle knobs, scrollbars,

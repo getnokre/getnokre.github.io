@@ -2706,7 +2706,7 @@ frame rather than a trace.
 
 A trace answers a reader who already knows what to look for. A **play**
 is for one who does not: a driver scenario played back as one animated
-PNG, with a finger or a pointer showing where each step lands and a
+PNG, with a finger showing where each step lands and a
 caption naming it, which opens in a browser, an image viewer or a phone
 with no player. It is not a second scenario language. A play *is* a
 driver scenario — a function over a `DriverApp`, written with the verbs
@@ -2781,12 +2781,12 @@ the locale a silent device leaves the app in. A play may name a `look`,
 an `appearance`, a `size` and a `locale` (the tag the device reports at
 boot, which reaches the screen wherever the app reads
 `services.locale.tag`), and that is all. Nothing about the film itself
-is an option: no frame rate, no pointer style, no caption font.
+is an option: no frame rate, no hand, no caption font.
 
 **The honesty rule.** Every pixel inside the app's frame is a frame
 nokre really drew, for a state the app was really in. The theatre adds
-exactly two things, both its own: a mark over the frame — the finger or
-the pointer — and a caption in a strip *below* the frame, so no word
+exactly two things, both its own: a mark over the frame — the finger —
+and a caption in a strip *below* the frame, so no word
 ever covers the app. The app is drawn on a surface of its own size, so
 nothing the theatre draws can reach under it. A test holds this pixel by
 pixel against the same state drawn alone.
@@ -2799,26 +2799,21 @@ appears and holds for a time that grows with the caption's length,
 between a floor and a ceiling. A wait on a real server that takes a
 minute is one step like any other — the film holds the frame it has.
 
-**A finger or a mouse.** A store film's device family decides, and
-every family a store takes is a phone or a tablet, so a finger; an
-explaining play is touched too, and a play made for a desktop says
-`.input = .mouse`. nokre keeps no desktop size to tell a window by — it
-refuses the breakpoint that would be (`layout.metrics.page_max_w`
-records why) — so the play states it. A finger appears where it lands —
-a disc a fingertip wide, half its pixels the app's — holds for the press
+**One hand, a finger, at every size.** nokre has no hover, so a
+pointer would show nothing a finger does not; a play at a desktop's
+size is touched like any other. A finger appears where it lands — a
+disc a fingertip wide, half its pixels the app's — holds for the press
 (longer for a long press), and lifts, all over the screen as it stood
 before the press, so a viewer sees the finger land on what was pressed
 and the screen the press produced appears with no hand on it; nothing
-travels between steps. A mouse's arrow travels there, eased, and a ring
-marks the click, on that same screen.
+travels between steps.
 
 **Gestures are real frames.** A `reveal` in a film is shown as the
 scroll it is: the window moved by the very function the app's reveal
 moves it with, in slices that add up to the one move, each slice a
 state the app was in and a frame of the film. A finger swipes against
-the content's motion, lifting and coming down again between swipes; a
-mouse's wheel turns under a still arrow. A `dragSelect` is filmed over
-real intermediate selections, the finger or the held-down pointer
+the content's motion, lifting and coming down again between swipes. A
+`dragSelect` is filmed over real intermediate selections, the finger
 travelling from the anchor to the head. A reveal that moves a
 scrolling region inside the page is filmed the same way, the region
 first and then the window, as the keyboard's reveal moves them, with
@@ -2885,7 +2880,7 @@ not recorded, and a run that reached a stage is refused
 
 The same play on the same tree writes the same bytes, and a test holds
 that. The kitchen sink's own three — a ranking by finger, a sheet, a
-long page and a select by mouse, and the ranking as a store film — and
+long page and a select at a desktop's size, and the ranking as a store film — and
 a Persian ballot proving right-to-left captions (`tests/theatre_fa/`)
 are filmed on every `zig build test -Dskia`, and written out by
 `zig build plays -Dskia`.

@@ -621,7 +621,10 @@ structure, not styling — the a11y audit fails if you skip levels.
 page's top is what the screen is called, stated once and drawn by the
 library — `RouteDef.title`, or `App.setTitle` where the two differ
 ([routing.md](routing.md)). So a screen's sections start at `h2`, which
-is the level field's default.
+is the level field's default. Being the page's label, it stands on the
+chrome's leading edge whatever it is written in, where a section's
+heading stands by its words ([localization.md](localization.md), "Where
+text stands").
 
 | Level | px | Level | px |
 | --- | --- | --- | --- |
@@ -2311,8 +2314,9 @@ derived"). `Button.goes` answers which kind a button is.
 #### The folded tail (`More`)
 
 Put actions in a horizontal `stack` and nokre shows as many as fit. When
-they don't all fit, the row **folds**: the last completely visible one
-gives up its slot to a control that says how many it hides — "3 more"
+they don't all fit, the row **folds**: the actions that don't fit, and
+as many before them as the control needs room taken from, give way to a
+control that says how many it hides — "3 more"
 (the framework's own counted word, `App.Chrome.more_count` — see
 [localization.md](localization.md)) — and pressing that opens a sheet,
 titled with the plain word "More" (`App.Chrome.more`), holding it and
@@ -2353,10 +2357,20 @@ either — that hides the only action twice. Those rows
 [wrap](#a-row-too-narrow-for-its-children) instead, which is the other
 half of the same rule.
 
-The fold is deliberately one action deeper than the overflow itself. The
-one that was already half off the screen is not the one to replace:
-put the control there and it stands at the very edge it exists to
-rescue, and the row reads as two failures at once.
+The fold is exactly the overflow. Every action that fits stays, then
+slots come back off the end until the control stands whole beside what
+is left, measured at the widest caption any count could say. A row of
+two whose first action fits beside the control keeps that action.
+
+Until 2026-10-02 the fold went one action deeper: the last completely
+visible action gave up its slot too, so the control would never stand
+where the clipping was, at the very edge it exists to rescue. That
+reason never applied to this fold: it has always given up further slots
+until the control's own measured width fits beside what stays (since
+revision 182, the widest caption), so the control cannot land on the
+clipped edge. What the extra fold did was fold a two-action row down to the control
+alone, hiding every action, which this section's own rule against
+folding a lone action refuses.
 
 Details worth knowing:
 
@@ -3550,18 +3564,34 @@ stage takes. There is no autoplay, no loop, no speed, no size and no
 look: a play is what it is, and the app it is shown in decides how it
 looks.
 
-**The window is the recording's, never scaled.** It is as wide as the
-window the play was run in, or the space the stage is given, whichever
-is narrower, centred, and as tall as the recording. Each recorded screen
-is laid out again by *this* app's layout at the window's width — the
-tree the played app built, not a picture of it — so its words are this
-app's own size, and a narrower window reflows them exactly as the played
-app would at that width. What runs past the window's bottom is clipped
-there, as the phone's window clipped it, at the scroll the recording
-stood at (kept as the node at the window's top, so a reflowed screen
-still shows the part it showed). It is drawn in this app's look and
+**The window is the page's, never scaled.** It is as wide as the space
+the stage is given, and as tall as it is wide or as the screen leaves
+once the frame and the controls under it are counted, whichever is
+less: with room it is a square, and on a short screen a landscape
+window, the whole stage on screen at once. It is never shorter than 240
+points; below that the stage is taller than the screen and the page
+scrolls. The size the play was run at decides none of it. Each recorded
+screen is laid out again by *this* app's layout at the window's size —
+the tree the played app built, not a picture of it — so its words are
+this app's own size, and a window narrower or wider than the played
+app's reflows them exactly as the played app would at that width. What
+runs past the window's bottom is clipped there, at the scroll the
+recording stood at (kept as the node at the window's top, so a reflowed
+screen still shows the part it showed), brought on as far as a step
+needs to show what it acts on. It is drawn in this app's look and
 appearance, on a window of its own — its page, its lamp and its frost
-know only it — inside an edge in the look's rule.
+know only it.
+
+**A titled frame.** The window stands in a frame with rounded corners,
+edged in the look's rule and parted by a rule from its two ends: above
+it a header a touch target tall, holding a play glyph, the stage's
+`label` and the step it stands on, as `2 / 8` in the app's digits, on
+the trailing edge (with `named_by`, the glyph and the count alone); and
+below it a foot holding the step's words. The header mirrors under a
+right-to-left chrome, the count's step on the leading side too. The
+frame is the stage's own, not a part of the app it is shown in, so the
+recorded screen is never mistaken for a live one; until the recording
+is in hand there is no count.
 
 **A picture is its box.** Inside a recorded play a
 [`picture`](#picture) is the box that says its description, at the
@@ -3569,10 +3599,10 @@ size the picture stood at: a recording carries no picture's pixels.
 
 **Inert.** Nothing inside the window takes focus, a press, hover or a
 node of its own in the accessibility tree: the stage is one `figure`,
-named by its name and described by the step it stands on. Below the
-window stand the step's words, in their own direction, with room kept
+named by its name and described by the step it stands on. The step's
+words stand in the frame's foot, in their own direction, with room kept
 for the longest so a step never moves the page, and nokre's controls
-under them, real buttons in the app's words: **Previous step**, **Play**
+under the frame, real buttons in the app's words: **Previous step**, **Play**
 and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
 `stage_next`). Previous and Next rest on each step's last screen;
 Previous is on wherever a step stands before the current one and Next
@@ -3611,7 +3641,7 @@ the app's module, one per play per language, named by nokre from its
 bytes so a changed recording is never met by a stale cache; the stage
 fetches its own, in the app's language, when it first comes on screen,
 so a page with no stage fetches none. Until it arrives the stage keeps
-its box at the recording's size: in a page written for the web the first
+the box it will stand in: in a page written for the web the first
 scene is already in the markup and stands at rest, and in a live page the
 window is a stand-in in the tone a missing value is drawn in. Play pressed
 meanwhile is busy, and plays when the recording lands. One that cannot be

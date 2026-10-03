@@ -45,16 +45,42 @@ App with no services, no routes and no input — into which
 `recorded_play.stand` restores a scene (`Tree.internal.restore`, past
 the construction rules, since the tree was one the played app built)
 and dresses it in the host's look, appearance, medium and measurer.
-The renderer lays it out at the stage's window width and draws it
+The renderer lays it out at the stage's window size, width and height
+both, and draws it
 through the canvas's window pair (`openWindow`/`closeWindow`, a CPU
 raster of its own composited pixel for pixel, on a GPU frame too), so
 its page ground, lamp and frost know only the window. Marks resolve
 against the scene as laid out: a place is a recorded ordinal and
 thousandths of that node's box, looked up through the ordinal table the
 restore answered, which chrome the host's layout adds (a folded row's
-`more`) cannot shift. Every cache here is exact: a scene stands again
-when the shot's scene or the width changes, and the resolved points go
-with the width.
+`more`) cannot shift. The window's anchor alone can leave the place a
+hand is about to act on outside a window shorter or narrower than the
+recording's, so a shot whose mark is on a node of the scene it draws
+stands that scene brought to it, by the scroll the driver made before
+the act (`input.actRevealWalk`, innermost region first, on a ranking
+the stop under the place): where the play was recorded that scroll is
+already made and nothing moves. The bar the recording emphasized stays
+the one drawn. A step stands on one target from its first shot to its
+rest (`stage.aimsOf`, read once beside the rests): a shot with no mark
+on a node — none, or a swipe on the glass — borrows the next marked
+shot's target in its step, else the last one's. A step with no hand on
+a node, a scroll to one, stands on the place its scroll's beat keeps
+(`timeline.Beat.at`): the driver tells a scroll's act after its
+slices, so that place is on the scene the last slice left. On the
+target's own scene the place is brought in. On another,
+usually the rest after the act, no place is resolved again, since a
+place is thousandths of a box the act may have grown: the scene stands
+at its own anchor, with the played app's own scroll in it, and is
+scrolled on by as much as the stage scrolled the target's scene to
+bring the place in, so nothing jumps as the result appears. That
+carry needs both scenes on one route and the target's ordinal naming
+an element of one kind on both; otherwise the anchor alone. A spot on
+another scene — a finger lifting from the screen it landed on — is
+resolved on that scene brought to it the same way, which is how it was
+drawn when it landed. Every cache here is exact: a scene stands again
+when the shot's scene, its aim (the target's scene and place among
+it), the width, the height or the look changes, and a resolved point is kept
+under the scene as it stood, at the size.
 
 ## Time
 
@@ -85,7 +111,7 @@ to the module's own URL once an `IntersectionObserver` sees the figure,
 and hands the bytes back through `nokre_dom_play_scratch` and
 `nokre_dom_play_arrived`, or reports `nokre_dom_play_failed`. A refused
 recording is said on the console by name (`nokre_log_refusal`). While a
-stage waits its window and its step carry `data-waiting`, and live.js's
+stage waits its window and its words carry `data-waiting`, and live.js's
 patch keeps whatever children the document holds there, so the first
 frame over a written page does not wipe the scene the page was written
 with; an empty waiting window is the sheet's stand-in.
@@ -97,8 +123,8 @@ with; an empty waiting window is the sheet's stand-in.
 language the app's catalogs declare as `plays/<digest>.nokreplay` — the
 first 64 bits of the bytes' SHA-256 — beside a generated module
 (`nokre_shown_plays`, read through `core/shown_plays.zig`) that lists
-each by that name with the stamp, the icons and the window its head
-states, and embeds its bytes unless the app fetches them (a web app,
+each by that name with the stamp and the icons its head states, and
+embeds its bytes unless the app fetches them (a web app,
 `addWebApp`; its site copies the files and lists them in
 `site.manifest`). It lists the icons for the icon face's scan too. The
 stamp is checked where the library is compiled (`core/stage.zig`) and
