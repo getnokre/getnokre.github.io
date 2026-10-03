@@ -1337,6 +1337,52 @@ sheet states the same rule from the same constant, so a page mounted in
 a full-width box is laid out where core measured it. A host page that
 capped a second time would overrule both.
 
+The one thing laid out on the window is a stage on the big screen, so
+the window goes in beside the column, through `nokre_dom_screen` into
+`App.staging.screen` (`layout.AppFacts.stage_screen`). Its size is the
+box the sheet gives the big pane, `position: fixed; inset: 0`, read off
+that pane while one stands and guessed before one does from the root's
+client width and `innerHeight`. Not the root's width while a pane
+stands: under the scroll lock below Chrome answers it without the
+scrollbar's gutter, which the pane keeps. The driver reads it before
+every frame and again after a frame that put a pane up, laying the
+stage out again where the guess was off. The pane's box is the
+sheet's; the window's height in it is core's, written into the markup
+as `--stage-h` as in the page.
+
+### A stage on the big screen
+
+A big stage is the same figure, patched in place: its frame and its
+controls always stand in a wrapper, `.stage-pane`, the figure's one
+child, so going big changes attributes and words and moves no node, and
+focus stays on the control that was pressed. While big the figure
+carries `data-big` and the pane `role="dialog" aria-modal="true"`
+under the figure's name; `aria-modal` is not valid on a `figure`, so the
+dialog is the pane. Core holds focus in it, live.js forwards Tab and
+Escape as it does for a sheet, and the pane covers the window, so no
+press can land beneath.
+
+- **Containment.** `.stage` is an inline-size container, which makes it
+  the containing block of a fixed descendant; a big stage drops it.
+  Nothing above a stage on the kitchen sink's pages, in any look,
+  captures the pane (checked in Chrome).
+- **Stacking.** The bars stand at z-index 2, a big pane at 3, the modal
+  layers and their scrims at 4. A page's chrome mount precedes its
+  content, so a big stage at the sheet's own z would stand over a
+  sheet opened after it. A stage gone big inside a sheet stands in that
+  sheet's layer, over it.
+- **The held place.** Core advances the page by the stage's page
+  height, which can differ from the browser's by a pixel, so live.js
+  measures the figure's height as `data-big` arrives and holds it as
+  `--stage-held` on the figure's style, beside the lamp's numbers, until
+  it goes; nothing beneath moves and the scroll stands where it stood.
+- **The scroll lock.** `:root:has(.stage[data-big])` takes
+  `overflow: hidden`, so neither a wheel nor a touch over the pane
+  reaches the page. Where the page had a classic scrollbar, live.js
+  keeps its gutter (`scrollbar-gutter: stable` on the root) while the
+  stage is big, or the window under the pane would widen by it; where it
+  had none, keeping one would narrow it.
+
 ### The write is a diff; the frame never is
 
 A frame is still built whole: nokre rebuilds subtrees instantly and
@@ -1865,8 +1911,12 @@ in the page names a timeline its plates read where it stands now, and
 a sideways scroller names the timeline its plates are placed by,
 measuring from the top it published. A timeline driven by the scroll
 position is no motion, so it stands past the sheet's guard against
-animation. Fixed chrome, the modal panes and a stage keep the top they
-were measured at.
+animation. Fixed chrome, the modal panes and a stage's window keep the
+top they were measured at, and so does everything on a stage's pane
+while it is big: it is fixed over the window then, and a `view()`
+timeline on a fixed box answers for the page beneath it. It follows the
+page again once `data-big` goes; the driver measures after the frame
+that moved it, as after any.
 
 Where the browser has none, a plate's top is the one measured at rest:
 the light is the page's at rest, and does not follow a scroll.
@@ -1893,6 +1943,15 @@ darkening too. The specular and each chrome edge carry the lamp's own
 light where they stand, faded out as their own light fades, which is
 how layers joined by the brightest come near native's sum. The chrome
 edges light only plates on the page.
+
+A big stage's pane is on the page for this, so the edge of a sheet or
+picker over it lights its plates and glyphs, but the bar and the chosen
+plate stand beneath it: the pane sets their numbers to `initial`, which
+an unregistered property reads as its fallback, an edge far above the
+window. The driver still measures both, for the page beneath. A stage
+gone big inside a sheet is off the page and takes no edge at all, the
+sheet's included, as native's does; a picker over that one does not
+light it, where native's would.
 
 **Shadow.** Two `box-shadow`s, cast away from the lamp, each pass its
 share of the reach. A plate that does not cast, or has no published

@@ -690,7 +690,11 @@ and frost's corner squares) are reported and not held, since Ganesh
 rasterises glyphs and curves its own way; a lit glyph's box, less the
 corner squares drawn through it (a focus ring's), is held to 2 bytes —
 Ganesh's glyph coverage under the glyph's shader, which lands within
-the tile's; what a frost covers is held to 4; the plates and the
+the tile's. That box is the glyph's advance and half its size either
+side; where a text run beside the glyph reaches into that margin, the
+run's own advance box there is text, while a run that crosses the
+glyph's own advance box (scrolled beneath it, or on a page beneath a
+layer) takes nothing back. What a frost covers is held to 4; the plates and the
 ground — the void, rims, faces, shadows,
 contact shadows over depth's fills — to 2.
 Max / mean byte difference on an M4, unturned (every take's first

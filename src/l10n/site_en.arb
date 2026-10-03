@@ -55,6 +55,8 @@
   "chromeStageNext": "Next step",
   "chromeStageUnavailable": "This play could not be loaded.",
   "chromeStageRetry": "Retry",
+  "chromeStageFullScreen": "Full screen",
+  "chromeStageExitFullScreen": "Exit full screen",
   "chromeIncreaseContrast": "Increase Contrast",
   "chromeReduceTransparency": "Reduce Transparency",
   "chromePictureUnavailable": "This picture could not be shown.",

@@ -3561,7 +3561,8 @@ other, so a stage naming a play the build does not carry does not
 compile; and `label`, or `named_by` in its place
 ([naming](#naming-a-device-without-drawing-its-label)). That is all a
 stage takes. There is no autoplay, no loop, no speed, no size and no
-look: a play is what it is, and the app it is shown in decides how it
+look: a play is what it is, its window's size is the page's and the
+reader's, never the app's, and the app it is shown in decides how it
 looks.
 
 **The window is the page's, never scaled.** It is as wide as the space
@@ -3580,14 +3581,17 @@ recording stood at (kept as the node at the window's top, so a reflowed
 screen still shows the part it showed), brought on as far as a step
 needs to show what it acts on. It is drawn in this app's look and
 appearance, on a window of its own — its page, its lamp and its frost
-know only it.
+know only it. Over it stands one hand, as in a film: a fingertip where
+each press lands, at every size, and never a pointer
+([testing.md](testing.md#a-scenario-as-a-film)).
 
 **A titled frame.** The window stands in a frame with rounded corners,
 edged in the look's rule and parted by a rule from its two ends: above
 it a header a touch target tall, holding a play glyph, the stage's
 `label` and the step it stands on, as `2 / 8` in the app's digits, on
-the trailing edge (with `named_by`, the glyph and the count alone); and
-below it a foot holding the step's words. The header mirrors under a
+the trailing edge (with `named_by`, the glyph and the count alone), then
+the big screen's control at its end; and below it a foot holding the
+step's words. The header mirrors under a
 right-to-left chrome, the count's step on the leading side too. The
 frame is the stage's own, not a part of the app it is shown in, so the
 recorded screen is never mistaken for a live one; until the recording
@@ -3608,19 +3612,42 @@ and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
 Previous is on wherever a step stands before the current one and Next
 wherever one stands after, playing or not, and either pressed while
 the play runs pauses it and steps. Play
-runs the play by itself on the shell's frame ticks, with the moving
-hand; while it runs the same button says **Pause** (`stage_pause`) and
+runs the play by itself on the shell's frame ticks, hand and all;
+while it runs the same button says **Pause** (`stage_pause`) and
 stops it where it stands, and it stops by itself at the end, or when its
 window leaves the screen. The button is laid out at the wider of its two
 words, so pressing it moves nothing. Under the platform's **Reduce
 Motion** there is no Play: the stage steps, the scenes change on the
 step, and no hand is drawn ([accessibility.md](accessibility.md#reduce-motion)).
-In a page written for the web the controls are written `hidden`, since
+The first control stands in the header instead, a glyph named **Full
+screen** (`stage_full_screen`): it shows the same stage, playing or
+not, over the reader's whole screen, where it says **Exit full screen**
+(`stage_exit_full_screen`) and takes the stage back to its place in the
+page, as Escape does, with focus on it both ways.
+In a page written for the web the controls, the header's included, are
+written `hidden`, since
 only the live driver answers them and the page may be read with no
 script at all; the figure, its scene at rest and its step's words stand
 without them, and the driver's first frame shows them.
 An app appends nothing under a stage and sets none of its play
 (`error.StageControlsAreNokres`, `error.StageFieldIsNokres`).
+
+**The big screen.** Full screen is the same stage, its frame, words and
+controls, standing alone over the reader's whole screen on the page's
+own ground, the window as wide and as tall as the screen leaves once
+they are counted. The played app is laid out again at that size, as it
+would lay itself out on the reader's own screen, and never scaled. The
+page beneath does not move, open or closed, and a sheet the app opens
+over it stands over it. Nothing on the big screen scrolls, so there is no
+240-point floor there: a screen too short to leave a window shows the
+frame, the words and the controls with no window between them.
+
+It is a modal layer, as a sheet is ([accessibility.md](accessibility.md#focus)).
+The platform's Back goes back, as it does with a sheet open, and a
+navigation or a reload takes the stage off the big screen with the
+screen it stood on. When the app's language changes the stage stays
+big, on that language's recording at rest; a recording that cannot be
+fetched while it is big says so there, with Retry.
 
 On the web the window holds the DOM substrate's own markup for each
 recorded tree, `inert`, with every id in it scoped to the stage; the hand
@@ -4608,7 +4635,7 @@ out from under a reader's own keyboard focus.
 ## Layers
 
 ### `sheet`
-The only modal surface, declared to the app as a *builder* — a fn the
+The only modal surface an app builds, declared to the app as a *builder* — a fn the
 framework calls to build the sheet, and calls again whenever it must be
 built again — never appended directly to build content. Sheets
 **stack** (since 2026-09-09): `App.sheets` holds one level per open

@@ -553,6 +553,7 @@ English until an app says otherwise:
 | `stage_play` / `stage_pause` | "Play" / "Pause" | a [`stage`](elements.md#stage)'s middle control, at rest and while it plays |
 | `stage_previous` / `stage_next` | "Previous step" / "Next step" | a stage's two steps, named apart from `back` |
 | `stage_unavailable` / `stage_retry` | "This play could not be loaded." / "Retry" | what a stage says in its steps' place when its recording could not be fetched — offline, or not served — and the one control it then offers, which asks for it again |
+| `stage_full_screen` / `stage_exit_full_screen` | "Full screen" / "Exit full screen" | the button in a stage's header that shows the stage over the reader's whole screen, and the same button while it does, which returns it to its place |
 | `store_credit_apple` / `store_credit_google` | none: nokre writes no default, and one an app does not say is not shown | the credit line ending a screen that shows a [`store_badge`](elements.md#the-credit-line), each the vendor's own legal line |
 | `caption_press`, `caption_long_press`, `caption_scroll_to`, `caption_type`, `caption_type_secret`, `caption_submit`, `caption_clear`, `caption_replace`, `caption_replace_secret`, `caption_select_range`, `caption_drag_range`, `caption_choose`, `caption_pick`, `caption_swap`, `caption_turn_to`, `caption_turn_by`, `caption_go_to` | "Press $1", "Type $1 into $2", "Select $1 to $2 in $3", … | a film's captions and a recorded play's steps, one per driver verb ([testing.md](testing.md#a-scenario-as-a-film)). `$1`–`$3` stand where the names and numbers go, in the language's own order; a catalog's pattern that drops, repeats or invents one does not build |
 
@@ -595,11 +596,12 @@ plus the field camel-cased at its underscores:
 | `stage_play` / `stage_pause` | `chromeStagePlay` / `chromeStagePause` | an app that shows a play (`AppOptions.shows`) |
 | `stage_previous` / `stage_next` | `chromeStagePrevious` / `chromeStageNext` | an app that shows a play (`AppOptions.shows`) |
 | `stage_unavailable` / `stage_retry` | `chromeStageUnavailable` / `chromeStageRetry` | an app that shows a play (`AppOptions.shows`) |
+| `stage_full_screen` / `stage_exit_full_screen` | `chromeStageFullScreen` / `chromeStageExitFullScreen` | an app that shows a play (`AppOptions.shows`) |
 | `picture_unavailable` | `chromePictureUnavailable` | an app whose own sources show a picture (`b.picture(` or `.picture =`) |
 | `store_credit_apple` / `store_credit_google` | `chromeStoreCreditApple` / `chromeStoreCreditGoogle` | an app whose own sources show a store badge (`.storeBadge(` or `.store_badge =`) |
 | `caption_press` … `caption_go_to` | `chromeCaptionPress` … `chromeCaptionGoTo` | a build that films or records the app's plays (`addPlays`) |
 
-**A word is asked of an app that can show it.** A stage's four words
+**A word is asked of an app that can show it.** A stage's words
 are asked of an app that shows a play: it can draw a stage, and no other
 app can. The caption patterns are asked of the build that films or
 records the app's own plays, which is where a caption is written; a

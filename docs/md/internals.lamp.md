@@ -84,7 +84,11 @@ room to light things. The ops, in paint order:
    shadow, its contact shadow, its frost, its glass face and rim, then
    its content, whose filled boxes are plates like the page's and which
    no edge lights. The collapsed nav's section list is a card on the
-   dim, not glass.
+   dim, not glass. A stage on the big screen stacks with them and is
+   none of this: its pane is the page's own ground over the whole
+   window, with no dim, shadow or glass, and its plates take only the
+   edges of a sheet or picker standing over it
+   ([stage.md](stage.md), "The big screen").
 
 ### The ground is a void
 

@@ -1144,7 +1144,11 @@ own route table, once per declared medium, at two viewports — the
 example's own and one past `metrics.sheet_max_w`, which is the only
 width the medium is read at at all. Mediums outer, widths inner, and the
 route loop's own `switchTo` is what rebuilds, so no screen is built at
-one size and audited at another.
+one size and audited at another. On every screen it stands, each
+[`stage`](elements.md#stage) is pressed onto the big screen by its own
+control, through the door a tap takes, and the screen is laid out and
+audited again while it is big, then pressed back: the big screen is a
+modal layer no route table lists, and the audit judges it alone.
 
 **What it proves, and what it does not.** For this repository's examples
 the medium axis is a second pass over the same tree, and saying so is
@@ -1484,7 +1488,7 @@ every `zig build test -Dskia`:
 | `tests/capture.zig` | a `DriverApp`-driven app's artifacts, out of a process with no window — and the PNG read back by a decoder that is not the encoder (`-Dskia`, desktop) |
 | `node --check` × 5 | every JavaScript file a web build ships, parsed by the engine that runs it |
 | `tests/web_services.mjs` | the three service legs that exist **only** on the web, executed |
-| `tests/example_screens.zig` | every screen of every example, built and audited through the example's own entry point, once per declared medium at two viewports ([The audit matrix](#the-audit-matrix)) (`-Dskia`, one driver per example) |
+| `tests/example_screens.zig` | every screen of every example, built and audited through the example's own entry point, once per declared medium at two viewports, and again with each stage on it on the big screen ([The audit matrix](#the-audit-matrix)) (`-Dskia`, one driver per example) |
 
 The web one is the least obvious, so it is spelled out below.
 What no gate reaches is still a real list: the native backends of
@@ -1874,6 +1878,12 @@ look through the page's own control, and holds five facts at a phone's
   box the live driver measured, or the gate names the missing
   `lamp_plates` entry. The nav plate's rim is held within 10 over the
   frost beneath it, read with the rim hidden.
+- **The big screen is lit as a page with no chrome.** On the Watch
+  screen with its stage on the big screen, the frame's face, the Play
+  pill's face and top rim and the header's play glyph are held to the
+  library with no edge, and the pane drawn again with the bar's and the
+  chosen plate's numbers taken off the root changes no pixel by more
+  than a byte.
 - **Frost is there.** With the nav plate over the QR code, its pixels
   are at least eight times smoother than the page beneath it, and their
   mean is within 6 of the library's frost of that same page — the

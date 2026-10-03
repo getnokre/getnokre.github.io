@@ -321,6 +321,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   }
 
   function frame() {
+    reportScreen();
     const ptr = nk.nokre_dom_render(wrap);
     const len = nk.nokre_dom_render_len();
     // Two regions, one walk. The host document decided where the
@@ -347,6 +348,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // the function because the two mounts are two hydrations of one
     // frame, and the chrome's would otherwise be the only one.
     hydrating = false;
+    syncBigScreen();
     fetchPlays();
     syncPictures();
     syncTables();
@@ -359,6 +361,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     framed = true;
     syncLamp(painted !== was || painted_screen !== wasScreen);
     playOn();
+    if (find(`.stage[${BIG}]`) && reportScreen()) frame();
   }
 
   // ---- a stage's recording ---------------------------------------
@@ -448,6 +451,60 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
         img.setAttribute("src", url);
       }
     }
+  }
+
+  // ---- the big screen ----------------------------------------------
+  //
+  // A stage on the big screen covers the browser's window, and core lays
+  // it out on the window's size (live.zig's `screen`), where the
+  // viewport it holds is the page's column. The size is the box the
+  // sheet's fixed pane takes, read off the pane while one stands; before
+  // one does, the root's client width, which a classic scrollbar is
+  // outside of, and `innerHeight`, which the dynamic viewport moves. Not
+  // the root's width while one stands: Chrome then answers it without the
+  // gutter the pane keeps. Read before every frame, because a page that
+  // grows a scrollbar changes the width with no resize, and after one
+  // that put a pane up, which is laid out again where the guess was off.
+  let reportedScreen = "";
+  function reportScreen() {
+    const pane = find(`.stage[${BIG}] > .stage-pane`);
+    const w = pane ? pane.clientWidth : root.clientWidth || innerWidth;
+    const h = pane ? pane.clientHeight : innerHeight;
+    if (`${w}x${h}` === reportedScreen) return false;
+    reportedScreen = `${w}x${h}`;
+    nk.nokre_dom_screen(w, h);
+    return true;
+  }
+
+  // The figure keeps its place in the page while its pane stands over
+  // the window: at the height the browser gave it, measured as the
+  // attribute arrives and released as it goes, since core's own page
+  // height can differ from the browser's by a pixel and then everything
+  // beneath would move. It rides the figure's `style` beside the lamp's
+  // numbers (`writeStyle`).
+  //
+  // The page beneath is held still by the sheet (`overflow: hidden` on
+  // the root). Where it had a classic scrollbar, taking it away would
+  // widen the window under the pane by its gutter, so the gutter is kept
+  // while the stage is big; where it had none, keeping one would narrow it.
+  const BIG = "data-big";
+  const heldPlace = new WeakMap(); // figure -> its page height as a declaration
+  let bigGutter = false;
+  let gutterKept = false;
+  function holdPlace(figure, big) {
+    if (!big) {
+      heldPlace.delete(figure);
+      return;
+    }
+    heldPlace.set(figure, `;--stage-held:${figure.getBoundingClientRect().height}px`);
+    bigGutter = innerWidth > root.clientWidth;
+  }
+  function syncBigScreen() {
+    const keep = bigGutter && find(`.stage[${BIG}]`) !== null;
+    if (keep === gutterKept) return;
+    gutterKept = keep;
+    if (keep) root.style.setProperty("scrollbar-gutter", "stable");
+    else root.style.removeProperty("scrollbar-gutter");
   }
 
   // A playing stage's clock (shell.h's `wants_ticks`): the browser's
@@ -664,7 +721,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_EDGE_BAR = ["--lamp-edge-bar-left", "--lamp-edge-bar-top", "--lamp-edge-bar-width"];
   const LAMP_EDGE_CHOSEN = ["--lamp-edge-chosen-left", "--lamp-edge-chosen-top", "--lamp-edge-chosen-width"];
   const LAMP_EDGE_SHEET = ["--lamp-edge-sheet-left", "--lamp-edge-sheet-top", "--lamp-edge-sheet-width"];
-  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .field-box.select > .icon, .dial-step > .icon';
+  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .stage-frame > .stage-header > button > .icon, .field-box.select > .icon, .dial-step > .icon';
   const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
@@ -685,8 +742,16 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   let lampDirty = true;
   let framed = false;
 
+  // What this driver appends to an element's style: a big stage's held
+  // place and the lamp's numbers.
+  function owned(el) {
+    const place = heldPlace.get(el);
+    const lamp = lampOwn.get(el);
+    return place === undefined && lamp === undefined ? undefined : (place ?? "") + (lamp ?? "");
+  }
+
   function writeStyle(el, markup) {
-    const own = lampOwn.get(el);
+    const own = owned(el);
     const want = own === undefined ? markup : (markup ?? "") + own;
     if (want === null) {
       if (el.hasAttribute("style")) el.removeAttribute("style");
@@ -697,7 +762,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // the declarations appended here, and null for no attribute.
   function markupStyle(el) {
     const style = el.getAttribute("style");
-    const own = lampOwn.get(el);
+    const own = owned(el);
     if (own === undefined || style === null || !style.endsWith(own)) return style;
     return style === own ? null : style.slice(0, style.length - own.length);
   }
@@ -919,6 +984,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       if (a.data !== b.data) a.data = b.data;
       return;
     }
+    if (a.nodeName === "FIGURE" && a.hasAttribute(BIG) !== b.hasAttribute(BIG)) holdPlace(a, b.hasAttribute(BIG));
     for (const attr of [...a.attributes]) {
       if (attr.name === "style") continue;
       if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name) && !pictureOwns(b, attr.name)) a.removeAttribute(attr.name);

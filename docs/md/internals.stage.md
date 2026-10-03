@@ -82,6 +82,60 @@ when the shot's scene, its aim (the target's scene and place among
 it), the width, the height or the look changes, and a resolved point is kept
 under the scene as it stood, at the size.
 
+## The big screen
+
+A stage on the big screen is the same node, never moved or copied:
+`Stage.played.big` is set by `stage.openBig` and cleared by
+`stage.closeBig`, and the play, its player and its controls are the
+ones it has in the page. Its one node has two boxes: the page keeps the
+stage's slot at its page height, so nothing beside it moves, and the
+layer stands over the whole screen. The screen is the viewport, or
+`App.staging.screen` where a substrate's viewport is narrower than the
+reader's window (`layout.AppFacts.stage_screen`): the web's, whose
+viewport is the page's column ([dom-substrate.md](dom-substrate.md#a-stage-on-the-big-screen)
+has how the browser presents it).
+`layout.bigStageGeometry` is the rule: the stage's rect is the screen;
+the frame stands the page's padding in from its edges and the window
+is as wide as that leaves; the controls stand under the frame from the
+window's leading edge and end the padding above `safe_bottom`; the
+window takes the height left, with no floor, since a pane cannot
+scroll, so a screen too short for it has a window of nothing and no
+scene stands. These are screen points, written by the last pass of
+layout (`placeBigStage`) after the page, its rows, a desk's regions
+and the sheet have placed everything, and the window's shift passes
+over them. Its role stays content, so a big
+stage is a modal layer by state, not by role: `layout.topModalLayer`
+ranks it under the sheet — over it when the stage stands in that
+sheet, so Esc closes the big screen first — and over the notices
+pane. Everything that takes the layer from there — the focus scope,
+Esc, a press outside it, the root scroll's and the edge Back's gates,
+the driver's reachable walk, the audit's jurisdiction — learned the big
+stage by that one change. What sorts the page from what floats over it
+by role does not, so each such place asks `layout.inBigStage` (or
+`bigStage`) beside `Role.isChromeLayer`: hit clipping
+(`input.clippedRect`), the screen column's cut and the window's reveal
+(`input.inChrome`), the reveal walk (`input.RevealWalk.next`), the
+window's shift (`App.shiftWindow`) and the renderer's page pass. A new
+place that partitions by role asks too, or a big stage is page there.
+The notices pane does not expand while a stage is big
+(`notices.openNoticesPane`): it ranks under it, and a substrate that
+paints chrome last would stand it over it. It has no scrim: a press
+beside it does nothing, and Esc or its control closes it. Closing reveals nothing, so the page
+beneath stands where it stood. A rebuild makes the node again at
+rest, so a navigation or a reload takes a stage off the big screen by
+itself.
+
+The renderer draws it as a layer in `topModalLayer`'s order
+(`renderer.drawBigStage`): the page's pass skips the stage, leaving
+its slot empty, and after the bar, the banner and the notices pane the
+pane is filled with the page's own ground through `safe_bottom` and
+`drawStage` draws the stage on it, the one drawing a stage has, at its
+screen boxes and under none of the page's clips; a sheet and a picker
+follow, unless the stage stands in that sheet. Under lamp dark the
+pane's plates take only the edges of the layers drawn over it
+(`LampFrame.over_big_screen`), never the bar's or the banner's, which
+it covers.
+
 ## Time
 
 Core keeps no clock. `stage.wantsTicks` answers whether a stage plays,

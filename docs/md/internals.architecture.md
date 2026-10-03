@@ -59,7 +59,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
 | [src/core/accessibility_toggles.zig](../../src/core/accessibility_toggles.zig) | the rows of `accessibility_toggles`: the reader's Increase Contrast and Reduce Transparency as `toggle`s nokre installs, keeps in step with the look, the medium and the words, and answers the press of ([../accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
 | [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control, the count it says, and its sheet |
-| [src/core/stage.zig](../../src/core/stage.zig) | the `stage`'s runtime: a player per node, its controls, stepping, the shell's ticks, Reduce Motion ([stage.md](stage.md)) |
+| [src/core/stage.zig](../../src/core/stage.zig) | the `stage`'s runtime: a player per node, its controls, stepping, the big screen's doors, the shell's ticks, Reduce Motion ([stage.md](stage.md)) |
 | [src/core/recorded_play.zig](../../src/core/recorded_play.zig) | a recorded play: the format, its stamp, and standing a scene up in a scene app ([stage.md](stage.md)) |
 | [src/core/shown_plays.zig](../../src/core/shown_plays.zig) | the plays an app's build declares it shows, and their embedded recordings |
 | [src/core/timeline.zig](../../src/core/timeline.zig) / [place.zig](../../src/core/place.zig) | a play's timeline, as data, and a hand's place on a node — read by a film and by a stage |

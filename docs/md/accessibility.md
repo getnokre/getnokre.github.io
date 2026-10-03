@@ -58,8 +58,8 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `ranking` control (framework) | `button` | Undo, Start over or Done by the framework's word, activatable, never a focus stop, present only while offered; edit's Start over too, where the app wired it |
 | `ranking` while picking | — | the prompt and the app's `picking_hint` as `static_text`; the choices as an unnamed `list` of `list_item`s named by their words, whose rank is the list's own position; each pool row a `button` named by its words, with no rank; the controls as above; and a polite `status` saying the state that now holds — the last choice with its rank, or the first prompt when none is chosen |
 | `dial` | `spin_button` | the label as the name, or the words of the node it is `named_by`; the reading its plate draws as value — the number in the app's own digits, written by layout — and the same figures as a `range` (min, max, now, step); focused; `disabled`. The adjustable role, with the increment and decrement actions behind it on every backend. Both step buttons are children of their own (below) |
-| `stage` | `figure` | the label as the name, or the words of the node it is `named_by`; the step it stands on as the description. One node whatever its window draws: nothing of the recorded screen enters the tree |
-| `stage` control (framework) | `button` | named by the framework ("Previous step" / "Play" or "Pause" / "Next step" in English — [localization.md](localization.md#the-frameworks-own-words)); Previous `disabled` on the first step and Next on the last, playing or not. No Play under Reduce Motion |
+| `stage` | `figure` | the label as the name, or the words of the node it is `named_by`; the step it stands on as the description; modal while it stands on the big screen. One node whatever its window draws: nothing of the recorded screen enters the tree |
+| `stage` control (framework) | `button` | named by the framework ("Full screen" or "Exit full screen" / "Previous step" / "Play" or "Pause" / "Next step" in English, the first a glyph in the frame's header with no pressed state, since its word changes — [localization.md](localization.md#the-frameworks-own-words)); Previous `disabled` on the first step and Next on the last, playing or not. No Play under Reduce Motion |
 | `dial` step (framework) | `button` | named by the framework ("Increase" / "Decrease" in English — [localization.md](localization.md#the-frameworks-own-words)), activatable, never a focus stop; `disabled` at the end of the range, where the plate beside it is empty |
 | `select` | `combo_box` | the label as the name, or the words of the node it is `named_by`; selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
@@ -399,13 +399,16 @@ not focusable itself but contributes one stop per link, in span order —
 so a link inside prose is reached by Tab like any other control, and a
 focus target is a node plus an optional span index rather than a bare
 node. Traversal is scoped to the
-active layer: normally the whole window, but while a sheet or the notices
-pane is open, only that layer — the background is inert, so there is
+active layer: normally the whole window, but while a sheet, the notices
+pane or a [`stage`](elements.md#stage) on the big screen is open, only
+that layer — the background is inert, so there is
 nothing outside the
 scope to reach. This is not a focus trap in the WCAG 2.1.2 sense: Esc
-always dismisses the sheet on top (or minimizes the pane), and focus
+always dismisses the sheet on top (or minimizes the pane, or takes the
+stage back to its page), and focus
 returns to the element that opened it — into the sheet it covered, by
-name, when sheets are stacked. The focus indicator — one 2px `ink`
+name, when sheets are stacked; for the stage, the control that took it
+big, which says **Full screen** again. The focus indicator — one 2px `ink`
 stroke, either standing 2px
 clear of the element or taking over the outline the element already
 draws, never both at once — comes from the renderer, identically on
@@ -669,8 +672,8 @@ fails on:
   as soon as each button states its own `accessible_name`, and two
   buttons whose visible words differ still collide if their names are
   equal. Judged within the active
-  layer only: everything behind an open sheet, picker, or notices pane
-  is inert and cannot collide with what is in front of it — and the
+  layer only: everything behind an open sheet, picker, notices pane or
+  stage on the big screen is inert and cannot collide with what is in front of it — and the
   audit re-runs when the layer closes, catching a pair the moment both
   are live
 - `unlabeled_interactive` — a label emptied by mutation after append
