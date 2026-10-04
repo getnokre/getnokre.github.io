@@ -53,12 +53,16 @@ its page ground, lamp and frost know only the window. Marks resolve
 against the scene as laid out: a place is a recorded ordinal and
 thousandths of that node's box, looked up through the ordinal table the
 restore answered, which chrome the host's layout adds (a folded row's
-`more`) cannot shift. The window's anchor alone can leave the place a
+`more`) cannot shift. On a ranking a place also names the stop the hand
+was on (`layout.RankingStop`), and its thousandths are of that stop's
+box: the ranking lays its rows and controls out anew at every width,
+so a hand on a row or a control stays on it, and a stop the scene does
+not stand resolves to nothing. The window's anchor alone can leave the place a
 hand is about to act on outside a window shorter or narrower than the
 recording's, so a shot whose mark is on a node of the scene it draws
 stands that scene brought to it, by the scroll the driver made before
 the act (`input.actRevealWalk`, innermost region first, on a ranking
-the stop under the place): where the play was recorded that scroll is
+the place's stop): where the play was recorded that scroll is
 already made and nothing moves. The bar the recording emphasized stays
 the one drawn. A step stands on one target from its first shot to its
 rest (`stage.aimsOf`, read once beside the rests): a shot with no mark
