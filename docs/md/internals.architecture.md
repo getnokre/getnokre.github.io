@@ -58,6 +58,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/desk.zig](../../src/core/desk.zig) | a desk's own chrome: the region switcher a window too narrow to stand the band offers instead ([../elements.md](../elements.md)) |
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
 | [src/core/accessibility_toggles.zig](../../src/core/accessibility_toggles.zig) | the rows of `accessibility_toggles`: the reader's Increase Contrast and Reduce Transparency as `toggle`s nokre installs, keeps in step with the look, the medium and the words, and answers the press of ([../accessibility.md](../accessibility.md#increase-contrast-and-reduce-transparency)) |
+| [src/core/reach.zig](../../src/core/reach.zig) | what stands where and whether a hand can reach it: the locator walk (topmost layer, folded region, folded control, stand-in), a row's More, a ranking's stop, a hidden region's chip — asked by the driver's ladders and the stage's player alike, dispatching nothing |
 | [src/core/overflow.zig](../../src/core/overflow.zig) | the folded tail of an overflowing row of actions: the `more` control, the count it says, and its sheet |
 | [src/core/stage.zig](../../src/core/stage.zig) | the `stage`'s runtime: a player per node, its controls, stepping, the big screen's doors, the shell's ticks, Reduce Motion ([stage.md](stage.md)) |
 | [src/core/recorded_play.zig](../../src/core/recorded_play.zig) | a recorded play: the format, its stamp, and standing a scene up in a scene app ([stage.md](stage.md)) |

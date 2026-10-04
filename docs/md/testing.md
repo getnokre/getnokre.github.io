@@ -1874,7 +1874,7 @@ look through the page's own control, and holds five facts at a phone's
   read where they cover a pixel whole, found by drawing each once in
   plain white, their brightest stroke within 12. Then the Details
   screen, reached through the page's own link: a tile led by the app's
-  mark, its well's face and its lit mark. Every one of them must be a
+  mark, its well's face and rims and its lit mark. Every one of them must be a
   box the live driver measured, or the gate names the missing
   `lamp_plates` entry. The nav plate's rim is held within 10 over the
   frost beneath it, read with the rim hidden.
@@ -1906,12 +1906,11 @@ the gate stood on the home screen alone, whose tiles lead with icons,
 and a box no entry names is drawn by depth's rules, which the gate
 does not look at under lamp. The tolerances are measured, and each
 says why it is not zero: the web joins a rim's lights with `lighten`
-where native sums them (4 at worst, on a filled pill's lit edge),
+where native sums them (5 at worst, on a tile mark's well's far edge),
 composites a glass
-rim's specular over the lamp's white (8, on a nav plate's top edge),
+rim's specular over the lamp's white (6, on a nav plate's top edge),
 and reads the plate's own shadows beneath the frost as one factor (4.6
-on mean). A tile's well — the icon's and the mark's alike — draws its
-rim 9 to 24 bytes over the library's, so its face alone is held. A
+on mean). A
 glyph is lit over its em square on the web, since CSS has no ink box
 to read, and over its ink box natively; the gate holds the
 web to the library over the em square and prints what the ink box
@@ -2168,11 +2167,17 @@ The rules the set follows, each of them a decision:
   and then acts on it where it stands; for an action its row folded
   away, the target is the row's More, and for a ranking verb the row
   or control it acts on, not the whole column, which may be taller
-  than the window. In a check and in a play alike,
+  than the window; for `selectOption` the target is the option it
+  chooses, and a segmented control's chip is brought into its own
+  track first, the innermost scroll of all. In a check and in a play alike,
   so the two end in one state; a play films the scroll
   ([below](#a-scenario-as-a-film)). A target no hand can reach — under
-  an open sheet, or in a region the desk is not showing — is not
-  scrolled to, and the verb refuses it by name as it always did. The
+  an open sheet — is not scrolled to, and the verb refuses it by name
+  as it always did. A target in a region a narrow desk is not showing
+  is reached first by switching to that region through the switcher,
+  as a reader does, so a scenario names no region and one scenario
+  acts at every width; a film shows the chip's press and the target's
+  as one step. The
   harness's verbs make the same scroll from the same place
   (`ladder.approach`), so a check ends where a driver does: two tiers,
   one rule.
@@ -2816,7 +2821,13 @@ disc a fingertip wide, half its pixels the app's — holds for the press
 (longer for a long press), and lifts, all over the screen as it stood
 before the press, so a viewer sees the finger land on what was pressed
 and the screen the press produced appears with no hand on it; nothing
-travels between steps.
+travels between steps. A press on an action its row folded away is
+two presses in one step, under its one caption: the finger lands on
+the row's More, the sheet that opens appears, the finger lands on the
+action the sheet restates, and then the result. `goTab` through a nav
+collapsed to its chip is the same: the finger lands on the chip, the
+picker appears, already scrolled to the destination's row where the
+list is taller than its window, and the finger lands on that row.
 
 **Gestures are real frames.** A `reveal` in a film is shown as the
 scroll it is: the window moved by the very function the app's reveal
@@ -2893,7 +2904,10 @@ that. The kitchen sink's own three — a ranking by finger, a sheet, a
 long page and a select at a desktop's size, and the ranking as a store film — and
 a Persian ballot proving right-to-left captions (`tests/theatre_fa/`)
 are filmed on every `zig build test -Dskia`, and written out by
-`zig build plays -Dskia`.
+`zig build plays -Dskia`. So is the support console's
+(`examples/support_console/plays.zig`): one scenario acted at a phone's
+size and at a desktop's, naming no region, so a fold the driver cannot
+reach through fails the gate.
 
 ### A play's device
 
