@@ -3608,7 +3608,10 @@ words stand in the frame's foot, in their own direction, with room kept
 for the longest so a step never moves the page, and nokre's controls
 under the frame, real buttons in the app's words: **Previous step**, **Play**
 and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
-`stage_next`). Previous and Next rest on each step's last screen;
+`stage_next`). Each is heard as its word and then the stage's name
+("Play, How to open a ballot", [accessibility.md](accessibility.md#derivation)),
+so two stages on one page are told apart by their names, and must have
+different ones. Previous and Next rest on each step's last screen;
 Previous is on wherever a step stands before the current one and Next
 wherever one stands after, playing or not, and either pressed while
 the play runs pauses it and steps. Play

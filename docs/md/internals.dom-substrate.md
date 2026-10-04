@@ -1939,9 +1939,10 @@ lamp adds out of a box's padding without moving a child
 over the border box, joined by `background-blend-mode: lighten`, each
 capped at the rim cap on its own, so the cap holds by construction.
 The lamp's layer, nine stops about the lamp, carries the face's
-darkening too. The specular and each chrome edge carry the lamp's own
-light where they stand, faded out as their own light fades, which is
-how layers joined by the brightest come near native's sum. The chrome
+darkening too. Each ring of the specular carries the lamp's own light at
+that ring's farthest from the lamp, and each chrome edge the lamp's
+where it stands, faded out as their own light fades, which is how
+layers joined by the brightest come near native's sum. The chrome
 edges light only plates on the page.
 
 A big stage's pane is on the page for this, so the edge of a sheet or
@@ -2007,7 +2008,7 @@ Chrome.
 | Effect | On the web, and by how much |
 | --- | --- |
 | Rim width | one CSS pixel, not one device pixel |
-| Joining a rim's lights | the brightest, with the lamp's light folded into each, not the sum: about 0.7 to 0.8 bytes off on unlit rims, about 4 where the nav lights them, 7 on a field's bottom edge under the lamp |
+| Joining a rim's lights | the brightest, with the lamp's light folded into each, not the sum: about 0.7 to 0.8 bytes off on unlit rims, about 4 where the nav lights them, 4 on a filled pill's lit edge |
 | The nav's light on the page | the bar lights rims as one edge and the chosen plate as a second, joined by the brighter: never brighter than native near the nav, and the gaps between plates are lit where native dims them |
 | Rounding | no dither: bands about five times longer than native's |
 | Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |

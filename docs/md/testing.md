@@ -1864,8 +1864,8 @@ look through the page's own control, and holds five facts at a phone's
 - **Nothing moved.** Every element's box is the same with every
   `:root[data-nokre-theme="lamp"]` rule deleted from the live sheet, at
   rest and scrolled.
-- **The drawing is the library's.** A card, a field, a meter's track
-  and fill and a switch off and on are each scrolled to a place in the
+- **The drawing is the library's.** A card, a field, a filled pill, a
+  meter's track and fill and a switch off and on are each scrolled to a place in the
   window and drawn alone — every other element hidden, which moves
   nothing, so no neighbour's shadow or child's text is in the pixels —
   and read against the reference at the same device pixels: faces within
@@ -1880,7 +1880,7 @@ look through the page's own control, and holds five facts at a phone's
   frost beneath it, read with the rim hidden.
 - **The big screen is lit as a page with no chrome.** On the Watch
   screen with its stage on the big screen, the frame's face, the Play
-  pill's face and top rim and the header's play glyph are held to the
+  pill's face and rims and the header's play glyph are held to the
   library with no edge, and the pane drawn again with the bar's and the
   chosen plate's numbers taken off the root changes no pixel by more
   than a byte.
@@ -1906,8 +1906,8 @@ the gate stood on the home screen alone, whose tiles lead with icons,
 and a box no entry names is drawn by depth's rules, which the gate
 does not look at under lamp. The tolerances are measured, and each
 says why it is not zero: the web joins a rim's lights with `lighten`
-where native sums them (7 at worst, on a field's bottom edge straight
-under the lamp), composites a glass
+where native sums them (4 at worst, on a filled pill's lit edge),
+composites a glass
 rim's specular over the lamp's white (8, on a nav plate's top edge),
 and reads the plate's own shadows beneath the frost as one factor (4.6
 on mean). A tile's well — the icon's and the mark's alike — draws its
