@@ -2964,7 +2964,11 @@ An act's step comes to the screen with the work it began, a control in
 progress, and the wait after it to the screen the work landed on: the
 same two in every take and at every size. On a thread, the act would
 come to whichever of the two the thread had reached when the step was
-taken (`tests/plays_settle`).
+taken (`tests/plays_settle`). A wait that writes no step of its own —
+`expectRoute`, `expectNotified`, an acting verb's wait for its target —
+still lets the work land: a screen it changes is shown as a further
+result of the step standing, before the next act or said line begins
+on it, or as the film ends.
 
 **The device already speaks the language being recorded when `prepare`
 runs.** A play is recorded once per language the app declares

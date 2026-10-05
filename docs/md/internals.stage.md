@@ -35,8 +35,9 @@ whatever moved to it. Icon names come first after the stamp, so the
 build's gathering tool, which links no nokre, can read them.
 
 Beside the shots a recording keeps its steps (`recorded_play.Step`),
-one per step the player counts (`stage.restsOf`): the opening, a said
-line, or an act, each with the waits after it under its words. An act's
+one per step the player counts, one per run of shots under one
+caption: the opening, a said line, or an act, each with the waits
+after it under its words. An act's
 step is what the scenario named, not how it was reached: the gesture,
 the target and a pair's second place as `reach.Target` parts on the
 app's own nodes, and a drag's anchor — heard from the director before
@@ -50,8 +51,9 @@ scenes by number: `before`, the scene standing when the intent was
 given; `during`, every state the act made in hand, each keystroke
 included where the shots show one in two; and `after`, the act's
 result then each wait's, with how the router moved to it, read off its
-stack. The player plays the shots, not the steps, so the scenes a
-reach passes through stay recorded for them.
+stack. The player plays each step cut again at its own size ("Cutting
+a step"); the shots and the scenes a reach passes through stay recorded
+for the test that holds a cut equal to them at the acted size.
 
 The codec is generic over the element set, and so is the stamp's
 digest (`shapeDigest`): a field added anywhere in `Element`,
@@ -80,55 +82,24 @@ The renderer lays it out at the stage's window size, width and height
 both, and draws it
 through the canvas's window pair (`openWindow`/`closeWindow`, a CPU
 raster of its own composited pixel for pixel, on a GPU frame too), so
-its page ground, lamp and frost know only the window. Marks resolve
-against the scene as laid out: a place is a recorded ordinal and
-thousandths of that node's box, looked up through the ordinal table the
-restore answered, which chrome the host's layout adds (a folded row's
-`more`) cannot shift. On a ranking a place also names the stop the hand
-was on (`layout.RankingStop`), and its thousandths are of that stop's
-box: the ranking lays its rows and controls out anew at every width,
-so a hand on a row or a control stays on it, and a stop the scene does
-not stand resolves to nothing. The window's anchor alone can leave the place a
-hand is about to act on outside a window shorter or narrower than the
-recording's, so a shot whose mark is on a node of the scene it draws
-stands that scene brought to it, by the scroll the driver made before
-the act (`input.actRevealWalk`, innermost region first, on a ranking
-the place's stop): where the play was recorded that scroll is
-already made and nothing moves. The bar the recording emphasized stays
-the one drawn. A step is a run of shots saying one caption, and may
-put a hand down more than once: a folded action's More, then the action
-on the sheet it opened, or a region's chip, then the target in the
-region it showed (`timeline.Timeline.follow`), each hand on its own
-scene and the second doing whatever gesture the act's would — a long
-press, a pair, a drag whose every slice is a hand on the field, or a
-scroll. A step stands on its first target from its first shot to its
-rest (`stage.aimsOf`, read once beside the rests): a shot with no mark
-on a node — none, or a swipe on the glass — borrows the next marked
-shot's target in its step, else the last one's. A later hand's scene
-stands carried from the first target, as a rest is below, then brought
-to its own target — each row of a pair to its own stop, each slice of
-a drag to the field — and the shots after it carry from the first target
-alone: the page under the sheet stays where the first hand left it. A scroll that follows
-a press stands every shot from its lead to the rest as a scroll step's
-does, its swipes included, which are on a region it moves or on the
-glass. A step with no hand on
-a node, a scroll to one, stands on the place its scroll's beat keeps
-(`timeline.Beat.at`): the driver tells a scroll's act after its
-slices, so that place is on the scene the last slice left. On the
-target's own scene the place is brought in. On another,
-usually the rest after the act, no place is resolved again, since a
-place is thousandths of a box the act may have grown: the scene stands
-at its own anchor, with the played app's own scroll in it, and is
-scrolled on by as much as the stage scrolled the target's scene to
-bring the place in, so nothing jumps as the result appears. That
-carry needs both scenes on one route and the target's ordinal naming
-an element of one kind on both; otherwise the anchor alone. A spot on
-another scene — a finger lifting from the screen it landed on — is
-resolved on that scene brought to it the same way, which is how it was
-drawn when it landed. Every cache here is exact: a scene stands again
-when the shot's scene, its aim (the target's scene and place among
-it), the width, the height or the look changes, and a resolved point is kept
-under the scene as it stood, at the size.
+its page ground, lamp and frost know only the window.
+
+What stands is a standing of the current step's cut ("Cutting a
+step"): a recorded scene at its recorded anchor, then either as many of
+the step's reach moves made on it as the shot has come to, or brought
+to the step's target. Marks resolve on the standing the cut made them on —
+the shot's own, or for a finger lifting after a swipe the one it
+landed on — by the place's ordinal (`place.Place`), which counts
+neither another platform's store badge nor the rows
+`accessibility_toggles` stands for the look, so a hand on a host in any
+look is on the node the cut named. A place on a ranking's stop is
+thousandths of that stop's box (`layout.RankingStop`): the ranking lays
+its rows and controls out anew at every width, so a hand on a row or a
+control stays on it. Every cache here is exact: the cuts are kept per
+step under the window's size and the dress, and all cleared, their
+arena emptied with its capacity kept, when either changes; the scene
+stands again when the step or the standing changes; a resolved point is
+kept under the step and the spot, and cleared with the cuts.
 
 ## Cutting a step
 
@@ -137,15 +108,31 @@ named, at any size: its `before` scene stood in the scene app, the
 intent rebuilt on it (`appNode` for the target and `then`, the gesture,
 the anchor, the caption's words), and `director.show` walked with
 `reach.make` as its executor into a timeline started at that scene's
-number. The act itself is never made: a typed run's keystrokes are one
-`between` per `during` scene, a drag's hand is retraced across its
-`during` scenes from the anchor's caret to the head's in even shares,
-as the driver moved it, and each result is one `step` onto its recorded
-scene. What a cut shot draws is a `Standing`: a recorded scene and how
-many of the step's moves are made on it, each slice of a scroll one,
-which only the step's `before` has. Standing one walks the same moves
-again, so with the step, the size and the dress it is the whole key of
-what stands, and a cache under it is exact.
+number. The plan made on the scene at this size is the step's reach: a
+scroll only where the target stands out of the window, a row's More
+only where this layout folds the row, a region's chip only where the
+desk hides the target's region. The act itself is never made: a typed
+run's keystrokes are one `between` per `during` scene, a drag's hand is
+retraced across its `during` scenes from the anchor's caret to the
+head's in even shares, as the driver moved it, and each result is one
+`step` onto its recorded scene. What a cut shot draws is a `Standing`:
+a recorded scene and how many of the step's moves are made on it, each
+slice of a scroll one, which only the step's `before` has; or a scene
+the act made in hand or came to, aimed: brought to the step's target by
+the reveal the driver acts after, where it still holds that target on
+the same route (`stage_cut.Standing` has the rule), so a window a reach
+scrolled does not jump back as the result appears. Standing one walks
+the same moves again, so with the step, the size and the dress it is
+the whole key of what stands, and a cache under it is exact.
+
+A step whose target the plan refuses on its scene is shown unreached
+(`Cutter.unreached`): its words over its `before` scene, then each
+result, with no hand — what a reader under Reduce Motion is shown of
+any step. It is never shown as the recording's own moves, which would
+be a second way to show one step. Two kinds of step take it today: a
+nav's destination, which a scene's empty roster refuses, and, on a desk
+acted wide and shown narrow, a target in a region the scene holds no
+switcher for.
 
 At the size a play was acted at, a cut is held equal to the step's
 recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
@@ -222,6 +209,19 @@ shell.h is the contract); the web runs animation frames while
 timeline's rate, with the remainder carried in thousandths of a frame,
 and a late tick counts at most `stage.max_tick_ms`. A frame is owed only
 where the shot changed.
+
+Where a stage stands is a step, the recording's, and a shot inside
+that step's cut, or none for the step's rest, its cut's last shot
+(`Stage.played`). The count is one per step, the same at every size.
+Previous and Next stop on rests; Next mid-step finishes the step. Play
+runs through a step's shots and into the next step's, cut as it is
+entered. A stage at rest, a page written at build time included, shows
+its step's rest with no tick: the first step's, cut when it is first
+drawn. A shot index means nothing in a cut made at another size or in
+another dress, so when the window changes — the big screen opening or
+closing, a reflow — or the dress does, a stage at rest or paused stands
+on its step's rest at the new size, and a playing one plays its step
+again from the first shot.
 
 ## Loading
 

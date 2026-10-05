@@ -3578,12 +3578,14 @@ this app's own size, and a window narrower or wider than the played
 app's reflows them exactly as the played app would at that width. What
 runs past the window's bottom is clipped there, at the scroll the
 recording stood at (kept as the node at the window's top, so a reflowed
-screen still shows the part it showed), brought on as far as a step
-needs to show what it acts on. It is drawn in this app's look and
+screen still shows the part it showed). It is drawn in this app's look and
 appearance, on a window of its own — its page, its lamp and its frost
 know only it. Over it stands one hand, as in a film: a fingertip where
-each press lands, at every size, and never a pointer
-([testing.md](testing.md#a-scenario-as-a-film)).
+each press lands, and never a pointer
+([testing.md](testing.md#a-scenario-as-a-film)). A play is shown as it
+would be reached at the reader's size, not as it was at the size it was
+recorded: a step scrolls only where its target stands out of this
+window, and opens a row's More only where this layout folds the row.
 
 **A titled frame.** The window stands in a frame with rounded corners,
 edged in the look's rule and parted by a rule from its two ends: above
@@ -3611,7 +3613,9 @@ and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
 `stage_next`). Each is heard as its word and then the stage's name
 ("Play, How to open a ballot", [accessibility.md](accessibility.md#derivation)),
 so two stages on one page are told apart by their names, and must have
-different ones. Previous and Next rest on each step's last screen;
+different ones. A play counts the same steps at every size, the
+moves a step takes to reach its target its own. Previous and Next rest
+on each step's last screen;
 Previous is on wherever a step stands before the current one and Next
 wherever one stands after, playing or not, and either pressed while
 the play runs pauses it and steps. Play
