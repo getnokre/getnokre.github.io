@@ -3586,6 +3586,9 @@ each press lands, and never a pointer
 would be reached at the reader's size, not as it was at the size it was
 recorded: a step scrolls only where its target stands out of this
 window, and opens a row's More only where this layout folds the row.
+The played app's [nav](#nav--nav_item) stands as a row or as its chip
+by this window's width on every screen, and a step to a destination
+opens the chip's picker only where it collapses.
 
 **A titled frame.** The window stands in a frame with rounded corners,
 edged in the look's rule and parted by a rule from its two ends: above

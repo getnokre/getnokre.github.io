@@ -25,7 +25,16 @@ replay's cues and a film's come from the same code.
 A scene is the tree — every element whole, in document order, each
 distinct element encoded once in a table and a scene being its nodes'
 parents and rows — and `SceneState`: the facts outside the tree that
-drawing reads. An action is kept as which of its functions were bound,
+drawing reads. The tree holds the `nav` and none of its children, which
+are a row or a chip by the width the played app stood at: the scene
+keeps the nav's roster instead, resolved as its nav drew it
+(`nav.effectiveRoster`: each entry's words in the played app's
+language, its icon, and whether it is the screen's own entry), each
+distinct roster once in `RecordedPlay.rosters`, since an app may change
+its roster mid-play. The screen's own entry keeps its route's name,
+never the reference it was entered with, whose arguments may be secret.
+Its icons are among the recording's. A hand on a nav's child is a place
+on the nav (`place.Place`). An action is kept as which of its functions were bound,
 and comes back bound to a function that does nothing, because drawing
 reads `wired()` and nothing else. A node reference (`named_by`, focus,
 the emphasized bar) is its ordinal. The window's scroll is the node at
@@ -72,6 +81,14 @@ App with no services, no routes and no input — into which
 `recorded_play.stand` restores a scene (`Tree.internal.restore`, past
 the construction rules, since the tree was one the played app built)
 and dresses it in the host's look, appearance, medium and measurer.
+The nav's roster is stood too: its destinations installed as the scene
+app's `nav_items`, the screen's own entry as the title of the one route
+the scene's router stands on, and `nav.syncNavChrome` run, so the nav
+stands as a row or as its chip by the host's width, medium and
+measurer, and its picker (`overlays.openNavPicker`) lists that roster.
+A destination's press is never made on a scene: the act's result is
+the next recorded scene. A recorded picker the nav's chip opened stands
+with no owner, since no scene holds the chip.
 A stand leaves the scene app holding that scene and nothing else:
 each App field is declared stood from the recording, dropped, or kept
 as the scene app's own (`recorded_play.on_stand`, a field left out is a
@@ -129,10 +146,9 @@ A step whose target the plan refuses on its scene is shown unreached
 (`Cutter.unreached`): its words over its `before` scene, then each
 result, with no hand — what a reader under Reduce Motion is shown of
 any step. It is never shown as the recording's own moves, which would
-be a second way to show one step. Two kinds of step take it today: a
-nav's destination, which a scene's empty roster refuses, and, on a desk
-acted wide and shown narrow, a target in a region the scene holds no
-switcher for.
+be a second way to show one step. One kind of step takes it today: on a
+desk acted wide and shown narrow, a target in a region the scene holds
+no switcher for.
 
 At the size a play was acted at, a cut is held equal to the step's
 recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
@@ -141,9 +157,8 @@ recorded scene's tree and state, byte for byte as a recording encodes
 them, and the window's offset. Where a scene holds a picture the
 played app's points (`Place.pt`) are set aside, since a recorded
 picture stands as its box (`layout.pictureRecordedSize`); a stage never
-draws at them. Two kinds of step are named there as differing: a nav
-destination, which a scene's empty roster refuses, and a scroll on a
-page a recorded store badge's box makes longer.
+draws at them. One kind of step is named there as differing: a scroll
+on a page a recorded store badge's box makes longer.
 
 ## The big screen
 
