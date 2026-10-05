@@ -2920,9 +2920,9 @@ long page and a select at a desktop's size, and the ranking as a store film — 
 a Persian ballot proving right-to-left captions (`tests/theatre_fa/`)
 are filmed on every `zig build test -Dskia`, and written out by
 `zig build plays -Dskia`. So is the support console's
-(`examples/support_console/plays.zig`): one scenario acted at a phone's
-size and at a desktop's, naming no region, so a fold the driver cannot
-reach through fails the gate.
+(`examples/support_console/plays.zig`): one scenario naming no region,
+filmed at a phone's size and at a desktop's, where its desk stands
+whole.
 
 ### A play's device
 
@@ -2958,6 +2958,13 @@ pub const plays = [_]nokre.testing.Play{
     .{ .name = "ballot", .scenario = ballot, .prepare = prepare, .before = signIn },
 };
 ```
+
+**A play's workers run on the device's own thread, inside the waits.**
+An act's step comes to the screen with the work it began, a control in
+progress, and the wait after it to the screen the work landed on: the
+same two in every take and at every size. On a thread, the act would
+come to whichever of the two the thread had reached when the step was
+taken (`tests/plays_settle`).
 
 **The device already speaks the language being recorded when `prepare`
 runs.** A play is recorded once per language the app declares
@@ -3019,6 +3026,20 @@ the app's root as `"app"`). An app with no catalog is recorded once, in
 whatever it stands in. A store play is not recorded. Recording links no
 Skia: any build that shows a play makes its recordings, a web build
 included.
+
+**A play is one scenario at every size.** A stage lays a recording out
+at its own width, so the plays step acts each recorded play a second
+time in each language, at a contrasting size — a desktop's 1280×800 for
+a play no wider than a page's column, a phone's 390×844 for a wider one
+— and holds the two runs to one: the same steps under the same words,
+on the same nodes with the same hand, coming to the same motions, every
+screen they began on, typed through and came to the same app tree once
+what nokre lays out by size is set aside, and the nav's same
+destinations. Where
+they part, or where the second run cannot be acted at all, the play is
+refused by name, its language, both sizes and the step: the app builds
+a different screen by size, or the scenario takes a step only one size
+has.
 
 An app shows a play by declaring it — the recordings, from `addPlays`
 on the played app in the same build graph, and the play's name:

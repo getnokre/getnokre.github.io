@@ -19,9 +19,8 @@ moment it exists.
 What the film and the recorder hear of a reach — the scrolls in
 slices, each hand and where it lands — is told by one routine,
 `core/director.zig`, which the driver calls with real input as its
-executor. A stage's player is meant to call it with `reach.make` to
-generate a step's shots at its own size, so a replay's cues and a
-film's come from the same code.
+executor and a cut calls with `reach.make` ("Cutting a step"), so a
+replay's cues and a film's come from the same code.
 
 A scene is the tree — every element whole, in document order, each
 distinct element encoded once in a table and a scene being its nodes'
@@ -43,8 +42,10 @@ the target and a pair's second place as `reach.Target` parts on the
 app's own nodes, and a drag's anchor — heard from the director before
 its first move (`director.Cue.intent`). Its node is an app ordinal
 (`recorded_play.appOrdinal`): document order without the nodes nokre
-adds by size — the nav's children, a narrow desk's switcher, every
-row's More — so it names one node at every size. A step names its
+adds by size or look — the nav's children, a narrow desk's switcher,
+every row's More, the rows of `accessibility_toggles` — so it names
+one node at every size and in every look. A drag keeps its head
+beside its anchor, so its path can be retraced. A step names its
 scenes by number: `before`, the scene standing when the intent was
 given; `during`, every state the act made in hand, each keystroke
 included where the shots show one in two; and `after`, the act's
@@ -128,6 +129,34 @@ drawn when it landed. Every cache here is exact: a scene stands again
 when the shot's scene, its aim (the target's scene and place among
 it), the width, the height or the look changes, and a resolved point is kept
 under the scene as it stood, at the size.
+
+## Cutting a step
+
+`core/stage_cut.zig` makes one step's shots again from what the step
+named, at any size: its `before` scene stood in the scene app, the
+intent rebuilt on it (`appNode` for the target and `then`, the gesture,
+the anchor, the caption's words), and `director.show` walked with
+`reach.make` as its executor into a timeline started at that scene's
+number. The act itself is never made: a typed run's keystrokes are one
+`between` per `during` scene, a drag's hand is retraced across its
+`during` scenes from the anchor's caret to the head's in even shares,
+as the driver moved it, and each result is one `step` onto its recorded
+scene. What a cut shot draws is a `Standing`: a recorded scene and how
+many of the step's moves are made on it, each slice of a scroll one,
+which only the step's `before` has. Standing one walks the same moves
+again, so with the step, the size and the dress it is the whole key of
+what stands, and a cache under it is exact.
+
+At the size a play was acted at, a cut is held equal to the step's
+recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
+same shots, frames, captions and marks, and each shot's standing the
+recorded scene's tree and state, byte for byte as a recording encodes
+them, and the window's offset. Where a scene holds a picture the
+played app's points (`Place.pt`) are set aside, since a recorded
+picture stands as its box (`layout.pictureRecordedSize`); a stage never
+draws at them. Two kinds of step are named there as differing: a nav
+destination, which a scene's empty roster refuses, and a scroll on a
+page a recorded store badge's box makes longer.
 
 ## The big screen
 

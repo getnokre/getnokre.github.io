@@ -129,7 +129,7 @@ worker services by construction — the architecture rule in
 
 | Transport | Where | Send | Wake for delivery |
 | --- | --- | --- | --- |
-| inline | unit tests + harness (`Runtime.mode = .inline_pump`, the test-build default) | direct enqueue, no threads | tests pump explicitly |
+| inline | unit tests + harness (`Runtime.mode = .inline_pump`, the test-build default), and a play's device | direct enqueue, no threads | tests pump explicitly; a driver's waits pump |
 | thread | native | mutex FIFO + condvar (parked at rest) | hop a pump call to the main thread |
 | post | web | serialized buffer, **transferred** (one copy total) | postMessage is already a wake |
 
