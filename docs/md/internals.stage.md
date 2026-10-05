@@ -16,6 +16,13 @@ draws each shot on the app as it stands, the recorder takes the app as
 it stands — each scene once, while it is on screen, which is the only
 moment it exists.
 
+What the film and the recorder hear of a reach — the scrolls in
+slices, each hand and where it lands — is told by one routine,
+`core/director.zig`, which the driver calls with real input as its
+executor. A stage's player is meant to call it with `reach.make` to
+generate a step's shots at its own size, so a replay's cues and a
+film's come from the same code.
+
 A scene is the tree — every element whole, in document order, each
 distinct element encoded once in a table and a scene being its nodes'
 parents and rows — and `SceneState`: the facts outside the tree that

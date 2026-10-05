@@ -945,7 +945,10 @@ expectation can't be met there, a screen reader user can't meet it either.
   the shell's bytes arriving as ordinary text.
 - `expectRoute(route)` — the screen on top ([routing.md](routing.md));
   pair it with `app.router.depth()` when the depth is the point, since
-  a push and a `switchTo` land on the same route
+  a push and a `switchTo` land on the same route. A route's name alone
+  holds under any arguments, a whole reference (`console~c6~billing`)
+  only on itself, and any other string is refused as `NotARoute` rather
+  than compared; `untilRoute` holds the same comparison
 - `expectNavigationRefused(ref, reason)` names a navigation this test
   meant to see refused and **takes the record with it**. A reference
   the router could not honor is written down and the audit fails on it
