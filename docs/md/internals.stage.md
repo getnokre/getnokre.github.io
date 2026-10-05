@@ -35,6 +35,23 @@ scene out with its own width and measurer, where an offset would show
 whatever moved to it. Icon names come first after the stamp, so the
 build's gathering tool, which links no nokre, can read them.
 
+Beside the shots a recording keeps its steps (`recorded_play.Step`),
+one per step the player counts (`stage.restsOf`): the opening, a said
+line, or an act, each with the waits after it under its words. An act's
+step is what the scenario named, not how it was reached: the gesture,
+the target and a pair's second place as `reach.Target` parts on the
+app's own nodes, and a drag's anchor — heard from the director before
+its first move (`director.Cue.intent`). Its node is an app ordinal
+(`recorded_play.appOrdinal`): document order without the nodes nokre
+adds by size — the nav's children, a narrow desk's switcher, every
+row's More — so it names one node at every size. A step names its
+scenes by number: `before`, the scene standing when the intent was
+given; `during`, every state the act made in hand, each keystroke
+included where the shots show one in two; and `after`, the act's
+result then each wait's, with how the router moved to it, read off its
+stack. The player plays the shots, not the steps, so the scenes a
+reach passes through stay recorded for them.
+
 The codec is generic over the element set, and so is the stamp's
 digest (`shapeDigest`): a field added anywhere in `Element`,
 `SceneState` or the timeline's types changes it, and a reader refuses

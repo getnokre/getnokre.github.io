@@ -1143,9 +1143,13 @@ fact.
 **What `tests/example_screens.zig` walks**: every screen of the app's
 own route table, once per declared medium, at two viewports — the
 example's own and one past `metrics.sheet_max_w`, which is the only
-width the medium is read at at all. Mediums outer, widths inner, and the
-route loop's own `switchTo` is what rebuilds, so no screen is built at
-one size and audited at another. On every screen it stands, each
+width the medium is read at at all. The two widths are two apps standing
+at once, mediums outer and routes inner, and the route loop's own
+`switchTo` is what rebuilds, so no screen is built at one size and
+audited at another. Each screen built at the narrower width is then held
+to being the same app tree as the one built at the wider
+(`internal.same_app_tree`), so a builder that read the window fails the
+walk by name. On every screen it stands, each
 [`stage`](elements.md#stage) is pressed onto the big screen by its own
 control, through the door a tap takes, and the screen is laid out and
 audited again while it is big, then pressed back: the big screen is a
