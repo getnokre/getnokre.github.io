@@ -3585,6 +3585,10 @@ each press lands, and never a pointer
 ([testing.md](testing.md#a-scenario-as-a-film)). A play is shown as it
 would be reached at the reader's size, not as it was at the size it was
 recorded: a step scrolls only where its target stands out of this
+window, opens a row's More only where this layout folds the row, and
+on a desk this window cannot stand side by side, switches to the
+region it acts in by that region's chip, whatever width the play was
+acted at.
 window, and opens a row's More only where this layout folds the row.
 The played app's [nav](#nav--nav_item) stands as a row or as its chip
 by this window's width on every screen, and a step to a destination
