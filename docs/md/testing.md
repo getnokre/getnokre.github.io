@@ -194,15 +194,12 @@ step and a re-audit around each; a driver adds a wait in front. The
 ladder itself is written once.
 
 - `press(role, label)` presses a control the way a user would: it
-  scrolls to the control first, as every acting verb of both tiers
-  does ([below](#driverapp-the-harnesss-verbs-over-a-live-app)), then
-  taps it, and presses More-then-the-action where a narrow row folded
-  it away
-  ([elements.md](elements.md#the-folded-tail-more)). Not for text
-  fields — the keyboard fallback's Enter in a field it just focused is
-  a submit, not a focus; that is `typeInto`'s job. `tap`'s other
-  refusals stand: an obscured, disabled, or busy control is still a
-  loud failure, because no fallback reaches one of those.
+  reaches the control first, as every acting verb of both tiers
+  does ([below](#driverapp-the-harnesss-verbs-over-a-live-app)) —
+  scrolled to, and behind More where a narrow row folded it away
+  ([elements.md](elements.md#the-folded-tail-more)) — then taps it.
+  `tap`'s refusals stand: an obscured, disabled, or busy control is
+  still a loud failure, because no reach makes one pressable.
 
   **Where the tap lands.** The middle first, and almost always. When
   something is drawn over the middle the tap moves to the nearest
@@ -227,9 +224,9 @@ ladder itself is written once.
   — and an assertion cannot do it at all, since
   `expectInFrame` asks what the frame about to be taken shows and a
   check that scrolled first would move the screen it was asked about.
-  It refuses a name nothing carries, and refuses a *folded* control
-  loudly, because no amount of scrolling brings one back — that one is
-  `press`'s business.
+  It is an acting verb's reach with no act after it, so it refuses a
+  name nothing carries, and shows a *folded* control the way `press`
+  reaches one: More pressed, and the control in the sheet that opens.
 - `typeInto(label, text)` puts the caret in the named field and types,
   appending like typing does — one codepoint per event, as a keyboard
   delivers them, so a screen that rebuilds in `on_change` is rebuilt
@@ -313,10 +310,11 @@ try t.selectOption("Country", "Japan");    // a select: opens the picker,
 try t.expectValue("Country", "Japan");
 ```
 
-It takes the **keyboard** route for all three, and that is the point: a
-chip scrolled out of an overflowing track and a picker row below the fold
-are both unreachable by a tap at their center, and both are reached by
-stepping, because stepping is what scrolls them into view. Every step
+The option is reached as every verb's target is: a chip scrolled out of
+an overflowing track is brought into the track, and a select's picker is
+opened by a tap on the select, its row brought into the picker's window
+and tapped. A track or a radio group is then stepped to the option by the
+keyboard, one arrow at a time. Every step
 goes through real dispatch and commits like a user's, so a handler
 watching for `on_select` sees exactly what it would in the app — and
 the control is re-found by role and name between steps, so a screen
@@ -2159,28 +2157,30 @@ try d.expectRoute("circles");
 
 The rules the set follows, each of them a decision:
 
-- **An acting verb scrolls to its target first.** A person cannot press
-  what they cannot see, so a verb whose target is not wholly inside the
-  window first makes the scroll `reveal` makes — the smallest that
-  brings it in, scrolling regions innermost first and then the window,
-  into the part of the window the nav or a banner does not cover —
-  and then acts on it where it stands; for an action its row folded
-  away, the target is the row's More, and for a ranking verb the row
-  or control it acts on, not the whole column, which may be taller
-  than the window; for `selectOption` the target is the option it
-  chooses, and a segmented control's chip is brought into its own
-  track first, the innermost scroll of all. In a check and in a play alike,
-  so the two end in one state; a play films the scroll
-  ([below](#a-scenario-as-a-film)). A target no hand can reach — under
-  an open sheet — is not scrolled to, and the verb refuses it by name
-  as it always did. A target in a region a narrow desk is not showing
-  is reached first by switching to that region through the switcher,
-  as a reader does, so a scenario names no region and one scenario
-  acts at every width; a film shows the chip's press and the target's
-  as one step. The
-  harness's verbs make the same scroll from the same place
-  (`ladder.approach`), so a check ends where a driver does: two tiers,
-  one rule.
+- **An acting verb reaches its target first, by one rule.** A scenario
+  names what it acts on and never how to get there: how a hand reaches
+  a target at the size the app stands at is nokre's own chrome and
+  state, so it is nokre's to derive, and there is one rule for it —
+  the reach plan in `core/reach.zig` (`reach.Plan`). Its moves: the
+  region a narrow desk is not showing, chosen on the switcher's chip;
+  the row's More, where a narrow row folded the target away; the
+  collapsed nav's chip, or a select, whose picker then holds the row;
+  and before each press, and before the act, the scroll `reveal`
+  makes — the smallest that brings the control wholly in, scrolling
+  regions innermost first and then the window, into the part of the
+  window the nav or a banner does not cover. For a ranking verb the
+  target is the row or control it acts on, not the whole column, which
+  may be taller than the window; for `selectOption` it is the option,
+  and a segmented control's chip is brought into its own track first.
+  Every verb of both tiers walks the plan through one routine in the
+  testing tier (`ladder.reachTarget`), making each move by real input
+  as a finger does — every press a tap — so a check and a play end in
+  one state, and a play's film shows a finger. A stage replaying a
+  recording makes the same moves through `reach.make`, which leaves
+  the app as those taps leave it, focus and its stood-down ring
+  included; `reach_equivalence_test.zig` holds the two to one
+  standing after every move, with no exception. A target no hand can
+  reach — under an open sheet — is refused by name.
 - **Every acting verb re-audits**, exactly as the harness's do. That is
   what makes driving by accessible name safe: two live controls sharing
   a label fail at the audit rather than silently taking the first.
@@ -2826,8 +2826,11 @@ two presses in one step, under its one caption: the finger lands on
 the row's More, the sheet that opens appears, the finger lands on the
 action the sheet restates, and then the result. `goTab` through a nav
 collapsed to its chip is the same: the finger lands on the chip, the
-picker appears, already scrolled to the destination's row where the
-list is taller than its window, and the finger lands on that row. A
+picker appears, scrolls to the destination's row where the list is
+taller than its window, and the finger lands on that row; and so is
+`selectOption` on a `select`: the finger on the select, then on the
+option's row in its picker. Every press after the first in a step,
+and every scroll between them, is filmed as the first one is. A
 target in a region a narrow desk is not showing is one step too, and
 the second hand does the verb's own gesture on the region the chip
 showed: a press, a long press, a pair's two presses, a drag across a
