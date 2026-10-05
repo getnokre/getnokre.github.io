@@ -714,7 +714,10 @@ fails on:
   would have agreed with itself while the snapshot said nothing. A
   counted slot's value must also be the rank its row draws, so a
   device that outgrew `Ranking.max_options` fails here rather than
-  announcing short
+  announcing short. A device in a region a narrow desk is not showing
+  is not carried at all, and is judged when the switcher shows it, as
+  `unannounced_dial` judges a dial: asked there, the rule would fire at
+  one width and not another
 - `malformed_dial` — a dial mutated out of shape: a floor below zero,
   an inverted or singular range, a value outside it, or a range past
   `Dial.max_digits`. Its label is not this rule's business — a dial is

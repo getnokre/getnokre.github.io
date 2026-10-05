@@ -45,6 +45,12 @@ App with no services, no routes and no input — into which
 `recorded_play.stand` restores a scene (`Tree.internal.restore`, past
 the construction rules, since the tree was one the played app built)
 and dresses it in the host's look, appearance, medium and measurer.
+A stand leaves the scene app holding that scene and nothing else:
+each App field is declared stood from the recording, dropped, or kept
+as the scene app's own (`recorded_play.on_stand`, a field left out is a
+compile error), so a More sheet or picker a made move opened on the
+last scene goes with its tree, while a picker the scene itself holds
+stands with its recorded owner.
 The renderer lays it out at the stage's window size, width and height
 both, and draws it
 through the canvas's window pair (`openWindow`/`closeWindow`, a CPU
