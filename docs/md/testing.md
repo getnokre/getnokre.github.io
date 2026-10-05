@@ -2827,7 +2827,12 @@ the row's More, the sheet that opens appears, the finger lands on the
 action the sheet restates, and then the result. `goTab` through a nav
 collapsed to its chip is the same: the finger lands on the chip, the
 picker appears, already scrolled to the destination's row where the
-list is taller than its window, and the finger lands on that row.
+list is taller than its window, and the finger lands on that row. A
+target in a region a narrow desk is not showing is one step too, and
+the second hand does the verb's own gesture on the region the chip
+showed: a press, a long press, a pair's two presses, a drag across a
+field, or a `reveal`'s swipes — so a scenario has the same steps under
+the same words at every size.
 
 **Gestures are real frames.** A `reveal` in a film is shown as the
 scroll it is: the window moved by the very function the app's reveal

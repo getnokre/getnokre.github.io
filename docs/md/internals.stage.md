@@ -65,15 +65,22 @@ the act (`input.actRevealWalk`, innermost region first, on a ranking
 the place's stop): where the play was recorded that scroll is
 already made and nothing moves. The bar the recording emphasized stays
 the one drawn. A step is a run of shots saying one caption, and may
-press more than once: a folded action's More, then the action on the
-sheet it opened (`timeline.Timeline.follow`), each hand on its own
-scene. A step stands on its first target from its first shot to its
+put a hand down more than once: a folded action's More, then the action
+on the sheet it opened, or a region's chip, then the target in the
+region it showed (`timeline.Timeline.follow`), each hand on its own
+scene and the second doing whatever gesture the act's would — a long
+press, a pair, a drag whose every slice is a hand on the field, or a
+scroll. A step stands on its first target from its first shot to its
 rest (`stage.aimsOf`, read once beside the rests): a shot with no mark
 on a node — none, or a swipe on the glass — borrows the next marked
-shot's target in its step, else the last one's. A later press's scene
+shot's target in its step, else the last one's. A later hand's scene
 stands carried from the first target, as a rest is below, then brought
-to its own target, and the shots after it carry from the first target
-alone: the page under the sheet stays where the first hand left it. A step with no hand on
+to its own target — each row of a pair to its own stop, each slice of
+a drag to the field — and the shots after it carry from the first target
+alone: the page under the sheet stays where the first hand left it. A scroll that follows
+a press stands every shot from its lead to the rest as a scroll step's
+does, its swipes included, which are on a region it moves or on the
+glass. A step with no hand on
 a node, a scroll to one, stands on the place its scroll's beat keeps
 (`timeline.Beat.at`): the driver tells a scroll's act after its
 slices, so that place is on the scene the last slice left. On the
