@@ -1490,6 +1490,29 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     });
   }
 
+  // ---- a scroll names its desk region -------------------------------
+  //
+  // On a canvas a scroll's start names the band region it began in
+  // (docs/routing.md, "The region a desk shows"); here the browser
+  // scrolls and core never sees it, so the start is reported. In the
+  // capture phase because `scroll` does not bubble: a region's inner
+  // scroller is seen on its way down. The page's own scroll targets the
+  // document, which is in no region. Once per burst, closed by the gap
+  // a wheel's is, and again whenever the burst moves to another region.
+  const REGION = ".region";
+  let scrolledRegion = null;
+  let regionScrollIdle = 0;
+  doc.addEventListener("scroll", (e) => {
+    const region = e.target.closest?.(REGION);
+    if (!region || region.dataset.n === undefined) return;
+    clearTimeout(regionScrollIdle);
+    regionScrollIdle = setTimeout(() => { scrolledRegion = null; }, DIAL_IDLE_MS);
+    if (region === scrolledRegion) return;
+    scrolledRegion = region;
+    nk.nokre_dom_region_scrolled(Number(region.dataset.n));
+    frame();
+  }, { capture: true, passive: true });
+
   // Tabbing is the browser's: the markup is the tree, so document
   // order already *is* focus order. What crosses back into wasm is
   // where it landed.

@@ -1280,6 +1280,13 @@ every region still clips and scrolls its own children — and
 [elements.md](../elements.md) names the divergence where a consumer
 reads the rule.
 
+**A scroll names its region, reported by the driver.** The browser
+scrolls the regions, so a scroll never reaches core's input; live.js
+listens for `scroll` on the document in the capture phase (it does not
+bubble), and the first of a burst inside a `.region` hands that
+region's node to `nokre_dom_region_scrolled`, which names it as a
+canvas scroll's start does ([routing.md](../routing.md#the-region-a-desk-shows)).
+
 **The mount tag follows the shape, and a host page owes the same rule.**
 A desk's `main` region *is* the document's `<main>`, so the content
 mount of a desk is a `<div>`; a page has no main region of its own, so
