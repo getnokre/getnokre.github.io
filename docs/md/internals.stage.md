@@ -147,13 +147,18 @@ the anchor, the caption's words), and `director.show` walked with
 number. The plan made on the scene at this size is the step's reach: a
 scroll only where the target stands out of the window, a row's More
 only where this layout folds the row, a region's chip only where the
-desk hides the target's region. The act itself is never made: a typed
+desk hides the target's region. A pair's second target is reached
+like the first, by its own plan (`director.showThen`), on the scene
+the first press armed, which the recording keeps as the step's first
+in-hand scene: a reveal at most, since a pair is one ranking in one
+region. The act itself is never made: a typed
 run's keystrokes are one `between` per `during` scene, a drag's hand is
 retraced across its `during` scenes from the anchor's caret to the
 head's in even shares, as the driver moved it, and each result is one
 `step` onto its recorded scene. What a cut shot draws is a `Standing`:
 a recorded scene and how many of the step's moves are made on it, each
-slice of a scroll one, which only the step's `before` has. Standing one
+slice of a scroll one, which only the step's `before` has, and for a
+pair the scene the first press armed. Standing one
 walks the same moves again, so with the step, the size and the dress it
 is the whole key of what stands, and a cache under it is exact.
 
