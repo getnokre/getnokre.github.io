@@ -10,15 +10,40 @@ normative contract that makes it true.
 
 - All layout happens in integer logical pixels (`i32`). There are no
   fractional coordinates anywhere in the API.
-- HiDPI is an integer scale factor applied as a transform at the raster
-  surface (`Surface.init(w, h, scale)`). A 2× frame is exactly the 1× frame
-  with every logical pixel rendered into a 2×2 block (text re-rasterizes at
-  the larger size but at identical logical metrics — hinting is off).
-- Fractional OS scale factors are rounded to the nearest integer —
-  125% → 1×, 150% → 2× (the Windows shell computes `(dpi + 48) / 96`,
-  and every shell applies the same policy). No shell letterboxes:
-  logical size is the ceiling, and the sub-scale remainder is cropped
-  at the window's edge.
+- There is one scale, `k`: device pixels per layout point, an integer
+  ≥ 1. It is applied as a transform at the raster surface
+  (`Surface.init(w, h, scale)`) and nowhere else, so a 2× frame is
+  exactly the 1× frame with every logical pixel rendered into a 2×2
+  block (text re-rasterizes at the larger size but at identical logical
+  metrics — hinting is off). Core lays out in points and never reads it;
+  `App.pixels_per_point` holds it for what must know the density.
+- `k` comes from one rule, `layout.pixelsPerPoint` (exported to the
+  shells as `nokre_pixels_per_point`), fed the OS's display scale and
+  its text size in percent. Text size is folded into the scale, not a
+  second axis: `k` is the product rounded **up**, never to the nearest,
+  so it is never below the density the OS asks for; a text size below
+  100% counts as 100%; and `k` is capped so the screen's shorter side in
+  points stays at or above `layout.metrics.narrowest_w`, the width every
+  screen is gated to stand at — though the cap never gives up the
+  display's own density. The rule reads the screen's shorter side, not
+  the window's width nor the screen's width as it is turned, so neither a
+  resize nor a rotation changes the text size. The doc comment on the
+  rule has an example per clause.
+- The viewport in points is `ceil(physical / k)`. A larger text size is
+  therefore a narrower viewport that reflows, and a text-size change
+  reaches core as a resize (`App.setViewport`): no builder runs, every
+  scroll offset stands. No shell letterboxes: the logical size is the
+  ceiling, and the sub-scale remainder is cropped at the window's edge.
+- Every shell is on the rule (each shell's section in
+  [platform-shells.md](platform-shells.md) says what it feeds it); none
+  passes a display scale of its own as `k`. Linux reads only Wayland's
+  integer output scale and never fractional-scale-v1: the rule rounds
+  the product up to an integer anyway, so a fractional display scale
+  would only ever reach it as the next integer.
+- A point is therefore not the OS's point once text is enlarged: where
+  `k` differs from the OS's own scale, a shell converts every
+  coordinate it hands core or takes from it by the OS's scale over `k`,
+  at the `k` core is laid out at.
 
 ## Grayscale, thirteen steps, four ramps
 

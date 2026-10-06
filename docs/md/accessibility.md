@@ -513,6 +513,22 @@ each step's screen stands whole. It is not a preference the app can
 override, and there is no row for it in `accessibility_toggles`: the
 setting is the platform's, and the stage is the only thing it changes.
 
+## Text size
+
+The platform's text size is not a setting nokre carries: it is folded
+into the display scale, one integer of device pixels per point, so a
+larger text size is a narrower viewport the screen reflows into
+([pixel-model.md](internals/pixel-model.md), "Logical pixels, integer
+scale"). WCAG 1.4.10 (Reflow) holds because every screen is gated to
+stand at `layout.metrics.narrowest_w`, 220 points, below the 320 it asks
+for. WCAG 1.4.4 (Resize Text, 200%) holds on the web through the
+browser's zoom, and natively wherever the scale can double without the
+viewport falling under that width. Where it cannot, the scale stops
+there: a 3× phone 390 points wide reaches 5 pixels per point, about
+167% text, and no further. Steps are whole pixels, so a phone gets the
+few that its width allows (at 3×: 133%, 167%), not every percent the
+setting offers.
+
 ## Enforcement
 
 nokre's position is that a consumer should never face an accessibility

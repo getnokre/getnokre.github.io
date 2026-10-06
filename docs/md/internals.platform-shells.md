@@ -599,6 +599,12 @@ above, beside the other shells'. Its presenter and its scrolling:
   the transaction that resizes the window. Raster is still on the main
   thread, inside the tick. `NOKRE_FRAME_LOG=1` prints each frame's
   raster, present (copy and commit) and interval to stderr.
+- **The scale.** Each frame asks `nokre_pixels_per_point`
+  ([pixel-model.md](pixel-model.md)) over the window's
+  `backingScaleFactor` as a percent, the shorter side of its screen's
+  frame in pixels, and a text size of 100, since macOS has none an app
+  is asked to honour — which answers the backing scale itself, so a
+  point stays an AppKit point.
 
 - **The scroll bar.** The presentation is AppKit's preferred scroller
   style — overlay is `indicator`, legacy is `interactive` — stated at
@@ -673,6 +679,24 @@ same contract with twists of its own:
   `NOKRE_FRAME_LOG=1` (`SIMCTL_CHILD_NOKRE_FRAME_LOG=1` through
   `simctl launch`) prints the macOS shell's frame line.
 
+- **The scale.** `k` is `nokre_pixels_per_point`
+  ([pixel-model.md](pixel-model.md)) over `screen.scale` in percent, the
+  shorter side of the screen's `nativeBounds`, and the text size as the
+  body font at the view's content-size category over the body font at
+  the default one (`pixelsPerPoint`), asked at every frame; a Dynamic
+  Type change (`traitCollectionDidChange:`) owes a frame, which is the
+  resize core reflows in. **A UIKit point is not a nokre point:** at
+  XXXL on a 3× phone `k` is 5, so a nokre point is 5/3 of a UIKit
+  point. Every crossing — touches, the edge pan, the feeder's offset and
+  room, `safe_bottom` (rounded up), the field box, caret and selection
+  rects, `closestPositionToPoint:` and every accessibility frame — goes
+  through `nokreFromUIKit:`/`uikitFromNokre:`, at the scale the last
+  frame was drawn at. The frame is `ceil(device pixels / k)` points, so
+  it overhangs the view's pixels by up to `k − 1` at the right and
+  bottom; the layer keeps `contentsScale` at the screen's and
+  `contentsRect` crops the overhang (its origin is the image's top
+  left, observed on the iOS 26.5 Simulator), the IOSurface and the
+  Metal drawable alike.
 - **Safe area.** The view respects the safe area's top and sides but
   runs to the physical bottom edge, reporting the home-indicator band's
   height as `safe_bottom` — so a bottom pane's surface (the notice
@@ -881,8 +905,18 @@ of the same contract — plain C, message loop, no framework. Its twists:
   again at `WM_SIZE`, and detached at `WM_DESTROY`; the same clock
   draws and `on_frame` presents inside the shim; a refused attach keeps
   the DIB presenter ([gpu.md](gpu.md#windows)). Per-monitor-v2 DPI
-  awareness, with the DPI rounded to an integer scale (125% → 1, 150% →
-  2) — the policy every shell shares — so glyphs never resample. This
+  awareness; the scale is `nokre_pixels_per_point`
+  ([pixel-model.md](pixel-model.md)) over the window's DPI as a percent
+  of 96, the text size (`TextScaleFactor` under
+  `HKCU\Software\Microsoft\Accessibility`, 100 when absent) and the
+  shorter side of the monitor the window is on — that monitor rather
+  than the primary, because the DPI is that monitor's. `WM_DPICHANGED`
+  takes the new DPI, every `WM_SETTINGCHANGE` re-reads the text size
+  (Win32 names no one broadcast for it), and `WM_MOVE` and
+  `WM_DISPLAYCHANGE` ask again for a monitor of the same DPI but another
+  size. A new scale is a resize: the next frame takes the logical size
+  from the client rect at it, and an open composition's candidate list
+  is placed again after that frame. This
   presenter and its clock are compile-checked and have not run: no
   Windows machine has seen them.
 - **Input.** `WM_LBUTTONDOWN` is the tap; wheel messages send `FREE`
@@ -1013,8 +1047,16 @@ shell.m. Its twists:
 - **The view is the frame's size.** `SurfaceView`: shell.c locks the
   `ANativeWindow`, the frame is drawn into it (below), and posts. The
   buffer is the view's own pixel size (`setBuffersGeometry` 0×0), so
-  the compositor never scales. Density rounds to an integer scale and
-  logical size is the ceiling, so a space that is not a whole number
+  the compositor never scales. The scale is `nokre_pixels_per_point`
+  ([pixel-model.md](pixel-model.md)) over `density` and the
+  configuration's `fontScale`, each in percent, and the screen's shorter
+  side (of the maximum window metrics, so neither split screen nor a
+  rotation moves it), asked
+  through JNI rather than restated in Java. `fontScale` and `density`
+  are in the manifest's `configChanges`, so a text-size change arrives
+  at `NokreView.onConfigurationChanged`, which takes the logical size
+  again from the surface and re-measures: core sees a resize. Logical
+  size is the ceiling, so a space that is not a whole number
   of logical pixels — a floating window 1273 px wide at scale 2 — makes
   a frame up to scale − 1 pixels larger than it. `NokreView.onMeasure`
   gives the view that frame's size, rounding its parent's space up, and
@@ -1290,9 +1332,23 @@ and one backend per platform is the charter. Its twists:
   the same way, committed by the shell after the present; a refused
   attach keeps `wl_shm` ([gpu.md](gpu.md#linux)). The frame callback
   and the GPU path are compile-checked and have not run: no Linux
-  machine has seen them. Integer buffer scale from the `wl_output` the surface is on, the
-  logical size from `xdg_toplevel.configure` — the Windows integer-DPI
-  policy, so glyphs never resample. The generated `xdg-shell` and
+  machine has seen them. The buffer scale is the integer
+  `wl_output.scale` of the output the surface is on, so glyphs never
+  resample; the scale is `nokre_pixels_per_point`
+  ([pixel-model.md](pixel-model.md)) over that output scale, the shorter
+  side of the output's current mode, and GNOME's `text-scaling-factor`
+  read through the XDG Settings portal (`ReadOne` on
+  `org.gnome.desktop.interface`, 100 without a portal or the key, read
+  again on every `SettingChanged`). The surface's size comes from
+  `xdg_toplevel.configure` in the compositor's coordinates; the viewport
+  is its device pixels over the scale, rounded up, and the buffer is
+  those device pixels exactly, the frame's overhang cropped. Pointer and
+  touch positions are converted into points as they arrive and the
+  caret rectangle out of them, at the scale of that moment; a new scale
+  is a resize, and the caret rectangle is sent again after the next
+  frame. The first window is the requested points at the scale found at
+  startup, clamped to the output, since Wayland lets the client choose
+  until a configure names a size. The generated `xdg-shell` and
   `text-input-unstable-v3` client glue is produced by `wayland-scanner`
   at build time (build.zig), never committed — the qrcodegen/harfbuzz
   vendoring rule.

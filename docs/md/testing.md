@@ -1156,16 +1156,14 @@ audited again while it is big, then pressed back: the big screen is a
 modal layer no route table lists, and the audit judges it alone.
 
 **And at the narrowest window.** A third app stands every one of those
-screens, big stages included, at `narrowest_w` (a constant in the test
-file, 220 today, moving to `layout.metrics` with the scale axis) by a
+screens, big stages included, at `layout.metrics.narrowest_w` by a
 phone's height, and each must build, pass the audit and lay out with no
 box past the window's sides — at all three widths, not only this one.
 Content wider than its window is the failure WCAG 1.4.10 (Reflow)
 names; what a table's columns outrun inside the table's own box is the
 two-dimensional content it excepts, and the table's box is held like
-any other. The width is a floor because the scale axis is capped by it:
-a larger text size is a narrower viewport, and the axis stops where the
-viewport would fall below every screen's standing. A refusal names the
+any other. The width is a floor because the scale is capped by it
+(`layout.pixelsPerPoint`; [pixel-model](internals/pixel-model.md)). A refusal names the
 example, the screen, the window and what failed.
 
 **What it proves, and what it does not.** For this repository's examples

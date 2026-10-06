@@ -19,6 +19,10 @@ serves a desktop browser and a phone browser, and Skia serves five
 platforms. One substrate spans several mediums; one medium spans several
 substrates.
 
+Text size is not an axis: it is folded into the display scale, and a
+larger one is a narrower viewport ([pixel-model.md](pixel-model.md),
+"Logical pixels, integer scale").
+
 ## Substrate
 
 A substrate is a renderer and everything under it: Skia over the five
