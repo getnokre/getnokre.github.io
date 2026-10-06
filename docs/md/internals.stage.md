@@ -25,10 +25,10 @@ replay's cues and a film's come from the same code.
 A scene is the tree — every element whole, in document order, each
 distinct element encoded once in a table and a scene being its nodes'
 parents and rows — and `SceneState`: the facts outside the tree that
-drawing reads. Two facts of the played app's window are left out,
-because a host stands them by its own: a narrow desk's region switcher,
-which is not in the tree a scene keeps, and which region the desk was
-showing, which the player derives ("Cutting a step"). A place a shot
+drawing reads, the reference the router stood on among them, in its
+one spelling with its secrets redacted (`SceneState.reference`). A
+narrow desk's region switcher is left out, because a host stands it by
+its own; which region it shows is the one the reference names. A place a shot
 names still counts the switcher where the played app stood one
 (`place.Place`): it is resolved only on a scene stood at the size it
 was made at, where the stand stood the switcher again. An action is
@@ -89,9 +89,11 @@ App with no services, no routes and no input — into which
 `recorded_play.stand` restores a scene (`Tree.internal.restore`, past
 the construction rules, since the tree was one the played app built)
 and dresses it in the host's look, appearance, medium and measurer.
-A desk shows the region the caller names and runs the desk's own sync
-(`desk.syncDeskChrome`), so the switcher stands exactly where the
-host's window cannot stand the regions side by side.
+The scene's router stands on its recorded reference, under the route
+that reference implies by its words alone (`address.impliedRoute`), and
+a desk shows the region it names, as a rebuild reads one; the desk's own
+sync runs (`desk.syncDeskChrome`), so the switcher stands exactly where
+the host's window cannot stand the regions side by side.
 The nav's roster is stood too: its destinations installed as the scene
 app's `nav_items`, the screen's own entry as the title of the one route
 the scene's router stands on, and `nav.syncNavChrome` run, so the nav
@@ -153,26 +155,22 @@ scrolled does not jump back as the result appears. Standing one walks
 the same moves again, so with the step, the size and the dress it is
 the whole key of what stands, and a cache under it is exact.
 
-Which region a narrow desk shows on each scene is derived from the
-steps alone, once per recording (`stage_cut.derive`, its `Shown`):
-the opening shows `main`; an act shows the region holding its target
-(`layout.bandRoleFor`: the composer's is `main`, the masthead's none),
-which is what the reach's chip made; a stay or a reload keeps what is
-shown, and so does a replace, which an action makes in the region it
-stands in; a push opens on `main` and remembers what the screen it left
-showed, and a pop shows what the screen it returns to showed when it
-was left, which is the region its reference names. Each is what the
-live router does, so a
-replay never shows a region its film did not. Each step begins on what
-the step before it left. No window
-size enters it, because a desk that fits shows every region whatever
-it names, so a cut stays keyed by its step, size and dress, and
-stepping back with Previous stands what arriving by Next stood.
+Which region a narrow desk shows on a scene is the one its recorded
+reference names, and nothing else: every input landing in a band region
+names it at every width (routing.md, "The region a desk shows"), so a
+recording acted wide carries the references a phone's run would, and
+the size-free gate holds the two equal. The one move is the reach's: on
+the step's `before`, while the act is in hand, its chip shows the
+target's region (`reach.make`, through the scene router as a live
+switcher's touch goes), and a scene the act made or came to stands as
+its own reference says. No window size enters it, so a cut stays keyed
+by its step, size and dress, and stepping back with Previous stands
+what arriving by Next stood.
 
 A step whose target the plan refuses on its scene is shown unreached
 (`Cutter.unreached`): its words over its `before` scene, then each
 result, with no hand — what a reader under Reduce Motion is shown of
-any step, the regions shown derived as above. It is never shown as the
+any step. It is never shown as the
 recording's own moves, which would be a second way to show one step.
 No kind of step takes it today.
 
@@ -180,8 +178,8 @@ At the size a play was acted at, a cut is held equal to the step's
 recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
 same shots, frames, captions and marks, and each shot's standing the
 recorded scene's tree and state, byte for byte as a recording encodes
-them, and the window's offset; the recorded scene is stood showing the
-region the played app's folds say it showed, so a derivation that
+them, and the window's offset; and each recorded scene, stood, shows
+the region the played app's folds say it showed, so a reference that
 parted from the live desk fails there. Where a scene holds a picture the
 played app's points (`Place.pt`) are set aside, since a recorded
 picture stands as its box (`layout.pictureRecordedSize`); a stage never

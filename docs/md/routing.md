@@ -318,22 +318,32 @@ so neither is one a reference names. A page route carries none.
 and reads its arguments as before: `routeArg(0)` is `c6` in both
 references above, and `routeRef` and `refTo` write the app's own
 arguments only. nokre writes the segment, reads it on every rebuild
-and navigation, and the shown region follows:
+and navigation, and the shown region follows.
 
-- **the switcher's touch** replaces the screen's reference with the
-  same one naming the chosen region — a replace, so it never joins
-  Back's history, and nothing is rebuilt, since no builder reads it;
-- **a choice made inside a region keeps it shown.** When an action
-  bound to a control navigates — `navigate`, `replaceWith` or
-  `switchTo` — and the reference names no region, nokre writes the
-  region that control stands in. The console's pane picker stands in
-  the aside and replaces `console~c6~billing` with
-  `console~c6~history`; the screen entered is
-  `console~aside~c6~history`, and the reader is still looking at the
-  pane they chose. A control in the composer writes `main`, which it
-  travels with; one in the masthead writes what is shown;
-- **outside any action** — a service's reply, a timer, a builder's
-  redirect — those three verbs write the region shown now;
+**The reference names the region the reader is working in.** Two
+things write it, each by replacing the screen's reference with the
+same one naming that region — a replace, so it never joins Back's
+history, and nothing is rebuilt, since no builder reads it:
+
+- **the switcher's touch**, naming the chosen region;
+- **every input landing in a band region** — a press, a hold, a
+  drag, a scroll where it starts, a key or a keystroke on the focused
+  control — naming that region before the input does anything else; a
+  reader's hand in a region is the reader working in it. A control in
+  the composer names `main`, which it travels with; the masthead names
+  nothing, and neither does the back gesture. This holds at every
+  width: on a desktop standing every region side by side only the
+  address moves, so a recording made wide carries the references a
+  phone's run would.
+
+A navigation — `navigate`, `replaceWith` or `switchTo` — whose
+reference names no region opens on the region shown, so one an action
+makes opens on the region that action was made in. The console's pane
+picker stands in the aside and replaces `console~c6~billing` with
+`console~c6~history`; the screen entered is
+`console~aside~c6~history`, and the reader is still looking at the
+pane they chose. Otherwise:
+
 - **a tapped `tile`, `link` or span** enters its reference as the app
   wrote it: a destination the app named, opening on `main`, which is
   why a roster's row opens the conversation it names;
@@ -341,9 +351,9 @@ and navigation, and the shown region follows:
   reference is what the stack kept; a reload keeps the region its
   reference names.
 
-A desktop standing every region side by side ignores the segment and
-writes it all the same, so a link made on a desktop opens a phone where
-it was made. The address carries it as one more segment in either form,
+A desktop ignores the segment for what it shows, so a link made on a
+desktop opens a phone where it was made. The address carries it as one
+more segment in either form,
 `/console/aside/c6/history` or `#console~aside~c6~history`, and an
 address naming no region opens on `main`.
 
