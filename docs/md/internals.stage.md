@@ -158,10 +158,11 @@ steps alone, once per recording (`stage_cut.derive`, its `Shown`):
 the opening shows `main`; an act shows the region holding its target
 (`layout.bandRoleFor`: the composer's is `main`, the masthead's none),
 which is what the reach's chip made; a stay or a reload keeps what is
-shown; a push opens on `main` and remembers what the screen it left
+shown, and so does a replace, which an action makes in the region it
+stands in; a push opens on `main` and remembers what the screen it left
 showed, and a pop shows what the screen it returns to showed when it
-was left, as the live router does (`Router.Entry.desk_view`); a
-replace opens on `main`. Each is what the live router does, so a
+was left, which is the region its reference names. Each is what the
+live router does, so a
 replay never shows a region its film did not. Each step begins on what
 the step before it left. No window
 size enters it, because a desk that fits shows every region whatever

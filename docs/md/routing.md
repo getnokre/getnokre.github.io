@@ -298,6 +298,59 @@ region's scroll position. It is also why a builder must not read
 that will not be rebuilt, and width, wrap and fold are nokre's answers
 anyway.
 
+### The region a desk shows
+
+A window too narrow for a desk's band shows one region at a time, and
+**which one is the screen's reference's**. A desk route's reference
+carries nokre's region segment first after the route name, before the
+app's own arguments:
+
+```
+console~c6~history          main, the segment absent
+console~aside~c6~history    the aside
+```
+
+The names are the band regions' — `roster`, `main`, `aside`; the
+masthead and the composer stand on every region a narrow desk shows,
+so neither is one a reference names. A page route carries none.
+
+**The segment is nokre's.** The app declares nothing, writes nothing
+and reads its arguments as before: `routeArg(0)` is `c6` in both
+references above, and `routeRef` and `refTo` write the app's own
+arguments only. nokre writes the segment, reads it on every rebuild
+and navigation, and the shown region follows:
+
+- **the switcher's touch** replaces the screen's reference with the
+  same one naming the chosen region — a replace, so it never joins
+  Back's history, and nothing is rebuilt, since no builder reads it;
+- **a choice made inside a region keeps it shown.** When an action
+  bound to a control navigates — `navigate`, `replaceWith` or
+  `switchTo` — and the reference names no region, nokre writes the
+  region that control stands in. The console's pane picker stands in
+  the aside and replaces `console~c6~billing` with
+  `console~c6~history`; the screen entered is
+  `console~aside~c6~history`, and the reader is still looking at the
+  pane they chose. A control in the composer writes `main`, which it
+  travels with; one in the masthead writes what is shown;
+- **outside any action** — a service's reply, a timer, a builder's
+  redirect — those three verbs write the region shown now;
+- **a tapped `tile`, `link` or span** enters its reference as the app
+  wrote it: a destination the app named, opening on `main`, which is
+  why a roster's row opens the conversation it names;
+- **Back** shows the region the screen it returns to names, since its
+  reference is what the stack kept; a reload keeps the region its
+  reference names.
+
+A desktop standing every region side by side ignores the segment and
+writes it all the same, so a link made on a desktop opens a phone where
+it was made. The address carries it as one more segment in either form,
+`/console/aside/c6/history` or `#console~aside~c6~history`, and an
+address naming no region opens on `main`.
+
+An expectation (`expectRoute`, `untilRoute`) written without the
+segment holds in any region, because the region is nokre's; written
+with one, it holds only there.
+
 ### The back gesture
 
 On iOS a drag inward from the leading screen edge also goes back — the
@@ -356,7 +409,9 @@ screen on top, `router.currentRef()` gives its full reference, and
 
 What a `link`, a route-carrying `tile` or `button`, a `nav_item`, a
 `notice`, a Markdown `[label](destination)` span and `App.navigate` all carry is a
-**reference**: a route name, optionally followed by positional arguments.
+**reference**: a route name, optionally followed by positional arguments
+— and, on a desk, nokre's region segment between the two
+([The region a desk shows](#the-region-a-desk-shows)).
 
 ```
 notes              a screen
@@ -631,7 +686,8 @@ one contact, and pressing the second replaces the first; `console~c1`
 and `console~c2` are two contacts, and pressing the second pushes.
 Re-entering the screen you are already on replaces it, which is why a
 back stack does not grow a rung every time a reader flips between two
-tabs of one record.
+tabs of one record. A desk's region segment is no part of the place:
+which region shows is a view of it.
 
 The comparison lives in `Router.follow`, once, because a tapped tile is
 three frames from the builder that wrote its reference and no app should
@@ -658,7 +714,8 @@ first and return an error** — the reference is the caller's own, so the
 caller is who can fix it, and a driver that asked for a screen that
 does not exist finds out at the call instead of at the next audit. The
 error names the same refusal `routeRef` names (`error.UnknownRoute`,
-`RouteArgCount`, `RouteArgCharset`, `RouteRefTooLong`); the stack does
+`RouteArgCount`, `RouteArgCharset`, `RouteRefTooLong`, and
+`UnknownRegion` for a region segment nothing names); the stack does
 not move and nothing is written down. A reference written as a literal
 never reaches this at all — the build refuses it first — and in a
 shipped app the not-found destination takes it instead of the error;
@@ -679,6 +736,7 @@ redacted to `*`) and a reason —
 | `arg_count` | not the number of arguments the route declares — or, for a route with secret ones, not that number and not its public part alone |
 | `arg_charset` | an argument outside the charset, or empty (a trailing `~` is a *missing* argument, not an empty one) |
 | `ref_too_long` | past `max_ref_bytes` — 256 unless this app declared otherwise (above) — because a reference can arrive from outside the app, and one enormous argument would pass the arity check |
+| `unknown_region` | a desk reference one argument longer than its route declares, whose region segment names none of `roster`, `main`, `aside` |
 | `reload_in_build` | a `reload` issued while the screen's builder was already running — honoring it would rebuild the screen over its own half-built output, duplicating it. The record carries the reference of the screen being built. (`refresh` never trips this: the polite verb declines the same call quietly.) |
 
 Every one of these is a programmer error, and nothing at an

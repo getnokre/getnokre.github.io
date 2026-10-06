@@ -1853,9 +1853,11 @@ adds a region switcher, a `segmented` named by `Chrome.regions` whose
 chips are the regions' labels; the masthead stands on every one of those
 screens, the composer travels with `main`, and the region not being
 shown is **folded** — off the screen entirely, subtree included, absent
-from the accessibility snapshot and unreachable by a test query. Back
-does not undo a switch: a region is not a screen and has no reference of
-its own. `App.setDeskView` is the same door the switcher uses.
+from the accessibility snapshot and unreachable by a test query. Which
+region shows is the screen's reference's: a switch replaces it with one
+naming the chosen region, so Back does not undo a switch, and a choice
+made inside a region keeps that region shown
+([routing.md](routing.md#the-region-a-desk-shows)).
 
 The fold is all-or-one on purpose. A graded fold — the aside first, then
 the roster — would make the switcher's chips mean "replace what is in
