@@ -341,9 +341,11 @@ try t.swapSlots("Ballot", "Your ranking ends here", "Charlie");   // the line re
 try t.swapSlots("Ballot", "Alpha", "Your ranking ends here");   // Alpha crosses to just below the line: two count
 ```
 
-It takes the keyboard route too: focus the ranking, ↑/↓ to the first
-slot, Space to arm it, ↑/↓ to the second, Space to press it — every
-step through real dispatch, so an `on_swap` handler sees exactly the
+It goes by taps, as a finger would: each row reached as every verb's
+target is — scrolled wholly into the window — and tapped there, the
+first to arm it and the second to press it, so the window ends where a
+stage's replay of the step leaves it; every press goes through real
+dispatch, so an `on_swap` handler sees exactly the
 pair it would in the app, and the trace records the step as `pair`
 with both names in order. It refuses a label that is not a ranking's
 (`error.NotARanking`), words no row carries (`error.NoSuchSlot`, whose
@@ -352,14 +354,14 @@ them), the same words twice (`error.SameSlot`), and a press the device
 did not take (`error.NotInteractive`): a pinned line armed first, or a
 pair whose new count the band refuses, which the diagnostic names —
 the count the pair would have made and the band that holds it — before
-Esc disarms the device again.
+a second tap on the armed row disarms the device again.
 
 A ranking that is picking has no pair to make — `swapSlots` refuses it
 (`error.NotEditing`) — and two verbs of its own. `pickOption` chooses
 the pool row with those words; `pressRankingControl` presses Undo,
 Start over or Done, named by `Ranking.Control` rather than by words,
-because an option may be called "Done". Both take the keyboard route
-and trace as `pick <words>` and `press <the control's word>`.
+because an option may be called "Done". Both tap the row or control
+where the reach leaves it, and trace as `pick <words>` and `press <the control's word>`.
 `pickOption` refuses a ranking in edit (`error.NotPicking`) and words
 on no pool row (`error.NoSuchSlot`, whose diagnostic lists the pool,
 or says the words are already a choice — only Undo takes one back);
