@@ -1241,7 +1241,7 @@ reader's width, text size and language, so no rule on the screen can read
 how tall it stands. The live driver watches it with a `ResizeObserver`
 and publishes its border box as `--notice-banner-height` on the document
 root; the sheet redefines `--chrome-reserve` under
-`:root:has(<the banner>)` to that height, the bar's pad and the gap, so
+`:root:has(<the page's banner>)` to that height, the bar's pad and the gap, so
 every rule that spends the reserve, the desk's and a host page's
 included, is right beside a banner with no rule of its own. The observer
 reports after layout and before paint, so no frame shows the old reserve,
@@ -1382,6 +1382,32 @@ press can land beneath.
   keeps its gutter (`scrollbar-gutter: stable` on the root) while the
   stage is big, or the window under the pane would widen by it; where it
   had none, keeping one would narrow it.
+
+### A scene reads its window, never the browser
+
+Core lays a stage's scene out at its window's size, so no rule may
+answer a scene's question from the browser's viewport, and no rule may
+let a scene answer a question about the page around it. The window is a
+container named `stage-window`, and its `contain` makes it the
+containing block of every fixed layer in the scene. So inside it:
+
+- **A width is the window's.** The banner takes the band's shape at the
+  window's width, by a container query, and lamp dark's glass for it
+  does too. The bar is the band at every width (below, "A stage's
+  window is the band at every width").
+- **A height is the window's.** A sheet's, the notices pane's and a
+  picker's cap, and the scrim's box, are percentages of the window, not
+  `100dvh` and `100dvw`.
+- **The reserve is the window's.** It has no OS band, and beside a
+  scene's banner it is core's one line: no driver measures a scene's
+  banner, and the page's measurement does not reach in.
+- **The page's questions are the page's.** The tests on the document
+  root, a banner beside the page and a nav in it, ask about the page's
+  own chrome and never a scene's.
+- **Lamp dark lights it from the window.** The driver publishes the
+  window's size on it and each plate's box in it, and the chrome's
+  edges light only plates on the page ("The numbers the live driver
+  publishes").
 
 ### The write is a diff; the frame never is
 

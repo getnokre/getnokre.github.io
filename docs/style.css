@@ -123,7 +123,7 @@
   --lh-h1: 40px;
 }
 
-:root:has(.notice:not(.notices-pane .notice)) {
+:root:has(.notice:not(.notices-pane .notice):not(.stage-window *)), .stage-window:has(> .notice:not(.notices-pane .notice)) {
   --chrome-reserve: calc(
     var(--nav-content-gap) + var(--nav-bar-pad) + var(--notice-banner-height, calc(66px + var(--safe-b)))
   );
@@ -677,6 +677,11 @@
     :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
     :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
     :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+    @container stage-window (max-width: 560px) {
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+    }
   }
   :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
   :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip.current > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 59; --lamp-glyph-em: 16; }
@@ -818,6 +823,11 @@
   :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
   :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
   :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+  @container stage-window (max-width: 560px) {
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+  }
 }
 :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
 :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip.current > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 59; --lamp-glyph-em: 16; }
@@ -2509,7 +2519,8 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    Its parts are parted by the window's own ring, in the margin it
    keeps above and below. `contain` makes the window the scene's own
    viewport: its chrome, pinned to the edges of a screen, pins to the
-   window's. */
+   window's ("A scene reads its window, never the browser",
+   dom-substrate.md). */
 .stage { margin: 0; container-type: inline-size; --stage-band: 100dvh; }
 .nokre.has-chrome .stage { --stage-band: calc(100dvh - var(--chrome-reserve) + var(--nav-content-gap)); }
 .stage-frame {
@@ -2546,7 +2557,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   margin-block: var(--border);
   overflow: hidden;
   contain: layout paint;
-  container-type: inline-size;
+  container: stage-window / inline-size;
   box-shadow: 0 0 0 var(--border) var(--g10);
   background: var(--paper);
 }
@@ -3620,7 +3631,9 @@ input.check::after { content: "\e06c"; }
   }
 }
 
-.stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); }
+.stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); --notice-banner-height: initial; --chrome-reserve: calc(
+    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
+  ); }
 :where(.stage-window) .nav { position: fixed; inset-inline: 0; bottom: 0; z-index: 2; justify-content: center; padding-top: var(--nav-bar-pad); padding-bottom: calc(var(--bar-bottom) + var(--safe-b)); pointer-events: none; }
 :where(.stage-window) .nav-row { flex-wrap: nowrap; gap: var(--nav-item-gap); pointer-events: auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; }
 :where(.stage-window) .nav-row::-webkit-scrollbar { display: none; }
@@ -3629,6 +3642,14 @@ input.check::after { content: "\e06c"; }
 :where(.stage-window) .chip:focus-visible { outline: var(--focus) solid var(--ink); outline-offset: calc(-1 * var(--focus)); border-color: transparent; }
 :where(.stage-window) .picker.above-nav { bottom: calc(var(--bar-bottom) + var(--safe-b) + var(--nav-slot) + var(--nav-item-gap)); width: max-content; max-width: calc(100% - 2 * var(--nav-bar-pad-h)); max-height: calc(100dvh - var(--sheet-min-top)); padding: 0; inset-inline: 0; margin-inline: auto; border-bottom: var(--border) solid var(--g6); border-radius: var(--radius-card); }
 :where(.stage-window) .nav-row { padding-inline: var(--nav-bar-pad-h); }
+@container stage-window (max-width: 560px) {
+  /* No side border left to be part of the inset, so the words
+     take the whole pad from the screen edge — which is where
+     the reference puts them either way. */
+  .notice { border-radius: 0; border-inline: 0; padding-inline: var(--notice-pad); }
+}
+:where(.stage-window) :is(.sheet, .notices-pane, .picker), :where(.stage-window) .picker.above-nav { max-height: calc(100% - var(--sheet-min-top)); }
+:where(.stage-window) .scrim { width: 100%; height: 100%; }
 
 /* The route header, centred on the cap region of the line it marks. */
 .nokre > .icon-button.back:has(+ :is(h1, .s-h1)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h1, .s-h1)) { top: calc(var(--page-pad) + -4px); }
@@ -3648,23 +3669,23 @@ input.check::after { content: "\e06c"; }
 :root .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
 :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
 :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
-:root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
-:root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
-:root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+:root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--pad); }
+:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
+:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
 
 @media (max-width: 560px) {
-  :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
-  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
-  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
+  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
 }
 
 @media print {
   :root .nokre.has-chrome { padding-bottom: var(--pad); }
   :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
   :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
-  :root:has(.nav) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
 }
 
 /* The driver's own guard: the substrate clips its screen, and this
