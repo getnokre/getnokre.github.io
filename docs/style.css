@@ -99,7 +99,7 @@
   --nav-bar-pad-b: 16px;
   --nav-content-gap: 24px;
   --back-bleed: 10px;
-  --stage-big-room: 32px;
+  --stage-header-room: 120px;
   --nav-slot: 52px;
   --radio-dot: 6px;
   --toggle-knob: 16px;
@@ -123,7 +123,7 @@
   --lh-h1: 40px;
 }
 
-:root:has(.notice:not(.notices-pane .notice):not(.stage-window *)), .stage-window:has(> .stage-scene > .notice:not(.notices-pane .notice)) {
+:root:has(.notice:not(.notices-pane .notice):not(.stage-window *)), .stage-window:has(> .stage-viewport > .stage-scene > .notice:not(.notices-pane .notice)) {
   --chrome-reserve: calc(
     var(--nav-content-gap) + var(--nav-bar-pad) + var(--notice-banner-height, calc(66px + var(--safe-b)))
   );
@@ -318,14 +318,14 @@
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .field-box:has(:disabled), :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .field-box:has([aria-disabled="true"]), :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .field-box[disabled], :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .field-box.select[aria-disabled="true"] { background: var(--field-fill-off); box-shadow: none; }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .field-box :is(input, textarea):not(:disabled, [aria-disabled="true"])::placeholder { color: var(--field-placeholder); }
 @media (max-width: 560px) {
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .picker.above-nav { box-shadow: var(--card-shadow); }
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip.current { background: var(--chosen-fill); border-color: transparent; }
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip { position: relative; }
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip::before { content: ""; position: absolute; inset: calc(-1 * var(--border)); border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row { padding-block: 20px; margin-block: -20px; pointer-events: none; }
-  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row > * { pointer-events: auto; }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .picker.above-nav:where(:not(.stage-window *)) { box-shadow: var(--card-shadow); }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip.current:where(:not(.stage-window *)) { background: var(--chosen-fill); border-color: transparent; }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip:where(:not(.stage-window *)) { position: relative; }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .chip:where(:not(.stage-window *))::before { content: ""; position: absolute; inset: calc(-1 * var(--border)); border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row:where(:not(.stage-window *)) { padding-block: 20px; margin-block: -20px; pointer-events: none; }
+  :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row > *:where(:not(.stage-window *)) { pointer-events: auto; }
 }
-@container stage-window (max-width: 560px) {
+@container stage-viewport (max-width: 560px) {
   :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .picker.above-nav { box-shadow: var(--card-shadow); }
   :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .chip.current { background: var(--chosen-fill); border-color: transparent; }
   :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .chip { position: relative; }
@@ -662,20 +662,20 @@
     :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notices-pane[style*="--lamp-plate-top:"] { --lamp-glass-below: 24; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 24px; }
     :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .picker:not(.above-nav)[style*="--lamp-plate-top:"] { --lamp-glass-below: 24; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 24px; }
     @media (max-width: 560px) {
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip:not(.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip.current[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
     }
     @media not all and (max-width: 560px) {
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
-      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
     }
-    @container stage-window (max-width: 560px) {
+    @container stage-viewport (max-width: 560px) {
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
@@ -683,6 +683,11 @@
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+    }
+    @container stage-viewport not (max-width: 560px) {
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
+      :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
     }
   }
   :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
@@ -808,20 +813,20 @@
   :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notices-pane[style*="--lamp-plate-top:"] { --lamp-glass-below: 24; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 24px; }
   :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .picker:not(.above-nav)[style*="--lamp-plate-top:"] { --lamp-glass-below: 24; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 24px; }
   @media (max-width: 560px) {
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip:not(.current)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip.current[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
   }
   @media not all and (max-width: 560px) {
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
-    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]:where(:not(.stage-window *))::after { content: ""; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"]:where(:not(.stage-window *)) { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
   }
-  @container stage-window (max-width: 560px) {
+  @container stage-viewport (max-width: 560px) {
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
@@ -829,6 +834,11 @@
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 1; --lamp-glass-edge: 0px; --lamp-glass-radius: 0px; }
+  }
+  @container stage-viewport not (max-width: 560px) {
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: rgb(0 0 0 / calc(1 - var(--lamp-glass-beneath))) !important; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
+    :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
   }
 }
 :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
@@ -2519,10 +2529,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    The band is `contentArea`'s: the window less the bottom chrome's
    reserve and the gap it keeps above the bar.
    Its parts are parted by the window's own ring, in the margin it
-   keeps above and below. `contain` makes the window the scene's own
-   viewport: its chrome, pinned to the edges of a screen, pins to the
-   window's ("A scene reads its window, never the browser",
-   dom-substrate.md). */
+   keeps above and below. */
 .stage { margin: 0; container-type: inline-size; --stage-band: 100dvh; }
 .nokre.has-chrome .stage { --stage-band: calc(100dvh - var(--chrome-reserve) + var(--nav-content-gap)); }
 .stage-frame {
@@ -2533,10 +2540,11 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   --stage-edge: var(--g10);
 }
 /* The play glyph, the label clipped on one line, and the count on the
-   trailing edge, which stands there with no label too; then the big
-   screen's control where `layout.stageBigControl` puts it, its
-   glyph's ink the padding in from the edge and its target's own air
-   spent in that padding, the count ending a gap before the ink. */
+   trailing edge where core keeps it (`serialize.stage`); then the
+   three controls side by side where `layout.stageHeaderControl` puts
+   them, the last one's glyph's ink the padding in from the edge and
+   its target's own air spent in that padding, the count ending a gap
+   before the first one's ink. */
 .stage-header {
   position: relative;
   box-sizing: border-box;
@@ -2544,10 +2552,12 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   align-items: center;
   gap: var(--icon-gap);
   height: var(--touch);
-  padding-inline: var(--tile-pad-h) calc(var(--tile-pad-h) + var(--stage-big-room));
+  padding-inline: var(--tile-pad-h) calc(var(--tile-pad-h) + var(--stage-header-room));
   color: var(--ink);
 }
 .stage-header > .btn { position: absolute; top: 0; inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed)); }
+.stage-header > .btn:nth-last-child(2) { inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed) + var(--touch)); }
+.stage-header > .btn:nth-last-child(3) { inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed) + 2 * var(--touch)); }
 .stage-header > .btn[hidden] { display: none; }
 .stage-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
 .stage-count { display: grid; justify-items: end; margin-inline-start: auto; color: var(--dark); }
@@ -2559,12 +2569,25 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   margin-block: var(--border);
   overflow: hidden;
   contain: layout paint;
-  container: stage-window / inline-size;
   box-shadow: 0 0 0 var(--border) var(--g10);
   background: var(--paper);
 }
+/* The scene's own viewport, the window in the scene's pixels
+   (`serialize.sceneZoom`): the window itself at 1:1, and at a zoom
+   the viewport core laid the scene out at, scaled by `zoom` to the
+   window. A named container, so a scene's query reads its own width
+   and not the host's, and with it a fixed layer's box: the scene's
+   chrome, pinned to the edges of a screen, pins to the window's
+   ("A scene reads its window, never the browser", dom-substrate.md).
+   `zoom` and not `transform: scale`: a zoomed box takes its zoomed
+   size in the window's layout, where a transformed one keeps its
+   unscaled box there and paints it about an origin, and a zoomed
+   scene sets its text at the reader's pixels, as Skia's raster at
+   `s` does, rather than stretching a paint made at the scene's. */
+.stage-viewport { height: 100%; container: stage-viewport / inline-size; }
 /* The scene, its chrome first as a page writes it, moved up by the
-   window's scroll (`margin-top`); its screen fills the window. */
+   window's scroll (`margin-top`, in the scene's own pixels); its
+   screen fills the viewport. */
 .stage-scene { display: flex; flex-direction: column; min-height: 100%; }
 .stage-scene > .nokre { flex: 1 0 auto; }
 /* Its recording not in hand and no written scene kept: the stand-in,
@@ -3507,11 +3530,11 @@ input.check::after { content: "\e06c"; }
   /* No side border left to be part of the inset, so the words
      take the whole pad from the screen edge — which is where
      the reference puts them either way. */
-  .notice { border-radius: 0; border-inline: 0; padding-inline: var(--notice-pad); }
+  .notice:where(:not(.stage-window *)) { border-radius: 0; border-inline: 0; padding-inline: var(--notice-pad); }
   /* The bar has no ground: no track, no fill, no hairline. The
      nav is its items and nothing else, each on a plate of its
      own, with 8px of page showing between them. */
-  .nav {
+  .nav:where(:not(.stage-window *)) {
     position: fixed;
     inset-inline: 0;
     bottom: 0;
@@ -3550,7 +3573,7 @@ input.check::after { content: "\e06c"; }
      instead, which is the same picture while it fits — a flex
      item is its content's width — and packs to the start the
      moment it does not. */
-  .nav-row {
+  .nav-row:where(:not(.stage-window *)) {
     flex-wrap: nowrap;
     gap: var(--nav-item-gap);
     pointer-events: auto;
@@ -3575,7 +3598,7 @@ input.check::after { content: "\e06c"; }
        finds. */
     scrollbar-width: none;
   }
-  .nav-row::-webkit-scrollbar { display: none; }
+  .nav-row:where(:not(.stage-window *))::-webkit-scrollbar { display: none; }
   /* Pills: the corner is half the slot's height, derived rather
      than fixed, so the shape follows the slot instead of
      drifting back to a rounded rectangle the next time the row
@@ -3588,7 +3611,7 @@ input.check::after { content: "\e06c"; }
      .g10, under the 1.4.11 floor. The plate is the mark here,
      so the regular face carries the words: bold *and* a fill
      would be two marks for one state. */
-  .chip {
+  .chip:where(:not(.stage-window *)) {
     height: var(--nav-slot);
     padding-inline: calc(var(--nav-item-pad-h) - var(--border));
     border: var(--border) solid transparent;
@@ -3596,13 +3619,13 @@ input.check::after { content: "\e06c"; }
     background: var(--g11);
     font-weight: 400;
   }
-  .chip.current { background: var(--g10); border-color: var(--mid); }
+  .chip.current:where(:not(.stage-window *)) { background: var(--g10); border-color: var(--mid); }
   /* A plate has an edge of its own, so focus takes it over
      rather than drawing a second line beside it — the rule the
      header leaves to the band (`sheet`, the focus block). It is
      drawn *inside* that edge, which is also what lets the row
      above be a scroll container without clipping a ring. */
-  .chip:focus-visible {
+  .chip:focus-visible:where(:not(.stage-window *)) {
     outline: var(--focus) solid var(--ink);
     outline-offset: calc(-1 * var(--focus));
     border-color: transparent;
@@ -3614,7 +3637,7 @@ input.check::after { content: "\e06c"; }
      on a chip, not a slab across the screen — and its rows sit
      flush inside the 1px edge, exactly as a `tile_group` seats
      its tiles, so the border is the whole of its padding. */
-  .picker.above-nav {
+  .picker.above-nav:where(:not(.stage-window *)) {
     bottom: calc(var(--bar-bottom) + var(--safe-b) + var(--nav-slot) + var(--nav-item-gap));
     width: max-content;
     /* Capped where the chip is capped — the bar's own inset off
@@ -3642,7 +3665,7 @@ input.check::after { content: "\e06c"; }
 .stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); --notice-banner-height: initial; --chrome-reserve: calc(
     var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
   ); }
-@container stage-window (max-width: 560px) {
+@container stage-viewport (max-width: 560px) {
   /* No side border left to be part of the inset, so the words
      take the whole pad from the screen edge — which is where
      the reference puts them either way. */
@@ -3673,26 +3696,31 @@ input.check::after { content: "\e06c"; }
 .nokre > :is(h6, .s-small) + .icon-button.header-action, .nokre > :is(h6, .s-small) + .icon-button.header-action + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action, .nokre > :is(.document, .stack.hands-back, .group):has(> :first-child:is(h6, .s-small)) + .icon-button.header-action + .icon-button.header-action { top: calc(var(--page-pad) + -14px); }
 
 /* The clear space bottom chrome owes the page, at the four widths it is asked. */
-:root .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
-:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
-:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
-:root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--pad); }
-:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
-:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+:root .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--chrome-reserve); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
+:root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)):not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
+:root:has(.nav:not(.stage-window *)) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+:root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)):not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
 
 @media (max-width: 560px) {
-  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
-  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
-  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
+  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--chrome-reserve); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: calc(var(--chrome-reserve) - var(--nav-content-gap)); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)):not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--nav-content-gap); }
 }
 
 @media print {
-  :root .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
-  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome { padding-bottom: var(--pad); }
-  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+  :root .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+  :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) > .region-composer, :root:is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)):not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) { padding-bottom: var(--pad); }
+  :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)) > .region-composer, :root:has(.nav:not(.stage-window *)):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre.has-chrome:where(:not(.stage-window *)):not(:has(> .region-composer)) > .region:not(.region-masthead) { padding-bottom: var(--pad); }
+}
+
+:where(.stage-window) .nokre.has-chrome { padding-bottom: var(--chrome-reserve); }
+@container stage-viewport not (max-width: 560px) {
+  :where(.stage-window) .stage-scene:has(> .nav) > .nokre.has-chrome { padding-bottom: var(--pad); }
 }
 
 /* The driver's own guard: the substrate clips its screen, and this

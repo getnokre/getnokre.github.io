@@ -23,7 +23,7 @@ const nok = @import("nokre");
 test "checkout flow" {
     // A screen is written against your state (routing.md), so a fixture
     // lowers it exactly as a route table does.
-    var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{
+    const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{
         .ctx = &state,
         .build = nok.Routes(State).builder(buildCheckout),
     });
@@ -41,7 +41,9 @@ test "checkout flow" {
 
 The harness owns a real `App` — the identical layout, focus, and event
 dispatch used in production. Layout uses the deterministic fixed measurer
-by default, so structural tests need no native code at all.
+by default, so structural tests need no native code at all. `init`
+creates the harness where it lives and returns a pointer to it, so a
+builder may keep `app`.
 
 Every app is constructed with its services — the harness builds the
 mocks from its init options. A bare non-harness test constructs them
@@ -533,7 +535,7 @@ fn serve(_: ?*anyopaque, req: nok.services.http.PendingRequest) ?nok.testing.Htt
 }
 
 test "sync round-trip" {
-    var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{ .ctx = &state, .build = nok.Routes(State).builder(buildNotes) });
+    const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{ .ctx = &state, .build = nok.Routes(State).builder(buildNotes) });
     defer t.deinit();
     t.onHttp(.{ .call = serve });
 
@@ -611,7 +613,7 @@ that degrades gracefully under it is ready everywhere.
 ```zig
 test "stored token skips sign-in; sign-out deletes it; locked keychain degrades" {
     var state: State = .{};
-    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .store = .{ .seeds = &.{.{ .key = "auth.token", .value = "tk_123" }} }, .ctx = &state, .build = nok.Routes(State).builder(State.build) });
+    const t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .store = .{ .seeds = &.{.{ .key = "auth.token", .value = "tk_123" }} }, .ctx = &state, .build = nok.Routes(State).builder(State.build) });
     defer t.deinit(); // the fake dies here — nothing leaks to the next test
 
     _ = try t.getByLabel("Inbox");             // boot read is sync: no settle, no loading frame
@@ -666,7 +668,7 @@ arrives — no shell produces one — so there is no such state for a test
 to rehearse.
 
 ```zig
-var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{
+const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{
     .ctx = &state,
     .build = nok.Routes(State).builder(State.build),
     .locale = .{ .tag = "fa-IR" },       // the device at boot; the default
@@ -712,7 +714,7 @@ every run and goldens byte-for-byte. Time moves where the test moves it
 and nowhere else — there is no ticker to move it behind your back.
 
 ```zig
-var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 320, .h = 480 }, .{
+const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 320, .h = 480 }, .{
     .ctx = &state,
     .build = nok.Routes(State).builder(State.build),
     // The device's clock at boot; the default is a fixed, fake instant.
@@ -811,7 +813,7 @@ const shelf = [_]nokre.services.iap.Product{.{
     .kind = .consumable,
 }};
 
-var t = try HarnessApp.init(gpa, .{ .w = 320, .h = 480 }, .{
+const t = try HarnessApp.init(gpa, .{ .w = 320, .h = 480 }, .{
     .ctx = &state,
     .build = nok.Routes(State).builder(buildPaywall),
     .iap = .{ .catalog = &shelf },    // a seeded catalog answers queries
@@ -2420,8 +2422,8 @@ exactly the guard. It also owns no loop — pumping `app.runtime.pumpDeliveries(
 stays the driver's job, on the driver's own deadlines. And a driver
 owes the `App` a fixed address: a
 press handler holds a `*App`, so build the app into storage that
-outlives the call rather than returning one by value (`HarnessApp` keeps it
-as a field for exactly that reason).
+outlives the call rather than returning one by value (`HarnessApp.init`
+allocates the harness for exactly that reason).
 
 A driver may hold **more than one `App` at a time**, and often should:
 two devices in one process is how a scenario signs out as one user and

@@ -406,7 +406,7 @@ const app = @import("main.zig");
 
 test "pressing Increment updates the label" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{
+    const t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{
         .ctx = &state,
         // The screen is typed against your state, so the fixture lowers
         // it the same way the route table does.
@@ -546,7 +546,7 @@ the first call, then any runtime link:
 ```zig
 test "a link routes the app to a section" {
     var state = app.State{};
-    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
 
     try t.deliverDeepLink("https://notes.example.com/settings");
@@ -656,7 +656,7 @@ The test drives it exactly like a user, keyboard-only:
 ```zig
 test "wrong passphrase stays signed out" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(std.testing.allocator, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 
@@ -744,7 +744,7 @@ fn signedIn(state: *app.State) !nok.testing.HarnessApp {
 
 test "a fresh install boots to sign-in; the stored token skips it" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
     _ = try t.getByLabel("Passphrase");
@@ -760,7 +760,7 @@ test "a fresh install boots to sign-in; the stored token skips it" {
 
 test "signing in stores the session; signing out deletes it and nothing else" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 
@@ -780,7 +780,7 @@ test "signing in stores the session; signing out deletes it and nothing else" {
 
 test "unchecking 'stay signed in' keeps the keychain empty" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 
@@ -796,7 +796,7 @@ test "unchecking 'stay signed in' keeps the keychain empty" {
 
 test "a locked keychain degrades to signed-in-for-now" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 
@@ -1875,7 +1875,7 @@ actual, paste it in:
 ```zig
 test "the sign-in screen's whole laid-out tree, inline" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, viewport, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 
@@ -1991,7 +1991,7 @@ const gpa = std.testing.allocator;
 
 test "golden: the sign-in screen" {
     var state: app.State = .{};
-    var t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
+    const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{ .routes = &app.routes, .nav = &app.nav_items, .ctx = &state, .initial_route = "notes" });
     defer t.deinit();
     state.app = &t.app;
 

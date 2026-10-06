@@ -17,6 +17,9 @@ normative contract that makes it true.
   block (text re-rasterizes at the larger size but at identical logical
   metrics — hinting is off). Core lays out in points and never reads it;
   `App.pixels_per_point` holds it for what must know the density.
+  A zoomed stage's window is the one place a frame holds a second
+  density: its scene's own, whole or a fraction, drawn with integers
+  alone ([stage.md](stage.md#the-scenes-own-density)).
 - `k` comes from one rule, `layout.pixelsPerPoint` (exported to the
   shells as `nokre_pixels_per_point`), fed the OS's display scale and
   its text size in percent. Text size is folded into the scale, not a

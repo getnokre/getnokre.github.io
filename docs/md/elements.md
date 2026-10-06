@@ -3579,7 +3579,7 @@ reader's size folds away is reached by the moves nokre itself would
 make, and a target that cannot be reached is shown without a hand,
 never faked.
 
-**The window is the page's, never scaled.** It is as wide as the space
+**The window is the page's.** It is as wide as the space
 the stage is given, and as tall as it is wide or as the screen leaves
 once the frame and the controls under it are counted, whichever is
 less: with room it is a square, and on a short screen a landscape
@@ -3587,8 +3587,8 @@ window, the whole stage on screen at once. It is never shorter than 240
 points; below that the stage is taller than the screen and the page
 scrolls. The size the play was run at decides none of it. Each recorded
 screen is laid out again by *this* app's layout at the window's size —
-the tree the played app built, not a picture of it — so its words are
-this app's own size, and a window narrower or wider than the played
+the tree the played app built, not a picture of it — so at 1:1 its
+words are this app's own size, and a window narrower or wider than the played
 app's reflows them exactly as the played app would at that width. What
 runs past the window's bottom is clipped there. It is drawn in this
 app's look and appearance, on a window of its own — its page, its lamp
@@ -3610,9 +3610,11 @@ edged in the look's rule and parted by a rule from its two ends: above
 it a header a touch target tall, holding a play glyph, the stage's
 `label` and the step it stands on, as `2 / 8` in the app's digits, on
 the trailing edge (with `named_by`, the glyph and the count alone), then
-the big screen's control at its end; and below it a foot holding the
-step's words. The header mirrors under a
-right-to-left chrome, the count's step on the leading side too. The
+three controls at its end — **Zoom out**, **Zoom in** and the big
+screen's — and below it a foot holding the step's words. The header
+mirrors under a right-to-left chrome, the count's step on the leading
+side too. In a narrow header the controls never give way: the count
+does first, and then the label is cut short. The
 frame is the stage's own, not a part of the app it is shown in, so the
 recorded screen is never mistaken for a live one; until the recording
 is in hand there is no count.
@@ -3644,11 +3646,27 @@ window leaves the screen. The button is laid out at the wider of its two
 words, so pressing it moves nothing. Under the platform's **Reduce
 Motion** there is no Play: the stage steps, the scenes change on the
 step, and no hand is drawn ([accessibility.md](accessibility.md#reduce-motion)).
-The first control stands in the header instead, a glyph named **Full
-screen** (`stage_full_screen`): it shows the same stage, playing or
-not, over the reader's whole screen, where it says **Exit full screen**
-(`stage_exit_full_screen`) and takes the stage back to its place in the
-page, as Escape does, with focus on it both ways.
+The first three controls stand in the header instead, glyphs. **Zoom
+in** and **Zoom out** (`stage_zoom_in`, `stage_zoom_out`) show the
+recorded screen larger and smaller inside the same window, which keeps
+its size: zoomed out, the played app is laid out wider than the window
+and drawn smaller, so a screen acted on a desk can be followed in a
+phone's column; zoomed in, it is laid out narrower and drawn larger. A
+stage starts at 1:1, the played app's points the size of this app's.
+Each step in or out is a whole device pixel per point more or fewer;
+on a screen of one pixel per point, zooming out goes on as one pixel
+per two points, per three. Zoom in stops before the played app would
+be laid out narrower than the narrowest width every screen is held to
+stand at, and Zoom out once it is as wide as the play was acted, or
+wider — the widest its recorded screens were made for. A control at
+its stop is off, never hidden, and both are off until the recording is
+in hand. A zoom keeps where the play stands, and so does a resize,
+which holds the zoom to the new window's stops. The third, **Full
+screen** (`stage_full_screen`), shows the same stage, playing or not,
+at the same zoom, over the reader's whole screen, where it says
+**Exit full screen** (`stage_exit_full_screen`) and takes the stage
+back to its place in the page, as Escape does, with focus on it both
+ways.
 In a page written for the web the controls, the header's included, are
 written `hidden`, since
 only the live driver answers them and the page may be read with no
@@ -3661,7 +3679,7 @@ An app appends nothing under a stage and sets none of its play
 controls, standing alone over the reader's whole screen on the page's
 own ground, the window as wide and as tall as the screen leaves once
 they are counted. The played app is laid out again at that size, as it
-would lay itself out on the reader's own screen, and never scaled. The
+would lay itself out on the reader's own screen, at the stage's zoom. The
 page beneath does not move, open or closed, and a sheet the app opens
 over it stands over it. Nothing on the big screen scrolls, so there is no
 240-point floor there: a screen too short to leave a window shows the

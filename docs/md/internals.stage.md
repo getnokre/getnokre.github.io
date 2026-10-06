@@ -106,11 +106,66 @@ as the scene app's own (`recorded_play.on_stand`, a field left out is a
 compile error), so a More sheet or picker a made move opened on the
 last scene goes with its tree, while a picker the scene itself holds
 stands with its recorded owner.
-The renderer lays it out at the stage's window size, width and height
-both, and draws it
+The renderer lays it out at the scene's viewport ("The scene's own
+density"), width and height both, and draws it
 through the canvas's window pair (`openWindow`/`closeWindow`, a CPU
-raster of its own composited pixel for pixel, on a GPU frame too), so
-its page ground, lamp and frost know only the window.
+raster of its own put down on the frame's pixels, on a GPU frame too),
+so its page ground, lamp and frost know only the window.
+
+## The scene's own density
+
+The stage's zoom overrides the one scale ([pixel-model.md](pixel-model.md))
+for the scene alone. The host draws at `k`, `App.pixels_per_point`; its
+window is W×H host points, W·k × H·k device pixels. The scene has a
+density of its own, `s` device pixels per scene point, and is laid out
+at `ceil(W·k / s)` × `ceil(H·k / s)` points (`stage.sceneViewport`):
+1:1 is `s = k`, the scene's points the host's. The state is
+`Stage.played.zoom_steps`, a count of steps from 1:1 rather than `s`
+itself, so it reads 1:1 at its default whatever `k` is and a window
+moved to a screen of another density keeps the reader's choice; a
+step in is `s = k+1, k+2, …`, a step out `k−1, …, 1`, and only where
+`k = 1` does zoom-out go on, as the fraction `s = 1/2, 1/3`
+(`stage.densityAt`; `scene_density` holds `s` as pixels per points).
+Where `k > 1` zoom-out ends at one pixel per point, already `k` times
+as wide as 1:1: a fraction is accepted on a screen of one pixel per
+point alone (owner-decided, 2026-10-03).
+
+`stage.fitZoom` holds the steps inside `stage.zoomStops` for the window
+as laid out, and writes `scene_density`, `host_density` and
+`scene_viewport` into `Stage.played` for the renderers: on every
+`cutNow` and after every layout (`stage.settle`, which also turns the
+zoom controls off at their stops), since a window's width is known only
+then. The cuts' cache is keyed by the scene's viewport, so a zoom is a
+size to a cut and clears what a resize clears and no more; the scene
+app's own `pixels_per_point` is set to `s` where it is whole, and layout
+never reads it.
+
+The ratio `s / k` is applied in one place per substrate. In Skia it
+is the window pair's: the renderer hands `openWindow` the scene's
+viewport and density (`canvas.WindowScene`), and the window's raster is
+made at `raster` device pixels per scene point and put down shrunk by
+`shrink`, the two whole numbers `WindowScene.rasterOn` reduces the
+frame's scale times `s / k` to. On a frame drawn at `k`, a whole `s` is
+a raster at `s`, whose `ceil(W·k / s) · s` pixels cover the window's
+`W·k` with at most `s − 1` cropped at its far edges; a fraction `1/n`
+is a raster at one pixel per point, `n·W` wide, each `n × n` block of it
+put down as its rounded integer mean, byte by byte (`hsk_draw_surface`).
+A frame drawn at another scale than `k`, as a take or a film may be,
+keeps the ratio: at 1:1 the raster is the frame's scale, as before
+there was a zoom. Not a scale transform on the canvas: a transform
+samples the scene at fractional positions in floats, and the window's
+bytes must be a function of the scene's alone, to the pixel. Inside the
+window everything, lamp masks and pictures included, draws at the
+raster's own integer scale, and the lamp's anchor is the scene's
+viewport, the window's box in device pixels before the crop. The DOM
+writes the scene's viewport at a CSS `zoom` of `s / k`
+([dom-substrate.md](dom-substrate.md), "A stage's scene, its words and
+its hand"). Skia's hand marks are resolved on the scene's layout, in
+scene points, and taken to the window's by `stage.sceneToHost`; the
+DOM's stand on the box the browser drew, already in the host's pixels.
+The hand itself, its finger and its lift's rings, is drawn in host
+points in both, the size of a finger on the reader's glass and not on
+the scene's. Nothing maps the other way: the window takes no press.
 
 What stands is a standing of the current step's cut ("Cutting a
 step"): a recorded scene at the scroll it enters with, then as many of
@@ -123,7 +178,7 @@ look is on the node the cut named. A place on a ranking's stop is
 thousandths of that stop's box (`layout.RankingStop`): the ranking lays
 its rows and controls out anew at every width, so a hand on a row or a
 control stays on it. Every cache here is exact: the cuts are kept per
-step under the window's size and the dress, and all cleared, their
+step under the scene's viewport and the dress, and all cleared, their
 arena emptied with its capacity kept, when either changes; the scene
 stands again when the step or the standing changes; a resolved point is
 kept under the step and the spot, and cleared with the cuts. The DOM

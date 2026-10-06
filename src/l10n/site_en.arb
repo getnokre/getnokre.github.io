@@ -57,6 +57,8 @@
   "chromeStageRetry": "Retry",
   "chromeStageFullScreen": "Full screen",
   "chromeStageExitFullScreen": "Exit full screen",
+  "chromeStageZoomIn": "Zoom in",
+  "chromeStageZoomOut": "Zoom out",
   "chromeIncreaseContrast": "Increase Contrast",
   "chromeReduceTransparency": "Reduce Transparency",
   "chromePictureUnavailable": "This picture could not be shown.",

@@ -1356,8 +1356,8 @@ Core cuts a stage's step and stands its scene ([stage.md](stage.md));
 the DOM only writes what core stands. The window holds the scene app's
 tree through the same walk as the page (`serialize.stage`), `inert`,
 every id in a scope of the stage's, in a `.stage-scene` moved up by the
-scroll core's cut stood it at; the foot holds the step's words as a
-polite live region. A page written at build time writes the first step
+scroll core's cut stood it at, inside a `.stage-viewport`; the foot
+holds the step's words as a polite live region. A page written at build time writes the first step
 at rest, scene and words, so a reader with no script sees both, and no
 hand: a step's rest has none.
 
@@ -1390,6 +1390,24 @@ core's `act_reveal_margin`, none. A box on a fixed layer moves nothing.
 The move is the scene's `margin-top`, which the window's
 `overflow: hidden` already reads as its scroll, appended to the scene's
 style beside the lamp's numbers. A mark nobody placed is not drawn.
+
+**A zoomed scene is drawn at its own density.** The ratio
+([stage.md](stage.md), "The scene's own density") is the viewport's:
+away from 1:1 `serialize.sceneZoom` writes on `.stage-viewport` a CSS
+`zoom` of `s / k` (on the web `k` is one CSS pixel per point, so `2`,
+`3`, or a fraction written as one, `calc(1/2)`, since `0.333333` of
+the viewport falls short of the window) and the viewport core laid the
+scene out at, `scene_viewport`, in the scene's own pixels; at 1:1 it
+writes nothing and the viewport is the window. `zoom` and not
+`transform: scale`: a zoomed box takes its zoomed size in the window's
+layout and sets its text at the reader's pixels, where a transformed one
+keeps its unscaled box and stretches a paint. Under it the browser
+hands back every box in the host's pixels, so the hand's place needs no
+scaling, and the mark stands outside the zoom, a finger on the reader's
+glass at every density. The scene's `margin-top` is inside it, the
+scene's own pixels as core's scroll is: the driver works a move out in
+the host's pixels and writes it in the scene's. A zoom survives the big
+screen, which only refits the viewport.
 
 ### A stage on the big screen
 
@@ -1430,7 +1448,11 @@ Core lays a stage's scene out at its window's size, so no rule may
 answer a scene's question from the browser's viewport, and no rule may
 let a scene answer a question about the page around it. The window is a
 container named `stage-window`, and its `contain` makes it the
-containing block of every fixed layer in the scene. So inside it:
+containing block of every fixed layer in the scene. Both are the
+viewport's, `.stage-viewport`, a container named `stage-viewport`: the
+window itself at 1:1, the scene's own pixels under a zoom, where a query
+on the window would read the host's (a 300-point scene at a zoom of 2
+in a 600px window took the header). So inside it:
 
 - **A width is the window's.** The banner and the bar take the band's
   shape at the window's width, by a container query, depth's plates and
@@ -1447,7 +1469,18 @@ containing block of every fixed layer in the scene. So inside it:
 - **Lamp dark lights it from the window.** The driver publishes the
   window's size on it and each plate's box in it, and the chrome's
   edges light only plates on the page ("The numbers the live driver
-  publishes").
+  publishes"). Under a zoom both are the scene's pixels, the window's
+  size again on the viewport, because the sheet spends them as `px`
+  inside the zoom.
+- **The browser's width answers for the page alone.** Every rule under
+  the band's `@media` query, and the lamp glass's past it, is held to
+  the page's elements (`stylesheet.outside_scenes`, weightless, so each
+  keeps its weight against its scene copy), and a scene's shape comes
+  from its viewport's query alone, in the band and past it. Before a
+  zoom no scene was wider than the browser, so the two always agreed; a
+  zoomed-out 716-point scene in a 390px browser took the bar where its
+  width says header. The page's reserve is the page's too: a scene owes
+  its window's, unless its own nav stands above it.
 
 ### The write is a diff; the frame never is
 
@@ -1951,7 +1984,7 @@ measures and publishes, each a whole number of CSS pixels:
 | Names (`class_names`) | On | What |
 | --- | --- | --- |
 | `lamp_plate` | every box `measured` matches | its border box in its lamp window, with every scroller between them at rest |
-| `lamp_window` | the document root, and each stage's window | the window's size |
+| `lamp_window` | the document root, each stage's window, and a zoomed scene's viewport | the window's size, a zoomed scene's in its own pixels |
 | `lamp_scrollport` | each scroll container other than the page | its top in the window at rest, and its height |
 | `lamp_sideways` | each scroller that scrolls sideways alone | its top in the window at rest |
 | `lamp_edge_bar`, `lamp_edge_chosen`, `lamp_edge_sheet` | the document root | the bar as one edge over all its plates, the chosen plate, and the modal pane on top; each absent while its chrome is off screen |

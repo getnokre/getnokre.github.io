@@ -526,7 +526,11 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // scene. The move is the scene's `margin-top`, its scroll in the
   // markup, rather than a scroll of the window: the window clips with
   // `overflow: hidden`, and a scroll offset there would be one more
-  // thing a patch had to carry across frames.
+  // thing a patch had to carry across frames. Under a zoom
+  // (`sceneZoom`) the boxes the browser hands back are the host's
+  // pixels, as the mark is, which stands outside the zoom so its finger
+  // is the reader's size; the margin is the scene's own pixels, so the
+  // move is worked out in the host's and written in the scene's.
   const HAND = "data-hand";
   const STAGE_WINDOW = ".stage-window";
   const handOwn = new WeakMap(); // element -> the declarations placing it
@@ -566,8 +570,16 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const childOf = (el, cls) => [...el.childNodes].find((n) => n.nodeType === Node.ELEMENT_NODE && n.classList.contains(cls)) ?? null;
   const isFixedLayer = (el) => typeof getComputedStyle === "function" && getComputedStyle(el).position === "fixed";
 
+  // A scene's zoom over its window, as the viewport's markup writes it
+  // (`serialize.sceneZoom`): `[num, den]`, `[1, 1]` at 1:1.
+  function sceneZoom(viewport) {
+    const m = /zoom:(?:calc\((\d+)\/(\d+)\)|(\d+))/.exec((viewport && markupStyle(viewport)) ?? "");
+    return !m ? [1, 1] : m[3] ? [Number(m[3]), 1] : [Number(m[1]), Number(m[2])];
+  }
+
   function placeHand(win) {
-    const scene = childOf(win, "stage-scene");
+    const viewport = childOf(win, "stage-viewport");
+    const scene = viewport && childOf(viewport, "stage-scene");
     const mark = childOf(win, "stage-mark");
     const on = win.hasAttribute(HAND) ? win : win.querySelector(`[${HAND}]`);
     if (!scene) return;
@@ -583,7 +595,11 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       setHand(mark, undefined);
       return;
     }
-    // The scroll the recording left, and the one standing now.
+    // The scroll the recording left, and the one standing now, in the
+    // scene's pixels; `toHost` and `toScene` take a length across.
+    const [num, den] = sceneZoom(viewport);
+    const toHost = (v) => (v * num) / den;
+    const toScene = (v) => (v * den) / num;
     const at = /margin-top:\s*(-?[\d.]+)px/.exec(markupStyle(scene) ?? "");
     const rest = at ? -Number(at[1]) : 0;
     const nowAt = /margin-top:\s*(-?[\d.]+)px/.exec(handOwn.get(scene) ?? "");
@@ -602,17 +618,17 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     }
     // Where the box stands at the recording's scroll, and at the one it
     // is brought in by.
-    const top = moves ? box.top + standing - rest : box.top;
+    const top = moves ? box.top + toHost(standing - rest) : box.top;
     let scroll = rest;
     if (moves) {
-      const most = Math.max(rest, scene.getBoundingClientRect().height - w.height);
-      if (top < band[0] || box.height > band[1] - band[0]) scroll = Math.max(0, rest + top - band[0]);
-      else if (top + box.height > band[1]) scroll = Math.min(most, rest + top + box.height - band[1]);
+      const most = Math.max(rest, toScene(scene.getBoundingClientRect().height - w.height));
+      if (top < band[0] || box.height > band[1] - band[0]) scroll = Math.max(0, rest + toScene(top - band[0]));
+      else if (top + box.height > band[1]) scroll = Math.min(most, rest + toScene(top + box.height - band[1]));
     }
     setHand(scene, scroll === rest ? undefined : `;margin-top:${-scroll}px`);
     const [ax, ay] = on.getAttribute(HAND).split(",").map(Number);
     const x = box.left - w.left + (box.width * ax) / 1000;
-    const y = top - (scroll - rest) - w.top + (box.height * ay) / 1000;
+    const y = top - toHost(scroll - rest) - w.top + (box.height * ay) / 1000;
     setHand(mark, `;--x:${Math.round(x)}px;--y:${Math.round(y)}px`);
   }
 
@@ -834,6 +850,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
+  const SCENE_VIEWPORT = '.stage-viewport';
   const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
   const LAMP_EDGE_CHOSEN_PLATES = '.chip.current';
   const LAMP_EDGE_SHEET_PLATES = '.sheet, .notices-pane, .picker:not(.above-nav)';
@@ -943,13 +960,22 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     };
     // Left, top, width and height in the element's lamp window at rest.
     // The scrollers above a stage move the stage and its plates alike,
-    // so its window's own rect is the origin as it stands.
+    // so its window's own rect is the origin as it stands. In a zoomed
+    // scene they are the scene's pixels, which is what the sheet spends
+    // them as there, and what its scrollers' offsets already are.
+    const zooms = new Map();
+    const zoomIn = (viewport) => {
+      if (!zooms.has(viewport)) zooms.set(viewport, sceneZoom(viewport));
+      return zooms.get(viewport);
+    };
     const atRest = (el) => {
       const r = el.getBoundingClientRect();
       const win = el.closest(LAMP_WINDOW);
       const [sx, sy] = shift(el, win);
       const o = win ? win.getBoundingClientRect() : { left: 0, top: 0 };
-      return [r.left + sx - o.left, r.top + sy - o.top, r.width, r.height];
+      const [num, den] = win ? zoomIn(el.closest(SCENE_VIEWPORT)) : [1, 1];
+      const own = (v) => (v * den) / num;
+      return [own(r.left - o.left) + sx, own(r.top - o.top) + sy, own(r.width), own(r.height)];
     };
     // One chrome edge over the page: the union of what the selector
     // finds on screen, or the last of it — the top of the stack.
@@ -971,6 +997,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
         for (const win of host.querySelectorAll(LAMP_WINDOW)) {
           const r = win.getBoundingClientRect();
           put(writes, win, LAMP_WINDOW_SIZE, [r.width, r.height]);
+          // A zoomed scene is lit from the same window, in its pixels.
+          const viewport = childOf(win, "stage-viewport");
+          const [num, den] = zoomIn(viewport);
+          if (num !== den) put(writes, viewport, LAMP_WINDOW_SIZE, [(r.width * den) / num, (r.height * den) / num]);
         }
         for (const el of host.querySelectorAll(LAMP_PLATES)) put(writes, el, LAMP_PLATE, atRest(el));
         for (const el of host.querySelectorAll(LAMP_SCROLLPORTS)) {
