@@ -1350,6 +1350,22 @@ stage out again where the guess was off. The pane's box is the
 sheet's; the window's height in it is core's, written into the markup
 as `--stage-h` as in the page.
 
+### A stage's scene, its words and its hand
+
+Core cuts a stage's step and stands its scene ([stage.md](stage.md));
+the DOM only writes what core stands. The window holds the scene app's
+tree through the same walk as the page (`serialize.stage`), `inert`,
+every id in a scope of the stage's, moved up by the scroll core's cut
+stood it at; the foot holds the step's words as a polite live region.
+A page written at build time writes the first step at rest, scene and
+words, so a reader with no script sees both.
+
+The hand is a positioned element (`.stage-mark`) at the point core
+resolved on *its own* layout of the scene (`stage.markOf`), while the
+browser lays the scene's markup out itself: where the two part, the
+hand stands off the node it names. Placing it on the node as the
+browser drew it, by the live driver, is a queued piece and not done.
+
 ### A stage on the big screen
 
 A big stage is the same figure, patched in place: its frame and its

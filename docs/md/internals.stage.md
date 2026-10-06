@@ -7,78 +7,76 @@ recorded and shown).
 
 ## The recording
 
-`core/recorded_play.zig` is the format, both halves: the `Writer` the
-recorder (`testing/recorder.zig`) fills while a scenario runs, and
-`read`. The recorder hears the run on the film sink's seam
-(`trace.StepObserver`) and keeps the same timeline the film keeps
-(`core/timeline.zig`), so the two decide the same shots; where the film
-draws each shot on the app as it stands, the recorder takes the app as
-it stands — each scene once, while it is on screen, which is the only
-moment it exists.
+A recording keeps what a play *is* and nothing of how it looked at the
+size it was acted at. `core/recorded_play.zig` is the format, both
+halves: the `Writer` the recorder (`testing/recorder.zig`) fills while
+a scenario runs, and `read`.
 
-What the film and the recorder hear of a reach — the scrolls in
-slices, each hand and where it lands — is told by one routine,
-`core/director.zig`, which the driver calls with real input as its
-executor and a cut calls with `reach.make` ("Cutting a step"), so a
-replay's cues and a film's come from the same code.
+**What it holds.** The locale the played app stood in, its direction
+and the framework's words it had installed (`App.Chrome`); the window
+it was acted at, which nothing on a stage reads but the test tier; the
+words each step stands under (`captions`); every icon a scene draws,
+by name, first after the stamp so the build's gathering tool, which
+links no nokre, can read them, and whose mark, by the app's display
+name; the elements, each distinct one encoded once in a table; the
+scenes; each distinct nav roster; and the steps.
 
-A scene is the tree — every element whole, in document order, each
-distinct element encoded once in a table and a scene being its nodes'
-parents and rows — and `SceneState`: the facts outside the tree that
-drawing reads, the reference the router stood on among them, in its
-one spelling with its secrets redacted (`SceneState.reference`). A
-narrow desk's region switcher is left out, because a host stands it by
-its own; which region it shows is the one the reference names. A place a shot
-names still counts the switcher where the played app stood one
-(`place.Place`): it is resolved only on a scene stood at the size it
-was made at, where the stand stood the switcher again. An action is
-kept as which of its functions were bound,
-drawing reads. The tree holds the `nav` and none of its children, which
-are a row or a chip by the width the played app stood at: the scene
-keeps the nav's roster instead, resolved as its nav drew it
+A **scene** is a screen the played app built, as an app tree: every
+element whole in document order, a scene being its nodes' parents and
+table rows, with nokre's own chrome stripped — the nav's children
+(its row or its chip), a narrow desk's region switcher, and a store
+badge absent from the platform. Beside the tree, `SceneState`: what
+drawing reads that the tree does not say (focus and its ring, the
+acknowledged mark, the grab handles, the open picker's owner, the
+screen's shape), the reference the router stood on, in its one
+spelling with its secrets redacted (`SceneState.reference`), and which
+roster its nav drew. A roster is resolved as the nav drew it
 (`nav.effectiveRoster`: each entry's words in the played app's
-language, its icon, and whether it is the screen's own entry), each
-distinct roster once in `RecordedPlay.rosters`, since an app may change
-its roster mid-play. The screen's own entry keeps its route's name,
-never the reference it was entered with, whose arguments may be secret.
-Its icons are among the recording's. A hand on a nav's child is a place
-on the nav (`place.Place`). An action is kept as which of its functions were bound,
+language, its icon, whether it is the screen's own entry), the screen's
+own entry keeping its route's name and never the reference it was
+entered with. An action is kept as which of its functions were bound,
 and comes back bound to a function that does nothing, because drawing
 reads `wired()` and nothing else. A node reference (`named_by`, focus)
-is its ordinal. A recording keeps no scroll at all (the module doc of
-`core/recorded_play.zig` has what it leaves out): a scene stands at the
-top, and its scroll is the stage's ("Cutting a step"). Icon names come
-first after the stamp, so the build's gathering tool, which links no
-nokre, can read them.
+is its ordinal. A picture travels as its description, destination and
+own size, and a store badge as the picture it draws as.
 
-Beside the shots a recording keeps its steps (`recorded_play.Step`),
-one per step the player counts, one per run of shots under one
-caption: the opening, a said line, or an act, each with the waits
-after it under its words. An act's
-step is what the scenario named, not how it was reached: the gesture,
-the target and a pair's second place as `reach.Target` parts on the
-app's own nodes, and a drag's anchor — heard from the director before
-its first move (`director.Cue.intent`). Its node is an app ordinal
-(`recorded_play.appOrdinal`): document order without the nodes nokre
-adds by size or look — the nav's children, a narrow desk's switcher,
-every row's More, the rows of `accessibility_toggles` — so it names
-one node at every size and in every look. A drag keeps its head
-beside its anchor, so its path can be retraced. A step names its
-scenes by number: `before`, the scene standing when the intent was
-given; `during`, every state the act made in hand, each keystroke
-included where the shots show one in two; and `after`, the act's
-result then each wait's, with how the router moved to it, read off its
-stack. The player plays each step cut again at its own size ("Cutting
-a step"); the shots and the scenes a reach passes through stay recorded
-for the test that holds a cut equal to them at the acted size.
+A **step** (`recorded_play.Step`) is one the player counts — the
+opening, a said line, or an act, each with the waits after it under
+its words — and keeps what the scenario named, not how it was reached:
+the gesture, the target and a pair's second place as `reach.Target`
+parts on the app's own nodes, a drag's anchor and head, all heard from
+the director before the act's first move (`director.Cue.intent`). Its
+node is an app ordinal (`recorded_play.appOrdinal`): document order
+without the nodes nokre adds by size or look — the nav's children, a
+narrow desk's switcher, every row's More, the rows of
+`accessibility_toggles` — so it names one node at every size and in
+every look, and an act on one of those is refused at the recording
+(`error.PlayActsOnSizeChrome`). A step names its scenes by number:
+`before`, the scene standing when the intent was given; `during`,
+every state the act made in hand, each keystroke of a typed run; and
+`after`, the act's result then each wait's, with how the router moved
+to it, read off its stack.
+
+**What it does not hold.** No move: no scroll slice, no hand, no place
+on the screen, no reach. No scroll at all — not the window's, not a
+viewport's or a track's (`recorded_play.atRest`), not which bar was
+emphasized. No region a desk showed apart from what its reference
+names. No shots and no beats: the recorder keeps the same timeline a
+film keeps (`core/timeline.zig`), to decide which scenes to take — each
+once, while it is on screen, which is the only moment it exists — and
+writes none of it. Each of those is a fact of the size the play was
+acted at, and a stage makes its own at the reader's ("Cutting a
+step"). The test tier keeps the run's timeline beside its recording in
+process (`recorder.Acted`), never in the file.
 
 The codec is generic over the element set, and so is the stamp's
 digest (`shapeDigest`): a field added anywhere in `Element`,
-`SceneState` or the timeline's types changes it, and a reader refuses
-any other stamp. `IconName`, `PlayName` and `PictureName` are digested
-by name alone — icons travel by name, a recording holds no stage, and a
-picture travels as its description, destination and own size, stood up
-with `Picture.held.recorded` set so it draws its box.
+`SceneState` or `Step` changes it, and `format` is bumped where the
+bytes' meaning changes with no type's, so a reader refuses any other
+stamp. `IconName`, `PlayName` and `PictureName` are digested by name
+alone — icons travel by name, a recording holds no stage, and a
+picture is stood up with `Picture.held.recorded` set so it draws its
+box.
 
 ## Standing a scene up
 
@@ -132,7 +130,13 @@ kept under the step and the spot, and cleared with the cuts.
 
 ## Cutting a step
 
-`core/stage_cut.zig` makes one step's shots again from what the step
+What a film and a stage show of a reach — the scrolls in slices, each
+hand and where it lands — is told by one routine, `core/director.zig`,
+which the driver calls with real input as its executor and a cut calls
+with `reach.make`, so a stage's cues and a film's come from the same
+code.
+
+`core/stage_cut.zig` makes one step's shots from what the step
 named, at any size: its `before` scene stood in the scene app, the
 intent rebuilt on it (`appNode` for the target and `then`, the gesture,
 the anchor, the caption's words), and `director.show` walked with
@@ -185,24 +189,36 @@ what arriving by Next stood.
 A step whose target the plan refuses on its scene is shown unreached
 (`Cutter.unreached`): its words over its `before` scene, then each
 result, with no hand — what a reader under Reduce Motion is shown of
-any step. It is never shown as the
-recording's own moves, which would be a second way to show one step.
-No kind of step takes it today.
+any step. A recording keeps no moves to fall back on, and a stage
+never places a hand it could not reach. No kind of step takes it
+today.
 
-At the size a play was acted at, a cut is held equal to the step's
-recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
-same shots, frames, captions and marks, and each shot's standing the
-recorded scene's tree and state, byte for byte as a recording encodes
-them; and each recorded scene, stood, shows
-the region the played app's folds say it showed, so a reference that
-parted from the live desk fails there. Where a scene holds a picture the
-played app's points (`Place.pt`) are set aside, since a recorded
-picture stands as its box (`layout.pictureRecordedSize`); a stage never
-draws at them. A cut's scrolls are held there by its shots' places.
-One kind of step is named as differing: the one after an act on a
-ranking, whose driver ladder reaches the ranking by Tab and leaves the
-played app's window scrolled wherever Tab passed, which a stage, never
-making the act, does not.
+**No drift.** At the size a play was acted at, every step's cut is
+held equal to the shots the acted run's own timeline made for it
+(`testing/stage_cut_test.zig`, every fixture play, against the
+recorder's timeline in process): the same shots, frames, captions and
+marks, and each shot's standing the recorded scene's tree and state,
+byte for byte as a recording encodes them; and each recorded scene,
+stood, shows the region the played app's folds say it showed, so a
+reference that parted from the live desk fails there. So a stage at
+the acted size plays the film, and at any other size plays what the
+same rules make there. Two exceptions are named (`standsBoxed`): where
+a scene holds a picture or a store badge, it stands as its box
+(`layout.pictureRecordedSize`, `layout.storeBadgeSlot`), not at the
+played app's height, so a reveal that runs to the page's end scrolls
+another distance — in more slices, or in as many with the last landing
+elsewhere — and the played app's points (`Place.pt`), which a stage
+never draws at, are set aside.
+
+**What the size-free gate proves for a stage.** A scene stood at a
+size it was not acted at is the screen the app would have built there
+only if the app builds its screens without reading the window, and the
+scenario takes the same steps at every size. The plays step holds both
+for every recorded play by acting it again at a contrasting size
+([testing.md](../testing.md#and-as-a-play-inside-an-app) has the gate
+and its limits). Past that gate, the reach at the reader's size is the
+one nokre would make live, and the scene it stands on is one the app
+built.
 
 ## The big screen
 

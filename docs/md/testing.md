@@ -2880,7 +2880,8 @@ names what each act lands on by the node's document-order position in
 the screen it stood on, and where inside that node's box as a fraction
 of it; the film resolves that to points from the real layout. A screen
 laid out again at another size finds the same node and the same part of
-it — which is what a recorded play shown inside another app will need.
+it, which is how a [stage](elements.md#stage) places its hand at the
+reader's size.
 
 **Captions** are the steps in a reader's words — "Pick Night bus",
 "Type ada@example.com into Email". A wait is not a step a viewer is
@@ -3023,14 +3024,20 @@ deadline.
 
 ### And as a play inside an app
 
-A film is pixels for a viewer with no app. A **recording** is the same
-run kept for an app: every screen the played app built in the scenario,
-as its tree, and the timeline a film of it shows — no pixels, no
-callbacks, no code. A [`stage`](elements.md#stage) in any nokre app
-plays it, laid out and drawn by that app, in that app's look, at the
-width the stage is given. So a marketing site shows what an app does
-with the app's own screens, in the reader's language, live text and
-all, where a video would be a picture of one language at one size.
+A film is pixels for a viewer with no app, at the one size it was made
+at. A **recording** is the same run kept for an app, at no size: every
+screen the played app built in the scenario, as its tree, and each
+step as what it acted on — the press on this button, the pick of that
+row — never the moves that reached it, and no pixels, callbacks or
+code. A [`stage`](elements.md#stage) in any nokre app plays it, laid
+out and drawn by that app, in that app's look, at the width the stage
+is given, and makes each step's moves again at that width, as nokre
+makes them live. So a marketing site shows what an app does with the
+app's own screens, in the reader's language, live text and all, where a
+video would be a picture of one language at one size. What a stage may
+and may not show is its [honesty rule](elements.md#stage);
+[internals/stage.md](internals/stage.md#the-recording) has what a
+recording holds.
 
 `zig build plays` writes each play's recordings beside its film:
 `zig-out/plays/<name>/<tag>.nokreplay`, one per language the app's
@@ -3044,19 +3051,28 @@ whatever it stands in. A store play is not recorded. Recording links no
 Skia: any build that shows a play makes its recordings, a web build
 included.
 
-**A play is one scenario at every size.** A stage lays a recording out
-at its own width, so the plays step acts each recorded play a second
-time in each language, at a contrasting size — a desktop's 1280×800 for
-a play no wider than a page's column, a phone's 390×844 for a wider one
-— and holds the two runs to one: the same steps under the same words,
-on the same nodes with the same hand, coming to the same motions, every
-screen they began on, typed through and came to the same app tree once
-what nokre lays out by size is set aside, and the nav's same
-destinations. Where
-they part, or where the second run cannot be acted at all, the play is
-refused by name, its language, both sizes and the step: the app builds
-a different screen by size, or the scenario takes a step only one size
+**A play is one scenario at every size.** A stage stands each
+recorded screen at the reader's size, which is only honest if the app
+would have built that screen there. So the plays step acts each
+recorded play a second time in each language, at a contrasting size —
+a desktop's 1280×800 for a play no wider than a page's column, a
+phone's 390×844 for a wider one — and holds the two recordings to one,
+step by step: the same kind of step and gesture under the same words,
+on the same nodes of the app's own with the same second target and
+anchor; every screen a step began on, typed through and came to
+standing on the same reference, the region a desk shows included,
+listing the nav's same destinations, and the same app tree once what
+nokre lays out by size is set aside; and the same motions to each
+result. Where they part, or where the second run cannot be acted at
+all, the play is refused, `error.PlayDiffersBySize`, by name, its
+language, both sizes and the first step that parts: the app builds a
+different screen by size, or the scenario takes a step only one size
 has.
+
+The gate has two limits. A size the app reads while building a play's
+first screen is not caught. And a scenario that waits for something
+only one size shows is refused only once the wait's timeout runs out at
+the other.
 
 An app shows a play by declaring it — the recordings, from `addPlays`
 on the played app in the same build graph, and the play's name:
@@ -3087,14 +3103,9 @@ recording is nokre's own format, stamped with the revision and a digest
 of the shapes it is made of: it is not a contract, and a new nokre asks
 for the plays to be recorded again.
 
-**The honesty rule, for a stage.** Every tree a stage shows is one the
-played app really built in that scenario; the stage stands it up and
-never makes one. A recording holds no stage — a play of a play is a
-recording of a recording — and the recorder refuses one. What the stage
-adds is the theatre's alone: the hand over the window and the words
-below it. Tests hold every window pixel to the scene drawn alone, and a
-scene stood up narrower than it was recorded to the played app's own
-layout at that width.
+A recording holds no stage — a play of a play is a recording of a
+recording — and the recorder refuses one
+(`error.RecordingHoldsAStage`).
 
 What nokre tests for *itself* — and the guarantees those tests prove on
 your behalf — is catalogued in

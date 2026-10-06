@@ -3555,8 +3555,8 @@ is holding was built before it.
 
 ### `stage`
 A recorded play of an app, shown in this one: the screens the played app
-really built in a scenario, one after the other, with the hand and the
-words the film of it shows ([testing.md](testing.md#and-as-a-play-inside-an-app)).
+really built in a scenario, one after the other, with a hand and the
+words of each step ([testing.md](testing.md#and-as-a-play-inside-an-app)).
 Fields: `play`, which play — a `nokre.PlayName`, with a member for each
 play the app's build declares it shows (`AppOptions.shows`) and no
 other, so a stage naming a play the build does not carry does not
@@ -3566,6 +3566,18 @@ stage takes. There is no autoplay, no loop, no speed, no size and no
 look: a play is what it is, its window's size is the page's and the
 reader's, never the app's, and the app it is shown in decides how it
 looks.
+
+**The honesty rule.** Every screen in a play is one the app built.
+nokre's own chrome stands as nokre stands it at the reader's size. A
+hand is placed on a node, never at a point. So one scenario serves
+every size: a play is recorded once per language and shown at any
+width. A stage never shows a screen the app did not build: it stands
+the recorded trees up and makes none, and the build refuses a play
+whose screens differ by size
+([testing.md](testing.md#and-as-a-play-inside-an-app)). A target the
+reader's size folds away is reached by the moves nokre itself would
+make, and a target that cannot be reached is shown without a hand,
+never faked.
 
 **The window is the page's, never scaled.** It is as wide as the space
 the stage is given, and as tall as it is wide or as the screen leaves
@@ -3578,23 +3590,20 @@ screen is laid out again by *this* app's layout at the window's size —
 the tree the played app built, not a picture of it — so its words are
 this app's own size, and a window narrower or wider than the played
 app's reflows them exactly as the played app would at that width. What
-runs past the window's bottom is clipped there, at the scroll the
-recording stood at (kept as the node at the window's top, so a reflowed
-screen still shows the part it showed). It is drawn in this app's look and
-appearance, on a window of its own — its page, its lamp and its frost
-know only it. Over it stands one hand, as in a film: a fingertip where
-each press lands, and never a pointer
+runs past the window's bottom is clipped there. It is drawn in this
+app's look and appearance, on a window of its own — its page, its lamp
+and its frost know only it. Over it stands one hand, as in a film: a
+fingertip where each press lands, and never a pointer
 ([testing.md](testing.md#a-scenario-as-a-film)). A play is shown as it
 would be reached at the reader's size, not as it was at the size it was
 recorded: a step scrolls only where its target stands out of this
-window, opens a row's More only where this layout folds the row, and
-on a desk this window cannot stand side by side, switches to the
-region it acts in by that region's chip, whatever width the play was
-acted at.
-window, and opens a row's More only where this layout folds the row.
-The played app's [nav](#nav--nav_item) stands as a row or as its chip
-by this window's width on every screen, and a step to a destination
-opens the chip's picker only where it collapses.
+window, and the screen stays scrolled where that left it, as a live
+app's would; it opens a row's More only where this layout folds the
+row; and on a desk this window cannot stand side by side, it switches
+to the region it acts in by that region's chip, whatever width the
+play was acted at. The played app's [nav](#nav--nav_item) stands as a
+row or as its chip by this window's width on every screen, and a step
+to a destination opens the chip's picker only where it collapses.
 
 **A titled frame.** The window stands in a frame with rounded corners,
 edged in the look's rule and parted by a rule from its two ends: above
