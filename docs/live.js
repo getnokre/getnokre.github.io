@@ -530,8 +530,11 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // (`sceneZoom`) the boxes the browser hands back are the host's
   // pixels, as the mark is, which stands outside the zoom so its finger
   // is the reader's size; the margin is the scene's own pixels, so the
-  // move is worked out in the host's and written in the scene's.
+  // move is worked out in the host's and written in the scene's. A
+  // step's rest draws no hand but marks what the step acted on (`AIM`),
+  // and the scene moves to it by the same rule.
   const HAND = "data-hand";
+  const AIM = "data-aim";
   const STAGE_WINDOW = ".stage-window";
   const handOwn = new WeakMap(); // element -> the declarations placing it
   const handWindows = new Set();
@@ -581,9 +584,10 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     const viewport = childOf(win, "stage-viewport");
     const scene = viewport && childOf(viewport, "stage-scene");
     const mark = childOf(win, "stage-mark");
-    const on = win.hasAttribute(HAND) ? win : win.querySelector(`[${HAND}]`);
+    const hand = win.hasAttribute(HAND) ? win : win.querySelector(`[${HAND}]`);
+    const on = mark ? hand : win.querySelector(`[${AIM}]`);
     if (!scene) return;
-    if (!mark || !on) {
+    if (!on) {
       setHand(scene, undefined);
       if (mark) setHand(mark, undefined);
       return;
@@ -592,7 +596,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     const box = on.getBoundingClientRect();
     if (!(box.width > 0 && box.height > 0)) {
       setHand(scene, undefined);
-      setHand(mark, undefined);
+      if (mark) setHand(mark, undefined);
       return;
     }
     // The scroll the recording left, and the one standing now, in the
@@ -626,6 +630,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       else if (top + box.height > band[1]) scroll = Math.min(most, rest + toScene(top + box.height - band[1]));
     }
     setHand(scene, scroll === rest ? undefined : `;margin-top:${-scroll}px`);
+    if (!mark) return;
     const [ax, ay] = on.getAttribute(HAND).split(",").map(Number);
     const x = box.left - w.left + (box.width * ax) / 1000;
     const y = top - toHost(scroll - rest) - w.top + (box.height * ay) / 1000;

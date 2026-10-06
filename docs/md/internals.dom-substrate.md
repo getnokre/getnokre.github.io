@@ -1397,6 +1397,13 @@ core's `act_reveal_margin`, none. A box on a fixed layer moves nothing.
 The move is the scene's `margin-top`, which the window's
 `overflow: hidden` already reads as its scroll, appended to the scene's
 style beside the lamp's numbers. A mark nobody placed is not drawn.
+At a step's rest the driver brings the step's target into view, mark
+or no mark: a rest with no hand writes `data-aim` on the node the step
+acted on (`stage.aimOf`) — on a ranking control's button where it
+pressed one still offered, never on a row, whose place the act gave to
+another — and the scene moves to it by the same rule; the opening, a
+said line and a rest on another screen than the one acted on mark
+nothing and stand where core put them.
 
 **A zoomed scene is drawn at its own density.** The ratio
 ([stage.md](stage.md), "The scene's own density") is the viewport's:
