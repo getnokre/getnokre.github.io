@@ -1725,6 +1725,15 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   Below the cap the band is one line by construction, the measurement is
   live again, and the chip is what a narrow window gets.
 
+  **A stage's window is the band at every width.** Its scene's nav was
+  laid out by core, which draws the band whatever the window, and the
+  hand and the scroll in it are core's numbers, so the reader's width
+  must not turn it into a header: the sheet writes the band's rules a
+  second time under `:where(.stage-window)`, outside the query, depth's
+  and lamp's plates for it included. The window's `contain` makes it the
+  fixed band's containing block, and its `--safe-b` is zero, as the
+  scene's `safe_bottom` is.
+
   **The band's own overflow answer needs nobody running.** A nowrap row
   in a fixed layer clips at both screen edges, and the band cannot wrap
   out of that — its height is arithmetic the content reserve repeats to

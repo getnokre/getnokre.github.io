@@ -325,6 +325,12 @@
   :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row { padding-block: 20px; margin-block: -20px; pointer-events: none; }
   :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row > * { pointer-events: auto; }
 }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .picker.above-nav { box-shadow: var(--card-shadow); }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .chip.current { background: var(--chosen-fill); border-color: transparent; }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .chip { position: relative; }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .chip::before { content: ""; position: absolute; inset: calc(-1 * var(--border)); border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .nav-row { padding-block: 20px; margin-block: -20px; pointer-events: none; }
+:root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) :where(.stage-window) .nav-row > * { pointer-events: auto; }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row { isolation: isolate; }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-indicator .icon-button, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row > .icon-button { position: relative; }
 :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-indicator .icon-button::before, :root:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .nav-row > .icon-button::before { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--card-shadow); z-index: -1; pointer-events: none; }
@@ -667,6 +673,10 @@
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
       :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
     }
+    :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
+    :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
+    :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+    :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) :where(.stage-window) .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
   }
   :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
   :root[data-nokre-theme="lamp"]:not([data-nokre-appearance]) .chip.current > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 59; --lamp-glyph-em: 16; }
@@ -804,6 +814,10 @@
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :is(.notice:not(.notices-pane .notice))[style*="--lamp-plate-top:"]::after { content: ""; }
     :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .notice:not(.notices-pane .notice)[style*="--lamp-plate-top:"] { --lamp-glass-below: 12; --lamp-glass-beside: 0; --lamp-glass-edge: 0px; --lamp-glass-radius: 12px; }
   }
+  :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"] { box-shadow: var(--lamp-contact), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 0.3501 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 0.3501 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.2850 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.8999)), calc(var(--lamp-cast-x) * var(--lamp-cast-off) * 1.0000 * 1px) calc((var(--lamp-cast-y) * var(--lamp-cast-off) * 1.0000 + 1) * 1px) calc(var(--lamp-cast-blur) * 0.9500 * 1px) rgb(0 0 0 / calc(var(--lamp-cast-peak) * 0.6001)) !important; border-color: transparent !important; background: transparent !important; }
+  :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::before, :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) :is(.chip:not(.current), .chip.current)[style*="--lamp-plate-top:"]::after { content: ""; }
+  :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) .chip:not(.current)[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
+  :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] :where(.stage-window) .chip.current[style*="--lamp-plate-top:"] { --lamp-glass-below: 0; --lamp-glass-beside: 0; --lamp-glass-edge: 1px; --lamp-glass-radius: 26px; }
 }
 :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip:not(.current) > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 28; --lamp-glyph-em: 16; }
 :root[data-nokre-theme="lamp"][data-nokre-appearance="dark"] .chip.current > .icon[style*="--lamp-plate-top:"] { --lamp-material-high: 0.2600; --lamp-material-low: 0.0300; --lamp-material-specular: 1.0000; --lamp-material-mirror: 0; --lamp-face-clip: padding-box; --lamp-glyph-under: 59; --lamp-glyph-em: 16; }
@@ -3475,7 +3489,6 @@ input.check::after { content: "\e06c"; }
      take the whole pad from the screen edge — which is where
      the reference puts them either way. */
   .notice { border-radius: 0; border-inline: 0; padding-inline: var(--notice-pad); }
-
   /* The bar has no ground: no track, no fill, no hairline. The
      nav is its items and nothing else, each on a plate of its
      own, with 8px of page showing between them. */
@@ -3606,6 +3619,16 @@ input.check::after { content: "\e06c"; }
     border-radius: var(--radius-card);
   }
 }
+
+.stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); }
+:where(.stage-window) .nav { position: fixed; inset-inline: 0; bottom: 0; z-index: 2; justify-content: center; padding-top: var(--nav-bar-pad); padding-bottom: calc(var(--bar-bottom) + var(--safe-b)); pointer-events: none; }
+:where(.stage-window) .nav-row { flex-wrap: nowrap; gap: var(--nav-item-gap); pointer-events: auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; }
+:where(.stage-window) .nav-row::-webkit-scrollbar { display: none; }
+:where(.stage-window) .chip { height: var(--nav-slot); padding-inline: calc(var(--nav-item-pad-h) - var(--border)); border: var(--border) solid transparent; border-radius: calc(var(--nav-slot) / 2); background: var(--g11); font-weight: 400; }
+:where(.stage-window) .chip.current { background: var(--g10); border-color: var(--mid); }
+:where(.stage-window) .chip:focus-visible { outline: var(--focus) solid var(--ink); outline-offset: calc(-1 * var(--focus)); border-color: transparent; }
+:where(.stage-window) .picker.above-nav { bottom: calc(var(--bar-bottom) + var(--safe-b) + var(--nav-slot) + var(--nav-item-gap)); width: max-content; max-width: calc(100% - 2 * var(--nav-bar-pad-h)); max-height: calc(100dvh - var(--sheet-min-top)); padding: 0; inset-inline: 0; margin-inline: auto; border-bottom: var(--border) solid var(--g6); border-radius: var(--radius-card); }
+:where(.stage-window) .nav-row { padding-inline: var(--nav-bar-pad-h); }
 
 /* The route header, centred on the cap region of the line it marks. */
 .nokre > .icon-button.back:has(+ :is(h1, .s-h1)), .nokre > .icon-button.back:has(+ :is(.document, .stack.hands-back, .group) > :first-child:is(h1, .s-h1)) { top: calc(var(--page-pad) + -4px); }
