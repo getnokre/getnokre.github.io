@@ -1155,6 +1155,19 @@ control, through the door a tap takes, and the screen is laid out and
 audited again while it is big, then pressed back: the big screen is a
 modal layer no route table lists, and the audit judges it alone.
 
+**And at the narrowest window.** A third app stands every one of those
+screens, big stages included, at `narrowest_w` (a constant in the test
+file, 220 today, moving to `layout.metrics` with the scale axis) by a
+phone's height, and each must build, pass the audit and lay out with no
+box past the window's sides — at all three widths, not only this one.
+Content wider than its window is the failure WCAG 1.4.10 (Reflow)
+names; what a table's columns outrun inside the table's own box is the
+two-dimensional content it excepts, and the table's box is held like
+any other. The width is a floor because the scale axis is capped by it:
+a larger text size is a narrower viewport, and the axis stops where the
+viewport would fall below every screen's standing. A refusal names the
+example, the screen, the window and what failed.
+
 **What it proves, and what it does not.** For this repository's examples
 the medium axis is a second pass over the same tree, and saying so is
 worth more than pretending otherwise: their rosters fit a row at every
@@ -1493,7 +1506,7 @@ every `zig build test -Dskia`:
 | `tests/capture.zig` | a `DriverApp`-driven app's artifacts, out of a process with no window — and the PNG read back by a decoder that is not the encoder (`-Dskia`, desktop) |
 | `node --check` × 5 | every JavaScript file a web build ships, parsed by the engine that runs it |
 | `tests/web_services.mjs` | the three service legs that exist **only** on the web, executed |
-| `tests/example_screens.zig` | every screen of every example, built and audited through the example's own entry point, once per declared medium at two viewports, and again with each stage on it on the big screen ([The audit matrix](#the-audit-matrix)) (`-Dskia`, one driver per example) |
+| `tests/example_screens.zig` | every screen of every example, built and audited through the example's own entry point, once per declared medium at two viewports and the narrowest window, and again with each stage on it on the big screen ([The audit matrix](#the-audit-matrix)) (`-Dskia`, one driver per example) |
 
 The web one is the least obvious, so it is spelled out below.
 What no gate reaches is still a real list: the native backends of
