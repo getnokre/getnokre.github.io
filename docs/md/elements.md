@@ -3607,14 +3607,14 @@ to a destination opens the chip's picker only where it collapses.
 
 **A titled frame.** The window stands in a frame with rounded corners,
 edged in the look's rule and parted by a rule from its two ends: above
-it a header a touch target tall, holding a play glyph, the stage's
-`label` and the step it stands on, as `2 / 8` in the app's digits, on
-the trailing edge (with `named_by`, the glyph and the count alone), then
-three controls at its end — **Zoom out**, **Zoom in** and the big
-screen's — and below it a foot holding the step's words. The header
-mirrors under a right-to-left chrome, the count's step on the leading
-side too. In a narrow header the controls never give way: the count
-does first, and then the label is cut short. The
+it a header a touch target tall, holding a play glyph and the stage's
+`label` (with `named_by`, the glyph alone), then three controls at its
+end — **Zoom out**, **Zoom in** and the big screen's — and below it a
+foot holding the step it stands on, as `2 / 8` in the app's digits and
+dimmer than the words, at the head of the step's words. The header
+mirrors under a right-to-left chrome, and the count's step stands on
+the chrome's leading side. In a narrow header the controls never give
+way: the label is cut short. The
 frame is the stage's own, not a part of the app it is shown in, so the
 recorded screen is never mistaken for a live one; until the recording
 is in hand there is no count.
@@ -3625,9 +3625,10 @@ size the picture stood at: a recording carries no picture's pixels.
 
 **Inert.** Nothing inside the window takes focus, a press, hover or a
 node of its own in the accessibility tree: the stage is one `figure`,
-named by its name and described by the step it stands on. The step's
-words stand in the frame's foot, in their own direction, with room kept
-for the longest so a step never moves the page, and nokre's controls
+named by its name and described by the step it stands on, its count
+first. The step's words stand in the frame's foot, in their own
+direction, with room kept for the longest behind the widest count so a
+step never moves the page, and nokre's controls
 under the frame, real buttons in the app's words: **Previous step**, **Play**
 and **Next step** (`App.Chrome`: `stage_previous`, `stage_play`,
 `stage_next`). Each is heard as its word and then the stage's name

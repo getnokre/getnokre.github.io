@@ -2560,8 +2560,6 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .stage-header > .btn:nth-last-child(3) { inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed) + 2 * var(--touch)); }
 .stage-header > .btn[hidden] { display: none; }
 .stage-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
-.stage-count { display: grid; justify-items: end; margin-inline-start: auto; color: var(--dark); }
-.stage-count > span { grid-area: 1 / 1; direction: ltr; unicode-bidi: bidi-override; white-space: nowrap; }
 .stage-window {
   position: relative;
   width: 100%;
@@ -2601,6 +2599,12 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .stage-words { display: grid; padding: var(--tile-pad-v) var(--tile-pad-h); }
 .stage-words > p { grid-area: 1 / 1; margin: 0; }
 .stage-room { visibility: hidden; user-select: none; }
+/* The step count at the head of the words (`serialize.stepCount`):
+   written in the order it is said and set in the chrome's direction,
+   which it inherits, isolated from the words, whose first strong
+   character alone says where the line starts. Its two classes
+   outrank the rule that hands a `span` in a paragraph back to it. */
+.stage-words > p > .stage-count { unicode-bidi: isolate; white-space: nowrap; color: var(--dark); }
 .stage-controls { display: flex; flex-wrap: wrap; gap: var(--control-gap); margin-top: var(--control-gap); }
 /* A file writes them `hidden` until the live driver can answer them
    (`serialize.stage`); the UA's own `[hidden]` loses to the line above. */
