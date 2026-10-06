@@ -2000,7 +2000,7 @@ beside the control, the only thing saying what it switches. A `meter` or
 label: it is already the name alone.
 
 ### `button`
-`label`, `on_press` or `route` or `external`, `disabled`,
+`label`, `room_for`, `on_press` or `route` or `external`, `disabled`,
 `in_progress`, `form`, `accessible_name`. A filled pill —
 ink fill, paper text — ringed on keyboard-origin focus
 ([accessibility.md](accessibility.md#focus)). Activated by tap, Enter,
@@ -2043,7 +2043,7 @@ its padding and its lead mark (`layout.buttonTextWidth`), and layout
 measures the box against the same wrap the renderer draws. Each line
 stands centred in that column, which moves nothing where the pill hugs
 one line and keeps the words off one side where it does not (a wrapped
-label, or a stage's Play holding room for Pause). No caller
+label, or a pill keeping room for words it does not say now). No caller
 states a width or a line count, so no form of the pill can be handed a
 label it will not contain — a price that fits in English and runs long
 in German is the ordinary case, and a pill that could be overrun would
@@ -2052,6 +2052,24 @@ one line whatever it was handed while its width was capped at what it
 was offered, and the rest of the label was painted past the pill: on an
 outlined one that reached a store screenshot with the price cut off, and
 on a filled one it is paper on paper and the words simply disappear.
+
+**`room_for` is a floor, never a cap.** A button whose words change —
+Follow and Following, Save and Saved — lists the labels it may say,
+`.room_for = &.{ "Follow", "Following" }`, and stands as wide as the
+widest of them or as what it says now, whichever is wider: pressing
+it moves nothing beside it. The label it says need not be in the list
+and always fits whole; one wider than every listed label widens the
+pill past them, as an unlisted label would on any button. A button
+with no list is an ordinary button: it hugs its words and its width
+changes when they do, and nothing forces it otherwise. Each listed
+label is measured on one line, as the label is, and held to the width
+offered like it, so the floor is width alone: a listed label that
+would wrap keeps no height. Only the label is drawn and announced —
+the web writes the listed labels as hidden copies in the words' own
+grid cell, so the browser measures them with its own fonts and
+assistive tech never hears them. The glyph form is a fixed square and
+refuses a list at `append`. The stage's Play keeps room for Pause this
+way.
 
 `in_progress` says the button has been pressed and the work it started
 is still running — not "loading", because nothing is being loaded, and

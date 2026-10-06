@@ -613,7 +613,8 @@ fn gallery(app: *App) !void {
     try buttons.button(.{ .label = "Cancel", .form = .{ .secondary = null } });
     try buttons.button(.{ .label = "Delete", .disabled = true });
     try buttons.button(.{ .label = "Publishing", .in_progress = true });
-    try b.styled("The fourth has been pressed and the work it started has not come back. Its words stand down for an hourglass — an ellipsis meant three things on one glyph (elision, a More control, waiting) and a reader had to be told which. It stops activating, so a second press cannot start the work twice, but unlike disabled it keeps its focus stop: taking the stop out from under the keyboard the user just pressed it with is the loss WCAG 3.2.2 is about. Nothing clears it for you.", .{ .ink = .mid, .scale = .small });
+    try buttons.button(.{ .label = "Follow", .room_for = &.{ "Follow", "Following" } });
+    try b.styled("The fifth keeps room for the words it may say: it is as wide as the widest of them, so turning Follow into Following moves nothing beside it; a word not listed still fits whole. The fourth has been pressed and the work it started has not come back. Its words stand down for an hourglass — an ellipsis meant three things on one glyph (elision, a More control, waiting) and a reader had to be told which. It stops activating, so a second press cannot start the work twice, but unlike disabled it keeps its focus stop: taking the stop out from under the keyboard the user just pressed it with is the loss WCAG 3.2.2 is about. Nothing clears it for you.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "a button that goes");
     const going = try b.stack(.{ .axis = .horizontal, .gap = 8 });

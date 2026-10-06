@@ -2115,6 +2115,15 @@ a.link.block {
    track with the boundary stroke a standalone meter carries, and
    the fill is ink. */
 .btn { position: relative; }
+/* Words standing over hidden copies of every other thing they may
+   say (a stage's foot, a button's `room_for`): one grid cell, as
+   wide and as tall as its widest and tallest copy, so a change of
+   words moves nothing. `visibility: hidden` keeps a copy's size
+   while leaving it out of the accessibility tree, selection and
+   find. */
+.keeps-room { display: grid; }
+.keeps-room > * { grid-area: 1 / 1; }
+.room { visibility: hidden; user-select: none; }
 /* In flow, taking the width layout measured; hidden, because what
    stands in its place is drawn over it. */
 .btn-strut { visibility: hidden; }
@@ -2599,12 +2608,10 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    (`.pending`), in the box a loaded one stands in. */
 .stage-window[data-waiting]:empty { background: var(--g10); }
 /* The step's words over the room kept for the longest
-   (`serialize.stage`): one cell, as tall as its tallest copy at the
-   foot's width. `visibility: hidden` keeps a copy's size while
-   leaving it out of the accessibility tree, selection and find. */
-.stage-words { display: grid; padding: var(--tile-pad-v) var(--tile-pad-h); }
-.stage-words > p { grid-area: 1 / 1; margin: 0; }
-.stage-room { visibility: hidden; user-select: none; }
+   (`serialize.stage`, `.keeps-room`): as tall as its tallest copy
+   at the foot's width. */
+.stage-words { padding: var(--tile-pad-v) var(--tile-pad-h); }
+.stage-words > p { margin: 0; }
 /* The step count at the head of the words (`serialize.stepCount`):
    written in the order it is said and set in the chrome's direction,
    which it inherits, isolated from the words, whose first strong
