@@ -174,6 +174,7 @@ table.
 | Element | Box | Material |
 | --- | --- | --- |
 | `box` (bordered or filled), `tile_group`, `radio_group` | the card | card |
+| `stage` | the frame, its rim lying on its edge, which is drawn under the face; the window is the scene's own frame, lit by its own lamp, and the step controls are buttons | card |
 | the collapsed nav's section list | the card, on the dim | card |
 | `button`, filled (primary) | the pill, a `.g9` plate | cta |
 | `button`, secondary | no plate: its stroke alone, no fill ([below](#buttons-under-the-lamp)) | none: a `.g6` stroke, lit on its own, as a pool row is |

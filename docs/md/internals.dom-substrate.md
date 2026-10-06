@@ -2064,7 +2064,10 @@ darkening too. Each ring of the specular carries the lamp's own light at
 that ring's farthest from the lamp, and each chrome edge the lamp's
 where it stands, faded out as their own light fades, which is how
 layers joined by the brightest come near native's sum. The chrome
-edges light only plates on the page.
+edges light only plates on the page. Each layer lifts the ring's own
+byte, `--lamp-ring-byte`, which is the fill's but on a stage's frame,
+whose ring is its edge: there it is the rule's, as native strokes the
+edge under the rim.
 
 A big stage's pane is on the page for this, so the edge of a sheet or
 picker over it lights its plates and glyphs, but the bar and the chosen

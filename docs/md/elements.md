@@ -2040,7 +2040,10 @@ own as eink's is — paint, not a form change.
 button asks for the width its words want and takes what it is offered;
 when that is less, the column it wraps to is the box less its border,
 its padding and its lead mark (`layout.buttonTextWidth`), and layout
-measures the box against the same wrap the renderer draws. No caller
+measures the box against the same wrap the renderer draws. Each line
+stands centred in that column, which moves nothing where the pill hugs
+one line and keeps the words off one side where it does not (a wrapped
+label, or a stage's Play holding room for Pause). No caller
 states a width or a line count, so no form of the pill can be handed a
 label it will not contain — a price that fits in English and runs long
 in German is the ordinary case, and a pill that could be overrun would
