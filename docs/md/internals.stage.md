@@ -181,7 +181,11 @@ control stays on it. Every cache here is exact: the cuts are kept per
 step under the scene's viewport and the dress, and all cleared, their
 arena emptied with its capacity kept, when either changes; the scene
 stands again when the step or the standing changes; a resolved point is
-kept under the step and the spot, and cleared with the cuts. The DOM
+kept under the step and the spot, and cleared with the cuts. Clearing
+them keeps the reader's place: the step, and the shot by what it shows
+(`stage_cut.Position`), since a reach scrolls in as many slices as the
+size asks — a press stays the press, a result the result, and a slice
+of the reach becomes the new reach's end. The DOM
 draws no hand at core's point: it marks what the hand stands on
 (`stage.handTargetOf`) and its live driver places it on the box the
 browser drew ([dom-substrate.md](dom-substrate.md#a-stages-scene-its-words-and-its-hand)).
