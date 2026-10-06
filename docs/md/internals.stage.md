@@ -44,12 +44,12 @@ never the reference it was entered with, whose arguments may be secret.
 Its icons are among the recording's. A hand on a nav's child is a place
 on the nav (`place.Place`). An action is kept as which of its functions were bound,
 and comes back bound to a function that does nothing, because drawing
-reads `wired()` and nothing else. A node reference (`named_by`, focus,
-the emphasized bar) is its ordinal. The window's scroll is the node at
-the window's top and how far into it the top stood: the host lays the
-scene out with its own width and measurer, where an offset would show
-whatever moved to it. Icon names come first after the stamp, so the
-build's gathering tool, which links no nokre, can read them.
+reads `wired()` and nothing else. A node reference (`named_by`, focus)
+is its ordinal. A recording keeps no scroll at all (the module doc of
+`core/recorded_play.zig` has what it leaves out): a scene stands at the
+top, and its scroll is the stage's ("Cutting a step"). Icon names come
+first after the stamp, so the build's gathering tool, which links no
+nokre, can read them.
 
 Beside the shots a recording keeps its steps (`recorded_play.Step`),
 one per step the player counts, one per run of shots under one
@@ -115,9 +115,8 @@ raster of its own composited pixel for pixel, on a GPU frame too), so
 its page ground, lamp and frost know only the window.
 
 What stands is a standing of the current step's cut ("Cutting a
-step"): a recorded scene at its recorded anchor, then either as many of
-the step's reach moves made on it as the shot has come to, or brought
-to the step's target. Marks resolve on the standing the cut made them on —
+step"): a recorded scene at the scroll it enters with, then as many of
+the step's reach moves made on it as the shot has come to. Marks resolve on the standing the cut made them on —
 the shot's own, or for a finger lifting after a swipe the one it
 landed on — by the place's ordinal (`place.Place`), which counts
 neither another platform's store badge nor the rows
@@ -147,13 +146,29 @@ retraced across its `during` scenes from the anchor's caret to the
 head's in even shares, as the driver moved it, and each result is one
 `step` onto its recorded scene. What a cut shot draws is a `Standing`:
 a recorded scene and how many of the step's moves are made on it, each
-slice of a scroll one, which only the step's `before` has; or a scene
-the act made in hand or came to, aimed: brought to the step's target by
-the reveal the driver acts after, where it still holds that target on
-the same route (`stage_cut.Standing` has the rule), so a window a reach
-scrolled does not jump back as the result appears. Standing one walks
-the same moves again, so with the step, the size and the dress it is
-the whole key of what stands, and a cache under it is exact.
+slice of a scroll one, which only the step's `before` has. Standing one
+walks the same moves again, so with the step, the size and the dress it
+is the whole key of what stands, and a cache under it is exact.
+
+Every scene stands at the scroll the reach's moves left on its screen,
+carried along the screen's life, as a live app keeps a screen's scroll
+until it leaves it: the moves of the latest act on that screen, made
+whole on that act's `before` (itself stood at the scroll it entered
+with), leave the window's offset and each scrolling element's, and the
+scenes after it — the act's in-hand states and results, the next
+step's `before` — stand at them, each clamped by its own layout. A
+scrolling element is matched by its app ordinal and kind
+(`stage_cut.Offsets`), the same at every size; one that no longer
+stands there is at the top. A push or a replace onto another screen
+starts it at the top; a pop returns to what its screen was left at.
+The bar the reach scrolled last stays emphasized only where the act is
+itself a scroll: any other act's input ends the emphasis, as it does
+live.
+Which act is the latest is read off the steps alone
+(`stage_cut.latestActOn`), so the scroll is a function of the step,
+the scene, the size and the dress, and a reader may begin at any step;
+the player keeps what each act left (`stage_cut.Chain`) beside its cuts,
+cleared with them.
 
 Which region a narrow desk shows on a scene is the one its recorded
 reference names, and nothing else: every input landing in a band region
@@ -178,13 +193,16 @@ At the size a play was acted at, a cut is held equal to the step's
 recorded shots (`testing/stage_cut_test.zig`, every fixture play): the
 same shots, frames, captions and marks, and each shot's standing the
 recorded scene's tree and state, byte for byte as a recording encodes
-them, and the window's offset; and each recorded scene, stood, shows
+them; and each recorded scene, stood, shows
 the region the played app's folds say it showed, so a reference that
 parted from the live desk fails there. Where a scene holds a picture the
 played app's points (`Place.pt`) are set aside, since a recorded
 picture stands as its box (`layout.pictureRecordedSize`); a stage never
-draws at them. One kind of step is named there as differing: a scroll
-on a page a recorded store badge's box makes longer.
+draws at them. A cut's scrolls are held there by its shots' places.
+One kind of step is named as differing: the one after an act on a
+ranking, whose driver ladder reaches the ranking by Tab and leaves the
+played app's window scrolled wherever Tab passed, which a stage, never
+making the act, does not.
 
 ## The big screen
 
