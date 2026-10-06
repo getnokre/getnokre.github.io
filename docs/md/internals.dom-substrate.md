@@ -1355,16 +1355,41 @@ as `--stage-h` as in the page.
 Core cuts a stage's step and stands its scene ([stage.md](stage.md));
 the DOM only writes what core stands. The window holds the scene app's
 tree through the same walk as the page (`serialize.stage`), `inert`,
-every id in a scope of the stage's, moved up by the scroll core's cut
-stood it at; the foot holds the step's words as a polite live region.
-A page written at build time writes the first step at rest, scene and
-words, so a reader with no script sees both.
+every id in a scope of the stage's, in a `.stage-scene` moved up by the
+scroll core's cut stood it at; the foot holds the step's words as a
+polite live region. A page written at build time writes the first step
+at rest, scene and words, so a reader with no script sees both, and no
+hand: a step's rest has none.
 
-The hand is a positioned element (`.stage-mark`) at the point core
-resolved on *its own* layout of the scene (`stage.markOf`), while the
-browser lays the scene's markup out itself: where the two part, the
-hand stands off the node it names. Placing it on the node as the
-browser drew it, by the live driver, is a queued piece and not done.
+**The scene is laid out in the web's own idiom.** The browser sets its
+own lines in its own faces, and the scene's chrome is written first, as
+a page's is, so its nav takes the shape the window's width says, as a
+live page's takes the shape the browser's says: a header above the
+screen on a wide window, the band on a narrow one ("A scene reads its
+window, never the browser"). It does not match core's layout pixel for
+pixel, and nothing in it is held to.
+
+**The hand stands on the node the browser drew.** Core's point is a
+place on its own layout (`stage.markOf`), and the browser's can stand
+the node elsewhere, so the DOM writes what the hand is on instead
+(`stage.handTargetOf`): `data-hand="x,y"`, thousandths across and down
+a box, on the element of the node the hand stands on, on a ranking's
+stop where the place is on one (the stop's own button), on the
+destination under the point where it is on a nav, and on the window
+itself for a swipe on the glass or a finger lifting from a screen no
+longer standing. A choice's chip, a link in a run and a caret in a
+field are marked on their whole node, at core's point within it, as
+core places them (`Place.of` keeps no finer part). The mark
+(`.stage-mark`) carries only what it is; after each frame and whenever
+a window changes size, the live driver puts it at that place on the box
+the browser drew. If the box is not wholly in the band no chrome
+floats over, it first moves the scene by the least that brings it in,
+from the scroll the recording left and no further than a real scroll
+could, a box taller than the band bringing its top in; the margin is
+core's `act_reveal_margin`, none. A box on a fixed layer moves nothing.
+The move is the scene's `margin-top`, which the window's
+`overflow: hidden` already reads as its scroll, appended to the scene's
+style beside the lamp's numbers. A mark nobody placed is not drawn.
 
 ### A stage on the big screen
 
@@ -1407,10 +1432,9 @@ let a scene answer a question about the page around it. The window is a
 container named `stage-window`, and its `contain` makes it the
 containing block of every fixed layer in the scene. So inside it:
 
-- **A width is the window's.** The banner takes the band's shape at the
-  window's width, by a container query, and lamp dark's glass for it
-  does too. The bar is the band at every width (below, "A stage's
-  window is the band at every width").
+- **A width is the window's.** The banner and the bar take the band's
+  shape at the window's width, by a container query, depth's plates and
+  lamp dark's glass for them too; past it the bar is the header.
 - **A height is the window's.** A sheet's, the notices pane's and a
   picker's cap, and the scrim's box, are percentages of the window, not
   `100dvh` and `100dvw`.
@@ -1767,12 +1791,11 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   Below the cap the band is one line by construction, the measurement is
   live again, and the chip is what a narrow window gets.
 
-  **A stage's window is the band at every width.** Its scene's nav was
-  laid out by core, which draws the band whatever the window, and the
-  hand and the scroll in it are core's numbers, so the reader's width
-  must not turn it into a header: the sheet writes the band's rules a
-  second time under `:where(.stage-window)`, outside the query, depth's
-  and lamp's plates for it included. The window's `contain` makes it the
+  **A stage's window takes the shape its own width says.** The sheet
+  writes the band's rules a second time under `:where(.stage-window)`,
+  inside the window's container query, depth's and lamp's plates for it
+  included; the hand is placed on what the browser drew ("A stage's
+  scene, its words and its hand"). The window's `contain` makes it the
   fixed band's containing block, and its `--safe-b` is zero, as the
   scene's `safe_bottom` is.
 

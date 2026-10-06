@@ -126,7 +126,10 @@ control stays on it. Every cache here is exact: the cuts are kept per
 step under the window's size and the dress, and all cleared, their
 arena emptied with its capacity kept, when either changes; the scene
 stands again when the step or the standing changes; a resolved point is
-kept under the step and the spot, and cleared with the cuts.
+kept under the step and the spot, and cleared with the cuts. The DOM
+draws no hand at core's point: it marks what the hand stands on
+(`stage.handTargetOf`) and its live driver places it on the box the
+browser drew ([dom-substrate.md](dom-substrate.md#a-stages-scene-its-words-and-its-hand)).
 
 ## Cutting a step
 

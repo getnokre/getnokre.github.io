@@ -359,6 +359,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // `paint` hands back what it was given when nothing moved, so an
     // unchanged frame compares a reference and measures nothing.
     framed = true;
+    placeHands();
     syncLamp(painted !== was || painted_screen !== wasScreen);
     playOn();
     if (find(`.stage[${BIG}]`) && reportScreen()) frame();
@@ -505,6 +506,114 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     gutterKept = keep;
     if (keep) root.style.setProperty("scrollbar-gutter", "stable");
     else root.style.removeProperty("scrollbar-gutter");
+  }
+
+  // ---- a stage's hand ----------------------------------------------
+  //
+  // The browser lays a scene out in its own idiom — its own line breaks
+  // and faces, and its nav the shape the window's width says — so a
+  // point core worked out on its own layout can stand beside the node the
+  // browser drew. The scene marks what the hand is on instead (`HAND`:
+  // a node, a ranking's stop, or the window, and where on its box in
+  // thousandths), and after each frame, and whenever a window changes
+  // size, the hand is put there on the box the browser drew. The scene
+  // moves first if that box is not wholly in the band no chrome floats
+  // over: by the least amount from the scroll the recording left, and no
+  // further than a real scroll could (core's `act_reveal_margin`, which
+  // keeps no clearance beyond that band, so none here either). A box
+  // taller than the band brings its top in. What rides a fixed layer —
+  // the band, a sheet — stands where its window puts it, and moves no
+  // scene. The move is the scene's `margin-top`, its scroll in the
+  // markup, rather than a scroll of the window: the window clips with
+  // `overflow: hidden`, and a scroll offset there would be one more
+  // thing a patch had to carry across frames.
+  const HAND = "data-hand";
+  const STAGE_WINDOW = ".stage-window";
+  const handOwn = new WeakMap(); // element -> the declarations placing it
+  const handWindows = new Set();
+  const handWatch = typeof ResizeObserver === "function"
+    ? new ResizeObserver(() => {
+      placeHands();
+      lampAgain();
+    })
+    : null;
+
+  function setHand(el, own) {
+    if (handOwn.get(el) === own) return;
+    const markup = markupStyle(el);
+    if (own === undefined) handOwn.delete(el);
+    else handOwn.set(el, own);
+    writeStyle(el, markup);
+  }
+
+  function placeHands() {
+    const now = new Set();
+    for (const host of roots) for (const win of host.querySelectorAll(STAGE_WINDOW)) now.add(win);
+    for (const win of handWindows) {
+      if (now.has(win)) continue;
+      handWindows.delete(win);
+      handWatch?.unobserve(win);
+    }
+    for (const win of now) {
+      if (!handWindows.has(win)) {
+        handWindows.add(win);
+        handWatch?.observe(win);
+      }
+      placeHand(win);
+    }
+  }
+
+  const childOf = (el, cls) => [...el.childNodes].find((n) => n.nodeType === Node.ELEMENT_NODE && n.classList.contains(cls)) ?? null;
+  const isFixedLayer = (el) => typeof getComputedStyle === "function" && getComputedStyle(el).position === "fixed";
+
+  function placeHand(win) {
+    const scene = childOf(win, "stage-scene");
+    const mark = childOf(win, "stage-mark");
+    const on = win.hasAttribute(HAND) ? win : win.querySelector(`[${HAND}]`);
+    if (!scene) return;
+    if (!mark || !on) {
+      setHand(scene, undefined);
+      if (mark) setHand(mark, undefined);
+      return;
+    }
+    const w = win.getBoundingClientRect();
+    const box = on.getBoundingClientRect();
+    if (!(box.width > 0 && box.height > 0)) {
+      setHand(scene, undefined);
+      setHand(mark, undefined);
+      return;
+    }
+    // The scroll the recording left, and the one standing now.
+    const at = /margin-top:\s*(-?[\d.]+)px/.exec(markupStyle(scene) ?? "");
+    const rest = at ? -Number(at[1]) : 0;
+    const nowAt = /margin-top:\s*(-?[\d.]+)px/.exec(handOwn.get(scene) ?? "");
+    const standing = nowAt ? -Number(nowAt[1]) : rest;
+    let moves = on !== win;
+    let band = [w.top, w.bottom];
+    for (let el = on; moves && el && el !== scene; el = parentOf(el)) if (isFixedLayer(el)) moves = false;
+    if (moves) {
+      for (const layer of scene.childNodes) {
+        if (layer.nodeType !== Node.ELEMENT_NODE || !isFixedLayer(layer)) continue;
+        const r = layer.getBoundingClientRect();
+        if (!(r.width > 0 && r.height > 0)) continue;
+        if (r.top + r.bottom > w.top + w.bottom) band[1] = Math.min(band[1], r.top);
+        else band[0] = Math.max(band[0], r.bottom);
+      }
+    }
+    // Where the box stands at the recording's scroll, and at the one it
+    // is brought in by.
+    const top = moves ? box.top + standing - rest : box.top;
+    let scroll = rest;
+    if (moves) {
+      const most = Math.max(rest, scene.getBoundingClientRect().height - w.height);
+      if (top < band[0] || box.height > band[1] - band[0]) scroll = Math.max(0, rest + top - band[0]);
+      else if (top + box.height > band[1]) scroll = Math.min(most, rest + top + box.height - band[1]);
+    }
+    setHand(scene, scroll === rest ? undefined : `;margin-top:${-scroll}px`);
+    const [ax, ay] = on.getAttribute(HAND).split(",").map(Number);
+    const x = box.left - w.left + (box.width * ax) / 1000;
+    const y = top - (scroll - rest) - w.top + (box.height * ay) / 1000;
+    setHand(mark, `;--x:${Math.round(x)}px;--y:${Math.round(y)}px`);
   }
 
   // A playing stage's clock (shell.h's `wants_ticks`): the browser's
@@ -743,11 +852,12 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   let framed = false;
 
   // What this driver appends to an element's style: a big stage's held
-  // place and the lamp's numbers.
+  // place, a stage's hand and its scene's scroll, and the lamp's numbers.
   function owned(el) {
     const place = heldPlace.get(el);
+    const hand = handOwn.get(el);
     const lamp = lampOwn.get(el);
-    return place === undefined && lamp === undefined ? undefined : (place ?? "") + (lamp ?? "");
+    return place === undefined && hand === undefined && lamp === undefined ? undefined : (place ?? "") + (hand ?? "") + (lamp ?? "");
   }
 
   function writeStyle(el, markup) {
