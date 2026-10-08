@@ -4025,11 +4025,29 @@ try b.tile(.{ .label = member.name, .route = "write", .avatar = .{ .picture = .{
   Lovelace" that also said "Ada Lovelace, image" would say its name
   twice. In the browser the face is an `<img>` with an empty `alt`, and
   initials are hidden from the tree.
-- **If a row leads with an avatar, it is `.small`, in the icon's
-  band** (`element.tile_avatar_size`): a body line's side fills the
-  band exactly, so the words start on the column an icon's rows start
-  on and the row is no taller. It centres on the row, moves to the far
-  end under right-to-left, and its face never mirrors.
+- **A row's avatar is `.small` by default, in the icon's band**
+  (`TileAvatar.size`): a body line's side fills the band exactly, so
+  the words start on the column an icon's rows start on and the row is
+  no taller. It centres on the row, moves to the far end under
+  right-to-left, and its face never mirrors.
+- **`.medium` is the identity tile**: the person a page is about, as a
+  settings page's own account, the name as the label and the sign-in
+  address as the detail. The band grows to the avatar's 40 pt plus the
+  icon gap, the row grows to hold it where its words are shorter (a
+  label with a detail is exactly as tall, so that row does not), and
+  the words centre beside it. The hairline under it starts at its
+  words, as under any marked row.
+
+  ```zig
+  try b.tile(.{ .label = account.name, .detail = account.address, .route = "account", .avatar = .{ .picture = account.face, .name = account.name, .size = .medium } });
+  ```
+
+- **`.large` is refused** (`TileAvatarIsLarge`): a tile is a row, and a
+  hero face is an `avatar` element of its own. **A group's rows lead at
+  one size** (`TileGroupMixedAvatarSizes`): the band is the column the
+  words start on, and two sizes are two columns, the mixed-marks
+  reason. It is its own error rather than `TileGroupMixedLeadingMarks`
+  because both rows *do* lead with an avatar, and the fix is the size.
 - **If a row leads with an avatar, it stands on no well and keeps its
   own look** on an off row and under depth: a face is content, and a
   person is never decorated (the `avatar` rules: no plate, rim or
@@ -4166,11 +4184,18 @@ try item.text(.{ .content = member.name });
 ```
 
 - **It leads, beside the first line, and never sits inline.** It stands
-  between the marker and the words, its top on the first line's; the
+  between an ordered list's number and the words, its top on the first
+  line's; the
   item's words, and every block after them, hang one band in (its side
   plus the icon gap, `layout.listItemAvatarBand`), so a wrapped line
   starts under the words and never under the face. The band mirrors
   under right-to-left with the marker's.
+- **An unordered list led by avatars draws no bullet**: the avatar is
+  the marker, and a dot beside a face says nothing. The list takes no
+  marker band (`layout.listDrawsMarkers`, `listGutter` is zero), so the
+  avatar stands at the list's edge and the words hang one avatar band
+  in. An ordered list keeps its numbers beside the avatars: a number is
+  information (a place, a count) that a face does not carry.
 - **It is `.small`** (`element.list_item_avatar_size`), the first line's
   height, so the marker keeps its baseline; another size is
   `error.ListItemAvatarIsSmall`.
@@ -4185,7 +4210,9 @@ try item.text(.{ .content = member.name });
   twice, and one that says what the words do not — "Ada Lovelace,
   organizer" beside "Ada Lovelace" — is not wasted.
 - **In the browser** it floats at the start of the item's first line
-  and the blocks after it keep the band as a margin.
+  and the blocks after it keep the band as a margin; an unordered list
+  it leads is `ul.list.avatar-led`, `list-style: none` with no gutter,
+  so no `::marker` is drawn.
 
 Items flow tighter than free-standing blocks — they are one run of prose
 broken into pieces, not separate thoughts. A list draws no edge, so the

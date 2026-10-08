@@ -1991,6 +1991,8 @@ img.avatar { object-fit: cover; background: none; }
 li > .avatar:first-child { float: inline-start; margin-inline-end: var(--icon-gap); }
 li > .avatar:first-child ~ * { margin-inline-start: calc(24px + var(--icon-gap)); }
 li > .avatar:first-child + * { margin-top: 0; }
+ul.list.avatar-led { list-style: none; padding-inline-start: 0; }
+ul.list.avatar-led > li { padding-inline-start: 0; }
 
 /* ---- links and controls ------------------------------------------ */
 
@@ -3562,6 +3564,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); border-top: var(--border) solid var(--g10); }
 .tiles > .tile:has(> .square, > .avatar) + .tile:not(.radio)::before { inset-inline-start: 44px; }
+.tiles > .tile:has(> .avatar.medium) + .tile:not(.radio)::before { inset-inline-start: 60px; }
 .tiles > .tile + .tile:focus-visible::before, .tiles > .tile:focus-visible + .tile::before { content: none; }
 
 input.check::after { content: "\e06c"; }

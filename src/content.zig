@@ -537,6 +537,16 @@ fn gallery(app: *App) !void {
     try second.avatar(.{ .name = "Katherine Johnson", .description = "Katherine Johnson, mathematician", .size = .small });
     try second.text("Katherine Johnson, whose wrapped lines start under the words rather than under the disc");
     try b.styled("A tile and a list item lead with a person at the small side. In a tile the avatar is decorative, as an icon is: the label is the row's name, so a tile's avatar carries no description of its own. In a list item it is the avatar element and is heard as one, before the item's words, so its description says what the words beside it do not. A group or a list leads every row with a person or none.", .{ .ink = .mid, .scale = .small });
+    const identities = [_]struct { label: []const u8, detail: []const u8, avatar: nok.element.TileAvatar }{
+        .{ .label = "Grace Hopper", .detail = "grace@example.com", .avatar = .{ .picture = .{ .data = &squares_png }, .name = "Grace Hopper", .size = .medium } },
+        .{ .label = "Ada Lovelace", .detail = "ada@example.com", .avatar = .{ .name = "Ada Lovelace", .size = .medium } },
+        .{ .label = "Your account", .detail = "member@example.com", .avatar = .{ .size = .medium } },
+    };
+    for (identities) |identity| {
+        const account = try b.tileGroup(.{});
+        try account.tile(.{ .label = identity.label, .detail = identity.detail, .avatar = identity.avatar, .route = "gallery" });
+    }
+    try b.styled("The identity tile: the person a page is about, as a settings page's own account, at the medium side, the name as the label and the sign-in address as the detail. The band widens to the disc, a row with a detail is already as tall as it, and the words centre beside it. A face, initials, and the neutral mark where there is no name, each the one row of its own group, as a settings page opens on one.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "store_badge");
     try b.stage(.{ .play = .@"store-badges", .label = "A store badge, played" });
