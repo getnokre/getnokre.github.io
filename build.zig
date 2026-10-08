@@ -31,7 +31,9 @@ pub fn build(b: *std.Build) void {
     // rebuild on the same two clean commits is byte-identical but for
     // share-card.png, whose text the host's own stack renders (README,
     // "Publishing") — so `git diff --stat docs` keeps meaning what the
-    // README says.
+    // README says. Git state is nothing the configure cache can track,
+    // so asking poisons that cache on purpose: a stale stamp would name
+    // a commit this build did not read.
     const nokre_git = gitState(b, repo);
     const site_git = gitState(b, ".");
 
@@ -108,7 +110,7 @@ pub fn build(b: *std.Build) void {
     // on `site_options`: the live half imports that one, and the
     // assembled tree holds the live half, so the pair would be a loop.
     const site_tree = b.addOptions();
-    site_tree.addOptionPath("dir", live.web.?);
+    site_tree.addOptionPathDirectory("dir", live.web.?);
 
     // ---- the generator, the other half of the pair -------------------
     //
@@ -139,7 +141,7 @@ pub fn build(b: *std.Build) void {
     const gen = b.addExecutable(.{ .name = "generate", .root_module = mod });
 
     const run = b.addRunArtifact(gen);
-    if (b.args) |args| run.addArgs(args);
+    run.addPassthruArgs();
 
     const publish = b.addUpdateSourceFiles();
     publish.addCopyFileToSource(live.artifact.getEmittedBin(), b.pathJoin(&.{ out, "app.wasm" }));
@@ -158,7 +160,8 @@ pub fn build(b: *std.Build) void {
 /// printing nothing is git's own definition of clean, so it is this
 /// one's too — no parsing, just "did it say anything".
 fn gitState(b: *std.Build, dir: []const u8) struct { rev: []const u8, dirty: bool } {
-    const root = b.pathFromRoot(dir);
+    b.graph.poisonCache();
+    const root = b.root.joinString(b.allocator, dir) catch @panic("OOM");
     const rev = b.run(&.{ "git", "-C", root, "rev-parse", "--short", "HEAD" });
     const status = b.run(&.{ "git", "-C", root, "status", "--porcelain" });
     return .{

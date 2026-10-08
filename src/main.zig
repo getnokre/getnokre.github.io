@@ -53,7 +53,7 @@ comptime {
     _ = nok.headless_shell;
 }
 
-const nokre_revision = 193;
+const nokre_revision = 194;
 comptime {
     if (nok.revision != nokre_revision) @compileError(std.fmt.comptimePrint(
         "written against nokre revision {d}, the checkout is at {d} — survey the generator before bumping",
@@ -194,7 +194,7 @@ pub fn main(init: std.process.Init) !void {
 
     var broken: usize = 0;
     for (seen.items) |ref| {
-        const page_anchors = anchors[@intFromEnum(ref.locale)];
+        const page_anchors = anchors[@backingInt(ref.locale)];
         switch (ref.target) {
             .page => |t| {
                 if (t.frag.len != 0 and !has(page_anchors[t.index], t.frag)) {
@@ -626,7 +626,7 @@ const external_mark_css = std.fmt.comptimePrint(
     \\  vertical-align: -0.05em;
     \\}}
     \\
-, .{@intFromEnum(nok.element.IconName.lucide_arrow_up_right)});
+, .{@backingInt(nok.element.IconName.lucide_arrow_up_right)});
 
 fn stylesheet(gpa: std.mem.Allocator) ![]const u8 {
     var out: std.ArrayList(u8) = .empty;
@@ -718,7 +718,7 @@ fn writeExtras(
 
 test "the external-link mark is nokre's codepoint, spelled as the sheet spells it" {
     try std.testing.expect(std.mem.indexOf(u8, external_mark_css, "content: \"\\e04d\";") != null);
-    try std.testing.expectEqual(@as(u21, 0xe04d), @intFromEnum(nok.element.IconName.lucide_arrow_up_right));
+    try std.testing.expectEqual(@as(u21, 0xe04d), @backingInt(nok.element.IconName.lucide_arrow_up_right));
 }
 
 test "every custom property the shell spends is one the document root carries" {

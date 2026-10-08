@@ -5,7 +5,7 @@ const dom = nok.render.dom;
 
 pub fn nameOf(cp: u21) []const u8 {
     for (std.enums.values(nok.element.IconName)) |n| {
-        if (@intFromEnum(n) == cp) return @tagName(n);
+        if (@backingInt(n) == cp) return @tagName(n);
     }
     return "no nokre icon";
 }
@@ -105,6 +105,6 @@ test "a real emitter's icon lands in the scan, so the entity spelling is pinned"
 
     const emitted = try collectEmitted(gpa, &.{out.items}, "");
     defer gpa.free(emitted);
-    try std.testing.expectEqualSlices(u21, &.{@intFromEnum(nok.element.IconName.lucide_house)}, emitted);
-    try std.testing.expect(nok.render.icon_face.maps(@intFromEnum(nok.element.IconName.lucide_house)));
+    try std.testing.expectEqualSlices(u21, &.{@backingInt(nok.element.IconName.lucide_house)}, emitted);
+    try std.testing.expect(nok.render.icon_face.maps(@backingInt(nok.element.IconName.lucide_house)));
 }

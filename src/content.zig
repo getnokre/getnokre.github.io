@@ -70,7 +70,7 @@ fn footer(app: *App) !void {
         // The look the site declared and this switch sets, not the one
         // drawn: a reader's Increase Contrast or Reduce Transparency
         // resolves the drawn one, and the switch keeps showing the look.
-        .selected = @intFromEnum(app.look),
+        .selected = @backingInt(app.look),
         .on_select = .bind(selectTheme, app),
     });
     try f.link(.{ .label = loc.tr(.footerSource), .external = links.repo_url });
@@ -78,7 +78,7 @@ fn footer(app: *App) !void {
 }
 
 fn selectTheme(app: *App, selected: usize) void {
-    app.setTheme(@enumFromInt(selected));
+    app.setTheme(@fromBackingInt(@intCast(selected)));
 }
 
 /// The one place this site quotes a nokre document word for word, and so
@@ -345,8 +345,8 @@ fn palette(site: *Site, app: *App) !void {
 
     try b.heading(.h2, "The ramps");
     const strip = try b.stack(.{ .axis = .horizontal, .gap = 4 });
-    inline for (@typeInfo(Gray).@"enum".fields) |f| {
-        const g: Gray = @enumFromInt(f.value);
+    inline for (@typeInfo(Gray).@"enum".field_names) |name| {
+        const g: Gray = @field(Gray, name);
         _ = try strip.box(.{ .fill = g, .border = false, .padding = 18 });
     }
     try b.styled("g0 on the left through g12 on the right, in whichever theme and appearance you are reading this in — the switch at the foot of every page changes the one. A dark ramp descends where its light one climbs — that descent is the inversion, which is why no draw site inverts anything.", .{
@@ -359,10 +359,10 @@ fn palette(site: *Site, app: *App) !void {
         try b.heading(.h3, t[1]);
         var rows: std.ArrayList([]const []const u8) = .empty;
         try rows.append(gpa, &.{ "Step", "Light", "Dark", "On paper (light)", "On paper (dark)" });
-        inline for (@typeInfo(Gray).@"enum".fields) |f| {
-            const g: Gray = @enumFromInt(f.value);
+        inline for (@typeInfo(Gray).@"enum".field_names) |name| {
+            const g: Gray = @field(Gray, name);
             try rows.append(gpa, try gpa.dupe([]const u8, &.{
-                f.name,
+                name,
                 try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(theme, .light)}),
                 try std.fmt.allocPrint(gpa, "0x{X:0>2}", .{g.byte(theme, .dark)}),
                 try std.fmt.allocPrint(gpa, "{d:.1}:1", .{g.contrastWith(.paper, theme, .light)}),
@@ -394,9 +394,9 @@ fn palette(site: *Site, app: *App) !void {
 
     try b.heading(.h2, "The type scale");
     try b.text("Fixed. Six sizes, and every heading level maps onto one of them.");
-    inline for (@typeInfo(nok.text.Scale).@"enum".fields) |f| {
-        const s: nok.text.Scale = @enumFromInt(f.value);
-        const label = try std.fmt.allocPrint(gpa, "{s} — {d}px on {d}px", .{ f.name, s.px(), s.lineHeight() });
+    inline for (@typeInfo(nok.text.Scale).@"enum".field_names) |name| {
+        const s: nok.text.Scale = @field(nok.text.Scale, name);
+        const label = try std.fmt.allocPrint(gpa, "{s} — {d}px on {d}px", .{ name, s.px(), s.lineHeight() });
         try b.styled(label, .{ .scale = s });
     }
 
@@ -1108,6 +1108,6 @@ test "the footer's theme switch is the app's setTheme, and shows the theme it is
         try drive.selectOption(&app, q.queryByLabel(&app.tree, theme).?, step[0]);
         try testing.expectEqual(step[1], app.theme);
         const switch_el = app.tree.getConst(q.queryByLabel(&app.tree, theme).?).?;
-        try testing.expectEqual(@as(usize, @intFromEnum(step[1])), switch_el.segmented.selected);
+        try testing.expectEqual(@as(usize, @backingInt(step[1])), switch_el.segmented.selected);
     }
 }

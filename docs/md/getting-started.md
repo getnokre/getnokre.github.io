@@ -14,7 +14,7 @@ Read [introduction.md](introduction.md) first if you haven't — nokre
 makes more sense once you know which decisions it has already made, and
 why each one is a refusal rather than a gap.
 
-**Prerequisites:** Zig 0.16. A windowed app runs on all five shells
+**Prerequisites:** Zig 0.17. A windowed app runs on all five shells
 today — macOS, Windows, Linux, iOS and Android — and in a browser,
 which has no shell because it is one. Everything headless
 in this course — the
@@ -120,7 +120,7 @@ stale `.fingerprint` and prints the value to paste:
     .name = .notes,
     .version = "0.1.0",
     .fingerprint = 0x0, // first `zig build` prints the real value
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .nokre = .{ .path = "../nokre" },
     },
@@ -251,7 +251,7 @@ pub fn buildNotFound(_: *State, app: *h.App) !void {
 }
 
 pub fn main() !void {
-    var gpa_state: std.heap.DebugAllocator(.{}) = .init;
+    var gpa_state: std.heap.SafeAllocator = .init(std.heap.page_allocator, .{});
     defer _ = gpa_state.deinit();
     const gpa = gpa_state.allocator();
 
@@ -2125,8 +2125,8 @@ to `main.zig` (and note `main`'s changed signature):
 ```zig
 const builtin = @import("builtin");
 
-const is_wasm = builtin.cpu.arch == .wasm32;
-const is_android = builtin.abi.isAndroid();
+const is_wasm = builtin.target.cpu.arch == .wasm32;
+const is_android = builtin.target.abi.isAndroid();
 
 // Nothing else pulls the platform into the build on these two, because
 // main never runs there. Android names its shell; the web has none —
@@ -2143,8 +2143,8 @@ pub fn main() if (is_wasm) void else anyerror!void {
         // wraps main on wasm, so keep it void and empty.
         return;
     } else {
-        if (builtin.os.tag == .ios) return run(std.heap.c_allocator);
-        var gpa_state: std.heap.DebugAllocator(.{}) = .init;
+        if (builtin.target.os.tag == .ios) return run(std.heap.c_allocator);
+        var gpa_state: std.heap.SafeAllocator = .init(std.heap.page_allocator, .{});
         defer _ = gpa_state.deinit();
         return run(gpa_state.allocator());
     }
@@ -2189,7 +2189,7 @@ pub fn nokreWebBuild(gpa: std.mem.Allocator) !*h.App {
 // lock — the same postures nokre's examples take.
 pub const panic = if (is_wasm)
     std.debug.no_panic
-else if (builtin.os.tag == .ios)
+else if (builtin.target.os.tag == .ios)
     std.debug.simple_panic
 else
     std.debug.FullPanic(std.debug.defaultPanic);
@@ -2381,12 +2381,13 @@ a line of `NOKRE_ZIG_FLAGS` because a second `-Doptimize` is one
 `-DNDEBUG`, so the level is the only difference.
 
 `ReleaseSmall` is not one of the two, and for a native target on an
-Apple CPU it is unsafe under Zig 0.16 with LLVM 21. At its highest
-code-generation level LLVM's machine copy propagation marks a register
-that is still live as undefined, and the machine outliner, which runs
-only when a function is built for size, then keeps the return address
-in it. nokre met this in the ranking's word lookup, where every row
-said "In" or nothing, and a table stands in for the switch there now;
+Apple CPU it is unsafe under Zig 0.17 with LLVM 22, as it was under
+0.16 with LLVM 21. At its highest code-generation level LLVM's machine
+copy propagation marks a register that is still live as undefined, and
+the machine outliner, which runs only when a function is built for size,
+then keeps the return address in it. nokre met this in the ranking's
+word lookup, where every row said "In" or nothing, and a table stands
+in for the switch there now;
 that covers the one function and not the cause. Android, Linux on a
 generic CPU and the browser build are not affected, and neither is any
 target at `ReleaseSafe`, `ReleaseFast` or `Debug`, where the outliner

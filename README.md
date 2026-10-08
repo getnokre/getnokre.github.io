@@ -37,7 +37,7 @@ substrate stops short.
 
 ## Build
 
-Needs Zig 0.16 and a nokre checkout beside this one:
+Needs Zig 0.17 and a nokre checkout beside this one:
 
 ```
 ../nokre

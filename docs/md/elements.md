@@ -688,7 +688,7 @@ anything embeds or serves it. Nothing is declared: the way to add a
 glyph is to draw one, and the way to drop one is to stop.
 
 That scan reads literals, so an icon chosen from *data* — a name read
-out of a catalog, an `@enumFromInt` — has to be spelled somewhere all
+out of a catalog, an `@fromBackingInt` — has to be spelled somewhere all
 the same, in a table or a switch the scan can see. An icon whose glyph
 the shipped face does not carry is refused by the audit
 ([accessibility.md](accessibility.md), `unshipped_icon`), not drawn as a
@@ -4930,7 +4930,7 @@ long as the sheet is up — with the sheet's name typed and the context
 bound, exactly as `Routes(State)` does for a screen. The name arrives
 at the builder because the framework knows it: the builder it is
 running is the one it just installed, so the cast, the tag unwrap and
-the `@enumFromInt` that used to open every one of these functions say
+the `@fromBackingInt` that used to open every one of these functions say
 nothing the `openSheetAs` line did not already say.
 
 A builder with nothing to tell apart drops the last parameter and is

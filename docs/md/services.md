@@ -482,11 +482,10 @@ nothing on a launcher or a tab. In particular the adaptive
 `favicon.svg` is not written — it is the mark's glyph, and a tab that
 showed it would be the one surface not showing the render.
 
-The actool compile is cached under `.zig-cache` by `std.Build.Cache`,
-keyed on the bundle's every file, actool's own binary and the argv, so
-it runs once per change and a cache hit costs a directory walk; the flat
-draw is a few vectors rasterised in integers and is not cached. Both are
-byte-stable — the `.icns` comes back identical run to run on one
+Both renders are made while the build graph is built, and neither is
+cached: the graph has no cache directory to keep one in, so actool runs
+on every build that builds the graph, and the flat draw is a few
+vectors rasterised in integers. Both are byte-stable — the `.icns` comes back identical run to run on one
 toolchain, and every PNG row is nokre's own integer pipeline — which is
 what a content-addressed deploy needs. **Xcode 26 on macOS is the
 floor**, for the `.icns`: a host with no `actool` fails the packaging
@@ -2502,7 +2501,7 @@ toolchain:
 
 - **FFI to native libraries** — Zig links C-ABI static libs natively.
   On web, link the library's wasm build into the app's own module.
-- **Platform detection** — `builtin.os.tag`, at comptime.
+- **Platform detection** — `builtin.target.os.tag`, at comptime.
 - **Build-time configuration** — Zig build options.
 - **Assets** — `@embedFile`.
 - **Raw threads (native)** — `std.Thread`, when a thread without the
