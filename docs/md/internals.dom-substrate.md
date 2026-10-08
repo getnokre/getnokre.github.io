@@ -428,9 +428,12 @@ stands the could-not-show box. When a sweep frees the entry, the next
 frame calls `nokre_dom_drop_picture` and live.js revokes the URL. The
 shell page (`webIndexHtml`) is written before any screen is built, so
 it cannot ask a tree: it admits `blob:` exactly when the app's own
-sources name the `picture` element, which build.zig reads off the trees
+sources name the `picture` or the `avatar` element, whose face from
+data takes a blob URL the same way, which build.zig reads off the trees
 the icon face is scanned from, by the scan's own rule
-(src/names_picture.zig, the fact that also decides the chrome word).
+(src/names_picture.zig, `namesDataImage`; the chrome word asks
+`namesPicture` alone, since an avatar that cannot show its face draws
+initials, never the could-not-show words).
 
 `img-src 'self'` and `font-src 'self'` are on all three, and the second
 of those is the interesting one: nokre's own markup spends neither. The

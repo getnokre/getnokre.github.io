@@ -519,6 +519,25 @@ fn gallery(app: *App) !void {
     try b.picture(.{ .shows = .{ .declared = .hills }, .description = "The same hills, as a link to the routing contract", .route = "routing" });
     try b.styled("A picture that goes is a link named by its description. Its focus ring stands outside the picture, clear of its corners; nothing is drawn over it. A picture cannot be a background and cannot carry a press of its own: the only control it can be is this one.", .{ .ink = .mid, .scale = .small });
 
+    try b.heading(.h3, "avatar");
+    const people = try b.stack(.{ .axis = .horizontal, .gap = 16 });
+    try people.avatar(.{ .name = "Ada Lovelace", .description = "Ada Lovelace", .size = .large });
+    try people.avatar(.{ .picture = .{ .data = &squares_png }, .name = "Grace Hopper", .description = "Grace Hopper", .size = .medium });
+    try people.avatar(.{ .name = "Alan Turing", .description = "Alan Turing", .size = .small });
+    try people.avatar(.{ .description = "Someone unnamed", .size = .medium });
+    try b.styled("A person, at one of three fixed sides: 80 points for the one face a screen is about, 40 for a list's or a header's lead, 24 for a name in a row. A face is the centre square of the picture it is handed, read to fill the disc and enlarged where it is small, which a picture never is. Where there is no face to show — none handed, or bytes that cannot be shown — the disc carries the initials of the name, first word and last, with no could-not-show words, and where there is no name either it carries a neutral mark. On this substrate the face from data has no bytes to give the browser, so until the app boots over the page its initials are what stand here. A reader hears the description alone, face or initials, and an avatar is never a control.", .{ .ink = .mid, .scale = .small });
+    const members = try b.tileGroup(.{});
+    try members.tile(.{ .label = "Ada Lovelace", .detail = "A row led by a person", .avatar = .{ .name = "Ada Lovelace" }, .route = "gallery" });
+    try members.tile(.{ .label = "Grace Hopper", .detail = "Her face, from data", .avatar = .{ .picture = .{ .data = &squares_png }, .name = "Grace Hopper" }, .route = "gallery" });
+    const roll = try b.list(.{});
+    const first = try roll.listItem();
+    try first.avatar(.{ .name = "Alan Turing", .description = "Alan Turing, mathematician", .size = .small });
+    try first.text("Alan Turing, a list item led by the avatar element itself");
+    const second = try roll.listItem();
+    try second.avatar(.{ .name = "Katherine Johnson", .description = "Katherine Johnson, mathematician", .size = .small });
+    try second.text("Katherine Johnson, whose wrapped lines start under the words rather than under the disc");
+    try b.styled("A tile and a list item lead with a person at the small side. In a tile the avatar is decorative, as an icon is: the label is the row's name, so a tile's avatar carries no description of its own. In a list item it is the avatar element and is heard as one, before the item's words, so its description says what the words beside it do not. A group or a list leads every row with a person or none.", .{ .ink = .mid, .scale = .small });
+
     try b.heading(.h3, "store_badge");
     try b.stage(.{ .play = .@"store-badges", .label = "A store badge, played" });
     try b.styled("This site is in no store, so it shows no badge of its own: this is another app's screen, recorded. A store badge is the vendor's own artwork, declared by the app that is in that store and leading to its page there; a recording carries it as its words, size and address, never the artwork, so a stage draws it as a box. Under the badge stands the credit line the vendor requires, drawn by nokre on every platform once per screen.", .{ .ink = .mid, .scale = .small });

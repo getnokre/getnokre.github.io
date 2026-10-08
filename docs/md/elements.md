@@ -1136,6 +1136,109 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name, .e
 - **Markdown cannot make one yet**: `[![…](name)](venue)` stays its
   source text.
 
+### `avatar`
+An avatar is a person: their face inside a disc, or, where there is no
+face to show, the initials of their name on a plain disc. Four fields:
+`picture`, an optional `PictureSource` (a picture's `.declared` or
+`.data`); `name`, the person's name, which nokre takes the initials
+from and never draws whole; `description`, who it is in words; and
+`size`, `.small`, `.medium` (the default) or `.large`.
+
+```zig
+try row.avatar(.{ .picture = .{ .data = member.face_png }, .name = member.name, .description = member.name, .size = .small });
+try b.avatar(.{ .name = account.name, .description = tr(.yourAccount), .size = .large });
+```
+
+- **Three fixed sizes, never another.** `.small` is 24 points, a body
+  line's height, for a name in a row; `.medium` is 40, a list's or a
+  header's lead; `.large` is 80, the one face a screen is about. Its
+  box is that square at the start edge, and it is never narrowed or
+  stretched. There is no size field in points.
+- **A face is its centre square, inside the disc.** Whatever the
+  picture's shape, the square at its centre is read down to the disc
+  in integers and the disc's edge is coverage nokre computes, so the
+  corners show what is behind. It is in its own color in every look and
+  undecorated, as a `picture` is: no plate, rim or shadow, and it never
+  mirrors.
+- **A face is read to fill the disc, enlarged where it is small.** A
+  picture is never enlarged; a face is, because an avatar's size is its
+  meaning and a small disc inside a larger one says nothing. A face made
+  by `App.squarePngOf` at an `edge` of 240 or more is never enlarged at
+  `.large` on a screen of three device pixels per point or less.
+- **No face draws the initials.** No `picture`, bytes that are not a
+  PNG within a picture's limits, and pixels the platform cannot decode
+  all draw the initials, with no could-not-show words: a person is
+  still named. A face that fails at its first draw draws nothing that
+  frame and its initials from the next.
+- **The initials are the first grapheme cluster of the name's first
+  word and of its last**, one where the name is one word. The first
+  letter is uppercased in the app's language where its script has case
+  (Turkish and Azerbaijani `i` is `İ`), and an accent typed as a
+  combining mark stays. Two initials of a script that joins, Persian's
+  and Arabic's, are kept apart by a zero-width non-joiner, so م and ا
+  stand as two letters and never as the word ما. They are set in the
+  size's scale, centred, and their order is their script's.
+- **No name draws a neutral mark**: Lucide's `user`
+  (`element.avatar_neutral_mark`) where the initials would be.
+- **The disc is one gray in every look**, `g10` under `ink`, which
+  holds 4.5:1 in every look and appearance.
+- **A reader hears the description alone**, "Ada Lovelace, image",
+  face or initials: the initials restate the name, and the face is the
+  person the description names. An empty description is refused at
+  append (`error.UndescribedAvatar`), and empty face bytes too
+  (`error.EmptyPicture`). It is never a control: no focus, no press.
+- **The same bytes decode once**, shared with any `picture` of them,
+  and are freed with them, by the store a picture uses.
+- **In the browser** a face is an `<img>` the stylesheet rounds and
+  covers, named by its `alt`; a face from data takes a blob URL from the
+  live driver as a picture's does, and stands its initials until then,
+  as on a page a static generator writes. Initials and the mark are one
+  `role="img"` named by the description.
+- **A recording carries the name, the description and the size, never
+  the face.** A stage draws a played app's avatar as its initials.
+
+#### Making a face from a photo
+
+`App.squarePngOf(gpa, bytes, .{ .edge = 256 })` turns a photo the app
+was handed — a picker's bytes, in whatever container the device keeps
+— into the square PNG a face is sent as, and that `.data` shows.
+
+- **The bytes and the header are held to limits before a pixel is
+  decoded**: over `max_bytes` (20 MiB) is
+  `error.PictureOverByteLimit`; a stored width or height over
+  `max_side` (8192) is `error.PictureOverSideLimit`. The header is read
+  in Zig, the same on every target: PNG, JPEG, WebP and HEIF (HEIC and
+  AVIF). Anything else is `error.PictureFormatUnsupported`.
+- **The pixels are decoded by the App's own picture decoder**, the one
+  `picture` draws with, and what decodes is the platform's: ImageIO on
+  macOS and iOS reads all four; BitmapFactory on Android reads PNG,
+  JPEG and WebP, and HEIF from Android 9; WIC on Windows reads PNG and
+  JPEG, and WebP and HEIF only where their codecs are installed; Linux's
+  libpng reads PNG alone. Bytes the decoder refuses are
+  `error.PictureUndecodable`. On the web and under a headless driver
+  the App holds only the fixed stand-in, and the answer is
+  `error.NoPictureDecoder`: the browser decodes asynchronously, outside
+  wasm.
+- **It stands upright.** No platform decoder applies the turn a camera
+  recorded, so nokre does: EXIF's Orientation in a JPEG, a WebP or a
+  PNG's `eXIf`, and an HEIF's `irot` (its EXIF is not read, so a file
+  carrying both turns once; `imir` is not read).
+- **It is the centre square, `edge` pixels a side**, read down by area
+  average, or the square's own side where that is less: a photo is
+  never enlarged. Opaque pixels are written as RGB, any coverage as
+  RGBA.
+- **Nothing but the pixels leaves.** nokre's own encoder writes IHDR,
+  IDAT and IEND and no other chunk: no EXIF, no place, no text, no
+  color profile. Its deflate is literals and runs, so a 256-pixel photo
+  is about 200 KB, close to its raw size.
+
+It leads two other elements' rows: a [`tile`](#tile_group--tile)'s,
+as its `avatar` field, and a [`list_item`](#list--list_item)'s, as its
+first child. Both take `.small`.
+
+What this is not: a `picture` is something the words are about, at its
+own shape; an `app_mark` is an app's identity; an avatar is a person's.
+
 ### `store_badge`
 A store badge says: this app, in that store. It shows the vendor's own
 badge, the "Download on the App Store" or "Get it on Google Play"
@@ -3907,6 +4010,43 @@ each row labeled with the product's name.
 - **If the mark cannot be drawn, the row is refused** with the errors
   and the build's sentence an `app_mark` gets.
 
+A row can lead with a person instead: `avatar`, a `TileAvatar` —
+`picture`, an optional face as an [`avatar`](#avatar) takes, and
+`name`, the name its initials are taken from. A picker of whom to write
+about is a tile group of these, each row labeled with the person's name.
+
+```zig
+try b.tile(.{ .label = member.name, .route = "write", .avatar = .{ .picture = .{ .data = member.face_png }, .name = member.name } });
+```
+
+- **If a row leads with an avatar, it is decorative, as an icon is.**
+  The label is the row's name and nothing of the avatar is announced,
+  so a `TileAvatar` carries no description: a row labeled "Ada
+  Lovelace" that also said "Ada Lovelace, image" would say its name
+  twice. In the browser the face is an `<img>` with an empty `alt`, and
+  initials are hidden from the tree.
+- **If a row leads with an avatar, it is `.small`, in the icon's
+  band** (`element.tile_avatar_size`): a body line's side fills the
+  band exactly, so the words start on the column an icon's rows start
+  on and the row is no taller. It centres on the row, moves to the far
+  end under right-to-left, and its face never mirrors.
+- **If a row leads with an avatar, it stands on no well and keeps its
+  own look** on an off row and under depth: a face is content, and a
+  person is never decorated (the `avatar` rules: no plate, rim or
+  shadow).
+- **A face, initials and the neutral mark behave as an `avatar`'s
+  do**: the same store decodes the face once, a face that cannot be
+  shown draws the initials, a face from data makes the row need a
+  runtime and takes a blob URL in the browser, and a recording carries
+  the name and never the face.
+- **If a row sets an avatar with an icon or a mark, it is refused**
+  (`TileHasOneLeadingMark`), and **a group whose rows do not all lead
+  with avatars or all not is refused** (`TileGroupMixedLeadingMarks`),
+  for the reasons above. A trailing mark beside an avatar does not
+  exist: `mark` leads.
+- **Empty face bytes are refused** (`error.EmptyPicture`), as on an
+  `avatar`.
+
 Reach for tiles where a screen is a list of destinations or row-shaped
 actions (settings screens, detail screens). For an exclusive choice
 among options, that is `radio_group`, not a tile group.
@@ -4007,13 +4147,45 @@ in the chrome's direction: mirrored, `۱۰.` keeps its figures in order
 and puts its stop on their left, between the number and the words.
 
 A `list_item` holds document blocks — `text` and nested lists — not
-arbitrary content. A `heading` inside one would claim an outline
+arbitrary content, and a leading `avatar` (below). A `heading` inside one would claim an outline
 position the list cannot own, and a `table` reads as a mistake at list
 depth; both are rejected at `append`. Nesting is capped at three levels,
 also at `append`: past that the indent has eaten the line without saying
 anything the words don't. Parsed Markdown flattens deeper levels onto
 the third rather than failing, the way it rebases heading levels (see
 [markdown.md](markdown.md)).
+
+**An item may lead with a person**: an [`avatar`](#avatar) as its
+first child, beside the item's first line. A roll of participants is a
+list whose items are each a face and a name.
+
+```zig
+const item = try roll.listItem();
+try item.avatar(.{ .picture = member.face, .name = member.name, .description = member.name, .size = .small });
+try item.text(.{ .content = member.name });
+```
+
+- **It leads, beside the first line, and never sits inline.** It stands
+  between the marker and the words, its top on the first line's; the
+  item's words, and every block after them, hang one band in (its side
+  plus the icon gap, `layout.listItemAvatarBand`), so a wrapped line
+  starts under the words and never under the face. The band mirrors
+  under right-to-left with the marker's.
+- **It is `.small`** (`element.list_item_avatar_size`), the first line's
+  height, so the marker keeps its baseline; another size is
+  `error.ListItemAvatarIsSmall`.
+- **It is the item's first child or not in it**
+  (`error.ListItemAvatarLeads`), so an item holds one.
+- **A list's items all lead with one or none does**
+  (`error.ListMixedLeadingAvatars`), checked as each item takes its
+  first child: the tile group's reason, one column of words.
+- **A reader hears it as the image its description names, before the
+  item's words.** It is the `avatar` element, so its description is
+  heard: a description that restates the words beside it is heard
+  twice, and one that says what the words do not — "Ada Lovelace,
+  organizer" beside "Ada Lovelace" — is not wasted.
+- **In the browser** it floats at the start of the item's first line
+  and the blocks after it keep the band as a margin.
 
 Items flow tighter than free-standing blocks — they are one run of prose
 broken into pieces, not separate thoughts. A list draws no edge, so the

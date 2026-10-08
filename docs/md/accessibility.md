@@ -22,6 +22,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets |
 | `qr` | `image` | label as name, encoded value carried |
 | `picture` | `link` (`route` or `external`) / `image` | description as name; never decorative, an empty one is refused; a link is focused, and its could-not-show box is the link too |
+| `avatar` | `image` | description as name, face or initials alike, leading a list item too, read before its words; an empty one is refused; never a control, so no stop |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
 | `stack`, `box`, `group` | `group` | — |
 | `accessibility_toggles` | `group` | — ; its rows are the `toggle`s nokre installs, below |
@@ -33,7 +34,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `button` / `link` (folded) | — | absent: the row folded it away and its `more` speaks for it |
 | `sheet_close`, `back`, `icon_button`, `more` | `button` | focused |
 | `link` | `link` | focused |
-| `tile` | `link` (`route` or `external`) / `button` (action) | detail and `badge` joined as the value, focused, `disabled`; its leading mark is decorative and its chip is not — a glyph's meaning is a guess and a word is not, so the label is the name and the chip is announced |
+| `tile` | `link` (`route` or `external`) / `button` (action) | detail and `badge` joined as the value, focused, `disabled`; its leading mark or avatar is decorative and its chip is not — a glyph's meaning is a guess and a word is not, so the label is the name and the chip is announced |
 | `toggle` | `switch` | on (carried as checked), focused, `disabled`; `in_progress`: disabled *and* busy, the value still carried, still a focus stop |
 | `checkbox` | `checkbox` | checked, focused, `disabled`; `in_progress` as `toggle` |
 | `copyable` | `button` | copied value carried, focused; a `status` child while acknowledged |

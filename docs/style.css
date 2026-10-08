@@ -1122,6 +1122,7 @@ a, s, u, ins, del { text-decoration-skip-ink: none; }
 .picture,
 .picture-unshown,
 .store-badge,
+.avatar,
 .badge,
 .btn,
 .ctl,
@@ -1968,6 +1969,28 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   inset: min(0px, calc(50% - var(--touch) / 2));
 }
 .stack.row > .store-badge + .store-badge { margin-inline-start: calc(max(var(--gap), 10px) - 20px - var(--gap)); }
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--g10);
+  color: var(--ink);
+  font-weight: 400;
+  white-space: nowrap;
+}
+img.avatar { object-fit: cover; background: none; }
+.avatar.neutral { font-family: icons; font-style: normal; }
+.avatar.small { width: 24px; height: 24px; font-size: var(--px-small); line-height: 1; }
+.avatar.medium { width: 40px; height: 40px; font-size: var(--px-h4); line-height: 1; }
+.avatar.large { width: 80px; height: 80px; font-size: var(--px-h1); line-height: 1; }
+li > .avatar:first-child { float: inline-start; margin-inline-end: var(--icon-gap); }
+li > .avatar:first-child ~ * { margin-inline-start: calc(24px + var(--icon-gap)); }
+li > .avatar:first-child + * { margin-top: 0; }
 
 /* ---- links and controls ------------------------------------------ */
 
@@ -3538,7 +3561,7 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 
 .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); border-top: var(--border) solid var(--g10); }
-.tiles > .tile:has(> .square) + .tile:not(.radio)::before { inset-inline-start: 44px; }
+.tiles > .tile:has(> .square, > .avatar) + .tile:not(.radio)::before { inset-inline-start: 44px; }
 .tiles > .tile + .tile:focus-visible::before, .tiles > .tile:focus-visible + .tile::before { content: none; }
 
 input.check::after { content: "\e06c"; }

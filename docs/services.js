@@ -49,6 +49,8 @@ export function silentHooks() {
     nokre_http_js_cancel: () => {},
     nokre_oauth_js_open: () => {},
     nokre_oauth_js_close: () => {},
+    nokre_photo_pick_js_open: () => {},
+    nokre_photo_pick_js_close: () => {},
     // Overridden by *both* instances (a compute actor runs the app's
     // code, so it may mint a PKCE verifier too, and a verifier of
     // zeros is not a verifier): the real hook needs the instance's
@@ -290,6 +292,66 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
     if (!ptr) return;
     memory().set(nb, ptr);
     nk().nokre_http_fail(index, gen, nb.length);
+    onWork();
+  }
+
+  // ---- photo_pick: the file input, and the one answer it gives ----
+  // Statuses mirror NOKRE_PHOTO_PICK_* in services/photo_pick/photo_pick.h.
+
+  const PICK_PICKED = 0;
+  const PICK_CANCELLED = 1;
+  const PICK_TOO_LARGE = 2;
+  const PICK_FAILURE = 3;
+  const PICK_UNDECODABLE = 4;
+  const EMPTY = new Uint8Array(0);
+  let pickInput = null;
+  let pickGen = 0;
+
+  function closePick() {
+    pickGen++;
+    if (pickInput) pickInput.remove();
+    pickInput = null;
+  }
+
+  // The square a face is sent as, drawn by the browser's own decoder:
+  // upright by the file's orientation, the centre square, read down to
+  // `edge` and never enlarged — App.squarePngOf's contract, which the
+  // wasm side cannot run here because the web's picture decoder lives
+  // off the wasm side.
+  async function squarePng(file, edge) {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    try {
+      const side = Math.min(bitmap.width, bitmap.height);
+      if (side === 0) throw new Error("empty");
+      const out = Math.min(edge, side);
+      const canvas = document.createElement("canvas");
+      canvas.width = out;
+      canvas.height = out;
+      const g = canvas.getContext("2d");
+      g.imageSmoothingQuality = "high";
+      g.drawImage(bitmap, (bitmap.width - side) >> 1, (bitmap.height - side) >> 1, side, side, 0, 0, out, out);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("no png");
+      return new Uint8Array(await blob.arrayBuffer());
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  // Landing then receive: the landing buffer is the app's own heap, so
+  // the file is copied out of the browser once and adopted where it
+  // lands (services/photo_pick/web.zig).
+  function endPick(status, payload) {
+    if (payload.length) {
+      const ptr = nk().nokre_photo_pick_landing(payload.length);
+      if (!ptr) {
+        nk().nokre_photo_pick_receive(PICK_FAILURE, 0);
+        onWork();
+        return;
+      }
+      memory().set(payload, ptr);
+    }
+    nk().nokre_photo_pick_receive(status, payload.length);
     onWork();
   }
 
@@ -727,6 +789,60 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
     nokre_oauth_js_random: (ptr, len) => {
       crypto.getRandomValues(memory().subarray(ptr, ptr + len));
     },
+
+    // ---- photo_pick (docs/services.md) ----
+    // A hidden file input, clicked inside the import: the import runs
+    // inside `photo_pick.start`, inside the action, inside the press's
+    // click or keydown listener (live.js), so the click carries the
+    // user activation a browser demands before it shows a file dialog.
+    // The answer is never synchronous — change and cancel are events.
+
+    nokre_photo_pick_js_open: (maxBytes, squareEdge) => {
+      closePick();
+      const gen = pickGen;
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.style.display = "none";
+      pickInput = input;
+      input.addEventListener("cancel", () => {
+        if (gen !== pickGen) return;
+        closePick();
+        endPick(PICK_CANCELLED, EMPTY);
+      });
+      input.addEventListener("change", async () => {
+        if (gen !== pickGen) return;
+        const file = input.files && input.files[0];
+        closePick();
+        const answering = pickGen;
+        if (!file) return endPick(PICK_CANCELLED, EMPTY);
+        if (file.size > maxBytes) return endPick(PICK_TOO_LARGE, EMPTY);
+        if (squareEdge > 0) {
+          let png;
+          try {
+            png = await squarePng(file, squareEdge);
+          } catch {
+            if (answering === pickGen) endPick(PICK_UNDECODABLE, EMPTY);
+            return;
+          }
+          if (answering === pickGen) endPick(PICK_PICKED, png);
+          return;
+        }
+        let data;
+        try {
+          data = new Uint8Array(await file.arrayBuffer());
+        } catch {
+          if (answering === pickGen) endPick(PICK_FAILURE, bytes.encode("ReadFailed"));
+          return;
+        }
+        if (answering !== pickGen) return;
+        if (data.length > maxBytes) return endPick(PICK_TOO_LARGE, EMPTY);
+        endPick(PICK_PICKED, data);
+      });
+      document.body.appendChild(input);
+      input.click();
+    },
+    nokre_photo_pick_js_close: () => closePick(),
 
     // ---- clock (docs/services.md) ----
     // The whole web leg: no scratch buffer, no seed, no doorway — a

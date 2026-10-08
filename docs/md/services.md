@@ -51,6 +51,7 @@ internals doc.
 | `scroll_activity` | Tells the shell a scroll the reader made moved something, so a fading scroll bar restarts its fade. **Framework-internal: no app can call it.** | **Working** — every native shell; only a shell presenting the fading bar acts on it ([elements.md](elements.md#scroll_region)) |
 | `open_url` | One verb: hand a URL (https/http/mailto — a closed set) to the system browser. Fire-and-forget. | **Working** — every shell and the web; nothing links |
 | `share` | One verb: put the OS share sheet up with UTF-8 text on it; the user picks the destination. Fire-and-forget. | **Working** — four native sheets and the web's `navigator.share`; no sheet on the Linux desktop, and `available` says so |
+| `photo_pick` | The user chooses one photo from the device; its original bytes come back on the UI thread, named by format. | **Built, unproven on devices** — PHPicker, NSOpenPanel, the Android Photo Picker, IFileOpenDialog, the FileChooser portal, a file input; compile-checked on all six, run on none |
 | `clock` | One verb: the wall clock, in milliseconds since the Unix epoch, UTC. Read on demand. | **Working** — every target; nothing links, and no shell is involved |
 | `notification` | The OS's own notification surface: ask, post, schedule, cancel, and one lane back for taps, arrivals and push tokens. | **Working** — all six platforms for the local half; push on four, and `scheduleAvailable` is false on the Linux desktop and the web |
 
@@ -2144,6 +2145,93 @@ In tests the mock journals every text put on the sheet, in order:
 refused share journals nothing, because the OS was never asked. Boot a
 sheetless target with `.share = .mock(.{ .available = false })`
 ([testing.md](testing.md)).
+
+### photo_pick: one photo, chosen by the user
+
+`photo_pick.start` opens the platform's own picker from an action, and
+exactly one `Result` comes back on the UI thread — oauth's shape: the
+one-shot delivery slot, a `Handle` whose `cancel` means the callback
+never runs.
+
+```zig
+// Inside build: is there a picker here at all? Cached at App.init.
+const can_pick = nokre.services.photo_pick.available(app);
+
+// From an action:
+_ = try nokre.services.photo_pick.start(.{ .app = app, .ctx = self, .on_result = onPhoto });
+
+fn onPhoto(ctx: ?*anyopaque, result: nokre.services.photo_pick.Result) void {
+    switch (result) {
+        .picked => |photo| upload(photo.bytes.take(), photo.format.mime()),
+        .cancelled => {},
+        .refused => |why| showWhy(why), // .too_large or .not_an_image
+        .failure => |f| log(f.name),
+    }
+}
+```
+
+**One photo, images only, no camera.** The picker shows images and
+takes one; there is no count, no crop, no title and no filter label,
+because no word the user reads may come from nokre. The bytes are the
+file's, except on iOS, where the picker hands a HEIC photo back as
+JPEG (`.compatible`): Chrome cannot decode HEIC, and the normaliser
+decodes on every target. Decoding is the normaliser's job. `photo.bytes` is a `Bytes`: `view()` borrows it for
+the callback, `take()` keeps it.
+
+**The format is read from the bytes.** iOS answers a UTI, Android and
+the web a MIME type, Windows and the portal a file name. `sniff` reads
+the leading bytes on every target, so `Format` — jpeg, png, gif, webp,
+heic, heif, avif, bmp, tiff — means one thing on all six, and a file
+the platform called an image that nokre cannot name is
+`.refused(.not_an_image)` everywhere alike.
+
+| Outcome | When |
+| --- | --- |
+| `.picked` | a file of a named format, at most `max_bytes` (20 MiB) |
+| `.cancelled` | the user dismissed the picker |
+| `.refused(.too_large)` | over 20 MiB — measured before the copy wherever the platform reports a size first |
+| `.refused(.not_an_image)` | the bytes name no format above |
+| `.refused(.undecodable)` | with `square_edge`: the photo could not be decoded, or is a GIF, BMP or TIFF, which the square does not take |
+| `.failure` | `PickerUnavailable` (no picker could be shown), `ReadFailed`, `OutOfMemory`, and with `square_edge` `NoPictureDecoder` |
+
+**`square_edge`: the face, made on the way in.** With `.square_edge =
+n`, `.picked` carries a square PNG, never the file: the photo's centre
+square, turned upright by its orientation, read down to at most `n`
+per side and never enlarged, `format` `.png`. The five native targets
+run the file through `App.squarePngOf` on the Zig side as the answer
+lands — one path, on the UI thread, decoded by the App's own picture
+decoder ([elements.md](elements.md), "Making a face from a photo").
+The web runs the browser's decoder: `createImageBitmap` with
+`imageOrientation: "from-image"`, a centre crop onto a canvas, and
+`toBlob("image/png")`. No flag on `Photo` says it was squared: the
+request did, and `format` is `.png`. `0` is `error.SquareEdgeZero` at
+`start`.
+
+`start` refuses with `error.Unavailable` where `available` is false —
+the Linux desktop with no xdg-desktop-portal on the session bus — and
+with `error.PickInFlight` while a pick is open.
+
+| Target | Picker | Notes |
+| --- | --- | --- |
+| iOS | `PHPickerViewController`, images filter, `.compatible` representation (HEIC arrives as JPEG) | out of process; no photo-library permission and no usage string. `photo_pick.m` compiles in the consumer's Xcode project, oauth's split |
+| macOS | `NSOpenPanel` as a sheet on the key window, `UTTypeImage` | |
+| Android | `android.provider.action.PICK_IMAGES` where the system picker exists (API 33, or 30 with SDK extension 2), else Play services' backport action, else `GET_CONTENT image/*` | no permission; the file is read off the main thread. `android.c` compiles through the consumer's CMake; the Activity forwards `onActivityResult` |
+| Windows | `IFileOpenDialog`, owned by the active window, shown one message-loop turn after the action so the modal loop never runs inside one | |
+| Linux | `org.freedesktop.portal.FileChooser.OpenFile` over the shell's session bus | the answer is the portal's `Response` signal, routed from the shell's one D-Bus pump |
+| Web | a hidden `<input type=file accept="image/*">`, clicked inside the import | the press's `click` listener calls into wasm synchronously, so the click carries the user activation browsers demand; the file lands straight in the app's heap |
+
+**Linking:** `.photo_pick = true` on `addApp`. No identity is needed
+and nothing derives into any manifest (packaging.zig's row). In tests
+the mock journals how many pickers the app opened and answers what the
+test says the user did: the harness's `pickPhoto(file)`,
+`cancelPhotoPick()`, `refusePhotoPickTooLarge()`,
+`failPhotoPick(name)` and `photoPickersOpened()`. `pickPhoto` runs the
+file through the same policy a platform's answer does — with
+`square_edge`, through the decoder the test installed
+(`app.setPictureDecoder`), else `NoPictureDecoder`.
+`pickSquarePhoto(png)` lands a square PNG fixture as the normaliser's
+output with no decoder, refused unless it is square and within the
+edge.
 
 ### clock: the time, and nothing that ticks
 
