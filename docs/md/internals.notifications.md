@@ -175,6 +175,13 @@ layer down. NSBundle resolves the bundle from the executable's own path,
 so no launcher and no `open(1)` is involved and stdout still attaches to
 the terminal.
 
+A process outside a bundle still links `apple.m` — a driver links the
+module its app does — so the leg asks `NSBundle` before it asks the
+notification centre, and an unbundled process answers no centre at all
+rather than raising out of `App.init`. `tests/headless_notification.zig`
+is that process, run by `zig build test`, and the headless shell
+defines the push-token sink an app delegate would otherwise own.
+
 Two details are load-bearing. The plist is a separate emitter from the
 iOS one rather than the same emitter with a flag: the scene manifest is
 UIKit's and means nothing here, and `NSHighResolutionCapable` is the

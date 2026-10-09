@@ -499,6 +499,26 @@ content; `copyable` is the one element that elides, and it drops the
 by. The break lands between grapheme clusters, so a combining mark never
 opens a line with nothing to sit on.
 
+Before the edge, such a word breaks at its own joints, as typography
+breaks them (`wrap.breaksAtJoint`): after an `@`, `/`, `-` or `_`
+standing between two word characters, and before a `.` followed by a
+letter, so a line never ends on a URL's dot and a sentence's full stop
+or a decimal point is never a joint. `wrap.breakWord` takes the last
+joint that fits the line, so `alice_659365@long.example.local?` breaks
+as `alice_659365@` / `long.example` / `.local?` rather than mid-name,
+and `https://example.com` as `https://example` / `.com`. Only a word
+wider than the line is broken this way; one that fits a line of its own
+still moves down whole.
+
+The DOM substrate states the same joints as `<wbr>` in every run it
+wraps, so a browser breaks there too: a `<wbr>` is an opportunity, never
+a forced break, so a word that fits its line is not split. One
+difference remains. A word that fits a whole line but not the rest of
+the current one moves down whole in the pixel substrate, and may split
+at a joint in a browser, which takes any opportunity on the line before
+moving a word. CSS has no break opportunity that waits for a word to be
+wider than a whole line.
+
 Which CSS value asks for it depends on what sizes the box, and the two
 answers are not interchangeable. A box whose width is already forced —
 `.tile-text`, at `flex: 1; min-width: 0` — takes `break-word`, which

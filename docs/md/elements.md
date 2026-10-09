@@ -621,10 +621,15 @@ structure, not styling — the a11y audit fails if you skip levels.
 page's top is what the screen is called, stated once and drawn by the
 library — `RouteDef.title`, or `App.setTitle` where the two differ
 ([routing.md](routing.md)). So a screen's sections start at `h2`, which
-is the level field's default. Being the page's label, it stands on the
-chrome's leading edge whatever it is written in, where a section's
-heading stands by its words ([localization.md](localization.md), "Where
-text stands").
+is the level field's default.
+
+**A heading stands on the page's leading edge, whatever it is written
+in.** The title and every section's heading are labels of the page, so
+under Persian chrome a channel called `Acme Plumbing` stands on the right
+with the page's other labels, while the words inside keep their own
+order. A heading inside a Markdown `document` is the document's prose
+and stands by its words, beside the paragraphs it heads
+([localization.md](localization.md), "Where text stands").
 
 | Level | px | Level | px |
 | --- | --- | --- | --- |
@@ -945,7 +950,17 @@ cannot encode is rejected there (`QrValueTooLong`, `QrValueNotText`).
 
 The square renders at a whole number of pixels per module (fractional
 modules blur and break scanning) with the spec's 4-module quiet zone,
-capped at `metrics.qr_max_side`. It is the one surface that ignores the
+capped at `metrics.qr_max_side`. `width` (`Qr.Width`, default
+`.capped`) lifts the cap: `.full` takes the whole content width, still in
+whole pixels per module, for a code that is the screen's subject — the
+invite a counter prints as a poster — where `.capped` is a code beside
+the words it restates.
+
+```zig
+try b.qr(.{ .label = "Join Acme Plumbing", .value = invite_url, .width = .full });
+```
+
+It is the one surface that ignores the
 appearance: scanners want dark modules on a light ground, so the code
 draws ink-on-paper from the light palette in dark mode too — a
 deliberately light tile. Never interactive; put a `copyable` beside it
@@ -5047,8 +5062,9 @@ corners, and the notice banner keeps a card's 12px. Its title is centred on the 
 (the owner's decision, 2026-09-27) when it fits on one line in the
 width left after the corner control's room is held off *both* sides,
 so a centred title never runs under the control; a title longer than
-that stands at its leading edge beside the control, wrapping if it
-must, and a wrapped title is never centred. The picker (no corner
+that stands at the chrome's leading edge beside the control whatever it
+is written in, as a page's heading does, wrapping if it must, and a
+wrapped title is never centred. The picker (no corner
 control) and the notices pane (two) follow the same rule with their
 own room. The framework pins a
 close control — a quiet Lucide square-x glyph with the accessible name "Close",

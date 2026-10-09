@@ -271,10 +271,9 @@ direction a shell maps its line keys by is the run's, not the edge's.
    character gives it, per hard paragraph, and on the chrome's leading
    edge when it has none (digits, Persian digits, punctuation, spaces,
    or nothing at all), where P3 would have said left-to-right on its
-   behalf. Prose is a paragraph, a heading below the screen's title,
-   a list item, a tile group's caption, a field's problem, a quantity's caption, a stage's step,
-   and a sheet's title where it wraps (one that fits a line is
-   centred). Under Persian
+   behalf. Prose is a paragraph, a list item, a tile group's caption,
+   a field's problem, a quantity's caption, a stage's step, and a
+   heading inside a Markdown document. Under Persian
    chrome a date written `۱۴۰۳/۰۵/۱۲` as a paragraph stood on the left
    beside Persian paragraphs standing right, and read as a mistake; it
    stands on the right, while an English paragraph stands on the left.
@@ -315,7 +314,7 @@ English.
 
 **A screen's title is a label of the page, not prose**, and stands on
 the chrome's leading edge whatever it is written in — on both
-substrates, by the third part's anchor (`wrap.isScreenTitle`). Under
+substrates, by the third part's anchor (`wrap.isPageHeading`). Under
 Persian chrome the title `Rokovski Ties` stood on the left while every
 other word on the page stood on the right, and three things nokre
 already does said it was wrong. The same words label the screen's nav
@@ -329,7 +328,16 @@ called where every platform puts it, on the leading edge, as the sheet
 title above has its own placement rather than its words'. Only the
 block moves: `Rokovski Ties` still reads left to right inside it. A
 title the screen states from a load (`App.setTitle`) is the same label
-and stands the same way; a heading below it is a section's, and prose.
+and stands the same way, and so does **every heading of the page and a
+modal pane's title** (`wrap.isPageHeading`): a section's heading labels
+a part of the page, and a sheet's, a picker's or the notices pane's
+title labels that pane, so a channel named `Acme Plumbing` heading a
+section of a Persian page stands on the right, as its own title would.
+One that fits a line on a pane is centred and stands nowhere. A heading
+inside a Markdown `document` is the document's, not the page's, and
+stands by its words with the paragraphs it heads: an English article
+under Persian chrome keeps its headings on the left above its
+paragraphs.
 
 **Chrome is decided by you.** Whether the interface mirrors —
 navigation order, field labels, chevrons, toggle knobs, scrollbars,

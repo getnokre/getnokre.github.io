@@ -899,9 +899,12 @@ so each pixel is compared with its own ground byte and the threshold is
 read per ground byte, and a comptime guard proves every theme,
 appearance and byte separable. The safe area is
 `tree.root_stack.padding`, the page's own margin, so content laid out
-correctly already keeps it. The exemption is `metrics.scroll_bar` times
-the family's scale — the bar is the one thing a frame draws hard against
-its edge, and it is logical where the buffer is not.
+correctly already keeps it. Every column is scanned, the edge columns
+too, because a store frame shows the device at rest:
+`render.skia.captureForStore` draws it under the transient scroll bar
+with the bar down — what every phone shell states — and hands the app
+back the presentation and bar it had. No bar stands against the frame's
+edge, so ink there is refused like any other, by the side it reached.
 
 It reads the **pixel buffer**, before encoding. Not an optimization: this
 library's frames are RGB for one sanctioned reason, the Google sign-in
@@ -2438,6 +2441,80 @@ service, holds no credential, and refuses silent (`content-available`)
 payloads: a push that wakes an app to run code with no UI is background
 execution, a different contract with a different owner.
 
+**The wire a sender writes is one key set on every transport**:
+`nokre.id`, `nokre.title`, `nokre.body`, `nokre.route` and
+`nokre.important`. The id is the identity everywhere, as it is for a
+local post: a push carrying an id that is already showing replaces it,
+`cancel(id)` takes it back, and a tap or an arrival reports it as
+`Payload.id`. The sender holds the caps and the id charset above —
+a push is not re-checked when it lands. With the app on screen a push
+is a `.received` event on every transport and no banner, as a local
+notification coming due is.
+
+APNs, token-based auth, an `alert` push with the route at top level:
+
+| Header | Value |
+| --- | --- |
+| `apns-push-type` | `alert` |
+| `apns-topic` | the app's `pkg.id` |
+| `apns-collapse-id` | the id — Apple replaces, and `cancel` removes, by the request identifier this sets |
+| `apns-priority` | `10` |
+
+```json
+{
+  "aps": {
+    "alert": { "title": "The month closed", "body": "Your results are ready." },
+    "interruption-level": "active"
+  },
+  "nokre.id": "cycle.closed",
+  "nokre.route": "results~2026-09"
+}
+```
+
+An important push writes `"interruption-level": "time-sensitive"` and
+`"sound": "default"`, the level a local important post asks for (Apple
+honours it only for an app holding the Time Sensitive Notifications
+capability). `Payload.id` on Apple is the payload's `nokre.id`, and the
+request identifier the OS gave the notification where a push carries
+none — so `nokre.id` and `apns-collapse-id` are the same string, or a
+tap reports one id and `cancel` misses the other. No `content-available`.
+
+FCM HTTP v1, a **data-only** message:
+
+```json
+{
+  "message": {
+    "token": "<the device's push token>",
+    "data": {
+      "nokre.id": "cycle.closed",
+      "nokre.title": "The month closed",
+      "nokre.body": "Your results are ready.",
+      "nokre.route": "results~2026-09",
+      "nokre.important": "1"
+    },
+    "android": { "priority": "high", "collapse_key": "cycle.closed" }
+  }
+}
+```
+
+No `notification` block: with one, Firebase draws the message itself
+while the app is in the background, its tap carries no route and it
+replaces nothing. The Android leg posts under the tag `nokre.id`, which
+is what replaces. `priority: high` because a normal data message waits
+out Doze; `collapse_key` keeps only the latest of a run the device has
+not yet received. Data values are strings: `nokre.important` is `"1"`
+or absent, and a message without `nokre.id` or `nokre.title` draws
+nothing.
+
+Web push (RFC 8030, encrypted per RFC 8291, signed with the VAPID pair
+whose public half is `notification_push_key`): the body is the same
+keys as one JSON object. The service worker shows it under the tag
+`nokre.id`, which is what replaces.
+
+```json
+{ "nokre.id": "cycle.closed", "nokre.title": "The month closed", "nokre.body": "Your results are ready.", "nokre.route": "results~2026-09", "nokre.important": "1" }
+```
+
 Linking needs identity, like `secure_store` — three platforms' worth at
 once: Android names its channel after the app, Windows derives its
 AppUserModelID from the id, and Apple keys the entitlement to it.
@@ -2480,8 +2557,36 @@ android { sourceSets { main { java.srcDirs += '<nokre>/src/services/notification
 dependencies { implementation 'com.google.firebase:firebase-messaging:24.0.0' }
 ```
 
-— and without them `pushAvailable` answers false on Android and nothing
-else changes.
+— and the Firebase project the app receives through, declared once
+beside the push flag. Every value is a public identifier off the
+Firebase console's Android app, never a credential:
+
+```zig
+.notification_push = true,
+.notification_push_fcm = .{
+    .project_id = "example-notes",
+    .application_id = "1:123456789012:android:0a1b2c3d4e5f6a7b",
+    .api_key = "AIza…",
+    .sender_id = "123456789012",
+},
+```
+
+nokre writes them into the packaging tree as
+`android/res/values/nokre_firebase.xml`, the four string resources
+Firebase's own start-up provider initializes its default app from —
+before any activity, so a push that starts the process finds it. They
+are the resources Google's `google-services` Gradle plugin would
+generate from `google-services.json`: declare this or apply that
+plugin, never both, or the resource merge meets two `google_app_id`s.
+Without the coordinate, or with no default Firebase app,
+`pushAvailable` answers false on Android and nothing else changes.
+
+**A process with no bundle identifier has no notification centre.**
+Apple refuses one to an unbundled executable — `UNUserNotificationCenter`
+raises rather than answers — so a driver, which is such a process,
+answers false to all three probes and `Unavailable` to every verb, and
+so does a headless driver on Linux and Windows. A driver draws the app
+as a device without notifications; the flows are the mock's, below.
 
 In tests the mock is one app's fake notification centre: every post,
 schedule, cancel, prompt and token request is journaled in order, and

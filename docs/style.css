@@ -3415,13 +3415,9 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    equal growth centres them on the pane. Otherwise the words wrap
    to a line of their own below a spacer of no height, and stand at
    the start. `anywhere` lets the words' item shrink past its
-   longest word, as the raster wrap breaks one.
-   One case differs from the reference: words that run against the
-   chrome (a Persian title in a left-to-right app), on one line but
-   too wide to centre, stand at the chrome's leading edge rather
-   than their own, because an item narrower than its line is placed
-   by the row. Wrapped, the item fills its line and the words take
-   their own edge as everywhere. */
+   longest word, as the raster wrap breaks one. Words too wide to
+   centre stand at the chrome's leading edge whatever they are
+   written in, as the reference stands a pane's title. */
 .pane-title {
   display: flex;
   flex-wrap: wrap;
