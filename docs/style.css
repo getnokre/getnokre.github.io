@@ -2904,8 +2904,10 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    than a hairline. */
 .field { display: flex; flex-direction: column; gap: var(--input-label-gap); }
 /* Small scale, but full ink: it is the field's name, and the
-   library dims the *detail* lines, never the labels. */
-.field-label { font-size: var(--px-small); line-height: var(--lh-small); color: var(--ink); }
+   library dims the *detail* lines, never the labels. It wraps
+   across the field as `layout.smallLabelHeight` wraps it, a word
+   wider than the field breaking at the edge. */
+.field-label { font-size: var(--px-small); line-height: var(--lh-small); color: var(--ink); overflow-wrap: break-word; }
 /* A field is sized by what it holds, not by the 44px target: one
    line of body text inside its own pad and border, which is the
    36px `labeledFieldHeight` computes. The big target belongs to a

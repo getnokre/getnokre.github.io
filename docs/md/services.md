@@ -905,6 +905,14 @@ too, because a store frame shows the device at rest:
 with the bar down — what every phone shell states — and hands the app
 back the presentation and bar it had. No bar stands against the frame's
 edge, so ink there is refused like any other, by the side it reached.
+The navigation band is chrome, not content: its ground may span the
+window, as the stacked band's does, the way a tab bar's does, so
+`captureForStore` hands the scan the band's top row
+(`shots.Opts.nav_band_top`, the nav's rect at the moment the frame is
+taken, whatever its shape) and the scan leaves that row and every row
+under it, the OS band's included, unread. Content is read, every row
+above the band, to the frame's edge, as before; the vertical axis is
+not scanned at all.
 
 It reads the **pixel buffer**, before encoding. Not an optimization: this
 library's frames are RGB for one sanctioned reason, the Google sign-in

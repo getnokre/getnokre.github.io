@@ -845,11 +845,8 @@ How much of a whole is filled: a full-width bar under words that state
 it, at `text_input`'s label scale. As with `badge`, the words carry the
 state — `label` ("12 of 30 days") is mandatory, rendered above the bar,
 and is what assistive tech hears; the `value`/`max` fill only restates
-it visually. The label wraps across the column like body text at its
-scale, a word wider than the column breaking at the edge, and the bar
-keeps the full width beneath however many lines it took: a label is
-your words — a ballot option, a German compound — and a cut one loses
-the reading the bar only restates. `append` rejects an empty label or a value outside
+it visually. The label wraps as [`text_input`'s](#text_input) does,
+and the bar keeps the full width beneath however many lines it took. `append` rejects an empty label or a value outside
 0...max. The track is the `segmented` pattern: dimmed `.g11` with a 1px
 `.g6` border carrying WCAG 1.4.11, an `.ink` fill inside; under
 [`depth`](getting-started.md#a-theme) it is a `.g10` fill with no border. Never
@@ -894,11 +891,14 @@ Under RTL the whole row mirrors — the start side is the right one and
 the arms mirror with it, because a magnitude drawn toward the start is
 drawn toward where reading begins.
 
-The words take their own line under the track when flanking it would
-squeeze the track below `metrics.diverging_min_track`. Side labels are
-unbounded consumer words on a 320pt screen; the alternative to that
-fallback is an arm shrunk to nothing, or two words meeting in the
-middle. That answer is the row's own only while the row stands alone —
+The words move under the track when flanking it would
+squeeze the track below `metrics.diverging_min_track`, each still at its
+own side's outer edge. Where the two would meet there, a side no wider
+than half the row keeps its width and the other wraps in the rest, two
+wider sides wrap in half each, and a word wider than its side breaks at
+the edge; the row grows by the lines. Side labels are unbounded consumer
+words on a 320pt screen; the alternative to that fallback is an arm
+shrunk to nothing, or two words meeting in the middle. That answer is the row's own only while the row stands alone —
 in a column it is `diverging_group`'s. Never interactive, never
 animated. Semantics: plain static text — the row's name and both
 readings.
@@ -3230,7 +3230,12 @@ across the column, which is a different thing to ask for.
 
 ### `text_input`
 Single-line. `label` is mandatory and rendered above the field (small
-scale). `value`, `placeholder`, `cursor` (byte offset), `on_change`,
+scale). It wraps across the field like body text at that scale, a word
+wider than the field breaking at the edge, and the box stands below
+however many lines it took — as every small label does: `text_area`'s,
+`select`'s, `copyable`'s, `radio_group`'s, `ranking`'s, `dial`'s,
+`qr`'s and both meters'. A label is your words, and a German compound or
+a Persian sentence cut at the edge loses what it names. `value`, `placeholder`, `cursor` (byte offset), `on_change`,
 `on_submit` (Enter — and wiring it also *labels* the key on the three
 platforms with an on-screen keyboard: Android's return key reads
 "Search", iOS's takes the Search return type, and the web's field gets
@@ -3580,7 +3585,9 @@ figure that moves is its own.
 spells — the digit count times the widest of the app's own ten shaped
 digits, measured rather than assumed, since the mono family is a
 request a font set may answer with a proportional face
-([`quantity`](#quantity)) — and every value stands in that column. Three
+([`quantity`](#quantity)) — and every value stands in that column. On a
+row the dial hugs the wider of that column and its label's one line, so
+a label that fits is not wrapped into a column a few digits wide. Three
 are on screen: the current one on a plate of its own, and one neighbour
 above and one below, so the direction of travel is there before anything
 is turned. The numbers are nokre's to shape, from the app's locale, the
