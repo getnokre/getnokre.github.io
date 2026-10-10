@@ -191,6 +191,31 @@ grab. It is declared rather than inferred from "this shell sends no
 `on_long_press`", which is true of iOS and would be silently wrong for
 the first shell that simply has not sent one yet.
 
+### Window focus is the app's foreground
+
+`on_window_focus` carries three jobs, all answered in `c_shell.zig`'s
+`onWindowFocus` so no shell repeats them: a lost focus drops a scroll
+overshoot, the a11y adapter hears both edges where it wants them, and
+both edges reach `App.internal.reportForeground`, whose return — in
+front after away, never at launch, once however many times the shell
+repeats itself — is the app's resume handler
+([../routing.md](../routing.md), "Coming back to the app";
+`core/foreground.zig`). What each platform reports as focus is
+therefore what each platform calls coming back:
+
+| Platform | In front | Away |
+| --- | --- | --- |
+| iOS | scene connection, `sceneDidBecomeActive` | `sceneWillResignActive` — the app switcher, Control Centre, the notification shade, a system alert or sheet |
+| Android | `onWindowFocusChanged(true)` | `onWindowFocusChanged(false)` — another activity, the shade, a permission dialog, the Play Billing sheet. `onResume` is not wired to it: a dialog over the activity takes window focus without pausing it |
+| macOS | `windowDidBecomeKey`, and the boot report of `isKeyWindow` | `windowDidResignKey` — another app, a panel this app opened |
+| Windows | `WM_SETFOCUS`, and the boot report of the foreground window | `WM_KILLFOCUS` |
+| Linux | `wl_keyboard.enter` | `wl_keyboard.leave` |
+| Web | `visibilitychange` to visible, and the boot report of `visibilityState` | `visibilitychange` to hidden — another tab, a minimised window. A browser window that merely loses focus to another app stays visible and is not away |
+
+The boot reports matter as much as the events: a window that opened
+behind another reports itself away first, stays launching, and is not
+a return when it is first shown.
+
 ### The honest document
 
 Every platform text system is written against a document it can *read*.

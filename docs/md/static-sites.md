@@ -427,7 +427,20 @@ There are three answers and the band can carry one:
   affordance is the pill cut off at the screen edge.
 
 The chip is then what a driver **upgrades** that shape to, not what the
-shape depends on. `no-boot` is gone, nothing in the sheet asks whether
+shape depends on — and so, for a marked roster, is the stacked row: the
+same links in columns of glyph over words, which core measures
+against the reader's window exactly as it measures the pills
+([elements.md](elements.md#nav--nav_item)). Where that answer is made
+was a choice between core's tree decision and a band rule in the sheet
+for every marked roster, and it is core's. A band rule cannot measure,
+so it would have stacked two short destinations a phone holds perfectly
+well as pills, and stacked them under the frame a driver then patched
+back to pills at boot — the reshape one frame in that the placement
+section above refuses. So `stacked` is a class core writes on the row
+from the window it is drawn at, its destinations are unplated `slot`s
+rather than `chip`s, and the sheet holds the slot's rules inside the
+band, where a stage's window inherits them through the scene's own
+`syncNavChrome`. `no-boot` is gone, nothing in the sheet asks whether
 anything is running, and one markup takes the band at a phone's width
 whoever published it.
 
@@ -516,7 +529,13 @@ measures the roster in *pills* whatever shape it is about to be drawn
 in, so the width at which a band's row begins to scroll is a pill's
 width rather than a word's. That is the same residue it always was: one
 measurement, one viewport, two shapes. What is gone is the residue that
-mattered.
+mattered. The stacked row adds one more of the same kind: a page with
+no driver was measured at its generator's viewport, which is past the
+cap, so its file carries the plain row and a phone reading it gets the
+scrolling band, never the columns. A generated header usually wears no
+marks, and a roster of bare words never stacks, so the case is a marked
+roster on a page nothing boots — the scrolling band is its answer, and
+it is a working one.
 
 ## A generated document has no host, so it has no unstyled half
 

@@ -180,7 +180,11 @@ module its app does — so the leg asks `NSBundle` before it asks the
 notification centre, and an unbundled process answers no centre at all
 rather than raising out of `App.init`. `tests/headless_notification.zig`
 is that process, run by `zig build test`, and the headless shell
-defines the push-token sink an app delegate would otherwise own.
+defines the push-token sink an app delegate would otherwise own. A
+`zig test` binary links `apple.m` too, and there the mock defines the
+sink instead and the headless shell withholds its own, so a test root
+that names the headless shell still links; `tests/notification_linked_test.zig`
+names none.
 
 Two details are load-bearing. The plist is a separate emitter from the
 iOS one rather than the same emitter with a flag: the scene manifest is

@@ -851,13 +851,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_EDGE_BAR = ["--lamp-edge-bar-left", "--lamp-edge-bar-top", "--lamp-edge-bar-width"];
   const LAMP_EDGE_CHOSEN = ["--lamp-edge-chosen-left", "--lamp-edge-chosen-top", "--lamp-edge-chosen-width"];
   const LAMP_EDGE_SHEET = ["--lamp-edge-sheet-left", "--lamp-edge-sheet-top", "--lamp-edge-sheet-width"];
-  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .stage-frame > .stage-header > button > .icon, .field-box.select > .icon, .dial-step > .icon';
+  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav.stacked, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav.stacked .slot > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .stage-frame > .stage-header > button > .icon, .field-box.select > .icon, .dial-step > .icon';
   const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
   const SCENE_VIEWPORT = '.stage-viewport';
-  const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .chip.current, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
-  const LAMP_EDGE_CHOSEN_PLATES = '.chip.current';
+  const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .chip.current, .nav.stacked, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
+  const LAMP_EDGE_CHOSEN_PLATES = '.chip.current, .nav.stacked';
   const LAMP_EDGE_SHEET_PLATES = '.sheet, .notices-pane, .picker:not(.above-nav)';
 
   // A plate's numbers ride its `style` attribute *behind* the markup's
@@ -1833,6 +1833,16 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   nk.nokre_dom_system_contrast(moreContrast.matches ? 1 : 0);
   nk.nokre_dom_system_transparency(lessTransparency.matches ? 1 : 0);
   nk.nokre_dom_system_reduce_motion(lessMotion.matches ? 1 : 0);
+  // Whether the reader can see the page, at boot and on every change:
+  // the boot report is what makes a tab opened behind another still
+  // launching when it is first shown, and a page hidden and shown again
+  // the app's return (core/foreground.zig).
+  const pageShown = () => (doc.visibilityState === "hidden" ? 0 : 1);
+  nk.nokre_dom_foreground(pageShown());
+  doc.addEventListener("visibilitychange", () => {
+    nk.nokre_dom_foreground(pageShown());
+    frame();
+  });
   // The notification service's worker, and the cold-start tap it may
   // have carried. Registration is after boot deliberately — it is
   // asynchronous either way, and nothing in the first `build` can wait

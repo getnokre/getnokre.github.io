@@ -293,7 +293,7 @@ It is not an optimization. A generated page is a screen measured with a
 ruler that is not the reader's — a build has no font metrics and no
 window, so `text.Measurer.fixed` answers every measured question against
 whatever viewport the generator declared. Prose wraps somewhere else,
-and `navCollapses` is asked about a
+and `navShape` is asked about a
 window nobody is looking at, so a roster that cannot fit a phone runs off
 the edge of one instead of collapsing. Those answers cannot be fixed by
 CSS, because they are not style: they are decisions core made from a
@@ -1830,9 +1830,15 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   wears is the sheet's, but whether the roster *collapses* is a tree
   decision — `nav.syncNavChrome` picks between a row of links and a
   combobox, and `semantics.roleOf` reads the element kind — so it cannot
-  move into a renderer. Above the cap this substrate wraps the header, and
-  a row that wraps has no width at which it fails, so
-  `layout.navCollapses` declines before it measures, on the one input
+  move into a renderer. Whether the row *stacks* is core's too, for the
+  other reason: it is a measurement against the window, which no rule
+  in a sheet can make. It changes no role, so it is a field on the nav
+  (`Nav.stacked`) rather than a different element, and the serializer
+  writes it as the row's `stacked` class and its destinations as
+  unplated `slot`s, which only the band's rules style. Above the cap
+  this substrate wraps the header, and a row that wraps has no width at
+  which it fails, so `layout.navShape` declines before it measures, on
+  the one input
   core cannot see: `layout.Medium`, `reflows` here and `clips` on every
   rastering substrate. `layout.rowOverflow` asks the same input, and
   under `reflows` a row of actions wraps rather than folding its tail

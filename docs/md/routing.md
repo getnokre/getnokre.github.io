@@ -253,6 +253,80 @@ builder again — which would duplicate the screen — is **refused and
 recorded** (`reload_in_build` below), and the audit fails the first
 test that trips it.
 
+### Entering a screen
+
+A builder runs on two kinds of occasion: the reader **arrived** at the
+screen — a navigation to it, a switch, a replace, *and* a Back onto it —
+or the screen is being **rebuilt in place** — a `reload`, a `refresh`,
+a reply landing. `App.routeEntered()` tells them apart, so a screen
+that shows something a server holds loads it on arrival and not on the
+rebuild its own reply asks for:
+
+```zig
+fn buildWallet(state: *State, app: *nokre.App) !void {
+    if (app.routeEntered()) state.loadBalance(app); // its reply says app.refresh
+    // ... draw state.balance, whatever it holds right now
+}
+```
+
+A Back onto a screen counts as an arrival because the screen stood
+underneath while the reader was elsewhere, and whatever they did there —
+spent a credit, sent a message — may have moved what it shows; its
+viewport comes back, its data is read again. A guard that redirects
+hands the arrival on: the screen it lands on is entered. The answer
+belongs to the build running now and is false outside one, so it is not
+a record of the last navigation; a sheet's builder re-run by `refresh`
+reads false with the rest of that rebuild.
+
+It is a question the builder asks rather than a second route observer,
+because the observer's one slot is the web's address bar
+(`Router.installObserver`), which reports a reload as a `.replace` like
+any other — an app that took the slot would take the address bar with
+it, and could still not tell a reload from a replace.
+
+### Coming back to the app
+
+The other moment a value can have moved under a screen is while the
+whole app was away — a pack bought on another device, a message that
+arrived while the phone was in a pocket. Entering cannot see that: the
+app comes back to the screen it left, and nothing navigates. So the app
+registers one callback for the return:
+
+```zig
+fn buildWallet(state: *State, app: *nokre.App) !void {
+    app.setResumeHandler(.bind(onResume, state)); // registering again replaces
+    if (app.routeEntered()) state.loadBalance(app);
+    // ...
+}
+
+fn onResume(state: *State) void {
+    state.loadBalance(state.app); // whatever the screen on top shows
+}
+```
+
+It is called once each time the app's window becomes the one in front
+**after it was not**, and never at launch: a window opened behind
+another is still launching when it is first shown, and a shell that
+reports focus twice for one return — iOS does, at scene connection and
+at `sceneDidBecomeActive` — calls it once. "Away" is whatever took the
+window's focus: switching apps, a system sheet over the app (a
+permission prompt, the store's payment sheet, the notification shade),
+a hidden browser tab. That is broader than "the app was backgrounded",
+on purpose: a re-read is a request, a missed one is a screen showing a
+stale balance, and the store's sheet closing over a purchase is exactly
+a moment worth re-reading. What each platform reports is
+[internals/platform-shells.md](internals/platform-shells.md), "Window
+focus is the app's foreground".
+
+A callback and not a flag a build reads, because a build runs on a
+navigation or a reload, never per frame: a flag set at the return would
+wait for whatever navigation came next, and the screen would show the
+stale value until then. nokre rebuilds nothing itself on a return —
+what changed is the app's to know, and its reply's `refresh` puts it on
+screen. It is not a service either ([services.md](services.md), "Not
+services"): nothing links, and the event is the shells' window focus,
+already in the shell contract.
+
 ### A screen declares its shape
 
 `RouteDef.shape` says how a screen is arranged, and what follows from it

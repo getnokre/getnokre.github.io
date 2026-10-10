@@ -424,7 +424,7 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
   // prose wrapped, whether a row of actions folded, whether a track had
   // to bleed. The nav's row is where it showed worst — it stayed a row
   // some thirty pixels past the width it actually fitted in, so the end
-  // destinations hung over both screen edges before `navCollapses`
+  // destinations hung over both screen edges before `navShape`
   // agreed the roster no longer fitted.
   //
   // So the cache lives exactly as long as the font set it was measured

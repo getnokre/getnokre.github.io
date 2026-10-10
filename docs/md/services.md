@@ -2593,6 +2593,8 @@ schedule, cancel, prompt and token request is journaled in order, and
 nothing the *user* does happens until the test says so —
 `grantNotifications`, `denyNotifications`, `deliverNotificationTap`,
 `deliverNotification`, `deliverPushToken` ([testing.md](testing.md)).
+A test that links the service names no shell to link, macOS included
+([internals/notifications.md](internals/notifications.md)).
 Boot a device with no notifications, no scheduling, or no push with
 `.notification = .mock(.{ .available = false })` and its siblings. The
 wiring — the per-platform legs, the two recorded reversals, and why the
@@ -2619,6 +2621,13 @@ toolchain:
   thread you already own will do. The `http` service adds what the
   bare client cannot: UI-thread delivery, the web, cancellation
   safety, and the deterministic testing story.
+- **Coming back to the app** — `App.setResumeHandler`
+  ([routing.md](routing.md), "Coming back to the app"). The event is
+  window focus, which every shell already reports through the shell
+  contract and the web reads off `visibilitychange`; there is nothing
+  to link, no OS verb to inject, and the harness reports it the way a
+  shell does (`resumeApp`), so a row would be a binding with no
+  capability behind it.
 
 ## Not planned
 

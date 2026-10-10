@@ -705,6 +705,34 @@ locale-dependent screen stays byte-deterministic in a golden test. A
 *running* app is a different matter, which is why nokre's own
 examples carry their locale in state instead of asking the device.
 
+## Coming back to the app
+
+A harness is a device that launched in front: `init` reports the first
+focus a shell would, so nothing before a test's own call is a return.
+`resumeApp()` is the user leaving and coming back — both edges, as a
+shell reports them — so the app's resume handler runs once, on this
+thread, and the step traces and re-audits like any driver action:
+
+```zig
+const t = try nok.testing.HarnessApp.init(gpa, .{ .w = 480, .h = 640 }, .{
+    .ctx = &state, .routes = &routes, .initial_route = "wallet",
+});
+_ = try t.getByLabel("12 credits");   // loaded on entering (`routeEntered`)
+state.server_balance = 17;            // a pack bought on another device
+try t.resumeApp();                    // the handler loads; its reply refreshes
+try t.fulfillHttpPath("/balance", .{ .status = 200, .body = "17" });
+_ = try t.getByLabel("17 credits");
+```
+
+There is no verb for going away alone, because nothing happens there:
+the handler is the return's, and a test that wants the away edge has
+nothing to observe in it. A bare test drives the door the shells use,
+`App.internal.reportForeground(&app, in_front)`, which is how
+`core/foreground.zig`'s own tests pin "never at launch" and "once per
+return". The web's leg is held by `tests/web_services.mjs`
+(`aPageShownAgainIsTheAppsReturn`), which hides and shows the page
+through the browser stub's `visibilityChange`.
+
 ## The wall clock
 
 `clock` is boot state like the locale, and it is the only clock a test
@@ -2394,7 +2422,11 @@ to write.
 
 Two things a driver owes that a test does not. It owes the hooks a
 shell owes — the free C functions the services name, which a binary
-with no shell must still resolve. nokre ships that shell:
+with no shell must still resolve. A test resolves none of them: under
+`zig test` every service is its mock, and where a service's own native
+source names a shell hook in a test binary (notification's Apple
+push-token sink), the mock defines it — so a test root never names
+`nokre.headless_shell` to link. For a driver, nokre ships that shell:
 `nokre.headless_shell` defines all of them, and naming it in the driver is the
 whole install —
 

@@ -845,7 +845,11 @@ How much of a whole is filled: a full-width bar under words that state
 it, at `text_input`'s label scale. As with `badge`, the words carry the
 state — `label` ("12 of 30 days") is mandatory, rendered above the bar,
 and is what assistive tech hears; the `value`/`max` fill only restates
-it visually. `append` rejects an empty label or a value outside
+it visually. The label wraps across the column like body text at its
+scale, a word wider than the column breaking at the edge, and the bar
+keeps the full width beneath however many lines it took: a label is
+your words — a ballot option, a German compound — and a cut one loses
+the reading the bar only restates. `append` rejects an empty label or a value outside
 0...max. The track is the `segmented` pattern: dimmed `.g11` with a 1px
 `.g6` border carrying WCAG 1.4.11, an `.ink` fill inside; under
 [`depth`](getting-started.md#a-theme) it is a `.g10` fill with no border. Never
@@ -862,7 +866,8 @@ per-dimension shape of a cycle, a budget split two ways, a vote. The
 centre is the reading: either share is the distance from it, which is
 what a pair of separate bars cannot say.
 
-`label` names the row and is the accessible name. `start_label` and
+`label` names the row and is the accessible name, and wraps above the
+row as `meter`'s does. `start_label` and
 `end_label` are what each side says — a magnitude and the thing it
 counts, formatted by you, as a `badge`'s words are — and both are
 **mandatory**, because they are the whole of what a reader who cannot
@@ -898,6 +903,18 @@ in a column it is `diverging_group`'s. Never interactive, never
 animated. Semantics: plain static text — the row's name and both
 readings.
 
+Under a group that carries a legend, a row draws `start_figure` and
+`end_figure` at its outer ends instead of its words — the magnitude
+alone, formatted by you as the words are ("2", "۲") — and its flanks
+are its figures' width. Both figures are **mandatory** there
+(`error.DivergingLegendRowNeedsFigures`) and refused anywhere else
+(`error.DivergingFigureWithoutLegend`), because a figure is a number
+whose words only a legend says. `start_label` and `end_label` stay
+mandatory and stay the value a listener hears, unchanged: nokre never
+composes "Observations 2" out of a legend word and a figure, since the
+plural and the order of a number and its noun are the language's, and
+the consumer who formatted the figure already holds the words.
+
 Reach for `meter` where there is one quantity and a whole it is part of,
 and for two `badge`s where the two counts are worth reading but their
 *balance* is not — the arms are the glance, and they are the only reason
@@ -905,11 +922,30 @@ to spend a full-width row on what two chips would also say.
 
 ### `diverging_group`
 Diverging meters read against one scale. It holds `diverging_meter` rows
-and nothing else (`error.DivergingGroupChildMustBeMeter`), takes no
-fields, and makes the one decision none of its rows can make alone: the
-widest words on each side decide a single flank width, so every track
-starts and ends at the same x and the whole column flanks or stacks
-together.
+and nothing else (`error.DivergingGroupChildMustBeMeter`), and makes the
+one decision none of its rows can make alone: the widest words on each
+side decide a single flank width, so every track starts and ends at the
+same x and the whole column flanks or stacks together.
+
+**A column that repeats its side words takes a `legend`.** Six rows of
+"2 observations … 5 recognitions" spend about forty percent of each row
+on a phone saying the same two nouns. `legend: .{ .start =
+"Observations", .end = "Recognitions" }` says them once, at the head of
+the column at the rows' label scale in a caption's `.dark` ink, the
+start word at the start edge and the end word at the end edge, so each
+stands over the figures it names and mirrors with them under RTL. Where
+the two would meet, the start word takes a line of its own above the
+end word and each keeps its edge. Both words are mandatory when the
+legend is present (`error.EmptyDivergingLegend`). Every row under it
+draws figures (see `diverging_meter`), so the shared flank is the widest
+figure and the track gets the width back. The legend carries no arrow:
+position already says which side a word keys, and an arrow is the glyph
+nokre spends on where navigation goes, so one here would read as a
+control. It is drawn for a looker only — every row already says its
+words to a listener, and announcing two bare nouns before the column
+would add nothing — so it is no node in the accessibility tree, and the
+DOM substrate hides it (`aria-hidden`) and puts each row's words in
+visually hidden text beside its figure.
 
 **Put a column of rows in one.** A shared `max` is what makes two rows
 comparable; the group is what makes the comparison visible. Left to
@@ -4547,8 +4583,9 @@ decisions, not the consumer's, and there is no API for either.
 
 **Two shapes, and the reader's window picks.** At a phone's width the
 bar is the bottom band of the viewport, and whatever it holds — the row
-of destinations, the collapsed chip, the minimized-notices square — is
-measured at its own width and centered there. That is a thumb
+of destinations as pills or stacked, the collapsed chip, the
+minimized-notices square — is measured at its own width and centered
+there. That is a thumb
 affordance: reach is worst at the far edge, and the bar is the chrome a
 hand goes to without looking. Anywhere wider it is a header instead —
 the same destinations as words in the page's own margin, above the
@@ -4573,7 +4610,8 @@ so no window above that width collapses anything, on any medium that
 reflows. In the band, which is one line by construction, a row that will
 not fit scrolls instead: every destination is a link with an address of
 its own, and a browser scrolls a focused one into view. A live driver
-replaces that with the chip, which always fits. So a page nothing will
+replaces that with the stacked row where its columns fit, and with the
+chip, which always fits, where they do not. So a page nothing will
 ever mount over gets the same band, the same markup and a reachable set
 of destinations at every width, and nothing about who published a file
 reaches the decision.
@@ -4619,7 +4657,8 @@ both uniform answers are statable and the mixture is not: a roster
 carrying some of each is `error.NavIconsMixed`, refused whole before
 anything is drawn. A phone's tab bar wears marks; a generated site's
 header usually wears none ([static-sites.md](static-sites.md)). Where there is a glyph it leads
-the label at the label's own 16px, both always visible, and it is
+the label at the label's own 16px — or stands over it, where the row
+stacks (below) — both always visible, and it is
 decorative to assistive tech, which hears the words; where there is
 none, there is no gap left where one would have been. The marker for a
 screen that is none of the destinations follows the roster, because it
@@ -4665,8 +4704,8 @@ the destination already showing does nothing.
 after it, the label, and `metrics.nav_item_pad_h` (20px) on either
 side: the button's 16 with 4 added back, because a pill's ends curve
 away from the words. Equal slots would stretch each pill to a share of
-the bar and set its words adrift in a strip of identical lozenges. The
-row is measured, then centered on the viewport as one group, the
+the bar and set its words adrift in a strip of identical lozenges — and
+the stacked row below keeps the same rule. The row is measured, then centered on the viewport as one group, the
 notices indicator — when there is one — riding at its trailing end. The
 gap between plates is drawn, not laid out: each item's *rect* is its
 pill grown half a gap on either side, so the targets meet end to end
@@ -4704,7 +4743,7 @@ and down into the safe band — that glimpse of a half-covered line is the
 only thing left saying there is more below. A header reserves nothing:
 it took its space where it stands, at the top, in flow.
 
-A slot is 52px tall, the one control in the library that grows *past*
+A slot is 52px tall, pill or stacked column, the one control in the library that grows *past*
 `touch_target` rather than up to it: it is the chrome a thumb reaches
 for without looking, stacked against the bottom edge where reach is
 worst. Below it the bar keeps `metrics.nav_bar_pad_b` (16px) of clear
@@ -4713,12 +4752,84 @@ except that the OS band counts toward it, so on a phone the items sit
 just above the home-indicator strip rather than 16px above a strip that
 is already empty.
 
-Where the labels fit, the nav is that row. Where they do not, it
-**collapses**: the bar shows the current section alone, as the same
-chip wearing that section's glyph with a chevron-up at its trailing
-edge, and the other destinations move behind a picker that opens above
-it — carrying their glyphs into the list, so a mark means the same
-thing in both shapes.
+Where the labels fit, the nav is that row. Where they do not, a
+**marked** roster **stacks**: the same destinations, each its glyph at
+16px over its words at `Scale.small` (12px), in columns across the
+band. Where even the columns do not fit, the nav **collapses**: the bar
+shows the current section alone, as the same chip wearing that
+section's glyph with a chevron-up at its trailing edge, and the other
+destinations move behind a picker that opens above it — carrying their
+glyphs into the list, so a mark means the same thing in every shape.
+
+**Each column is as wide as its own words**, never under
+`touch_target`, and only what the band has left over is shared — equally,
+so every column gains the same air. Equal shares of the whole bar were
+the first draft, argued on the ground that a glyph over a short word is
+a column with no plate to stretch; measured against the first
+consumer's rosters it never stacked anything, because six equal columns
+each as wide as the *widest* word ("Einstellungen", ~85px) wanted
+430–510px of a phone's 276–306. A column's width being its word's is
+the pill rule again: no word stands adrift in a share sized for another
+one, and a short word gives the width it does not need to the long one
+beside it. Which is also why only a marked roster stacks: a column of
+one small word with nothing over it is a cramped row, not a column, so a
+roster of bare words keeps the row or the chip it always had.
+
+**Words with a space may take two lines**, broken at a space, inside a
+column no wider than the longer line — "Your groups" becomes a
+`touch_target`-wide column of two words. Two lines take tight leading,
+14px apart rather than `Scale.small`'s 16 (`layout.nav_stacked_two_line_pitch`),
+the way a wrapped caption may sit tighter than running text: the glyph's
+16, the 4px gap (`nav_stacked_glyph_gap`) and two 14px lines are 48 of
+the 52px slot, centred, so 2px of air stand above the glyph and below
+the words. At `Scale.small`'s own 16 two lines filled all 52 and set the
+glyph on the ground's top edge. A one-line column keeps 16. A single
+word never breaks. Drawn, the words take one line where they fit
+their column after the leftover is shared, and two where they do not,
+broken at the last space that keeps the first line fitting.
+
+**The stacked band has one ground, and its columns no plates.** The
+pill row is plated per item because each pill is a control standing in
+air, and content may pass behind the air. Stacked columns are one bar,
+and a bar has a ground — the first build drew them bare, and every
+scene that scrolled a page behind them had its words read straight
+through the destinations'. A plate per column would be the strip of
+identical lozenges the pills refused; a plate on the current column
+alone leaves the others on prose. So the ground is the chip's own
+material — the current plate's fill, `.g10` in eink, the chosen fill
+under depth, the chosen glass under lamp — because the band replaces
+the chip and should read as the same thing. It runs the window's full
+width and down through the OS band to the frame, as every
+bottom-anchored fill does, and starts where the chip's plate started, at
+the columns' top, so its shadow reaches no higher than the chip's did
+and the content reserve still clears it. Eink draws the `.g6` hairline
+the notice banner already draws at the same edge; depth and lamp draw
+none, as the banner's do not. It casts what the chip's plate cast: the
+card's shadow under depth, the nav plate's contact and cast shadow under
+lamp, where the DOM substrate's lamp table lists it as a band-wide glass
+beside the banner and lights the column glyphs on it as the chip's glyph
+was lit.
+
+The current destination takes `.ink` and the bold face against `dark`
+for the others, with no plate of its own — the header's mark, weight and
+tone, a non-colour cue that is two carriers deep rather than the single
+step of gray the band's plates were added to replace — and no underline,
+for the header's reason: in a row where every word is a destination it
+distinguishes nothing. The glyph takes its words' tone, and is never
+mirrored: it is centred, with no leading side to swap, while the
+columns' order mirrors under [right-to-left](localization.md) like the
+row's. The notices control keeps its circle plate at the trailing end,
+on the ground, being a glyph target rather than a destination. A focused
+column draws the ring inside itself, half a gap in at a control's
+corner, so it never touches the column beside it.
+
+It is a shape of the *row*, not a third kind of nav: the same `nav_item`
+links, in the same order, with the same focus stops and `aria-current`,
+and no `tablist` — tabs select a panel that co-exists with them, and a
+destination is a place you go. The flip between pills and columns
+writes one field on the nav (`Nav.stacked`) and keeps every node, so
+focus and an assistive tech's place survive a window crossing the
+threshold.
 
 The threshold is measured, not a breakpoint — the one breakpoint above
 is about *where the bar stands*, which is a fact about the reader's
@@ -4730,13 +4841,55 @@ line, which no width alone can answer:
   **viewport** — a longer word costs the row that word and nothing
   more, and the reserve is counted whether or not an indicator is
   showing, so the nav never changes shape because a notice arrived.
+- **What "stacks" means.** The columns fit when one column per declared
+  destination, each as wide as its words in bold at 12px — on one line,
+  or on two at a space where that is narrower — and never under
+  `touch_target`, plus a bare `touch_target` column for the off-roster
+  marker, sum to no more than the viewport less the same insets and
+  reserve. The marker's column is counted whether or not the marker is
+  showing and its words are not counted at all — they are the title of
+  whatever screen is open — so opening a detail screen never reshapes
+  the bar; a title wider than its column is clipped to it from its
+  leading edge. No air is added beside a column's words: the leftover
+  the band shares is the air between neighbours. Two neighbours' words
+  can therefore touch, and that is accepted: it happens only at an exact
+  fit, where the columns sum to the span to the pixel and there is no
+  leftover to share. Laid out, the leftover of that span is
+  shared equally among the columns, the group centred with the
+  indicator's square riding at its trailing end — the leftover is
+  computed with the indicator's reserve held back, so a notice moves
+  the group and never resizes a column. The band keeps its 52px slot
+  and its height, and the content reserve with it.
+- **What that measured, against the first consumer.** Rokovski Teams'
+  and Rokovski Reviews' five destinations, in bold 12px, each column
+  then the marker's 44, against 276px of span at a 360pt phone and 306
+  at 390 (`tests/golden.zig`, the consumer-roster test):
+
+  | room | locale | columns | sum | 360 | 390 |
+  |---|---|---|---|---|---|
+  | Teams | en | 44 44 44 44 47 +44 | 267 | stacked | stacked |
+  | Teams | de | 50 58 58 44 78 +44 | 332 | chip | chip |
+  | Teams | fa | 44 44 44 44 44 +44 | 264 | stacked | stacked |
+  | Teams | tr | 64 63 44 44 44 +44 | 303 | chip | stacked |
+  | Reviews | en | 48 44 44 44 47 +44 | 271 | stacked | stacked |
+  | Reviews | de | 44 58 58 44 78 +44 | 326 | chip | chip |
+  | Reviews | fa | 44 44 44 44 44 +44 | 264 | stacked | stacked |
+  | Reviews | tr | 56 63 44 44 44 +44 | 295 | chip | stacked |
+
+  German stays the chip at both widths, and that is the record of why
+  rather than a gap: "Einstellungen" (78), "Bibliothek" (58) and
+  "Schreiben" (58) are single words that cannot break, and the sum runs
+  20–26px past a 390pt phone's span. Dropping the marker's reserve when
+  no marker shows would stack it, and was refused: the bar would then
+  change shape whenever a detail screen opened.
 - **The viewport, not the 560px pane.** That cap is a line-length
   argument, governing the bottom chrome that holds prose — the banner,
   the notices pane, the sheet, a select's picker — and nothing in the
   bar is prose, so the row grows past the cap to exactly the width its
   items need and no further.
 - **What moves the answer.** Icons cost width, so they push rosters
-  into the chip sooner; a set that fits in landscape and not in
+  off the row sooner — and are what gives them the stacked shape to go
+  to; a set that fits in landscape and not in
   portrait reshapes as the device turns, one too wide for a laptop
   reopens the moment the window reaches the width it asked for, and
   translations change it too — the same app can be a row in English

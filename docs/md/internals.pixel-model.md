@@ -503,7 +503,9 @@ Before the edge, such a word breaks at its own joints, as typography
 breaks them (`wrap.breaksAtJoint`): after an `@`, `/`, `-` or `_`
 standing between two word characters, and before a `.` followed by a
 letter, so a line never ends on a URL's dot and a sentence's full stop
-or a decimal point is never a joint. `wrap.breakWord` takes the last
+or a decimal point is never a joint. A `-` or `/` between two digits,
+in any script's digits, is not one either: `2024-03-09` and
+`۱۴۰۳/۰۵/۱۲` are one number, as UAX #14 keeps them. `wrap.breakWord` takes the last
 joint that fits the line, so `alice_659365@long.example.local?` breaks
 as `alice_659365@` / `long.example` / `.local?` rather than mid-name,
 and `https://example.com` as `https://example` / `.com`. Only a word

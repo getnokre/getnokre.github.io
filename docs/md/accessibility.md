@@ -19,14 +19,14 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `icon` (labeled) | `image` | label as name; decorative icons are omitted |
 | `app_mark` | `image` | the declared name of the app whose mark it is, never a label at the call |
 | `badge`, `meter` | `static_text` | the words carry all state; a badge's leading mark is decorative and is never announced |
-| `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets |
+| `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets; under a group legend the row draws figures and the value is still the words |
 | `qr` | `image` | label as name, encoded value carried |
 | `picture` | `link` (`route` or `external`) / `image` | description as name; never decorative, an empty one is refused; a link is focused, and its could-not-show box is the link too |
 | `avatar` | `image` | description as name, face or initials alike, leading a list item too, read before its words; an empty one is refused; never a control, so no stop |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
 | `stack`, `box`, `group` | `group` | — |
 | `accessibility_toggles` | `group` | — ; its rows are the `toggle`s nokre installs, below |
-| `diverging_group` | `group` | nameless: it decides a track width, not a reading |
+| `diverging_group` | `group` | nameless: it decides a track width, not a reading; its legend is no node, since every row already says its words |
 | `tile_group` | `group` | description as value |
 | `divider` | `separator` | — |
 | `stand_in` | `status` | label as name, polite; its subtree is announced as itself, every control there disabled and not busy, focus stops kept (below) |
@@ -65,7 +65,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `select` | `combo_box` | the label as the name, or the words of the node it is `named_by`; selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
 | `nav` | `navigation` | — |
-| `nav_item` | `link` | selected (aria-current), focused; its icon is decorative — the label is the name |
+| `nav_item` | `link` | selected (aria-current), focused; its icon is decorative — the label is the name. The same `link` whether the row is pills or stacked ([elements.md](elements.md#nav--nav_item)): stacked columns are destinations with addresses of their own, never a `tablist`, because no panel co-exists with them to be selected |
 | `nav_current` (framework) | `combo_box` | named by the framework ("Section" in English — [localization.md](localization.md#the-frameworks-own-words)), current section as value, focused |
 | `nav_here` (framework) | `static_text` | named by the framework ("Current screen"), the route's title as value; no focus stop — it names where you are, it does not go there |
 | `sheet` | `dialog` | modal |
@@ -548,7 +548,10 @@ after the fact would mean the bad state existed:
 - a nav off the root, a second nav, non-item children of a nav, nav items
   outside a nav, or a nav mixing its two shapes — the row of destinations
   and the collapsed chip cannot both stand, or the same section would be
-  in the focus order twice
+  in the focus order twice. The row's stacked arrangement is not a third
+  shape here: it is the same `nav_item`s, the same order and the same
+  focus stops, drawn differently (`Nav.stacked`), so the flip between
+  pills and columns keeps every node and focus with it
 - a sheet or notice off the root, a second one of either, an untitled
   sheet, an empty notice
 - a `more` control anywhere but on a horizontal stack, or a second one on

@@ -188,6 +188,26 @@ Supported message syntax, deliberately Flutter-compatible:
   guess one, which is the locale-library behavior this kind exists to
   refuse. No clock and no zone anywhere: the value is the caller's,
   so the same arguments are the same bytes forever.
+
+  **A date is one word; its joints never break.** A reader takes
+  `9. März 2024` whole, so a line may move it down but never end
+  inside it. The bundle renders every space a message writes between
+  two parts of one date as a no-break space (U+00A0) — two references
+  to the same placeholder, neither of them `yMd`, the second naming a
+  part that date has not said yet — so `{when, date, d}. {when, date,
+  MMM} {when, date, y}` comes out `9.␣März␣2024` with `␣` = U+00A0, in
+  every locale, and both substrates keep it whole by the same bytes:
+  the canvas wraps at spaces alone, and a browser never breaks at a
+  no-break space. The translator keeps typing a plain space; the
+  joint is the library's. A space beside anything else — `From {a,
+  date, MMM} {a, date, y} to …`, `…{when, date, y}, filed {when, date,
+  yMd}` — stays a space. A `-` or `/` between two digits is no joint
+  either (`wrap.breaksAtJoint`), so `yMd`'s `2024-03-09` and a
+  catalog's `{when, date, d}/{when, date, M}` stay whole without help.
+  A consumer that composes a date by hand outside a message uses the
+  same join, U+00A0 between its parts; in the shipped faces it draws
+  at a space's advance (`tests/golden.zig`, "a date in a column just
+  narrower than its line moves to the next line whole").
 - **Plurals** — `{count, plural, =0{...} one{...} other{...}}`: `=N`
   exact matches (which win over categories, per ICU), the six CLDR
   category keywords, and `#` for the count. Nesting is allowed, and `#`
@@ -364,9 +384,16 @@ return `l10n.Direction`, which is what `setDirection` takes.
 
 Under `.rtl` every leading/trailing choice flips together: intrinsic
 blocks and tables snap to the right, horizontal stacks and nav slots run
-right-to-left, field labels and values lead from the right, the back and
-tile chevrons point the other way, toggle knobs travel the other way,
-and a vertical scroll bar moves to the left. Three things deliberately
+right-to-left, field labels and values lead from the right, toggle
+knobs travel the other way, and the glyphs that point where navigation
+goes — chevrons and arrows — point the other way: the back and tile
+chevrons, and a button's own glyph alike. A `lucide_chevron_left` /
+`lucide_chevron_right` or `lucide_arrow_left` / `lucide_arrow_right` in
+a `Button.Form` is drawn as its partner, so a previous–label–next row
+keeps each chevron pointing away from the label; write the glyph the
+left-to-right screen wants and never pick one by direction. A close, a
+plus or a check is drawn as written. A vertical scroll bar moves to the
+left. Three things deliberately
 do *not* follow the chrome: prose and values still stand by their own
 content (an English caption stays left-aligned inside a mirrored
 screen), a QR code's modules never mirror — a mirrored symbol does not

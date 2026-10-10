@@ -483,11 +483,13 @@ fn gallery(app: *App) !void {
     try b.styled("The label is mandatory and is what assistive tech hears; the fill only restates it. Never animated — for indeterminate waiting, write \"Loading…\" as text.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "diverging_meter");
-    const bars = try b.divergingGroup();
+    const bars = try b.divergingGroup(.{ .legend = .{ .start = "Observations", .end = "Recognitions" } });
     try bars.divergingMeter(.{
         .label = "Composure",
         .start_label = "12 observations",
         .end_label = "4 recognitions",
+        .start_figure = "12",
+        .end_figure = "4",
         .start = 12,
         .end = 4,
         .max = 14,
@@ -496,11 +498,13 @@ fn gallery(app: *App) !void {
         .label = "Consideration",
         .start_label = "3 observations",
         .end_label = "9 recognitions",
+        .start_figure = "3",
+        .end_figure = "9",
         .start = 3,
         .end = 9,
         .max = 14,
     });
-    try b.styled("Two arms from one centre, where meter has one fill and a whole. Both side labels are mandatory: they are the reading, and the arms only restate it. The centre tick stands proud of the track because two full arms would swallow one drawn inside it, and nothing else tells the arms apart — no hatch, no texture, no hue. A shared max is what makes two rows comparable; the diverging_group these two sit in is what makes the comparison visible — it takes the widest words on each side and hands every row one flank width, so one track, one starting x, and one stack-or-flank answer down the whole column. Left to themselves the rows answer that separately, and a row whose words happen to be short keeps flanking a floor-width track while its wider neighbours stack.", .{ .ink = .mid, .scale = .small });
+    try b.styled("Two arms from one centre, where meter has one fill and a whole. Both side labels are mandatory: they are the reading, and the arms only restate it. The centre tick stands proud of the track because two full arms would swallow one drawn inside it, and nothing else tells the arms apart — no hatch, no texture, no hue. A shared max is what makes two rows comparable; the diverging_group these two sit in is what makes the comparison visible — it takes the widest words on each side and hands every row one flank width, so one track, one starting x, and one stack-or-flank answer down the whole column. Left to themselves the rows answer that separately, and a row whose words happen to be short keeps flanking a floor-width track while its wider neighbours stack. The column repeats its two side words on every row, so the group says them once as a legend at its head, and each row draws its figures alone under it — the track takes back the width the nouns spent. A listener still hears each row's words whole; the legend is drawn for a looker only.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "app_mark");
     const mark_row = try b.stack(.{ .axis = .horizontal, .gap = 8 });
@@ -913,9 +917,11 @@ fn colophon(app: *App) !void {
     try b.text("So the page ships with the app that made it. The same wasm module " ++
         "on every screen, the same route table, the same builders — it " ++
         "boots, measures the column you actually have, and retakes those " ++
-        "decisions. The roster that could not fit collapses into a section " ++
-        "chip, which is what nokre does on every other platform and what " ++
-        "the file alone could never do.");
+        "decisions. The roster whose pills no longer fit stands as stacked " ++
+        "slots, each destination's glyph over its words, and collapses " ++
+        "into a section chip only where even those cannot fit, which is " ++
+        "what nokre does on every other platform and what the file alone " ++
+        "could never do.");
     try b.text("It is an upgrade and not a requirement, which is the whole reason " ++
         "the pair exists. Nothing on this site waits for it: the markup is " ++
         "complete before a byte of script arrives, the links are real " ++
