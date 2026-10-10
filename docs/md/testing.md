@@ -1265,8 +1265,10 @@ stack [0,0,480,640]
 
 `nok.render.skia.PixelSink` (requires `-Dskia`) is the pixel twin: one
 frame per step through the production renderer, with identical
-numbering, so the two pair file-for-file. Its `take` says on what terms
-— `.{ .scale = 2, .format = .png }`; PNG by default, because the reader
+numbering, so the two pair file-for-file, and a `shots.FrameRecord`
+beside each frame naming the scenario its `Options.scenario` gives. Its
+`Options.take` says on what terms — `.{ .scale = 2, .format = .png }`;
+PNG by default, because the reader
 this exists for often cannot open a PPM, and `scale` is the hi-DPI knob
 `Surface.init` has always had. A take also installs the Skia measurer if
 the app is not already on it, for `expectGolden`'s reason: the fixed
@@ -2657,8 +2659,11 @@ const skia = nok.render.skia;
 
 skia.useFrame(app, .{ .w = 390, .h = 844 });  // metrics and size, once
 
-var frames = try skia.PixelSink.init(io, .cwd(), gpa, "zig-out/inspect");
-frames.take = .{ .scale = 2, .format = .png };
+var frames = try skia.PixelSink.init(io, .cwd(), gpa, .{
+    .sub_dir = "zig-out/inspect",
+    .scenario = "sign-in",
+    .take = .{ .scale = 2, .format = .png },
+});
 var inst = try nok.testing.driver_app.TraceInstruments.init(
     io, .cwd(), gpa, "zig-out/inspect", frames.observer());
 try d.startTrace(inst.observer());          // 0000-init.txt + 0000-init.png
@@ -2742,6 +2747,15 @@ Four things about this are decisions rather than defaults:
   PPM, and an artifact its reader cannot open is not an instrument.
   Goldens stay PPM — they are compared, not looked at, and their
   byte-exactness is load-bearing.
+- **Every frame says which step it is.** Beside each frame `PixelSink`
+  writes `<frame>.shot`, a `shots.FrameRecord` whose `taken` is
+  `scenario_step` — the scenario the driver named, the step's number and
+  its words — over the app, the language and the frame's size and
+  digest ([services.md](services.md#which-shot-a-frame-is-and-the-gallery)).
+  The scenario is the driver's to name, since nothing in a run knows
+  which scenario it is, and an empty one is refused when the sink is
+  made (`error.ScenarioNameIsEmpty`), as the record's reader refuses it.
+  The frames stay in the directory the driver names, beside the trees.
 - **`step` is for the gaps.** The acting verbs number their own steps;
   `step(action)` is how a driver marks a moment those do not cover —
   after a wait with no action behind it, or at the top of a scenario.
@@ -2947,13 +2961,19 @@ a driver that already takes frames takes a film by putting it where the
 frames went, and deciding so in its own entry:
 
 ```zig
-var film = skia.FilmSink.init(gpa, .{});        // .store = family for a store film
+var film = skia.FilmSink.init(gpa, .{ .play = "e2e" }); // .store = family for a store film
 var inst = try TraceInstruments.init(io, .cwd(), gpa, null, film.observer());
 try d.startTrace(inst.observer());
 // … the scenario, unchanged …
-try film.write(io, .cwd(), "zig-out/plays/e2e.png");
+try film.write(io, .cwd(), "zig-out/plays/e2e.png");   // and e2e.png.shot beside it
 try film.writeRecording(io, .cwd(), "zig-out/plays/e2e"); // e2e/<tag>.nokreplay
 ```
+
+`write` puts the film's `shots.FrameRecord` beside it, `taken` a
+`film`: the play the sink was named for (`Options.play`, refused empty
+with `error.PlayNameIsEmpty`), its purpose — `explain`, or `store` and
+its family — and its length in film frames
+([services.md](services.md#which-shot-a-frame-is-and-the-gallery)).
 
 An explaining film is recorded as it is filmed, so a driver's own run
 gives a `stage` its recording as `addPlays` does:
@@ -3006,6 +3026,30 @@ pub const plays = [_]nokre.testing.Play{
     .{ .name = "ballot", .scenario = ballot, .prepare = prepare, .before = signIn },
 };
 ```
+
+**A play is refused for showing a year that is gone.** A film or a
+recording made against last decade's clock shows a reader an app that
+looks abandoned, and nothing about it fails until a person notices. So
+the plays step reads the year off the host's clock — the plays runner
+is a tool, and a tool may; the app it stands up reads only the device's
+— and refuses, by name, the play and the year:
+
+- `error.PlayClockIsStale` — the played app read its clock, and the
+  instant it read (`clockAt`, or the test clock's default where the play
+  names none) falls in a year more than one behind the host's. A play
+  whose app never reads the clock is not held to its clock: nothing on
+  its screens came from it. Filmed and recorded alike.
+- `error.PlayTextIsStale` — a recording spells a year from 2000 on more
+  than one behind the host's: a run of four digits of one script, Latin,
+  Persian or Arabic-Indic, anywhere in its strings — its screens' words,
+  its captions, the references its scenes stood on. Read off the
+  recording nokre wrote, so every explaining play is held to it in every
+  language it is recorded in. A year in a held answer is the usual
+  cause: the fixture's dates are pinned to the device's clock, and moving
+  that forward moves them.
+
+There is no opt-out per play: no play has a reason to show a stale year
+that a reader would accept.
 
 **A play's workers run on the device's own thread, inside the waits.**
 An act's step comes to the screen with the work it began, a control in

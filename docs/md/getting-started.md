@@ -2054,6 +2054,7 @@ driver — nokre's own tree has both, three drivers between them:
         .target = target,
         .pkg = app_pkg, // the same declaration addApp took
         .deep_link_domains = &.{"notes.example.com"},
+        .store = app.store, // the families and flows addApp declared
         .skia = true, // this one writes frames
     })) |e2e| {
         b.step("e2e-build", "Build the screen-driving E2E runner")
@@ -2085,7 +2086,9 @@ cap, and a driver left at 256 refuses a link the app opens
 ([routing.md](routing.md#the-cap-is-declared)). `.theme` is the same:
 a driver that does not state the app's theme starts in eink, and its
 e2e frames and store shots are then of a look the app never ships
-([A theme](#a-theme)). It answers
+([A theme](#a-theme)). A store walk takes `.store = app.store`, the
+declaration `addApp` was given, never a second list of families and
+flows ([services.md](services.md#the-cell-and-the-walk)). It answers
 `?Driver` rather than `Driver` because off a host where that store
 cannot exist the honest answer is no step at all — an optional the
 plain case would otherwise unwrap for nothing — and it takes no

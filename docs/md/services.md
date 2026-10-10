@@ -793,11 +793,12 @@ generator: your driver walks to the screen, and the library keeps what it
 produces from disagreeing with what a store will take.
 
 None of it is forced. `store` defaults to empty, and an app that never
-writes it — a web-only publisher, an internal tool, this repository's own
-examples — is asserted about in no way at all.
+writes it — a web-only publisher, an internal tool — is asserted about
+in no way at all.
 
 ```zig
     .store = &.{ .iphone_6_9, .play_phone },   // requires .pkg
+    .store_flows = &.{ "home", "inbox" },      // the listing, in order
 ```
 
 **Naming a device family is what declares its store.** One statement
@@ -920,27 +921,68 @@ mark, and its own PNG decoder refuses a non-grayscale image — so a scan
 built on the written file would fail every sign-in screenshot for a
 reason that has nothing to do with margins.
 
-**The verdict is the caller's, and an escape leaves a record.**
+**The verdict is the caller's, and the record carries it.**
 `render.skia.captureForStore` writes the frame whichever way the verdict
 goes and returns the verdict; it prints nothing and raises nothing for
 one, so a walk decides whether to stop or to photograph its remaining
 screens and fail at the end, and `shots.message` is the sentence a
-caller prints. On `.escaped` it also writes `<frame>.escaped`
-(`shots.escaped_record_suffix`) beside the frame: one JSON line,
-`shots.EscapedRecord` —
+caller prints. The verdict is also written into the frame's record
+([below](#which-shot-a-frame-is-and-the-gallery)), beside the digest of
+the PNG bytes written. An escape is
+`{"escaped":{"side":"leading","at":3,"allowed":45}}` — `side` is
+`leading` or `trailing`, `at` the ink's distance from that edge and
+`allowed` the safe area less its overhang, both in the frame's own
+pixels — and a clear frame says so, `{"clear":{"slack":20}}`, rather
+than by the absence of a file. There is no second record for an escape.
+
+**An escape a person looked at and accepted is cleared, by its bytes.**
+A glyph's overhang one pixel past the line is an escape the scan cannot
+tell from a cut word; a person can, by opening the frame. What they
+decide is kept in `listing/shot_clearances.json` in the package that
+declares the app (`shots.shot_clearances_sub_path`), one entry per
+cleared frame, sorted by digest:
 
 ```json
-{"side":"leading","at":3,"allowed":45,"sha256":"<64 lowercase hex>"}
+[
+  {"sha256":"<64 lowercase hex>","cleared_on":"2026-10-10"}
+]
 ```
 
-`side` is `leading` or `trailing`, `at` the ink's distance from that edge
-and `allowed` the safe area less its overhang, both in the frame's own
-pixels, and `sha256` is the digest of the PNG bytes written. It is there
-for tooling that clears a refused frame by its exact bytes: a frame that
-changes changes its hash, and the clearance lapses. Every other verdict
-removes a record left by an earlier run, so a record beside a frame is
-always that frame's; `.no_page_tone` and `.empty` leave none, because a
-frame nobody could measure is not one a person clears.
+Keyed by the frame's digest alone: the place, the flow, the language
+and the family are in the frame's record, and a clearance names the
+exact bytes looked at, never a place a different picture could later
+stand in. `shots.ShotClearances.parse` refuses, each by its own error, a
+file that is not a JSON array, an entry that is not exactly those two
+string fields, a digest that is not 64 lowercase hex digits, a day that
+is not a `YYYY-MM-DD` calendar day, and one digest cleared twice.
+
+The walk is handed the file in its cell (`NOKRE_STORE_CLEARANCES`,
+[below](#the-cell-and-the-walk)). An escaped frame whose digest is in it
+keeps its `escaped` verdict — the record still says what the scan found
+— and gains `cleared_on`, the day it was cleared, in what
+`captureForStore` returns (`shots.StoreJudgement`), in its record and
+in `cell.json`; it no longer fails the walk. Only an escape is cleared:
+a frame with no page tone or an empty one is refused whatever the file
+says. A frame re-shot with other bytes is simply escaped and not
+cleared, and the old entry is an **orphan** — a digest no frame under
+the roots carries (`ShotClearances.orphans`), to be deleted; there is
+no "lapsed" state between.
+
+`shots-clear` is the one writer:
+
+```
+zig build shots-clear -- [--on YYYY-MM-DD] <shot_clearances.json> <frame.png>
+```
+
+Run from a nokre checkout's build file, as `shots-gallery` is. It reads
+the frame's `.shot`, and refuses a frame that is not a store frame, one
+whose verdict is not `escaped` (there is nothing to clear), one whose
+bytes are not the digest its record names, and one already cleared;
+otherwise it appends `{sha256, cleared_on}` and writes the file back
+sorted, creating it for the first clearance. The day is `--on`, else
+today's date in UTC off the host clock — a tool run by a person at the
+moment of judgement, so the date is a fact about that act, not about the
+build.
 
 Two things it refuses rather than reports: an eink frame whose
 commonest tone covers under half of it, which has no page to measure
@@ -964,80 +1006,266 @@ a screen that is laid out exactly as intended, and there is no number a
 consumer could move. A store wants a screen a reader recognizes anyway,
 and the screens a store page is made of are pages.
 
-### Which shot a frame is, and the gallery
+### The cell and the walk
 
-A frame on disk says nothing about itself. So `captureForStore` is
-handed the shot it takes as well as the path it writes:
+A store listing is a short list of screens in a fixed order, taken once
+per device family and once per language. Every part of that but the
+walk to each screen is a declaration, and nokre holds it:
 
 ```zig
-const verdict = try nokre.render.skia.captureForStore(io, .cwd(), gpa, &app, "shots/play_phone/03_inbox_fa.png", .{
-    .family = .play_phone,
-    .flow = "inbox",
-    .listing_position = 3,
-});
+    .store = &.{ .iphone_6_9, .play_phone },
+    .store_flows = &.{ "home", "inbox", "details" },
 ```
 
-`shots.Shot` is the three facts only the walk knows: the family, the
-flow's name, and where the frame stands in the store's listing. The
-path stays yours, because a directory layout is a consumer's decision
-and clearance tooling is keyed on it. Beside every frame, whatever the
-verdict, it writes `<frame>.shot` (`shots.shot_record_suffix`): one JSON
-line, `shots.ShotRecord` —
+`store_flows` names the listing's **flows** in listing order: a flow's
+place there is its frame's position on the store page, so `inbox`
+above is second wherever it is taken and no walk states a number. It is
+declared exactly when `store` is — a store with no flows has nothing to
+upload, flows with no store have nowhere to go — and the build refuses
+either alone, a flow that is not lowercase letters, digits, `_` and
+`-` (it is written into a file name), and a flow named twice. The
+declaration is stated once: `addApp` hands it back as `App.store`, and
+a driver built by `addDevStoreDriver` takes that value whole,
+`.store = app.store`, because the walk is held to it — a consumer's
+`build.zig` names `store_flows` exactly once.
+
+A running app reads its own as `nokre.declared.store`, a
+`shots.StoreDeclaration`: the families, the flows, and the languages
+its `listing/<store>/` directories carry.
+
+**A cell** is one family in one language, under one root:
+`shots.Cell{ .root, .family, .locale }`. The matrix is every listed
+language at every declared family, and a walk runs in one cell. Your
+tooling stands up a world per cell and runs the walk binary once per
+cell, naming the cell in three variables and its clearances in a fourth:
+
+| Variable | Holds |
+| --- | --- |
+| `NOKRE_SHOTS_ROOT` (`shots.cell_root_variable`) | the directory every frame is written under |
+| `NOKRE_STORE_FAMILY` (`shots.cell_family_variable`) | a family's name, `play_phone` |
+| `NOKRE_STORE_LOCALE` (`shots.cell_locale_variable`) | a listed language, `fa` |
+| `NOKRE_STORE_CLEARANCES` (`shots.cell_clearances_variable`) | the clearance file, optional ([The safe area](#the-safe-area)) |
+
+The root is not store-scoped because the root is not: store frames are
+written under `<root>/store/`, which leaves the root for frames of other
+kinds. `shots.Cell.fromEnviron(io, gpa, environ, nokre.declared.store)`
+reads the four and refuses, each by its own error, one of the first
+three unset or empty, a family no store accepts, a family the app did
+not declare, a language its listing does not carry, and a clearance
+file it cannot read (`error.ShotClearancesFileIsUnreadable`) or that
+`ShotClearances.parse` refuses. The fourth unset or empty means no
+clearances. The cell owns what it read; `cell.deinit(gpa)` frees it.
+
+**Your tooling learns the cells from the walk binary**, never from a
+list of its own. Run it with the one argument `--nokre-store-cells`
+(`shots.cells_argument`) and it prints one JSON line and exits:
 
 ```json
-{"app_name":"Example","family":"play_phone","locale":"fa","flow":"inbox","listing_position":3,"sha256":"<64 lowercase hex>","verdict":{"escaped":{"side":"trailing","at":3,"allowed":45}}}
+{"flows":["home","inbox","details"],"cells":[{"locale":"en","family":"iphone_6_9"},{"locale":"en","family":"play_phone"},{"locale":"fa","family":"iphone_6_9"},{"locale":"fa","family":"play_phone"}]}
 ```
 
-Two of its fields are not the caller's to state. `locale` is
+The binary, because it is the one thing built from the declaration it
+will be held to: the cells it prints are the cells it accepts, from the
+same build. A walk answers the argument with one line at the top of its
+`main`. The shape of a driver, which `tests/store_shots.zig` is in full:
+
+```zig
+pub fn main(init: std.process.Init) !void {
+    const store = nokre.declared.store;
+    if (try nokre.shots.answerCellsArgument(init.io, init.gpa, init.minimal.args, store)) return;
+    const cell = try nokre.shots.Cell.fromEnviron(init.io, init.gpa, init.environ_map, store);
+    defer cell.deinit(init.gpa);
+    // stand the app up at cell.family.logical(), in cell.locale
+    var ledger: nokre.shots.CellLedger = try .init(init.gpa, nokre.services.package_info.declaredName(), cell, store);
+    defer ledger.deinit();
+    for (store.flows) |flow| {
+        // walk to the flow's screen
+        const judgement = try nokre.render.skia.captureForStore(init.io, init.gpa, &app, cell, flow);
+        try ledger.note(flow, judgement);
+    }
+    std.process.exit(try ledger.finish(init.io));
+}
+```
+
+**The layout is nokre's; the root is yours.** `captureForStore` writes
+
+```
+<root>/store/<locale>/<family>/<NN>_<flow>.png
+```
+
+and its record beside it — language before family because a store's
+upload is grouped per language, `NN` the flow's listing position in two
+digits. It refuses, before anything is drawn, a flow the app did not
+declare (`error.FlowIsNotDeclared`), a cell the declaration does not
+cover, an app not at its cell's family's size, and an app drawing
+another language than its cell's (`error.LocaleIsNotTheCells`).
+Tooling that reads frames derives the place from a record
+(`FrameRecord.storeFrameSubPath`) and never spells it.
+
+**The ledger is the cell's verdict.** `shots.CellLedger.note(flow,
+judgement)` takes what each capture returned; noting an undeclared flow
+or one flow twice is refused. It is opened with the app's declared name,
+`package_info.declaredName()`, the same name each frame's record carries.
+`finish` writes `<root>/store/<locale>/<family>/cell.json`,
+`shots.CellRecord`:
+
+```json
+{"app_name":"Example","locale":"fa","family":"play_phone","flows":[{"flow":"home","listing_position":1,"verdict":{"clear":{"slack":20}},"cleared_on":null},{"flow":"inbox","listing_position":2,"verdict":null,"cleared_on":null},{"flow":"details","listing_position":3,"verdict":{"escaped":{"side":"trailing","at":3,"allowed":45}},"cleared_on":"2026-10-10"}]}
+```
+
+— the app (`null` for one that declares no name), then every declared
+flow in listing order, with its verdict and the day it
+was cleared, or `null` for one the walk never took or a frame nobody
+cleared. It then answers the walk's exit status:
+`shots.escaped_exit_code` (3) when any frame is neither clear nor
+cleared, 0 when every one is one or the other. A declared flow left untaken is `error.DeclaredFlowIsNotTaken`
+once the record naming it is written: a listing short a screen is a
+walk that broke, not a frame to judge, and the distinct status is what
+lets a caller tell the two apart.
+
+### Which shot a frame is, and the gallery
+
+A frame on disk says nothing about itself, and its path is not a record.
+So beside every frame, whatever the verdict, `captureForStore` writes
+`<frame>.shot` (`shots.frame_record_suffix`): one JSON line,
+`shots.FrameRecord` —
+
+```json
+{"app_name":"Example","locale":"fa","pixels":{"w":1080,"h":2400},"scale":3,"sha256":"<64 lowercase hex>","taken":{"store":{"family":"play_phone","flow":"inbox","listing_position":3,"verdict":{"escaped":{"side":"trailing","at":3,"allowed":45}},"cleared_on":null}}}
+```
+
+**One record for every frame nokre writes.** The first five fields are
+what any captured frame is: the app, the language it was drawn in, its
+size in pixels, the scale between layout and file, and the digest of
+the bytes written (a PNG; a scenario step taken as a PPM digests the
+PPM). `taken` is what was taken, one of three arms,
+each in `std.json`'s encoding of a tagged union:
+
+| Arm | Fields | Taken by |
+| --- | --- | --- |
+| `store` | `family`, `flow`, `listing_position`, `verdict` (`shots.Verdict`), `cleared_on` (the clearance's day, or `null`) | `captureForStore` |
+| `scenario_step` | `scenario`, `step`, `action` | `render.skia.PixelSink`, one per step, beside `<sub_dir>/NNNN-<action>.<ext>` |
+| `film` | `play`, `purpose` (`{"explain":{}}` or `{"store":"<family>"}`), `frames` | `render.skia.FilmSink.write`, beside the film it writes |
+
+A film's purpose is one field rather than a purpose and a family, since
+a store film is the one with a family and the two could disagree.
+`shots.writeFrameRecord` writes any of the three beside the frame it
+names, and each of nokre's three writers calls it for every frame it
+writes. A step's `scenario` is the name its driver gave
+`PixelSink.Options.scenario`, `step` its number and `action` the step's
+own words, unsanitised (the file name is `testing.trace.stepFileName`'s);
+its `pixels` and `scale` are the take's. A film's `play` is
+`FilmSink.Options.play`, `frames` its length in film frames
+(`render.skia.film.fps` a second), and its `pixels` and `scale` are the
+film's own, caption strip included. A play's recording (`.nokreplay`)
+is not a picture and carries no record. A step's frames stay in the
+directory its driver names rather than under a cell root: the tree
+sink writes the same step's `.txt` there, and the pair is filed
+side by side ([testing.md](testing.md#seeing-a-screen-nobody-watched)).
+
+Two common fields are not a store caller's to state. `locale` is
 `App.locale()`, the language the frame was drawn in, so a walk that
-asked for `fa-AF` and stood in `fa` is recorded as `fa`; an app that has
-not chosen a locale is refused (`error.LocaleIsNotChosen`) before
-anything is drawn, because a store page is a page in a language and a
-frame in none has no place on one. `app_name` is the name the build
+asked for `fa-AF` and stood in `fa` is recorded as `fa`. A store frame
+in no language is refused (`error.LocaleIsNotChosen`) before anything is
+drawn, because a store page is a page in a language and a frame in none
+has no place on one; a scenario step or a film may be drawn before a
+locale is chosen, and records `null`. `app_name` is the name the build
 declared (`PackageDecl.name`, the home-screen label), and `null` in a
 module that declared no identity — which a store app cannot be, since
-`.store` requires `.pkg`. `verdict` is the `shots.Verdict` returned,
-in `std.json`'s encoding of a tagged union, and `sha256` is the digest
-of the PNG bytes written. `ShotRecord.parse` reads one back and refuses
-a record whose family is not one of `shots.all`, whose locale is not a
-tag, whose flow is empty or whose digest is not lowercase hex.
+`.store` requires `.pkg`. A store frame's `pixels` and `scale` are its
+family's, by construction.
 
-The `.escaped` record stays exactly as above. It is redundant with a
-`.shot` whose verdict is `escaped`, and is kept because clearance tooling
-reads it by its existence; retiring it is a change of its own.
+`FrameRecord.parse` reads one back and refuses, each by its own error:
+a record that is not one JSON object of exactly its fields, a `taken`
+that is not one of the three arms, a family that is not one of
+`shots.all`, a locale that is not a tag, a store frame with no locale,
+an empty flow, scenario or play, a size or scale of zero, a store frame
+whose size or scale is not its family's, a digest that is not
+lowercase hex, a `cleared_on` that is not a `YYYY-MM-DD` day, and a
+`cleared_on` on a frame whose verdict is not an escape.
 
-**The gallery is the set, on one page.** `shots-gallery` reads every
-`.shot` under the roots it is given and writes one static HTML page:
+**The gallery is every captured frame, on one page.** `shots-gallery`
+walks the roots it is given for every `.shot` and every `cell.json`, and
+writes one static HTML page:
 
 ```
-zig build shots-gallery -- --out <page.html> [--family iphone_6_9,play_phone] [--locale en,fa] <root>...
+zig build shots-gallery -- [--out <page.html>] [--kind store,scenario,film] [--app <name>]... [--family iphone_6_9,play_phone] [--locale en,fa] [--clearances <shot_clearances.json>]... <root>...
 ```
 
 Run from a nokre checkout's build file, the way `l10n-fmt` is
 (`zig build --build-file <nokre>/build.zig shots-gallery -- …`); paths
-are read from the directory it is invoked in. **With no `--family` and
-no `--locale` it shows everything captured** — every family and every
-locale any record names. A flag narrows to the ones it lists, and
-naming a family or a locale no record carries is refused rather than
-answered with an empty column, since that is how a typo reads.
+are read from the directory it is invoked in. A record's frame is the
+record's own path without `.shot`, so a store frame, a scenario step
+and a film are found the same way wherever their writer put them.
 
-The page is a section per app, a section per flow in listing order, and
-under each flow a row per family — one family's frames share an aspect
-ratio, so a row lines up, and reading along it compares the languages a
-screen was drawn in, which is where copy overflows. Each frame is its
-PNG, linked by a path relative to the page and opening at full size, its locale under it, and its
-verdict in a line when it is not clear: `escaped · trailing · 3px ·
-45px allowed`, enough to judge an escape at one look. A family and locale
-the flow was not captured in is a cell that says so, so a gap shows. It
-is grayscale, carries no script and loads nothing from anywhere else;
-the choosing is done at the command line. At a phone's width the rows
-wrap and the frames scale down, with no sideways scroll.
+**The whole set is always `index.html` at the first root.** With no
+narrowing flag the page shows every frame of every kind and is written
+there, unless `--out` names another file. `--kind`, `--app`, `--family`
+and `--locale` narrow, and each is refused without `--out`, and refused
+when `--out` is that `index.html`: a narrowed page left where the whole
+set is read would be taken for it. A narrowing flag keeps a frame only
+if the frame carries the value: `--family` keeps store frames and store
+films of that family, and drops scenario steps and explaining films,
+which have none; `--locale` drops a frame drawn in no language; `--app`
+takes one name and repeats, since a name may hold a comma. Naming a
+kind, an app, a family or a locale no record carries is refused rather
+than answered with an empty page, since that is how a typo reads.
 
-It refuses: a malformed record (naming the file and what is wrong), a
-record whose PNG is missing, two records claiming one cell, and roots
-that hold no record at all. Films are not listed; a play writes no
-record, and listing `addPlays`'s store films would want one written
-beside each.
+The page is a section per app, in the order the roots were given and,
+within a root, by path; an app is the record's `app_name`, and frames
+from a module that declared no identity share one section headed "No
+package declared" rather than being refused, since a test driver's
+scenario steps are exactly that. Its header counts the frames of each
+kind. Within an app:
+
+- **Store** — a section per flow in listing order, under each flow a
+  row per family (one family's frames share an aspect ratio, so a row
+  lines up) and a cell per locale, so reading along a row compares the
+  languages a screen was drawn in, which is where copy overflows. A
+  frame is its PNG, its locale under it, and its verdict in a line when
+  it is not clear: `escaped · trailing · 3px · 45px allowed`, enough to
+  judge an escape at one look; an escape a person cleared reads
+  `escaped · cleared 2026-10-10`, from the record's `cleared_on`. Where
+  the walk wrote a `cell.json` (`shots.CellRecord`), a flow it declared
+  and never took is a cell that says **not taken**; a family and locale
+  with no `cell.json` at all is a cell that says **not captured**. A
+  `cell.json` belongs to the app its `app_name` names.
+- **Scenarios** — a block per scenario and locale, in the order first
+  found, its steps in step order as a strip with each step's number and
+  action under its frame. A step taken as a PPM, or any frame whose file
+  is not `.png` or `.apng`, is a labelled cell naming its file and
+  linking to it, since a browser draws no PPM.
+- **Films** — a block per play, each film its image (a film is an
+  APNG, which a browser plays) with its purpose (`explain` or
+  `store · <family>`), its length in film frames and its locale.
+
+Every frame links to itself at full size by a path relative to the
+page. It is grayscale, carries no script and loads nothing from
+anywhere else; the choosing is done at the command line. At a phone's
+width the rows wrap to one column and the frames scale down, with no
+sideways scroll. There are no thumbnails: the frames are the artifact.
+
+**Orphans.** `--clearances` names a package's
+`listing/shot_clearances.json` (`shots.shot_clearances_sub_path`) and
+repeats, one per package; the caller names the file rather than the
+package, so the gallery holds no idea of where a package keeps it and a
+package with no file is simply not named. A clearance whose digest no
+record under the roots carries is an orphan (`ShotClearances.orphans`):
+the frame it cleared was shot again or is gone. Orphans are listed in a
+section at the end of the page by digest, day and the file that holds
+them, so the line to delete is one look away. They are reckoned against
+every record found, before any narrowing.
+
+It refuses, each naming its files: a malformed `.shot` or `cell.json`, a
+record whose frame is missing, two records claiming one place (one
+store cell; one step of a scenario in one language; one play's film of
+one purpose in one language), two `cell.json` for one app, family and
+locale, a `cell.json` saying a flow was taken where no record of that
+frame is under the roots, a `cell.json` naming another app than a store
+frame in its own directory, an
+unreadable or malformed clearance file, a narrowing flag without
+`--out` or with `--out` at the whole set's page, a choice no record
+carries, and roots that hold no record at all.
 
 ## The share card
 
