@@ -660,7 +660,8 @@ const shell_css =
 /// The recordings the site's stages fetch, copied from the assembled
 /// web tree by its manifest: every entry under `plays/`, at the same
 /// path, since the live driver asks for a play by the name the
-/// gathering tool gave it and nothing else knows that name.
+/// gathering tool gave it and nothing else knows that name; every
+/// other file under `plays/` is deleted.
 fn writePlays(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
     const manifest = try cwd.readFileAlloc(io, try std.fs.path.join(gpa, &.{ site_tree.dir, "site.manifest" }), gpa, .limited(1 << 20));
     var named: std.StringHashMapUnmanaged(void) = .empty;
