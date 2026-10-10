@@ -663,7 +663,7 @@ const shell_css =
 /// gathering tool gave it and nothing else knows that name.
 fn writePlays(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []const u8) !void {
     const manifest = try cwd.readFileAlloc(io, try std.fs.path.join(gpa, &.{ site_tree.dir, "site.manifest" }), gpa, .limited(1 << 20));
-    var copied: usize = 0;
+    var named: std.StringHashMapUnmanaged(void) = .empty;
     var lines = std.mem.splitScalar(u8, manifest, '\n');
     while (lines.next()) |rel| {
         if (!std.mem.startsWith(u8, rel, "plays/")) continue;
@@ -671,9 +671,28 @@ fn writePlays(gpa: std.mem.Allocator, io: std.Io, cwd: std.Io.Dir, out_dir: []co
         const path = try std.fs.path.join(gpa, &.{ out_dir, rel });
         if (std.fs.path.dirname(path)) |dir| try cwd.createDirPath(io, dir);
         try cwd.writeFile(io, .{ .sub_path = path, .data = bytes });
-        copied += 1;
+        try named.put(gpa, rel["plays/".len..], {});
     }
-    if (copied == 0) return error.NoPlaysToPublish;
+    if (named.count() == 0) return error.NoPlaysToPublish;
+    try removePlaysTheManifestDoesNotName(gpa, io, cwd, out_dir, named);
+}
+
+fn removePlaysTheManifestDoesNotName(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    cwd: std.Io.Dir,
+    out_dir: []const u8,
+    named: std.StringHashMapUnmanaged(void),
+) !void {
+    var plays_dir = try cwd.openDir(io, try std.fs.path.join(gpa, &.{ out_dir, "plays" }), .{ .iterate = true });
+    defer plays_dir.close(io);
+    var superseded: std.ArrayList([]const u8) = .empty;
+    var it = plays_dir.iterate();
+    while (try it.next(io)) |entry| {
+        if (named.contains(entry.name)) continue;
+        try superseded.append(gpa, try gpa.dupe(u8, entry.name));
+    }
+    for (superseded.items) |name| try plays_dir.deleteTree(io, name);
 }
 
 fn writeExtras(
