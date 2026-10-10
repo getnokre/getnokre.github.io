@@ -964,6 +964,81 @@ a screen that is laid out exactly as intended, and there is no number a
 consumer could move. A store wants a screen a reader recognizes anyway,
 and the screens a store page is made of are pages.
 
+### Which shot a frame is, and the gallery
+
+A frame on disk says nothing about itself. So `captureForStore` is
+handed the shot it takes as well as the path it writes:
+
+```zig
+const verdict = try nokre.render.skia.captureForStore(io, .cwd(), gpa, &app, "shots/play_phone/03_inbox_fa.png", .{
+    .family = .play_phone,
+    .flow = "inbox",
+    .listing_position = 3,
+});
+```
+
+`shots.Shot` is the three facts only the walk knows: the family, the
+flow's name, and where the frame stands in the store's listing. The
+path stays yours, because a directory layout is a consumer's decision
+and clearance tooling is keyed on it. Beside every frame, whatever the
+verdict, it writes `<frame>.shot` (`shots.shot_record_suffix`): one JSON
+line, `shots.ShotRecord` —
+
+```json
+{"app_name":"Example","family":"play_phone","locale":"fa","flow":"inbox","listing_position":3,"sha256":"<64 lowercase hex>","verdict":{"escaped":{"side":"trailing","at":3,"allowed":45}}}
+```
+
+Two of its fields are not the caller's to state. `locale` is
+`App.locale()`, the language the frame was drawn in, so a walk that
+asked for `fa-AF` and stood in `fa` is recorded as `fa`; an app that has
+not chosen a locale is refused (`error.LocaleIsNotChosen`) before
+anything is drawn, because a store page is a page in a language and a
+frame in none has no place on one. `app_name` is the name the build
+declared (`PackageDecl.name`, the home-screen label), and `null` in a
+module that declared no identity — which a store app cannot be, since
+`.store` requires `.pkg`. `verdict` is the `shots.Verdict` returned,
+in `std.json`'s encoding of a tagged union, and `sha256` is the digest
+of the PNG bytes written. `ShotRecord.parse` reads one back and refuses
+a record whose family is not one of `shots.all`, whose locale is not a
+tag, whose flow is empty or whose digest is not lowercase hex.
+
+The `.escaped` record stays exactly as above. It is redundant with a
+`.shot` whose verdict is `escaped`, and is kept because clearance tooling
+reads it by its existence; retiring it is a change of its own.
+
+**The gallery is the set, on one page.** `shots-gallery` reads every
+`.shot` under the roots it is given and writes one static HTML page:
+
+```
+zig build shots-gallery -- --out <page.html> [--family iphone_6_9,play_phone] [--locale en,fa] <root>...
+```
+
+Run from a nokre checkout's build file, the way `l10n-fmt` is
+(`zig build --build-file <nokre>/build.zig shots-gallery -- …`); paths
+are read from the directory it is invoked in. **With no `--family` and
+no `--locale` it shows everything captured** — every family and every
+locale any record names. A flag narrows to the ones it lists, and
+naming a family or a locale no record carries is refused rather than
+answered with an empty column, since that is how a typo reads.
+
+The page is a section per app, a section per flow in listing order, and
+under each flow a row per family — one family's frames share an aspect
+ratio, so a row lines up, and reading along it compares the languages a
+screen was drawn in, which is where copy overflows. Each frame is its
+PNG, linked by a path relative to the page and opening at full size, its locale under it, and its
+verdict in a line when it is not clear: `escaped · trailing · 3px ·
+45px allowed`, enough to judge an escape at one look. A family and locale
+the flow was not captured in is a cell that says so, so a gap shows. It
+is grayscale, carries no script and loads nothing from anywhere else;
+the choosing is done at the command line. At a phone's width the rows
+wrap and the frames scale down, with no sideways scroll.
+
+It refuses: a malformed record (naming the file and what is wrong), a
+record whose PNG is missing, two records claiming one cell, and roots
+that hold no record at all. Films are not listed; a play writes no
+record, and listing `addPlays`'s store films would want one written
+beside each.
+
 ## The share card
 
 A web build also emits the picture a link preview shows: the app's mark

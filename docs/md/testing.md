@@ -2817,8 +2817,8 @@ re-export, and a worker that registry lacks refused as the browser
 build refuses it — drawn by
 the CPU raster the goldens are, and, where it links a store, over the
 dev file store: a film never reaches the login keychain. A build that
-wants the films elsewhere — copied into a store upload, listed for a
-page — takes them from `Plays.films`, the directory the run wrote them
+wants the films elsewhere — copied into a store upload — takes
+them from `Plays.films`, the directory the run wrote them
 to, rather than from a prefix and a folder name:
 
 ```zig
