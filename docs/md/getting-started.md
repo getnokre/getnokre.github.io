@@ -2118,6 +2118,237 @@ a `.store` play as a store preview at your declared store sizes.
 [testing.md](testing.md#a-scenario-as-a-film) has the declaration, the
 build line and the rules a film keeps.
 
+### Store frames: the declaration
+
+The goldens prove the pixels never drifted; a store wants different
+pixels — its own sizes, every language you list, the screens you chose
+in the order you chose them. nokre holds all of that but the walk to
+each screen, and the walk is a driver like the one above. Six steps take
+Notes from a drawing app to a page of store frames;
+[services.md](services.md#the-store-when-there-is-one) is the reference
+each one points into.
+
+Naming a device family declares its store. Add two lines to Part 1's
+`addApp` call, which already carries the `.pkg` they require:
+
+```zig
+        .store = &.{ .iphone_6_9, .play_phone }, // requires .pkg
+        .store_flows = &.{ "notes", "settings" }, // the listing, in order
+```
+
+A flow's place in `store_flows` is its frame's place on the store page,
+so `settings` is second wherever it is taken. The two go together — the
+build refuses either alone ([The cell and the walk](services.md#the-cell-and-the-walk)).
+
+Each declared store wants a listing per language, in the project root,
+under `listing/<store>/<locale>.md`. Notes speaks `en` and `fa`, so four
+files: `listing/apple/en.md`, `listing/apple/fa.md`,
+`listing/google/en.md`, `listing/google/fa.md`. Short fields are
+front matter, prose is a `## ` section:
+
+```markdown
+---
+locale: "en"
+name: "Notes"
+subtitle: "Notes behind a passphrase"
+keywords: "notes,passphrase,sync"
+---
+
+## description
+
+Prose, as long as the store allows.
+```
+
+Google's fields are `name` and `short_description` above the line and
+`## full_description` below it. A field over budget, a required field
+missing, a `locale:` line that disagrees with its filename, or a locale
+one store carries and the other does not is refused by name on the
+packaging step ([The listing](services.md#the-listing)). The build cannot
+see your bundle's languages, so one line in `main.zig`, beside the
+revision assert, holds the listings to Part 11's `L` both ways
+([The half a build cannot see](services.md#the-half-a-build-cannot-see)):
+
+```zig
+comptime { h.store_listing.requireListings(L); }
+```
+
+### Store frames: the walk
+
+The walk is a driver built by `addDevStoreDriver`, handed the
+declaration `addApp` was given — `.store = app.store`, never a second
+list of families and flows. Beside the e2e driver in `build.zig`:
+
+```zig
+    if (nokre.addDevStoreDriver(nokre_dep, .{
+        .name = "store_walk",
+        .root_source_file = b.path("src/store_walk.zig"),
+        .target = target,
+        .pkg = app_pkg,
+        .store = app.store,
+        .skia = true,
+    })) |walk| {
+        b.step("store-walk-build", "Build the store walk")
+            .dependOn(&b.addInstallArtifact(walk.artifact, .{}).step);
+    }
+```
+
+State the app's `.theme` here too if it has one, or the frames show a
+look the app never ships ([The fourth artifact](#the-fourth-artifact-a-driver)).
+
+`src/store_walk.zig` answers `--nokre-store-cells` before anything else,
+reads its cell from the environment, opens the ledger with the app's
+declared name, takes one frame per flow and exits through `finish`:
+
+```zig
+const std = @import("std");
+const nok = @import("nokre");
+
+pub fn main(init: std.process.Init) !void {
+    const store = nok.declared.store;
+    if (try nok.shots.answerCellsArgument(init.io, init.gpa, init.minimal.args, store)) return;
+    const cell = try nok.shots.Cell.fromEnviron(init.io, init.gpa, init.environ_map, store);
+    defer cell.deinit(init.gpa);
+
+    const logical = cell.family.logical();
+    var app: nok.App = undefined;
+    app = try nok.App.init(init.gpa, .{ .viewport = .{ .w = logical.w, .h = logical.h }, .locale = cell.locale });
+    defer app.deinit();
+
+    var ledger: nok.shots.CellLedger = try .init(init.gpa, nok.services.package_info.declaredName(), cell, store);
+    defer ledger.deinit();
+    for (store.flows) |flow| {
+        // walk to the flow's screen: "notes", then "settings"
+        const judgement = try nok.render.skia.captureForStore(init.io, init.gpa, &app, cell, flow);
+        try ledger.note(flow, judgement);
+    }
+    std.process.exit(try ledger.finish(init.io));
+}
+```
+
+Reaching each screen is yours, the way your e2e scenarios reach it;
+`tests/store_shots.zig` in nokre's tree is a complete walk that builds
+its screens by hand. `captureForStore` refuses, before drawing, a flow
+you did not declare and an app not at its cell's size or in its cell's
+language. It returns a judgement and prints nothing: the verdict is
+yours to note, and `ledger.note` is where it goes
+([The cell and the walk](services.md#the-cell-and-the-walk)).
+
+### Store frames: one cell by hand
+
+A cell is one family in one language. Ask the binary which cells it
+accepts — your tooling learns them from here, never from a list of its
+own:
+
+```sh
+zig build store-walk-build
+zig-out/bin/store_walk --nokre-store-cells
+```
+
+```json
+{"flows":["notes","settings"],"cells":[{"locale":"en","family":"iphone_6_9"},{"locale":"en","family":"play_phone"},{"locale":"fa","family":"iphone_6_9"},{"locale":"fa","family":"play_phone"}]}
+```
+
+Then run one, naming the cell in three variables:
+
+```sh
+NOKRE_SHOTS_ROOT=zig-out/shots NOKRE_STORE_FAMILY=play_phone NOKRE_STORE_LOCALE=fa \
+  zig-out/bin/store_walk; echo $?
+```
+
+Under `zig-out/shots/store/fa/play_phone/` you now have
+`01_notes.png` and `02_settings.png`, a `.shot` beside each — one JSON
+line naming the app, the language, the size, the digest of the bytes and
+the verdict — and `cell.json`, the cell's ledger, every declared flow in
+listing order with its verdict. Open the PNGs.
+
+The exit status is the cell's verdict. `0`: every frame is clear.
+`3` (`shots.escaped_exit_code`): at least one frame put ink inside the
+page's margin — `cell.json` and that frame's `.shot` say which side, how
+far from the edge and how much was allowed, as
+`{"escaped":{"side":"trailing","at":3,"allowed":45}}`. Any other
+failure is a walk that broke — a declared flow left untaken is
+`error.DeclaredFlowIsNotTaken` — not a frame to judge
+([The safe area](services.md#the-safe-area)).
+
+### Store frames: an escape, looked at and cleared
+
+A glyph's overhang one pixel past the line and a cut word read the same
+to the scan; they do not to you. Open the escaped frame. If something is
+cut or a control sits in the margin, fix the screen and run the cell
+again. If it is an overhang and nothing more, clear it — by its bytes,
+from your project root, through nokre's build file:
+
+```sh
+zig build --build-file ../nokre/build.zig shots-clear -- \
+  listing/shot_clearances.json zig-out/shots/store/fa/play_phone/02_settings.png
+```
+
+`shots-clear` reads the frame's `.shot`, refuses a frame whose verdict is
+not `escaped`, one already cleared and one whose bytes no longer match
+its record, and appends
+`{"sha256":…,"cleared_on":…}` to `listing/shot_clearances.json`,
+creating it the first time. The day is today's in UTC unless
+`--on YYYY-MM-DD` names one. Commit the file. Run the cell again with the
+fourth variable:
+
+```sh
+NOKRE_SHOTS_ROOT=zig-out/shots NOKRE_STORE_FAMILY=play_phone NOKRE_STORE_LOCALE=fa \
+NOKRE_STORE_CLEARANCES=listing/shot_clearances.json \
+  zig-out/bin/store_walk; echo $?
+```
+
+With that the only escape, the status is `0`. The frame keeps its `escaped` verdict — the record
+still says what the scan found — and gains `cleared_on` in its `.shot`
+and its `cell.json` row. A frame re-shot with other bytes is escaped and
+not cleared again; the clearance is for the picture you looked at, never
+for a place another picture could later stand in
+([The safe area](services.md#the-safe-area)).
+
+### Store frames: the gallery
+
+`shots-gallery` puts every captured frame on one page: store frames,
+the step frames a `PixelSink` writes
+([testing.md](testing.md#seeing-a-screen-nobody-watched)) and the films
+`addPlays` writes ([A scenario as a film](#a-scenario-as-a-film)), each
+found by its `.shot`. Name the store root first, then the directory your
+e2e driver hands its `PixelSink` (`zig-out/e2e-frames` here) and the
+films' `zig-out/plays`:
+
+```sh
+zig build --build-file ../nokre/build.zig shots-gallery -- \
+  --clearances listing/shot_clearances.json \
+  zig-out/shots zig-out/e2e-frames zig-out/plays
+```
+
+With no narrowing flag the page is the whole set, written to
+`index.html` at the first root — here `zig-out/shots/index.html`. Store
+frames sit a flow per section, a row per family, a cell per language, so
+reading along a row compares the languages a screen was drawn in. A
+narrowing flag — `--kind`, `--app`, `--family`, `--locale` — is refused
+without `--out`, and refused when `--out` is that `index.html`, so a
+narrowed page is never taken for the whole set:
+
+```sh
+zig build --build-file ../nokre/build.zig shots-gallery -- \
+  --out zig-out/fa.html --locale fa zig-out/shots
+```
+
+`--clearances` is what finds **orphans**: a clearance whose digest no
+frame under the roots carries — the frame was shot again or is gone. They
+are listed at the foot of the page by digest and day; delete those lines
+from `listing/shot_clearances.json`
+([Which shot a frame is, and the gallery](services.md#which-shot-a-frame-is-and-the-gallery)).
+
+### Store frames: what stays yours
+
+Standing up a world per cell — a seeded backend, a signed-in account,
+whatever the screens need to show something — and running the walk once
+per cell the binary printed are your tooling's, since nokre knows
+neither your world nor how you run processes. Every default is
+everything: the matrix is every listed language at every declared
+family, and a gallery with no narrowing flag shows every frame of every
+kind, so a narrowed run is always a choice you made at the command line.
+
 ## Part 13 — Every platform
 
 The Zig you wrote is finished — what remains is entry points and native
