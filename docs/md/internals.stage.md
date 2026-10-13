@@ -422,7 +422,12 @@ shift learned it through the places that learned the big stage.
 centred, as tall as the screen or the scene's whole content, whichever is
 less; the scene is laid out at its whole content height
 (`RareeHeld.content_h`, found by standing it at the viewport first), and
-the window shows a slice of it at `RareeHeld.scroll`. That scroll is the
+the window shows a slice of it at `RareeHeld.scroll`: the renderer opens
+a window the window's own size and draws the scene into it from that row
+down, so no window is taller than the screen however long the scene (a
+window the scene's whole height drew blank on an iPhone's GPU, past the
+largest target it renders to; the renderer test "a peeped raree's window
+is the pane's height" holds it). That scroll is the
 raree's: `Element.scrollView` answers it while peeped, so the wheel, a
 drag and the bar scroll it through the one door, clamped to
 `content_h` less the window's height. `unpeep` returns focus without a

@@ -72,6 +72,17 @@ The reversal spends the promise for GPU-backed frames and nothing else:
 | a lit glyph's paint: the glyph's shader over its own ink box's field | the partial-raster decisions, which the GPU path does not use: it redraws whole frames |
 | presenting, paced by the display | goldens, proofs and the audit |
 
+With a presenter attached every surface is drawn on the GPU, a stage's
+or a raree's window as well as the frame, except one the GPU cannot
+render to: a surface wider or taller than the context's
+`maxRenderTargetSize` is recorded and drawn on the CPU from its first
+op (`onGpu` in the shim). Without that guard the GPU made no target for
+it and its pixels stayed blank, which is how a peeped raree's window,
+then its scene's whole height, drew an empty pane on an iPhone
+(2026-10-13). The window is the pane's size since, so the guard is a
+net, held by `check-gpu`'s "a surface asked onto the GPU and taller
+than the GPU renders to draws on the CPU, every pixel it was told".
+
 The proof order was deliberate: OP_FROST and the contact line (then a
 table op, OP_GLOW; a plain shadow since 2026-09-27) read pixels, so
 the first GPU frame read them back to the CPU and ran the CPU's
