@@ -796,10 +796,6 @@ None of it is forced. `store` defaults to empty, and an app that never
 writes it — a web-only publisher, an internal tool — is asserted about
 in no way at all.
 
-The device families named here are also the sizes the app's exhibit
-offers its recordings at, or every family where none is named
-([getting-started.md](getting-started.md#the-apps-exhibit)).
-
 ```zig
     .store = &.{ .iphone_6_9, .play_phone },   // requires .pkg
     .store_flows = &.{ "home", "inbox" },      // the listing, in order

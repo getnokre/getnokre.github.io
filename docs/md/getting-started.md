@@ -2356,7 +2356,8 @@ kind, so a narrowed run is always a choice you made at the command line.
 
 The gallery shows frames; the **exhibit** shows the runs themselves —
 one [`raree`](elements.md#raree) per step of every scenario your drivers
-recorded, in the language and at the device size you pick, then each
+recorded, in the language you pick and at your window's size or a
+phone's, a tablet's, a laptop's or a desktop's, then each
 play on a [`stage`](elements.md#stage). It is an app of nokre's own,
 built from your app's declaration and nothing else: no source of yours
 is compiled into it, and it fetches its recordings over `http` from one
@@ -2399,8 +2400,9 @@ place ([internals/exhibit.md](internals/exhibit.md)).
    under the root, and serves it.
 
 4. Open `http://127.0.0.1:8000/`. The top bar picks the language, the
-   look and the device; a raree pressed fills the screen at that size
-   and scrolls its whole screen. A recording the index could not read —
+   look and the device, "This window" by default, so each card is your
+   window in miniature and follows it when you resize; a raree pressed
+   fills the screen at that size and scrolls its whole screen. A recording the index could not read —
    recorded by another nokre, say — is listed at the foot by file and
    error rather than stopping the page.
 

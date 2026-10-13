@@ -42,7 +42,7 @@ written by `std.json`, and read back by the same type's `parse`: the
 writer and the reader are one declaration.
 
 ```json
-{"revision":202,"app":"Demo","recordings":[{"kind":"scenario","name":"settings_walk","locale":"en","viewport":{"w":440,"h":956},"family":"iphone_6_9","steps":4,"file":"scenarios/settings_walk/en.nokreplay"}],"refused":[{"file":"plays/ballot/fa.nokreplay","error":"RecordedPlayStampDiffers"}]}
+{"revision":203,"app":"Demo","recordings":[{"kind":"scenario","name":"settings_walk","locale":"en","viewport":{"w":440,"h":956},"steps":4,"file":"scenarios/settings_walk/en.nokreplay"}],"refused":[{"file":"plays/ballot/fa.nokreplay","error":"RecordedPlayStampDiffers"}]}
 ```
 
 | Field | Source |
@@ -53,7 +53,6 @@ writer and the reader are one declaration.
 | `name` | the scenario's or play's directory name |
 | `locale` | the recording's own locale, read by `recorded_play.read` |
 | `viewport` | the window the run was acted at, read the same way |
-| `family` | the `shots.all` family whose logical size is exactly the viewport, else `null` (`ExhibitIndex.familyOf`) |
 | `steps` | the recording's step count: what a raree counts and a stage counts as one |
 | `file` | the path under the root, `/`-separated on every host, which is the URL the exhibit fetches |
 | `refused` | each `.nokreplay` that `read` refused, or that stands outside the layout, by path and the error's name |
@@ -132,7 +131,6 @@ derived declaration is what it is for one reason:
 | `l10n` | none | the exhibit's chrome is English and its own; a scene's words are the recording's |
 | `mark` | none | the exhibit draws no mark of its own; the app's is a scene mark (below) |
 | icons | the trees `appIcons` scans for the app, and `src/exhibit` | the scan only subsets glyphs, so the app's trees are read and none of them is compiled |
-| families | the app's `.store`, or `shots.all` where it declares none | the device picker's sizes; the exhibit itself declares no store |
 
 The app is not required to declare `.pkg` for anything else, but
 `addExhibit` refuses one that does not, by name, since the exhibit's
@@ -194,10 +192,18 @@ opening on the exhibited app's template language — its template
 catalog's `@@locale`, read when `addExhibit` is configured and handed to the page as
 `exhibit_options.template_locale` — where the root holds a recording in
 it, else on the first recording's), the look (`eink`, `depth`,
-`lamp`, through `setTheme`) and the device (each family by its logical
-size, and "As recorded"). Then, per scenario recorded in the chosen
-language, its name and one `raree` per step at the device's viewport,
-null for "As recorded", in one row that wraps them as many to a line as
+`lamp`, through `setTheme`) and the device: "This window", the
+default, then the exhibit's own presets (`src/exhibit/viewports.zig`:
+small phone, phone, large phone, tablet, laptop, desktop, each said
+with its logical size, "Phone, 390×844"). The presets are not the
+store's device families and are not read from the app's `.store`: a
+family is a size a listing is uploaded at, and a reader looking at a
+run wants a laptop as much as a phone. Nor is the size a run was acted
+at offered, since a recording keeps no size a reader defers to. Then,
+per scenario recorded in the chosen language, its name and one `raree`
+per step at the device's viewport, `.window` for "This window" — the
+exhibit's own window, re-laid on every resize, so a card is that window
+in miniature and a peep stands it at 1:1 — in one row that wraps them as many to a line as
 their cells allow (`layout.metrics.raree_cell_w`: three to a page at its
 cap, one to a phone's); then each play on a `stage` on `.data`; then
 the refusals. A failed fetch is written in words where its recording

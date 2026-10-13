@@ -399,8 +399,11 @@ from — is `error.RecordingNotInHand`; a test stands one on a file with
 
 **Standing lazily.** `raree.sync` runs beside `stage.sync` with no cap on
 how many it walks — a page holds hundreds — and only reads: each raree's
-reading from the store, its caption, its scene viewport (the one asked
-for, else the recording's acted one) and the host's density. A scene app
+reading from the store, its caption, its scene viewport (the size asked for, or at `.window` the
+screen, `App.staging.screen` else `App.viewport`, read at every sync so a
+resize lays it out again with no rebuild; the web's driver reports a new
+screen through `App.internal.reportScreen`, which lays out again where
+`raree.readsWindow`) and the host's density. A scene app
 is made only where it is drawn: `raree.sceneOf` stands one, and
 `raree.settle`, after each layout, drops the scene app of every raree
 whose box is more than one screen from the window. A stood scene is
@@ -408,8 +411,9 @@ keyed by the scene number, its size and the dress, and stands again when
 any changes.
 
 **The card and the peep.** Layout (`layoutRaree`) makes the window the
-viewport at the largest density from 1:1 down (`stage.densityAt`) whose
-width fits the column, so the card keeps the viewport's aspect, and
+viewport at the largest density from 1:1 down whose width fits the
+column (`layout.rareeDensityAt`: the stage's steps, then past one pixel
+per point on every host, where a stage's zoom stops on a hi-DPI one), so the card keeps the viewport's aspect, and
 keeps a caption's room under it. Peeped, the raree is a layer as a big
 stage is: `layout.bigScreen` and `inBigScreen` answer either, so the
 modal order, focus, Esc, hit clipping, the reveal walk and the window's

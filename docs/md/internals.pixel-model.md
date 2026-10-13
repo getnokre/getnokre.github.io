@@ -362,6 +362,20 @@ straddles a half-pixel. Rounded rects are drawn with grayscale AA — still
 deterministic per Skia build, like text. Lines are axis-aligned only —
 the shim ignores anything else by design.
 
+**A rounded stroke's long side is drawn in short pieces.** Skia splits a
+straight edge longer than 512 device rows at its midpoint, and where the
+midpoint falls on a half row a one-point stroke loses coverage at that
+one pixel: every odd-height card from 537 rows drew its sides' middle
+pixel 112 against 64, and only the whole raster did, since a tile's clip
+chops the edge short (`tests/partial_raster.zig` caught it on a raree's
+card). So a rounded stroke whose side exceeds `kLongestEdgeRows` is built
+by `roundedStrokeInShortSides` as lines of at most 256 device rows
+meeting on whole rows, its corners the conics `SkRRect`'s own path
+draws; a shorter one keeps `drawRRect`. The threshold was measured
+(2026-10-13), not read from Skia's sources; the shim test "a one-point
+rounded stroke 537 rows tall draws its sides' middle pixel at the side's
+own byte" holds it.
+
 ## Text: shaped, grayscale AA, no hinting, no subpixel
 
 - Bundled fonts only ([src/assets/fonts](../../src/assets/fonts)):

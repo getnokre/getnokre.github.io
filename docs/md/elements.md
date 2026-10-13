@@ -3963,8 +3963,8 @@ that screen: a recording keeps no scroll, and a raree makes no moves to
 reach anything. A `step` past the recording's last is refused by name
 (`error.RareeStepOutOfRange`, through `raree.failureOf`) and the raree
 stands the could-not-show words a stage says (`stage_unavailable`) under
-an empty window, the size of its `viewport` where it names one and of
-nothing where it does not; so does a recording that cannot be read. A
+an empty window the size of its `viewport`; so does a recording that
+cannot be read. A
 `.declared` play is fetched where a stage's is (the web): the raree asks
 for it once laid out, as a stage does, one fetch per file however many
 rarees stand on it, and until it arrives its window is the tone a
@@ -3972,15 +3972,24 @@ missing value is drawn in, with no words under it; a fetch that fails
 says the could-not-show words. A `.data` raree never asks: its bytes
 are all there is.
 
-**The viewport is the reader's choice.** `null` lays the scene out at
-the size the play was acted at. A size lays it out at that size instead,
-at any width and height: the tree the played app built, laid out again by
-this app's layout, exactly as a stage lays it out at the reader's width,
-so an exhibit can show one recording at each device family's logical
-size. The card keeps the viewport's aspect: its window is the viewport
-drawn at 1:1, or as many steps smaller as the column needs, one device
-pixel per point fewer each (the stage's zoom-out, `stage.densityAt`),
-never larger. In a vertical flow the column is the span, so a raree
+**The viewport is the reader's choice**, a `nokre.element.RareeViewport`.
+`.window`, the default, lays the scene out at the screen the app stands
+on now, read again at every layout, so a resize lays it out again with
+no rebuild, as a stage's is; peeped, it stands at 1:1 in exactly the
+window. `.size` lays it out at that size instead, at any width and
+height. Either way it is the tree the played app built, laid out again
+by this app's layout, so an exhibit can show one recording at any size.
+The size the play was acted at is not offered: a recording keeps no
+size a reader defers to, only the canvas one driver happened to use.
+The card keeps the viewport's aspect: its window is the viewport drawn
+at 1:1, or as many steps smaller as the column needs, one device pixel
+per point fewer each and then one pixel per two points, per three
+(`layout.rareeDensityAt`), never larger. This is the one place the
+stage's floor — a zoom-out stops at one device pixel per point on a
+hi-DPI host, a fraction shrunk accepted only on a host of one —
+is not held: a stage is read at its size, a card is a miniature only
+looked at whole, and without it a desktop-wide scene on a 2× host
+would stand 960 points wide against a 237-point cell. In a vertical flow the column is the span, so a raree
 whose viewport fits is drawn at 1:1. **In a row**, or a table cell, the
 column is a cell (`layout.metrics.raree_cell_w`, three to a page at its
 cap with the row's gap between), and the card hugs itself in it, so a
