@@ -82,6 +82,14 @@ then its scene's whole height, drew an empty pane on an iPhone
 (2026-10-13). The window is the pane's size since, and the scene is
 stood at it, so the guard is a net, held by `check-gpu`'s "a surface asked onto the GPU and taller
 than the GPU renders to draws on the CPU, every pixel it was told".
+A window drawn whole (`WindowScene.rasterOn` with no shrink) on a frame
+drawn on the GPU is put down from the GPU: its target is snapped as an
+image and drawn into the frame at whole device pixels, nearest, and
+nothing is read back — a peeped raree's pane at 1800×1100@2 cost 83 ms
+a frame read back and 11 ms put down. A raree's still
+(stage.md, "The still") is read back once, the frame it is kept, and a
+window shrunk by a fraction is read back every time, since the box
+average is the CPU's integer arithmetic.
 
 The proof order was deliberate: OP_FROST and the contact line (then a
 table op, OP_GLOW; a plain shadow since 2026-09-27) read pixels, so

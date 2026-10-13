@@ -426,6 +426,25 @@ at most. A stood scene is
 keyed by the scene number, its size and the dress, and stands again when
 any changes.
 
+**The still.** A card does not move, so on a canvas that keeps stills it
+is rastered once: the renderer names what the card shows as one number
+(`raree.stillKey`: the recording's digest, the step's rest scene, the
+size and density the scene is laid out at, and the dress), and asks the
+canvas for the still kept under it (`canvas.WindowScene.still`,
+`Canvas.drawStill`) before it stands the scene; only a card the canvas
+does not hold opens a window, and the window's bytes are kept under the
+key as they were put down (`hsk_draw_surface`), to a cap of 64 MB per
+surface, the least recently drawn dropped first. Two cards on the same
+scene at the same size share one still. A peeped raree has no key: its
+window scrolls. The recording canvas keeps none, so a renderer test
+reads every card's ops in every frame; the Skia canvas keeps them, and
+`stage_test` holds a frame from stills byte for byte to the frame
+drawn through windows. Measured on a page of 318 cards of one kitchen
+sink scenario, lamp dark, ReleaseSafe, this Mac (`bench-exhibit`): a
+window scroll frame at 1800×1100@2 fell from 128 ms to 40 ms on the
+CPU and from 94 ms to 8 ms on the GPU, and at 428×926@3 from 55 ms to
+18 ms and from 25 ms to 5 ms.
+
 **The card and the peep.** Layout (`layoutRaree`) makes the window the
 viewport at the largest density from 1:1 down whose width fits the
 column (`layout.rareeDensityAt`: the stage's steps, then past one pixel
