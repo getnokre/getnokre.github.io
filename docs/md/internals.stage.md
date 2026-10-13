@@ -477,7 +477,13 @@ shell.h is the contract); the web runs animation frames while
 `nokre_dom_wants_ticks` answers yes. A tick counts film frames at the
 timeline's rate, with the remainder carried in thousandths of a frame,
 and a late tick counts at most `stage.max_tick_ms`. A frame is owed only
-where the shot changed.
+where the shot changed. A play stops at its end, and where its window
+left the screen as core places it; not where the browser scrolls the
+window (`layout.Medium.reflows`), since core never sees that scroll and
+would place every stage below the first screen off it, which is how Play
+on the web did nothing outside the big screen (2026-10-14). There a
+stage plays wherever the page stands, and a hidden tab, which gets no
+animation frames, waits.
 
 Where a stage stands is a step, the recording's, and a shot inside
 that step's cut, or none for the step's rest, its cut's last shot
