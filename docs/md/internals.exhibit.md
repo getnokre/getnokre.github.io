@@ -188,7 +188,12 @@ Since the web fetches only its own origin, the page's `connect-src
 `max_body` of 64 MiB, `nokre-serve`'s own `max_file_bytes`.
 
 **What it shows.** A top bar of three selects: the language (the
-locales the manifest's recordings carry), the look (`eink`, `depth`,
+locales the manifest's recordings carry — named as text, "Language: en",
+when the root holds one language, since a select needs two options —
+opening on the exhibited app's template language — its template
+catalog's `@@locale`, read when `addExhibit` is configured and handed to the page as
+`exhibit_options.template_locale` — where the root holds a recording in
+it, else on the first recording's), the look (`eink`, `depth`,
 `lamp`, through `setTheme`) and the device (each family by its logical
 size, and "As recorded"). Then, per scenario recorded in the chosen
 language, its name and one `raree` per step at the device's viewport,

@@ -1949,7 +1949,7 @@ plate's box, material and fill in a window at a scale, what `lamp.Face`,
 `lamp.Rim`, `lamp.Glyph` and the frost put at a device pixel. Then
 `tests/web_lamp.mjs` serves the site, drives headless Chrome over the
 DevTools protocol (node's own `WebSocket`, no package), chooses each
-look through the page's own control, and holds five facts at a phone's
+look through the page's own control, and holds these facts at a phone's
 390x844 at scale 2 and 3, and at a desk's 1024x700 at scale 2:
 
 - **Nothing moved.** Every element's box is the same with every
@@ -1986,6 +1986,13 @@ look through the page's own control, and holds five facts at a phone's
   pseudo-element and no pixel by more than a byte (Chrome dithers a
   gradient anew each time it rasterizes one).
 - **No console error**, through all of it.
+- **A peeped raree scrolls.** Not the lamp's, and here because this is
+  the one place a real browser scrolls a nokre page: at 390x844 at
+  scale 2, the Watch screen's raree is pressed as a pointer presses it,
+  and its card must move under a wheel over it and again under PageDown
+  on the press it focuses, each read back off the card's `scrollTop`,
+  and Escape must put it back. A press fixed over the window once
+  chained both past the card to the held page, and nothing moved.
 
 What each compared plate *is* — its material and fill — is written in
 the script, not read from the sheet, which is what is under test. So

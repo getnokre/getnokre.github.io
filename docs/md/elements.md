@@ -4001,8 +4001,10 @@ caption under the card, or by its number where it has none. Pressed, it is *peep
 the viewport's width at 1:1, the scene laid out at its whole height, its
 window centred and as tall as the screen allows, and the page's chrome
 gone under it. The scene scrolls there by its own scroll, which is the
-raree's and not the recording's: the wheel, a drag and the bar move
-it, held between the scene's top and its bottom. Pressed again —
+raree's and not the recording's: the wheel, a drag, the bar and,
+on the raree it focuses, ↑/↓, PageUp/PageDown and Home/End move it,
+held between the scene's top and its bottom, and it opens at the top
+every time. Pressed again —
 anywhere on its screen, since nothing stands beside its window to press
 — or on Escape, it goes back to the card at the same place in the page, which
 never moved. It is a modal layer while peeped, as a big stage is.

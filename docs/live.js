@@ -494,6 +494,8 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // scroll, and its figure's place in the page is held the same way.
   const PEEPED = "data-peeped";
   const ON_BIG_SCREEN = `.stage[${BIG}], .raree[${PEEPED}]`;
+  const PEEPED_PRESS = `.raree[${PEEPED}] .raree-press`;
+  const PEEPED_SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
   const heldPlace = new WeakMap(); // figure -> its page height as a declaration
   let bigGutter = false;
   let gutterKept = false;
@@ -1135,7 +1137,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       return;
     }
     if (a.nodeName === "FIGURE" && a.hasAttribute(BIG) !== b.hasAttribute(BIG)) holdPlace(a, b.hasAttribute(BIG));
-    if (a.nodeName === "FIGURE" && a.hasAttribute(PEEPED) !== b.hasAttribute(PEEPED)) holdPlace(a, b.hasAttribute(PEEPED));
+    if (a.nodeName === "FIGURE" && a.hasAttribute(PEEPED) !== b.hasAttribute(PEEPED)) {
+      holdPlace(a, b.hasAttribute(PEEPED));
+      // Core opens a raree at the top of its scene (`raree.peep`). The
+      // card is one element across peeps, and a browser hands a box
+      // back the offset it held when it last scrolled, so the card
+      // leaves at the top while it can still be scrolled there.
+      if (!b.hasAttribute(PEEPED)) a.querySelector(".raree-frame")?.scrollTo(0, 0);
+    }
     for (const attr of [...a.attributes]) {
       if (attr.name === "style") continue;
       if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name) && !pictureOwns(b, attr.name)) a.removeAttribute(attr.name);
@@ -1584,6 +1593,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // real scroll containers. Core's answer to the same keys is the
     // raster's sideways scroll, which this substrate has no offset for.
     if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target.matches?.(".table-wrap, pre.code")) return;
+    // A peeped raree's ↑/↓, PageUp/PageDown and Home/End are the
+    // browser's for the same reason: its card is a real scroll
+    // container, and the browser scrolls the one holding the press it
+    // focuses. Core's answer moves the raster's offset over its scene,
+    // which this substrate does not read. Enter, Space and Esc stay
+    // core's, and put it back.
+    if (PEEPED_SCROLL_KEYS.has(e.key) && e.target.matches?.(PEEPED_PRESS)) return;
     e.preventDefault();
     // Every key below acts on a *range* when there is one — Backspace
     // deletes it, a plain arrow collapses onto the end it points at,
