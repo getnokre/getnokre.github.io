@@ -2684,26 +2684,38 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
   --stage-edge: var(--g10);
 }
 .raree-window.stage-window { width: var(--raree-w); height: var(--raree-h); margin-block: 0 var(--border); box-shadow: 0 var(--border) 0 0 var(--stage-rule); border-radius: calc(var(--radius-card) - var(--border)) calc(var(--radius-card) - var(--border)) 0 0; }
+/* A raree in the page off the screen renders nothing of its scene:
+   its window's size is its own (`--raree-w`, `--raree-h`), so
+   skipping it moves no box, and a page of hundreds styles, lays out
+   and paints the few on the screen rather than every scene's
+   markup. Peeped, it is the screen, and always rendered. */
+.raree:not([data-peeped]) .raree-window.stage-window { content-visibility: auto; contain-intrinsic-size: var(--raree-w) var(--raree-h); }
 .raree-caption { padding: var(--tile-pad-v) var(--tile-pad-h); margin: 0; }
 .raree-frame:not(:has(> .raree-caption)) > .raree-window.stage-window { margin-block: 0; box-shadow: none; border-radius: calc(var(--radius-card) - var(--border)); }
 .raree-press { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: transparent; border-radius: var(--radius-card); cursor: pointer; }
 /* Peeped (`layout.peepedRareeGeometry`): the card stands over the
    whole window on the page's ground and scrolls; the window is the
-   viewport's width at 1:1, centred, and the scene in it as tall as
-   it lays itself out. The figure keeps its place in the page at the
-   height the live driver measured (`--stage-held`), and the page
-   beneath does not scroll. The press shares the card's one grid
-   cell with the window, at least the window's height and as tall
-   as the scene, so a press anywhere puts it back. It stays in the
-   card's flow rather than fixed over the window: a browser chains a
-   wheel, and the keys of the press it focuses, up the containing
-   blocks, and a fixed press's is the viewport, past the card to the
-   held page, so nothing scrolled. */
+   viewport's width at 1:1, centred, and the screen's height, held at
+   the card's top as it scrolls, so what the scene pins to its
+   screen's edges stands at the window's (`.stage-window`'s
+   containment is its fixed layers' box). The scene scrolls inside
+   its own viewport, which the live driver keeps at the card's scroll,
+   and the press, as tall as the scene (`--peep-h`, which the driver
+   measures), is what gives the card that scroll. The figure keeps
+   its place in the page at the height the live driver measured
+   (`--stage-held`), and the page beneath does not scroll. The press
+   shares the card's one grid cell with the window, so a press
+   anywhere puts it back. It stays in the card's flow rather than
+   fixed over the window: a browser chains a wheel, and the keys of
+   the press it focuses, up the containing blocks, and a fixed
+   press's is the viewport, past the card to the held page, so
+   nothing scrolled. */
 .raree[data-peeped] { height: var(--stage-held, auto); }
 .raree[data-peeped] > .raree-frame { position: fixed; inset: 0; z-index: 3; width: auto; border: 0; border-radius: 0; overflow: auto; background: var(--paper); display: grid; grid-template-rows: minmax(max-content, 1fr); }
-.raree[data-peeped] .raree-window.stage-window { grid-area: 1 / 1; align-self: start; margin-inline: auto; height: auto; min-height: var(--raree-h); overflow: visible; contain: none; box-shadow: none; border-radius: 0; }
+.raree[data-peeped] .raree-window.stage-window { grid-area: 1 / 1; align-self: start; position: sticky; top: 0; margin-inline: auto; box-shadow: none; border-radius: 0; }
+.raree[data-peeped] .raree-window > .stage-viewport { overflow: hidden; }
 .raree[data-peeped] .raree-caption { display: none; }
-.raree[data-peeped] .raree-press { grid-area: 1 / 1; position: relative; inset: auto; border-radius: 0; }
+.raree[data-peeped] .raree-press { grid-area: 1 / 1; position: relative; inset: auto; height: var(--peep-h, auto); border-radius: 0; }
 :root:has(.raree[data-peeped]) { overflow: hidden; }
 /* The play's hand, as the film draws it (render/theatre.zig): a
    fingertip is a disc of `mid` checkerboard inside an ink rim and a

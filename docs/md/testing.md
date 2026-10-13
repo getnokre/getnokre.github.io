@@ -2030,7 +2030,8 @@ look through the page's own control, and holds these facts at a phone's
   scale 2, the Watch screen's raree is pressed as a pointer presses it,
   and its card must move under a wheel over it and again under PageDown
   on the press it focuses, each read back off the card's `scrollTop`,
-  and Escape must put it back. A press fixed over the window once
+  its scene's viewport at the card's scroll and its band at its window's
+  foot, and Escape must put it back. A press fixed over the window once
   chained both past the card to the held page, and nothing moved.
 
 What each compared plate *is* — its material and fill — is written in

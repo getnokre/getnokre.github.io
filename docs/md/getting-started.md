@@ -2411,6 +2411,37 @@ from `http://127.0.0.1:<port>/`, so leave `exhibit-serve` running
 beside it. `.root_url` bakes another place in, for an exhibit
 published somewhere other than where it is served from.
 
+On an iPhone the exhibit is the same call again, with the iOS target
+and a root the phone can reach, and nokre's own Xcode project builds
+it — you write no project and copy none:
+
+```zig
+    const exhibit_root = b.option([]const u8, "exhibit-root", "Where the phone's exhibit fetches its root") orelse "http://127.0.0.1:8000/";
+    const ios_exhibit = nokre.addExhibit(b, nokre_dep, .{
+        .app = notes_decl,
+        .target = target, // the -Dtarget the project passes
+        .optimize = optimize,
+        .root_url = exhibit_root,
+    });
+    b.step("exhibit-ios", "Install the exhibit for the Xcode project").dependOn(ios_exhibit.install);
+```
+
+```sh
+xcodebuild -project ../nokre/src/exhibit/ios/Exhibit.xcodeproj -scheme Exhibit \
+  -destination 'generic/platform=iOS' -allowProvisioningUpdates \
+  DEVELOPMENT_TEAM=<team> PRODUCT_BUNDLE_IDENTIFIER=com.example.notes.exhibit \
+  NOKRE_EXHIBIT_PACKAGE_DIR="$PWD" NOKRE_EXHIBIT_LIB=notes-exhibit \
+  NOKRE_ZIG_FLAGS=-Dexhibit-root=http://my-mac.local:8000/ build
+```
+
+The phone shows `Notes exhibit` under the id `<your id>.exhibit`, the
+same name and id the web and desktop exhibits carry, and asks once
+before it reaches your Mac on the local network. `exhibit-serve`
+answers on loopback only, which a phone is not, so the root the phone
+reads is served by something listening on that address. The project's other
+settings — the step's name, the prefix — have defaults, and
+[internals/exhibit.md](internals/exhibit.md) lists them.
+
 ## Part 13 — Every platform
 
 The Zig you wrote is finished — what remains is entry points and native
@@ -2558,7 +2589,9 @@ below, and a hand-rolled `.app` has one directory to hand to `actool`.
 
 **iOS.** Build Skia for iOS once, then let Xcode own packaging and
 signing, with a build phase calling `zig build` for the Zig side — the
-kitchen sink's project is the template to copy. Xcode 26 is the floor
+kitchen sink's project is the template to copy. (Your app's exhibit is
+the one exception: its project is nokre's, used in place and never
+copied — Part 12, "The app's exhibit".) Xcode 26 is the floor
 (the `.icon` format above is why), and it ships without the iOS
 platform component: until `xcodebuild -downloadPlatform iOS` has run
 once, every iOS build refuses with `iOS <version> is not installed`.

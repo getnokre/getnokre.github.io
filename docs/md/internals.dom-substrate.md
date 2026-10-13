@@ -1366,7 +1366,11 @@ Core cuts a stage's step and stands its scene ([stage.md](stage.md));
 the DOM only writes what core stands. The window holds the scene app's
 tree through the same walk as the page (`serialize.stage`), `inert`,
 every id in a scope of the stage's, in a `.stage-scene` moved up by the
-scroll core's cut stood it at, inside a `.stage-viewport`; the foot
+scroll core's cut stood it at, inside a `.stage-viewport` carrying the
+scene app's own `dir` — a Persian recording is `rtl` in an English page
+and an English one `ltr` in a Persian page, as native stands the scene
+in its recording's direction, so its back and refresh controls stand
+where the scene's page puts them; the foot
 holds the step's words as a polite live region. A page written at build time writes the first step
 at rest, scene and words, so a reader with no script sees both, and no
 hand: a step's rest has none.

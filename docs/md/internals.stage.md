@@ -404,9 +404,15 @@ screen, `App.staging.screen` else `App.viewport`, read at every sync so a
 resize lays it out again with no rebuild; the web's driver reports a new
 screen through `App.internal.reportScreen`, which lays out again where
 `raree.readsWindow`) and the host's density. A scene app
-is made only where it is drawn: `raree.sceneOf` stands one, and
-`raree.settle`, after each layout, drops the scene app of every raree
-whose box is more than one screen from the window. A stood scene is
+is made only where it is drawn: the renderer's `drawRaree` asks
+`raree.sceneOf` only for a raree whose window has a row on the window
+the app is drawn into, and draws the rest as the missing-value tone
+(the DOM substrate still writes every raree's scene; its sheet skips
+rendering an off-screen figure with `content-visibility: auto`). The
+scene app of every raree whose box is more than one screen from the
+window is dropped by `raree.settle` after each layout and by
+`raree.dropScenesOutsideBand` after a scroll that lays nothing out, so
+a scrolled page holds about three screens of them at most. A stood scene is
 keyed by the scene number, its size and the dress, and stands again when
 any changes.
 
@@ -419,18 +425,18 @@ stage is: `layout.bigScreen` and `inBigScreen` answer either, so the
 modal order, focus, Esc, hit clipping, the reveal walk and the window's
 shift learned it through the places that learned the big stage.
 `peepedRareeGeometry` stands the window at the viewport's width at 1:1,
-centred, as tall as the screen or the scene's whole content, whichever is
-less; the scene is laid out at its whole content height
-(`RareeHeld.content_h`, found by standing it at the viewport first), and
-the window shows a slice of it at `RareeHeld.scroll`: the renderer opens
-a window the window's own size and draws the scene into it from that row
-down, so no window is taller than the screen however long the scene (a
-window the scene's whole height drew blank on an iPhone's GPU, past the
-largest target it renders to; the renderer test "a peeped raree's window
-is the pane's height" holds it). That scroll is the
-raree's: `Element.scrollView` answers it while peeped, so the wheel, a
-drag and the bar scroll it through the one door, clamped to
-`content_h` less the window's height. `unpeep` returns focus without a
+centred, the screen's whole height; the scene is stood at the window's
+size (`raree.sceneOf`), as a big stage's is, so the chrome it pins to
+its screen's edges stands at the window's, and its page scrolls under
+it by the scene app's own root scroll, which `raree.sceneOf` sets to
+`RareeHeld.scroll`. A scene once laid out at its whole height and
+sliced by the window put that chrome at the foot of the whole page,
+off every screen (a phone's peep showed no band at all). That scroll is
+the raree's: `Element.scrollView` answers it while peeped, so the
+wheel, a drag and the bar scroll it through the one door, clamped to
+`RareeHeld.content_h` less the window's height — the window's height
+and as far again as the scene's page scrolls at the window, found by
+`raree.settle`. `unpeep` returns focus without a
 reveal, as `closeBig` does, so the page stands where it stood.
 
 ## Time

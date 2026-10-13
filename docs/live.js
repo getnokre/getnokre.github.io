@@ -349,6 +349,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     // frame, and the chrome's would otherwise be the only one.
     hydrating = false;
     syncBigScreen();
+    syncPeep();
     fetchPlays();
     syncPictures();
     syncTables();
@@ -362,7 +363,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     placeHands();
     syncLamp(painted !== was || painted_screen !== wasScreen);
     playOn();
-    if (find(`.stage[${BIG}]`) && reportScreen()) frame();
+    if (find(SCREEN_LAYER) && reportScreen()) frame();
   }
 
   // ---- a stage's recording ---------------------------------------
@@ -458,23 +459,36 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   //
   // A stage on the big screen covers the browser's window, and core lays
   // it out on the window's size (live.zig's `screen`), where the
-  // viewport it holds is the page's column. The size is the box the
-  // sheet's fixed pane takes, read off the pane while one stands; before
-  // one does, the root's client width, which a classic scrollbar is
-  // outside of, and `innerHeight`, which the dynamic viewport moves. Not
-  // the root's width while one stands: Chrome then answers it without the
-  // gutter the pane keeps. Read before every frame, because a page that
-  // grows a scrollbar changes the width with no resize, and after one
-  // that put a pane up, which is laid out again where the guess was off.
+  // viewport it holds is the page's column; a peeped raree's card covers
+  // it the same way. The size is the layer's while one stands — the big
+  // stage's fixed pane, or the peeped card — in the whole CSS pixels its
+  // box holds beside its own scrollbar (`wholeInside`); before one does,
+  // the root's client width, which a classic scrollbar is outside of, and
+  // `innerHeight`, which the dynamic viewport moves. Not the root's width
+  // while one stands: Chrome then answers it without the gutter the pane
+  // keeps. Read before every frame, because a page that grows a scrollbar
+  // changes the width with no resize, and after one that put a layer up,
+  // which is laid out again where the guess was off.
   let reportedScreen = "";
   function reportScreen() {
-    const pane = find(`.stage[${BIG}] > .stage-pane`);
-    const w = pane ? pane.clientWidth : root.clientWidth || innerWidth;
-    const h = pane ? pane.clientHeight : innerHeight;
+    const layer = find(SCREEN_LAYER);
+    const [w, h] = layer ? wholeInside(layer) : [root.clientWidth || innerWidth, innerHeight];
     if (`${w}x${h}` === reportedScreen) return false;
     reportedScreen = `${w}x${h}`;
     nk.nokre_dom_screen(w, h);
     return true;
+  }
+  // A window whose device pixels are not a whole number of CSS pixels is
+  // a fraction of one wide, and `clientWidth` rounds to the nearest: a
+  // layer 1001.6 wide answers 1002, core lays a 1:1 scene 1002 wide in
+  // it, and the card scrolls sideways by the fraction it lacks. The box's
+  // own width, floored, less the scrollbar the client box is beside.
+  function wholeInside(el) {
+    const box = el.getBoundingClientRect();
+    return [
+      Math.floor(box.width) - (el.offsetWidth - el.clientWidth),
+      Math.floor(box.height) - (el.offsetHeight - el.clientHeight),
+    ];
   }
 
   // The figure keeps its place in the page while its pane stands over
@@ -494,6 +508,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // scroll, and its figure's place in the page is held the same way.
   const PEEPED = "data-peeped";
   const ON_BIG_SCREEN = `.stage[${BIG}], .raree[${PEEPED}]`;
+  const SCREEN_LAYER = `.stage[${BIG}] > .stage-pane, .raree[${PEEPED}] > .raree-frame`;
   const PEEPED_PRESS = `.raree[${PEEPED}] .raree-press`;
   const PEEPED_SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
   const heldPlace = new WeakMap(); // figure -> its page height as a declaration
@@ -507,6 +522,46 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     heldPlace.set(figure, `;--stage-held:${figure.getBoundingClientRect().height}px`);
     bigGutter = innerWidth > root.clientWidth;
   }
+  // A peeped raree's scene stands in a window the screen's size, held at
+  // the top of its card, and scrolls inside its own viewport, so what it
+  // pins to its screen's edges stays at the window's. The card is still
+  // the scroller the wheel, a drag and the keys of the press it focuses
+  // move, as tall as the scene through its press (`--peep-h`, the
+  // scene's height the browser laid it out at), and the scene's viewport
+  // is kept at the card's scroll. Measured after each frame, when the
+  // scene's box changes, and moved on every scroll of the card.
+  const PEEPED_CARD = `.raree[${PEEPED}] > .raree-frame`;
+  const peepOwn = new WeakMap(); // figure -> its scene's height as a declaration
+  let peepWatched = null;
+  const peepWatch = typeof ResizeObserver === "function" ? new ResizeObserver(() => syncPeep()) : null;
+  function syncPeep() {
+    const card = find(PEEPED_CARD);
+    const viewport = card?.querySelector(".raree-window > .stage-viewport") ?? null;
+    if (peepWatch && peepWatched !== viewport) {
+      if (peepWatched) peepWatch.unobserve(peepWatched);
+      if (viewport) peepWatch.observe(viewport.firstElementChild ?? viewport);
+      peepWatched = viewport;
+    }
+    if (!viewport) return;
+    const figure = card.closest(".raree");
+    const own = `;--peep-h:${viewport.scrollHeight}px`;
+    if (peepOwn.get(figure) !== own) {
+      const markup = markupStyle(figure);
+      peepOwn.set(figure, own);
+      writeStyle(figure, markup);
+    }
+    if (viewport.scrollTop !== card.scrollTop) viewport.scrollTop = card.scrollTop;
+  }
+  function releasePeep(figure) {
+    if (!peepOwn.has(figure)) return;
+    const markup = markupStyle(figure);
+    peepOwn.delete(figure);
+    writeStyle(figure, markup);
+  }
+  doc.addEventListener("scroll", (e) => {
+    if (e.target.matches?.(PEEPED_CARD)) syncPeep();
+  }, { capture: true, passive: true });
+
   function syncBigScreen() {
     const keep = bigGutter && find(ON_BIG_SCREEN) !== null;
     if (keep === gutterKept) return;
@@ -881,12 +936,14 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   let framed = false;
 
   // What this driver appends to an element's style: a big stage's held
-  // place, a stage's hand and its scene's scroll, and the lamp's numbers.
+  // place, a peeped raree's scene height, a stage's hand and its scene's
+  // scroll, and the lamp's numbers.
   function owned(el) {
     const place = heldPlace.get(el);
+    const peep = peepOwn.get(el);
     const hand = handOwn.get(el);
     const lamp = lampOwn.get(el);
-    return place === undefined && hand === undefined && lamp === undefined ? undefined : (place ?? "") + (hand ?? "") + (lamp ?? "");
+    return place === undefined && peep === undefined && hand === undefined && lamp === undefined ? undefined : (place ?? "") + (peep ?? "") + (hand ?? "") + (lamp ?? "");
   }
 
   function writeStyle(el, markup) {
@@ -1139,6 +1196,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     if (a.nodeName === "FIGURE" && a.hasAttribute(BIG) !== b.hasAttribute(BIG)) holdPlace(a, b.hasAttribute(BIG));
     if (a.nodeName === "FIGURE" && a.hasAttribute(PEEPED) !== b.hasAttribute(PEEPED)) {
       holdPlace(a, b.hasAttribute(PEEPED));
+      if (!b.hasAttribute(PEEPED)) releasePeep(a);
       // Core opens a raree at the top of its scene (`raree.peep`). The
       // card is one element across peeps, and a browser hands a box
       // back the offset it held when it last scrolled, so the card

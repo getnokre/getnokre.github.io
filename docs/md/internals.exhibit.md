@@ -146,6 +146,15 @@ derived declaration is what it is for one reason:
 | `l10n` | none | the exhibit's chrome is English and its own; a scene's words are the recording's |
 | `mark` | none | the exhibit draws no mark of its own; the app's is a scene mark (below) |
 | icons | the trees `appIcons` scans for the app, and `src/exhibit` | the scan only subsets glyphs, so the app's trees are read and none of them is compiled |
+| services | none, and a local-network purpose (`packaging.Services.local_network_usage`) | on a phone the root is another machine on the network, and iOS asks the person first with this sentence; the `http` service is sockets, so no App Transport Security key rides beside it |
+
+The name, the display name and the id are one on every target: an app
+exhibited for the web, this machine and an iPhone in one build is three
+exhibits of one derived app, `<pkg.name> exhibit` on the phone's home
+screen as in the browser's tab, `<pkg.id>.exhibit` wherever an id is
+asked. `addExhibit` refuses, when configured, a second exhibit of one app **for one
+target** (the message names the target) and two apps of one name
+under two ids.
 
 The app is not required to declare `.pkg` for anything else, but
 `addExhibit` refuses one that does not, by name, since the exhibit's
@@ -163,17 +172,21 @@ site's `fonts/marks.ttf` are written from one list (`declaredMarks`);
 a site written from the exhibit's own mark alone ships no mark face,
 and the page draws the app's mark as a missing glyph. A `LinkedApp` per mark was the
 alternative and was not taken: it needs a `web_origin` and a link the
-exhibit never writes. The derivation reaches `appDeclared` and
-`appIcons` through `exhibit_derivations`, keyed by the derived name,
-because no `AppOptions` field may carry it without becoming every
-consumer's.
+exhibit never writes. The derivation reaches `appDeclared`, `appIcons`
+and `appServices` through `exhibit_derivations`, keyed by the derived
+name and holding every target it was exhibited for, because no
+`AppOptions` field may carry it without becoming every consumer's.
 
-**The install.** `Exhibit.install` puts the site (web) or the
-executable (native) and the plays:
+**The install.** `Exhibit.install` puts the site (web), the
+executable (desktop) or what Xcode takes (iOS), and the plays:
 
 - the site into `<prefix>/<install_dir>` as an **overlay** — not
   `addInstallExactDirectory`, which would prune the `scenarios/` the
   drivers wrote there;
+- on iOS, the exhibit's static library (`lib/lib<name>-exhibit.a`),
+  the Skia shim (`lib/libnokre_skia.a`) and the `pkg` tree **exactly**
+  into `<prefix>/pkg`, as an iOS app's build installs its own (On an
+  iPhone, below);
 - `.plays`, `Plays.recordings` from `addPlays`, **exactly** into
   `<prefix>/<install_dir>/plays`, so a play the app stopped declaring is gone.
 
@@ -201,6 +214,45 @@ Since the web fetches only its own origin, the page's `connect-src
 ([dom-substrate.md](dom-substrate.md)). Each request takes a
 `max_body` of 64 MiB, `nokre-serve`'s own `max_file_bytes`.
 
+**On an iPhone.** nokre ships one Xcode project for every app's
+exhibit, `src/exhibit/ios/Exhibit.xcodeproj`, and a consumer never
+copies it: it is the kitchen sink's project with everything the
+consumer owns turned into a build setting given on the `xcodebuild`
+line.
+
+| Setting | Meaning |
+| --- | --- |
+| `NOKRE_EXHIBIT_PACKAGE_DIR` | the package whose `zig build` installs the exhibit; the script runs there. Required |
+| `NOKRE_EXHIBIT_STEP` | the step whose dependency is `Exhibit.install` for the target the script passes (`-Dtarget=aarch64-ios`, or `-simulator`); default `exhibit-ios` |
+| `NOKRE_EXHIBIT_PREFIX` | the `-p` the script passes, and where the app target reads `lib/` and `pkg/ios` from; default `$(BUILT_PRODUCTS_DIR)/NokreExhibit` |
+| `NOKRE_EXHIBIT_LIB` | the library's name, `<name>-exhibit`. Required |
+| `PRODUCT_BUNDLE_IDENTIFIER` | `<pkg.id>.exhibit`; the app target's first phase refuses any other, reading the generated `Info.plist` |
+| `NOKRE_ZIG_FLAGS`, `NOKRE_OPTIMIZE` | as in the kitchen sink's project ([getting-started.md](../getting-started.md), Part 13) |
+| `DEVELOPMENT_TEAM` | signing is automatic, under the team the line names |
+
+The root URL is baked by the consumer's own build (`.root_url`), so it
+reaches the phone as one of the consumer's `-D` options in
+`NOKRE_ZIG_FLAGS` and the project carries none. A phone has no
+loopback to the Mac: the URL names the Mac as the phone resolves it,
+and `Exhibit.serve` cannot answer it, since `nokre-serve` listens on
+loopback alone. The
+scheme's pre-action runs the same step before signing is planned, so
+the entitlements are current, and logs to
+`$(BUILT_PRODUCTS_DIR)/exhibit-pre-build.log`. The asset catalog and
+privacy manifest are mirrored to `$(BUILT_PRODUCTS_DIR)/NokreExhibitResources`,
+since a file reference expands no build setting, and nothing is written
+into nokre's checkout. The project compiles `shell.m` and no service
+source: the exhibit links none. `NOKRE_RASTER` is the kitchen sink's
+override of nokre's own `-Dgpu` and is not carried: the exhibit's raster
+derives from the app's theme, as any app's does.
+
+nokre proves it on the kitchen sink: `zig build -Dtarget=aarch64-ios
+exhibit-ios` is the step the project names, `zig build
+exhibit-ios-smoke` builds and installs it for a device from a host
+build and reads the five installed files back, and `zig build test`
+holds the install to the library, the shim and the `pkg` tree on the
+graph and the derived `Info.plist` to its id and local-network purpose.
+
 **What it shows.** A top bar of three selects: the language (the
 locales the manifest's recordings carry — named as text, "Language: en",
 when the root holds one language, since a select needs two options —
@@ -224,6 +276,20 @@ their cells allow (`layout.metrics.raree_cell_w`: three to a page at its
 cap, one to a phone's); then each play on a `stage` on `.data`; then
 the refusals. A failed fetch is written in words where its recording
 would stand, never a panic.
+
+**Asking again.** A manifest that failed to arrive is said in words
+with a "Try again" button under it; recordings that failed are counted
+under the bar ("2 recordings could not be fetched.") with the same
+button, which asks again for every one that failed and for nothing
+that arrived. The same retry runs on its own when the app comes back
+in front (`App.setResumeHandler`), and that is the automatic retry
+rather than one after a delay, because nokre has no timer (the clock
+service's refusals): on an iPhone the first fetch races iOS's
+local-network prompt and fails, and answering the prompt is the app
+coming back. A recording that arrived and that the raree refuses to
+read ("This play could not be loaded.", recorded at another revision
+or shape) is not a failed fetch and is not asked for again; the
+manifest's refusals say the same of a file the index refused.
 
 **The icon risk, stated rather than closed.** A stage's icons are
 checked at the host's build (`render/stage_glyphs.zig`) because its

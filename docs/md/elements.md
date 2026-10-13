@@ -4007,13 +4007,21 @@ aspect inside the card's edge.
 
 **Peeping.** The raree is one button, named by its step's words, its
 caption under the card, or by its number where it has none. Pressed, it is *peeped*: it fills the screen at
-the viewport's width at 1:1, the scene laid out at its whole height, its
-window centred and as tall as the screen allows, and the page's chrome
-gone under it. The scene scrolls there by its own scroll, which is the
-raree's and not the recording's: the wheel, a drag, the bar and,
-on the raree it focuses, ↑/↓, PageUp/PageDown and Home/End move it,
-held between the scene's top and its bottom, and it opens at the top
-every time. Pressed again —
+the viewport's width at 1:1, its window centred and the screen's whole
+height, the scene stood at the window's size as an app stands on its
+screen, and the page's chrome gone under it. What the scene pins to its
+screen's edges — its band of destinations, a floating pill, a sheet —
+stands at the window's, and its page scrolls under them. A `.window` raree fills the screen's width edge to edge,
+so its scene stands where the app's own page does; a `.size` narrower
+than the screen stands centred at 1:1 on the pane's ground, the gutter
+either side bare and nothing added to it, so the scene's own page
+inset starts that far in — a 390-point scene on a 428-point phone puts
+its text at 19 + 16 = 35 points, where the page under it puts its at
+16. The scene scrolls there by its own page's scroll, which the raree
+holds and the recording does not: the wheel, a drag, the bar and, on
+the raree it focuses, ↑/↓, PageUp/PageDown and Home/End move it, held
+between the page's top and as far as it scrolls, and it opens at the
+top every time. Pressed again —
 anywhere on its screen, since nothing stands beside its window to press
 — or on Escape, it goes back to the card at the same place in the page, which
 never moved. It is a modal layer while peeped, as a big stage is.

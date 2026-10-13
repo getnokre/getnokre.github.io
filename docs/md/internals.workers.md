@@ -153,6 +153,14 @@ clean and two apps spawning from two threads cannot race its init.
   wake eventfd, and Android as a pipe on the main thread's ALooper.
   The pump drains the reply queue, decodes, invokes handlers, then
   issues one `nokre_shell_request_frame` if anything invalidated.
+  A reply queued before the shell installed its wake at all — a
+  request the app issued while it was built, answered before
+  `nokre_shell_run` — is waked for by `Runtime.installWake` itself,
+  which calls the hook once when the queue is not empty; before
+  2026-10-13 such a reply sat until an unrelated delivery pumped it,
+  and the macOS exhibit stood on "Fetching" with its manifest
+  answered (http_test.zig, "an answer that landed before the shell
+  installed its wake …").
 - **Web.** The app runs on the main thread; `spawn` starts a sibling
   `Worker` on live-worker.js, which instantiates the same wasm module
   and calls `nokre_worker_boot(index)` instead of `nokre_dom_boot`.

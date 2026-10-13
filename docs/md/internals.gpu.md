@@ -79,8 +79,8 @@ render to: a surface wider or taller than the context's
 op (`onGpu` in the shim). Without that guard the GPU made no target for
 it and its pixels stayed blank, which is how a peeped raree's window,
 then its scene's whole height, drew an empty pane on an iPhone
-(2026-10-13). The window is the pane's size since, so the guard is a
-net, held by `check-gpu`'s "a surface asked onto the GPU and taller
+(2026-10-13). The window is the pane's size since, and the scene is
+stood at it, so the guard is a net, held by `check-gpu`'s "a surface asked onto the GPU and taller
 than the GPU renders to draws on the CPU, every pixel it was told".
 
 The proof order was deliberate: OP_FROST and the contact line (then a
