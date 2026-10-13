@@ -1606,7 +1606,15 @@ large is a figure rather than a title.
 
 ### `stack`
 Vertical (default) or horizontal flow. `gap` (default 8), `padding`
-(default 0). The gap is what two blocks in a vertical stack get unless
+(default 0), and on a horizontal stack `row_align` (default `.center`):
+where each child stands on its line, centred on the line's tallest or,
+under `.top`, at the line's top. Cards of unequal height in a row — a
+row of [rarees](#raree), some captioned and some not — share a top edge
+under `.top`; a row of controls stays centred, which is why the default
+is what rows always did. `.top` and not `.start`: a row's start is its
+leading edge, which mirrors, and vertical geometry does not. A vertical
+stack has no lines, and `append` refuses one asking for `.top`
+(`error.RowAlignOnVerticalStack`) rather than ignoring the field. The gap is what two blocks in a vertical stack get unless
 one of them asks for more — a heading or a [`group`](#group) does. The
 tree root is a vertical stack with padding 16.
 
@@ -1669,7 +1677,8 @@ no way to be handed the wrong one:
 - **Every other row wraps, on every surface.** Children flow along the
   line and break onto a new one when the next will not fit — greedy,
   first-fit, in document order, each line `gap` below the last and
-  centered on its own tallest.
+  centered on its own tallest, or standing at its top under
+  `row_align = .top`.
 
 The browser wraps rows of actions because a fold there is one nothing
 can perform. A page of links needs no runtime, so none loads to open a
@@ -3739,12 +3748,31 @@ is holding was built before it.
 A recorded play of an app, shown in this one: the screens the played app
 really built in a scenario, one after the other, with a hand and the
 words of each step ([testing.md](testing.md#and-as-a-play-inside-an-app)).
-Fields: `play`, which play — a `nokre.PlayName`, with a member for each
-play the app's build declares it shows (`AppOptions.shows`) and no
-other, so a stage naming a play the build does not carry does not
-compile; and `label`, or `named_by` in its place
+Fields: `play`, which play, a `nokre.element.PlaySource` — and `label`,
+or `named_by` in its place
 ([naming](#naming-a-device-without-drawing-its-label)). That is all a
-stage takes. There is no autoplay, no loop, no speed, no size and no
+stage takes.
+
+A play comes from one of two places. `.declared` names one the app's
+build declares it shows (`AppOptions.shows`): a `nokre.PlayName`, with a
+member for each such play and no other, so a stage naming a play the
+build does not carry does not compile. The build gathers it in every
+language the app declares, the stage stands in the app's own, and the
+build checks its stamp and every glyph it draws. Reach for it whenever
+the play is known when the app is built. `.data` is the bytes of a
+`.nokreplay` the app was handed while it runs — fetched, say, by an app
+that shows recordings it learns of only then. They are copied at append,
+so the app may free its buffer the moment append returns, and a stage
+on the same bytes as another shares one copy. A data stage stands on
+those bytes whatever the app's language, and is never fetched by nokre:
+it has no ask. Its stamp is checked as it is read, and bytes another
+nokre wrote, or that are no recording, stand the stage's could-not-show
+words (`stage_unavailable`) rather than refuse the append, with Retry,
+which reads the same bytes again; new bytes are the app's next rebuild.
+Empty bytes
+are the app's mistake and are refused (`error.EmptyRecording`). The
+build never sees a data recording, so nothing checks its glyphs against
+the app's faces. There is no autoplay, no loop, no speed, no size and no
 look: a play is what it is, its window's size is the page's and the
 reader's, never the app's, and the app it is shown in decides how it
 looks.
@@ -3880,7 +3908,7 @@ recorded tree, `inert`, with every id in it scoped to the stage; the hand
 is positioned elements nobody hears, and the step is a polite live
 region, so a screen reader hears each step as it arrives.
 
-**One language.** The stage shows the recording in the language the app
+**One language.** A declared stage shows the recording in the language the app
 stands in, and the build carries one per language the app's catalogs
 declare (an app with no catalog is in English). A play not recorded in a
 language the app declares is refused at the build, by name, as are a play
@@ -3889,7 +3917,8 @@ glyph the recording draws that the app's icon face lacks. None of these
 can reach a reader. When the app's language changes, the stage stands on
 that language's recording, at rest.
 
-**Loaded when it is needed.** On the web a recording is a file beside
+**Loaded when it is needed.** A data stage is read when it is first
+laid out. A declared one, on the web, is a file beside
 the app's module, one per play per language, named by nokre from its
 bytes so a changed recording is never met by a stale cache; the stage
 fetches its own, in the app's language, when it first comes on screen,
@@ -3908,6 +3937,98 @@ the stage on one at once.
 Reach for it to show what an app does — on its own welcome screen, or on
 another app's pages, which is what a marketing site is. The played app's
 code is never linked: its recordings are data.
+
+### `raree`
+One still scene from a recorded play, in a card, with the words its step
+stands under: the peep box of a raree show. Where a [`stage`](#stage)
+plays a recording, a raree shows one of its screens and holds still, so
+a page can lay a whole play out as one raree per step and a reader can
+look at each. It is what an exhibit is made of: an app that fetches its
+recordings shows one raree per step of each, then the plays on stages.
+Fields: `play`, a `nokre.element.PlaySource` as a stage's; `step`, which
+step's rest it shows; and `viewport`, the size the scene is laid out at.
+That is all a raree takes.
+
+**A step with no words has no caption.** The opening of a traced
+recording stands under nothing, so its card is the window alone: no
+foot and no rule over one, on both substrates (the web writes no
+`figcaption`). Its name is then its step's number, "Step 1", counted
+from one — `App.Chrome.raree_step`, the one word a raree says of its
+own, asked of no app and heard from a catalog that says it.
+
+**One step's rest.** A raree shows the screen its step comes to rest
+on: the act's last result, or what a said line or the opening stands
+over, never a screen the act made while in hand. It stands at the top of
+that screen: a recording keeps no scroll, and a raree makes no moves to
+reach anything. A `step` past the recording's last is refused by name
+(`error.RareeStepOutOfRange`, through `raree.failureOf`) and the raree
+stands the could-not-show words a stage says (`stage_unavailable`) under
+an empty window, the size of its `viewport` where it names one and of
+nothing where it does not; so does a recording that cannot be read. A
+`.declared` play is fetched where a stage's is (the web): the raree asks
+for it once laid out, as a stage does, one fetch per file however many
+rarees stand on it, and until it arrives its window is the tone a
+missing value is drawn in, with no words under it; a fetch that fails
+says the could-not-show words. A `.data` raree never asks: its bytes
+are all there is.
+
+**The viewport is the reader's choice.** `null` lays the scene out at
+the size the play was acted at. A size lays it out at that size instead,
+at any width and height: the tree the played app built, laid out again by
+this app's layout, exactly as a stage lays it out at the reader's width,
+so an exhibit can show one recording at each device family's logical
+size. The card keeps the viewport's aspect: its window is the viewport
+drawn at 1:1, or as many steps smaller as the column needs, one device
+pixel per point fewer each (the stage's zoom-out, `stage.densityAt`),
+never larger. In a vertical flow the column is the span, so a raree
+whose viewport fits is drawn at 1:1. **In a row**, or a table cell, the
+column is a cell (`layout.metrics.raree_cell_w`, three to a page at its
+cap with the row's gap between), and the card hugs itself in it, so a
+row of rarees stands its cards side by side and wraps as
+[any row does](#a-row-too-narrow-for-its-children): three phone screens
+across a wide page, one across a phone's. A row of rarees wants its
+cards to share a top edge, which `.row_align = .top` on the row gives
+it ([`stack`](#stack)); a row left centred stands a card with no caption
+beside captioned ones lower by half the foot. The window is clipped to
+the inside of the card's edge, so the card stays round at each corner
+the window reaches: the top two, and the foot's too where there are no
+words. No device's bezel is drawn: nokre holds none, as it holds
+no vendor's badge it was not handed. A family is a logical size and an
+aspect inside the card's edge.
+
+**Peeping.** The raree is one button, named by its step's words, its
+caption under the card, or by its number where it has none. Pressed, it is *peeped*: it fills the screen at
+the viewport's width at 1:1, the scene laid out at its whole height, its
+window centred and as tall as the screen allows, and the page's chrome
+gone under it. The scene scrolls there by its own scroll, which is the
+raree's and not the recording's: the wheel, a drag and the bar move
+it, held between the scene's top and its bottom. Pressed again —
+anywhere on its screen, since nothing stands beside its window to press
+— or on Escape, it goes back to the card at the same place in the page, which
+never moved. It is a modal layer while peeped, as a big stage is.
+Nothing inside the window takes focus, a press of its own or a node in
+the accessibility tree: a raree is a button whose expanded state is
+whether it is peeped (`aria-expanded` on the web), and the window is
+`inert`.
+
+**What it shares with the stage, and what it lacks.** The recording is
+read once per distinct bytes, however many rarees and stages stand on it
+(`stage.RecordingStore`), and a declared one is fetched through the same
+ask a stage makes; the scene is stood by the same code, drawn on
+a window of its own in this app's look in the same card edge, and
+written on the web as the same scene markup. It has no Play, no step
+controls, no hand, no zoom controls, no header and no words of nokre's
+own but the could-not-show words and a wordless step's number: an
+exhibit's chrome is the exhibit's. A raree holds its state as a
+stage does (`error.RareeFieldIsNokres`), nothing is appended under it
+(`error.RareeHoldsNothing`), and only the rarees within one
+screen of the window stand a scene at all, so a page of hundreds costs
+what the few on screen cost.
+
+Reach for it to lay a play out still — a gallery of a run's screens, a
+reviewer's sheet — and for a [`stage`](#stage) to play it.
+`addExhibit` builds the page that lays every recording of an app out
+this way ([getting-started.md](getting-started.md#the-apps-exhibit)).
 
 ### `copyable`
 A verbatim value the user carries away — a recovery code, an invite

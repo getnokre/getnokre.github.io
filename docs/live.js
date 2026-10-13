@@ -489,6 +489,11 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   // widen the window under the pane by its gutter, so the gutter is kept
   // while the stage is big; where it had none, keeping one would narrow it.
   const BIG = "data-big";
+  // A peeped raree is a layer over the window as a big stage is: its
+  // card is fixed over it and scrolls its scene by the browser's own
+  // scroll, and its figure's place in the page is held the same way.
+  const PEEPED = "data-peeped";
+  const ON_BIG_SCREEN = `.stage[${BIG}], .raree[${PEEPED}]`;
   const heldPlace = new WeakMap(); // figure -> its page height as a declaration
   let bigGutter = false;
   let gutterKept = false;
@@ -501,7 +506,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     bigGutter = innerWidth > root.clientWidth;
   }
   function syncBigScreen() {
-    const keep = bigGutter && find(`.stage[${BIG}]`) !== null;
+    const keep = bigGutter && find(ON_BIG_SCREEN) !== null;
     if (keep === gutterKept) return;
     gutterKept = keep;
     if (keep) root.style.setProperty("scrollbar-gutter", "stable");
@@ -851,7 +856,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_EDGE_BAR = ["--lamp-edge-bar-left", "--lamp-edge-bar-top", "--lamp-edge-bar-width"];
   const LAMP_EDGE_CHOSEN = ["--lamp-edge-chosen-left", "--lamp-edge-chosen-top", "--lamp-edge-chosen-width"];
   const LAMP_EDGE_SHEET = ["--lamp-edge-sheet-left", "--lamp-edge-sheet-top", "--lamp-edge-sheet-width"];
-  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav.stacked, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav.stacked .slot > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .stage-frame > .stage-header > button > .icon, .field-box.select > .icon, .dial-step > .icon';
+  const LAMP_PLATES = '.box:not(.bare), .tiles, .stage-frame, .raree-frame, .box.bare[style*="background:"], .picker.above-nav, .tile > .square, .badge, .meter-track, .meter-fill, .diverging-track, .diverging-arm, .ctl:not(.busy) input.toggle, .ctl:not(.busy) input.check, .radios input[type="radio"], .seg-track, .seg input:checked + span, .dial-plates, .dial-plate.now, .dial-step, .plate:not(.cut, .pool), .field-box, .picker-item[aria-selected="true"], .btn:not(.secondary, .icon-only, .pending-label), .btn.pending-label, .btn:not(.secondary) .btn-track, .btn:not(.secondary) .btn-fill, .notices-pane .notice, .chip:not(.current), .chip.current, .nav.stacked, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice), .sheet, .notices-pane, .picker:not(.above-nav), .chip:not(.current) > .icon, .chip.current > .icon, .nav.stacked .slot > .icon, .nav-row > .icon-button > .icon, .nav-indicator .icon-button > .icon, .notice:not(.notices-pane .notice) > .icon-button > .icon, .notices-pane .notice > .icon-button > .icon, .sheet > .icon-button > .icon, .notices-pane > .icon-button > .icon, .icon-button:is(.back, .header-action) > .icon, .tile > .square.icon, .tile > .square.app-mark, .tiles .tile > .icon:not(.square), .stage-frame > .stage-header > .icon, .stage-frame > .stage-header > button > .icon, .field-box.select > .icon, .dial-step > .icon';
   const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
@@ -1130,6 +1135,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       return;
     }
     if (a.nodeName === "FIGURE" && a.hasAttribute(BIG) !== b.hasAttribute(BIG)) holdPlace(a, b.hasAttribute(BIG));
+    if (a.nodeName === "FIGURE" && a.hasAttribute(PEEPED) !== b.hasAttribute(PEEPED)) holdPlace(a, b.hasAttribute(PEEPED));
     for (const attr of [...a.attributes]) {
       if (attr.name === "style") continue;
       if (!b.hasAttribute(attr.name) && !tableOwns(a, attr.name) && !pictureOwns(b, attr.name)) a.removeAttribute(attr.name);

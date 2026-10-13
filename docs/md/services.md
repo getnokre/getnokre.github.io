@@ -796,6 +796,10 @@ None of it is forced. `store` defaults to empty, and an app that never
 writes it — a web-only publisher, an internal tool — is asserted about
 in no way at all.
 
+The device families named here are also the sizes the app's exhibit
+offers its recordings at, or every family where none is named
+([getting-started.md](getting-started.md#the-apps-exhibit)).
+
 ```zig
     .store = &.{ .iphone_6_9, .play_phone },   // requires .pkg
     .store_flows = &.{ "home", "inbox" },      // the listing, in order
@@ -1184,12 +1188,13 @@ whose size or scale is not its family's, a digest that is not
 lowercase hex, a `cleared_on` that is not a `YYYY-MM-DD` day, and a
 `cleared_on` on a frame whose verdict is not an escape.
 
-**The gallery is every captured frame, on one page.** `shots-gallery`
-walks the roots it is given for every `.shot` and every `cell.json`, and
-writes one static HTML page:
+**The gallery is one app's captured frames, on one page.** `shots-gallery`
+walks the roots it is given — the app's store root, the directories its
+drivers wrote step frames to, its films — for every `.shot` and every
+`cell.json`, and writes one static HTML page:
 
 ```
-zig build shots-gallery -- [--out <page.html>] [--kind store,scenario,film] [--app <name>]... [--family iphone_6_9,play_phone] [--locale en,fa] [--clearances <shot_clearances.json>]... <root>...
+zig build shots-gallery -- [--out <page.html>] [--kind store,scenario,film] [--family iphone_6_9,play_phone] [--locale en,fa] [--clearances <shot_clearances.json>]... <root>...
 ```
 
 Run from a nokre checkout's build file, the way `l10n-fmt` is
@@ -1200,23 +1205,29 @@ and a film are found the same way wherever their writer put them.
 
 **The whole set is always `index.html` at the first root.** With no
 narrowing flag the page shows every frame of every kind and is written
-there, unless `--out` names another file. `--kind`, `--app`, `--family`
+there, unless `--out` names another file. `--kind`, `--family`
 and `--locale` narrow, and each is refused without `--out`, and refused
 when `--out` is that `index.html`: a narrowed page left where the whole
 set is read would be taken for it. A narrowing flag keeps a frame only
 if the frame carries the value: `--family` keeps store frames and store
 films of that family, and drops scenario steps and explaining films,
-which have none; `--locale` drops a frame drawn in no language; `--app`
-takes one name and repeats, since a name may hold a comma. Naming a
-kind, an app, a family or a locale no record carries is refused rather
-than answered with an empty page, since that is how a typo reads.
+which have none; `--locale` drops a frame drawn in no language. Naming
+a kind, a family or a locale no record carries is refused rather than
+answered with an empty page, since that is how a typo reads.
 
-The page is a section per app, in the order the roots were given and,
-within a root, by path; an app is the record's `app_name`, and frames
-from a module that declared no identity share one section headed "No
-package declared" rather than being refused, since a test driver's
-scenario steps are exactly that. Its header counts the frames of each
-kind. Within an app:
+**One app per page.** Every record under the roots names the same app —
+the `app_name` of the first record found — and a record naming another
+is refused with both files named, since roots of two apps are a mistake
+on the command line, not a page. A module that declared no identity
+writes records with no `app_name` (a test driver's scenario steps are
+exactly that), and a set of those alone is a page; one unnamed record
+among named ones is refused the same way. A consumer with several apps
+runs the gallery once per app. It prints one line,
+`shots-gallery: <app>: 12 store frames, 0 scenario steps and 0 films, 0
+orphan clearances, written to <page>`, with `<app>` as the page's header
+names it: the app's name, or "Captured frames" when the records name none.
+The header counts the frames of each kind; the page's sections are, in order, by root order and within a root
+by path:
 
 - **Store** — a section per flow in listing order, under each flow a
   row per family (one family's frames share an aspect ratio, so a row
@@ -1228,8 +1239,7 @@ kind. Within an app:
   `escaped · cleared 2026-10-10`, from the record's `cleared_on`. Where
   the walk wrote a `cell.json` (`shots.CellRecord`), a flow it declared
   and never took is a cell that says **not taken**; a family and locale
-  with no `cell.json` at all is a cell that says **not captured**. A
-  `cell.json` belongs to the app its `app_name` names.
+  with no `cell.json` at all is a cell that says **not captured**.
 - **Scenarios** — a block per scenario and locale, in the order first
   found, its steps in step order as a strip with each step's number and
   action under its frame. A step taken as a PPM, or any frame whose file
@@ -1245,11 +1255,11 @@ anywhere else; the choosing is done at the command line. At a phone's
 width the rows wrap to one column and the frames scale down, with no
 sideways scroll. There are no thumbnails: the frames are the artifact.
 
-**Orphans.** `--clearances` names a package's
-`listing/shot_clearances.json` (`shots.shot_clearances_sub_path`) and
-repeats, one per package; the caller names the file rather than the
-package, so the gallery holds no idea of where a package keeps it and a
-package with no file is simply not named. A clearance whose digest no
+**Orphans.** `--clearances` names the app's
+`listing/shot_clearances.json` (`shots.shot_clearances_sub_path`), and
+may repeat; the caller names the file rather than the package, so the
+gallery holds no idea of where a package keeps it and an app with no
+file simply names none. A clearance whose digest no
 record under the roots carries is an orphan (`ShotClearances.orphans`):
 the frame it cleared was shot again or is gone. Orphans are listed in a
 section at the end of the page by digest, day and the file that holds
@@ -1257,12 +1267,12 @@ them, so the line to delete is one look away. They are reckoned against
 every record found, before any narrowing.
 
 It refuses, each naming its files: a malformed `.shot` or `cell.json`, a
-record whose frame is missing, two records claiming one place (one
-store cell; one step of a scenario in one language; one play's film of
-one purpose in one language), two `cell.json` for one app, family and
-locale, a `cell.json` saying a flow was taken where no record of that
-frame is under the roots, a `cell.json` naming another app than a store
-frame in its own directory, an
+record whose frame is missing, a record naming another app than the
+first (or naming one where the first names none, or the reverse), two
+records claiming one place (one store cell; one step of a scenario in
+one language; one play's film of one purpose in one language), two
+`cell.json` for one family and locale, a `cell.json` saying a flow was
+taken where no record of that frame is under the roots, an
 unreadable or malformed clearance file, a narrowing flag without
 `--out` or with `--out` at the whole set's page, a choice no record
 carries, and roots that hold no record at all.

@@ -1282,6 +1282,47 @@ var tee: nok.testing.trace.Tee = .{ .sinks = &.{ trees.observer(), frames.observ
 try t.startTrace(tee.observer());
 ```
 
+`nok.testing.RecordingSink` (pure Zig, no Skia) is the third instrument:
+it keeps the whole run as one [recording](#and-as-a-play-inside-an-app),
+so a seeded walk, a journey or a store flow becomes something a `stage`
+plays and an exhibit shows. `write(io, dir, root)` puts it at
+`<root>/scenarios/<scenario>/<tag>.nokreplay`, the tag the app stood in
+(`und` for none). `Options.captions` has no default, because the two
+kinds of run caption differently:
+
+- `.acted` — a `DriverApp` run whose verbs the director tells: the sink
+  hears the cues and is the play recorder exactly, each act captioned in
+  the app's own words.
+- `.traced` — any run, a `HarnessApp`'s included, which tells no cues:
+  the sink hears steps only, and every step after `init` is one said
+  step captioned by its action name, standing over the screen it was
+  taken on and coming to the screen it made. A step that ends with the
+  app in another language than the run began in is left out, silently,
+  and the next step back in the first language is recorded as usual: a
+  recording is per language and a traced run is not, so a journey that
+  detours through the language picker keeps its own screens instead of
+  losing the whole run to `error.PlayChangedLanguageMidRun`. An `.acted`
+  run that changes language is still refused — a directed play that
+  does so is a defect in the play.
+
+```zig
+var recording = try nok.testing.RecordingSink.init(gpa, .{ .scenario = "sign-in", .captions = .traced });
+defer recording.deinit();
+var tee: nok.testing.trace.Tee = .{ .sinks = &.{ trees.observer(), recording.observer() } };
+try t.startTrace(tee.observer());
+// … the run …
+try recording.write(io, .cwd(), "zig-out/exhibit");
+```
+
+The scenario is a directory name, so `init` refuses an empty one
+(`error.ScenarioNameIsEmpty`) and one that is not letters, digits, `-`
+and `_` (`error.ScenarioNameIsNotAFileName`, the rule a play's name is
+held to). A recording that cannot be kept does not stop the run — the
+trees and frames beside it are still worth having — and `write`
+answers for it instead: `error.NothingRecorded` for a run that never
+stepped, `error.RecordingHoldsAStage`, `error.PlayChangedLanguageMidRun`,
+or whatever else the recorder refused.
+
 Custom sinks implement `trace.StepObserver`.
 
 ## Golden screenshot tests
@@ -3127,7 +3168,9 @@ their words finds them by the words of the language it runs in
 the app's root as `"app"`). An app with no catalog is recorded once, in
 whatever it stands in. A store play is not recorded. Recording links no
 Skia: any build that shows a play makes its recordings, a web build
-included.
+included. A run that is not a declared play — a driver's walk, a
+journey, a store flow — is recorded by putting a `RecordingSink` on its
+trace ([Step traces](#step-traces)).
 
 **A play is one scenario at every size.** A stage stands each
 recorded screen at the reader's size, which is only honest if the app
@@ -3166,7 +3209,7 @@ const site = nokre.addApp(nokre_dep, .{
 
 ```zig
 // a screen of that app
-try b.stage(.{ .play = .ranking, .label = L.tr(loc, .votesPlayed) });
+try b.stage(.{ .play = .{ .declared = .ranking }, .label = L.tr(loc, .votesPlayed) });
 ```
 
 The build carries the recording in each language the showing app

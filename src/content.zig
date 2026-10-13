@@ -553,7 +553,7 @@ fn gallery(app: *App) !void {
     try b.styled("The identity tile: the person a page is about, as a settings page's own account, at the medium side, the name as the label and the sign-in address as the detail. The band widens to the disc, a row with a detail is already as tall as it, and the words centre beside it. A face, initials, and the neutral mark where there is no name, each the one row of its own group, as a settings page opens on one.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "store_badge");
-    try b.stage(.{ .play = .@"store-badges", .label = "A store badge, played" });
+    try b.stage(.{ .play = .{ .declared = .@"store-badges" }, .label = "A store badge, played" });
     try b.styled("This site is in no store, so it shows no badge of its own: this is another app's screen, recorded. A store badge is the vendor's own artwork, declared by the app that is in that store and leading to its page there; a recording carries it as its words, size and address, never the artwork, so a stage draws it as a box. Under the badge stands the credit line the vendor requires, drawn by nokre on every platform once per screen.", .{ .ink = .mid, .scale = .small });
 
     try b.heading(.h3, "qr");

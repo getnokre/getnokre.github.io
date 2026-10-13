@@ -206,6 +206,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.exhibit",
+        .title = .titleInternalsExhibit,
+        .blurb = .blurbInternalsExhibit,
+        .icon = .lucide_gallery_horizontal,
+        .md = "internals/exhibit.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.dom-substrate",
         .title = .titleInternalsDomSubstrate,
         .blurb = .blurbInternalsDomSubstrate,

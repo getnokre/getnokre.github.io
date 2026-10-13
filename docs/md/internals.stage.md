@@ -10,11 +10,19 @@ recorded and shown).
 A recording keeps what a play *is* and nothing of how it looked at the
 size it was acted at. `core/recorded_play.zig` is the format, both
 halves: the `Writer` the recorder (`testing/recorder.zig`) fills while
-a scenario runs, and `read`.
+a scenario runs, and `read`. A recording is written by the plays step
+through that recorder, or by a `RecordingSink` (same file) on any
+driver run's trace: `.acted` is the recorder as it stands, and
+`.traced` feeds it a said line of the step's action name ahead of each
+step after the opening, for a run that tells no cues, and leaves out
+any step the app ends in another language than the run began in
+([testing.md](../testing.md#step-traces)).
 
 **What it holds.** The locale the played app stood in, its direction
 and the framework's words it had installed (`App.Chrome`); the window
-it was acted at, which nothing on a stage reads but the test tier; the
+it was acted at, whose width is the widest a stage zooms out to
+(`stage.zoomStops`) and whose size the scene app is made at before its
+first fit (`stage.Reading`); the
 words each step stands under (`captions`); every icon a scene draws,
 by name, first after the stamp so the build's gathering tool, which
 links no nokre, can read them, and whose mark, by the app's display
@@ -74,7 +82,8 @@ digest (`shapeDigest`): a field added anywhere in `Element`,
 `SceneState` or `Step` changes it, and `format` is bumped where the
 bytes' meaning changes with no type's, so a reader refuses any other
 stamp. `IconName`, `PlayName` and `PictureName` are digested by name
-alone — icons travel by name, a recording holds no stage, and a
+alone — icons travel by name, a recording holds no stage (a
+`PlaySource` of either kind is refused at the writer), and a
 picture is stood up with `Picture.held.recorded` set so it draws its
 box.
 
@@ -316,8 +325,9 @@ pane. Everything that takes the layer from there — the focus scope,
 Esc, a press outside it, the root scroll's and the edge Back's gates,
 the driver's reachable walk, the audit's jurisdiction — learned the big
 stage by that one change. What sorts the page from what floats over it
-by role does not, so each such place asks `layout.inBigStage` (or
-`bigStage`) beside `Role.isChromeLayer`: hit clipping
+by role does not, so each such place asks `layout.inBigScreen` (or
+`bigScreen`, which answer a peeped raree too, "The raree") beside
+`Role.isChromeLayer`: hit clipping
 (`input.clippedRect`), the screen column's cut and the window's reveal
 (`input.inChrome`), the reveal walk (`input.RevealWalk.next`), the
 window's shift (`App.shiftWindow`) and the renderer's page pass. A new
@@ -340,6 +350,79 @@ follow, unless the stage stands in that sheet. Under lamp dark the
 pane's plates take only the edges of the layers drawn over it
 (`LampFrame.over_big_screen`), never the bar's or the banner's, which
 it covers.
+
+## The raree
+
+A `raree` (elements.md, "raree") is one step's rest scene held still in
+a card; `core/raree.zig` keeps it. It shares with the stage what showing
+a recording takes and nothing a play needs.
+
+**What it shares.** The recording, read: a raree's bytes are interned in
+the same `stage.RecordingStore` as a data stage's, and the store keeps
+one `stage.Reading` per distinct bytes for every raree on them
+(`RecordingStore.readingOf`), read once and without a scene app of its
+own, so a page laying a play out as one raree per step parses it once.
+The store sweeps bytes and readings once no player and no raree stands
+on them (`stage.sweepRecordings`, after both syncs). The scene is stood
+by `recorded_play.stand` and dressed as the stage dresses its scene app
+(`stage.dressScene`). Skia draws it through the stage's two halves,
+`drawSceneFrame` (the card edge, the depth plate, the lamp's) and
+`drawSceneWindow` (the scene on a window of its own at its own density),
+and the DOM writes it through the stage's `sceneMarkup`, so a scene in a
+raree and in a stage are the same markup and the same pixels.
+
+**What it lacks.** No cut: a raree stands its step's rest scene
+(`recorded_play.Step.after`'s last, or `before` where a step has none)
+at the top, never through `stage_cut`, so no reach, no carried scroll and
+no hand. No ticks, no controls, and one chrome word: a step with no
+words (the opening of a traced recording) draws no foot and no rule,
+its card the window alone, and is named by its number in
+`Chrome.raree_step` (`raree.nameOne`, into `RareeHeld.name`).
+
+**Asks are shared, not absent.** A declared play the app fetches
+(`shown_plays.on_demand`, the web) is asked for through the stage's
+door: `stage.takeAsks` writes the stages' asks, then `raree.takeAsks`'s
+— one per file for every raree laid out on it, the rest joining that
+ask's ticket (`Viewer.phase`, `Viewer.ticket`) — and `stage.arrive`,
+`stage.fail` and `stage.askedFile` hand a ticket no stage holds to the
+raree's. An answer is interned once under its file
+(`RecordingStore.internFetched`), and each raree on that file finds it
+at its next sync (`RecordingStore.fetchedAs`), so the live driver's
+`playArrived` and `playFailed` serve both with no raree of their own,
+and a raree's figure carries the ticket the glue watches (`data-ask`).
+Waiting, a raree's window is `pending_ink` with no caption, at its
+`viewport`; failed, it says `stage_unavailable`
+(`error.RecordingUnreachable`). A `.data` raree never asks, and a
+declared one with no recording gathered — the build a play is recorded
+from — is `error.RecordingNotInHand`; a test stands one on a file with
+`raree.provide`, as `stage.provide` does a stage.
+
+**Standing lazily.** `raree.sync` runs beside `stage.sync` with no cap on
+how many it walks — a page holds hundreds — and only reads: each raree's
+reading from the store, its caption, its scene viewport (the one asked
+for, else the recording's acted one) and the host's density. A scene app
+is made only where it is drawn: `raree.sceneOf` stands one, and
+`raree.settle`, after each layout, drops the scene app of every raree
+whose box is more than one screen from the window. A stood scene is
+keyed by the scene number, its size and the dress, and stands again when
+any changes.
+
+**The card and the peep.** Layout (`layoutRaree`) makes the window the
+viewport at the largest density from 1:1 down (`stage.densityAt`) whose
+width fits the column, so the card keeps the viewport's aspect, and
+keeps a caption's room under it. Peeped, the raree is a layer as a big
+stage is: `layout.bigScreen` and `inBigScreen` answer either, so the
+modal order, focus, Esc, hit clipping, the reveal walk and the window's
+shift learned it through the places that learned the big stage.
+`peepedRareeGeometry` stands the window at the viewport's width at 1:1,
+centred, as tall as the screen or the scene's whole content, whichever is
+less; the scene is laid out at its whole content height
+(`RareeHeld.content_h`, found by standing it at the viewport first), and
+the window shows a slice of it at `RareeHeld.scroll`. That scroll is the
+raree's: `Element.scrollView` answers it while peeped, so the wheel, a
+drag and the bar scroll it through the one door, clamped to
+`content_h` less the window's height. `unpeep` returns focus without a
+reveal, as `closeBig` does, so the page stands where it stood.
 
 ## Time
 
@@ -367,12 +450,29 @@ again from the first shot.
 
 ## Loading
 
-A player is in one of four phases (`stage.Phase`). Where its recording
-is embedded it is read when the stage is first synced, and is loaded or
-failed at once. Where it is fetched (`shown_plays.on_demand`), it waits
+A player is in one of four phases (`stage.Phase`). What it reads is a
+`stage.Reading` — the read recording, the scene app stood from it and
+what standing a scene takes, in an arena of its own — and the player
+keeps beside it what a stage alone needs: the cuts, the ask, the hand.
+Where its recording is embedded it is read when the stage is first
+synced, and is loaded or failed at once.
+
+A stage on `.data` (`element.PlaySource`) stands on bytes the app
+handed it. Append copies them into the tree's arena, as a picture's
+are, so the app's buffer is free once append returns; the copy moves
+with every rebuild. `stage.sync` takes it into the App's
+`stage.RecordingStore` (`App.staging.recordings`): keyed by
+`pictures.digestOf`, confirmed by the bytes, one copy for every stage on
+the same bytes, swept at the end of each sync once no player stands on
+it. The player stands on the store's copy, so `sameSource` holds across
+rebuilds and the recording is read once; a sync whose tree copy equals
+the bytes the player stands on hashes nothing. A data source has no
+file, so it is never asked for and its figure carries no `data-ask`; a
+failed one's Retry reads the same bytes again. Its language is its
+own: a change of the app's leaves it standing. Where it is fetched (`shown_plays.on_demand`), it waits
 until layout has given the stage a box, then asks: `stage.takeAsks`
 hands the substrate each file under a ticket, and the substrate answers
-with `arrive` (the bytes, copied into the player's arena and read there)
+with `arrive` (the bytes, copied into its reading's arena and read there)
 or `fail`. An answer under a ticket no stage still holds — the language
 changed, or Retry asked again — is dropped. Core fetches nothing itself,
 as it keeps no clock.

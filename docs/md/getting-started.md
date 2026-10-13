@@ -2306,7 +2306,7 @@ for a place another picture could later stand in
 
 ### Store frames: the gallery
 
-`shots-gallery` puts every captured frame on one page: store frames,
+`shots-gallery` puts one app's captured frames on one page: store frames,
 the step frames a `PixelSink` writes
 ([testing.md](testing.md#seeing-a-screen-nobody-watched)) and the films
 `addPlays` writes ([A scenario as a film](#a-scenario-as-a-film)), each
@@ -2323,8 +2323,11 @@ zig build --build-file ../nokre/build.zig shots-gallery -- \
 With no narrowing flag the page is the whole set, written to
 `index.html` at the first root — here `zig-out/shots/index.html`. Store
 frames sit a flow per section, a row per family, a cell per language, so
-reading along a row compares the languages a screen was drawn in. A
-narrowing flag — `--kind`, `--app`, `--family`, `--locale` — is refused
+reading along a row compares the languages a screen was drawn in. The
+page is Notes' alone: a record under the roots naming another app is
+refused with both files named, so a second app gets a gallery run of its
+own. A
+narrowing flag — `--kind`, `--family`, `--locale` — is refused
 without `--out`, and refused when `--out` is that `index.html`, so a
 narrowed page is never taken for the whole set:
 
@@ -2348,6 +2351,63 @@ neither your world nor how you run processes. Every default is
 everything: the matrix is every listed language at every declared
 family, and a gallery with no narrowing flag shows every frame of every
 kind, so a narrowed run is always a choice you made at the command line.
+
+### The app's exhibit
+
+The gallery shows frames; the **exhibit** shows the runs themselves —
+one [`raree`](elements.md#raree) per step of every scenario your drivers
+recorded, in the language and at the device size you pick, then each
+play on a [`stage`](elements.md#stage). It is an app of nokre's own,
+built from your app's declaration and nothing else: no source of yours
+is compiled into it, and it fetches its recordings over `http` from one
+place ([internals/exhibit.md](internals/exhibit.md)).
+
+1. Hold the declaration `addApp` takes in a `const`, and hand the same
+   value to `addExhibit`, with the recordings `addPlays` made:
+
+   ```zig
+       const exhibit = nokre.addExhibit(b, nokre_dep, .{
+           .app = notes_decl, // the value addApp took
+           .target = nokre.webTarget(b),
+           .optimize = .small,
+           .plays = plays.recordings, // optional
+       });
+       b.step("exhibit", "Install the exhibit into zig-out/exhibit").dependOn(exhibit.install);
+       b.step("exhibit-serve", "Serve the exhibit at http://127.0.0.1:8000/").dependOn(&exhibit.serve.step);
+   ```
+
+   `.app` needs `.pkg`: the exhibit is named for it, `Notes exhibit`.
+   A build giving each app's exhibit its own `--prefix` passes
+   `.install_dir = "."`, so the root is the prefix, not `<prefix>/exhibit`.
+
+2. In each driver run you want shown, put a `RecordingSink` on the
+   trace beside the tree and pixel sinks, and write it into the
+   exhibit's root ([testing.md](testing.md#step-traces)):
+
+   ```zig
+   var recording = try nok.testing.RecordingSink.init(gpa, .{ .scenario = "sign-in", .captions = .traced });
+   defer recording.deinit();
+   // … the run …
+   try recording.write(io, .cwd(), "zig-out/exhibit");
+   ```
+
+   Each run writes `zig-out/exhibit/scenarios/<scenario>/<tag>.nokreplay`
+   and touches nothing else, so runs side by side do not race.
+
+3. Run the drivers, then `zig build exhibit-serve`. It installs the page
+   and the plays, writes `zig-out/exhibit/exhibit.json` over everything
+   under the root, and serves it.
+
+4. Open `http://127.0.0.1:8000/`. The top bar picks the language, the
+   look and the device; a raree pressed fills the screen at that size
+   and scrolls its whole screen. A recording the index could not read —
+   recorded by another nokre, say — is listed at the foot by file and
+   error rather than stopping the page.
+
+A native exhibit is the same call with your desktop target: it fetches
+from `http://127.0.0.1:<port>/`, so leave `exhibit-serve` running
+beside it. `.root_url` bakes another place in, for an exhibit
+published somewhere other than where it is served from.
 
 ## Part 13 — Every platform
 

@@ -88,6 +88,10 @@
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.stage/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.stage/"/>
 </url>
+<url><loc>https://getnokre.github.io/en/internals.exhibit/</loc>
+<xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.exhibit/"/>
+<xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.exhibit/"/>
+</url>
 <url><loc>https://getnokre.github.io/en/internals.dom-substrate/</loc>
 <xhtml:link rel="alternate" hreflang="en" href="https://getnokre.github.io/en/internals.dom-substrate/"/>
 <xhtml:link rel="alternate" hreflang="x-default" href="https://getnokre.github.io/internals.dom-substrate/"/>
