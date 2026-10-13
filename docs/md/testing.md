@@ -1965,7 +1965,14 @@ look through the page's own control, and holds these facts at a phone's
   read where they cover a pixel whole, found by drawing each once in
   plain white, their brightest stroke within 12. Then the Details
   screen, reached through the page's own link: a tile led by the app's
-  mark, its well's face and rims and its lit mark. Every one of them must be a
+  mark, its well's face and rims and its lit mark. On a phone, the
+  Watch screen's raree card too, whose lower rims stand beside the
+  stacked band, and the select chevron again, scrolled to just above
+  the band: the two places a chrome edge's light adds to the lamp's,
+  held to the library's one capped sum. Nothing else the kitchen sink
+  draws stands within an edge's reach, so the bar's span over a chosen
+  chip between two others is not read: no pass lays the chips in a
+  row. Every one of them must be a
   box the live driver measured, or the gate names the missing
   `lamp_plates` entry. The nav plate's rim is held within 10 over the
   frost beneath it, read with the rim hidden.
@@ -1975,7 +1982,9 @@ look through the page's own control, and holds these facts at a phone's
   library with no edge, and the pane drawn again with the bar's and the
   chosen plate's numbers taken off the root changes no pixel by more
   than a byte.
-- **Frost is there.** With the nav plate over the QR code, its pixels
+- **Frost is there.** With the nav plate in the chosen glass over the
+  QR code — the current pill, or the one ground stacked columns stand
+  on, which the kitchen sink's roster takes at 390 — its pixels
   are at least eight times smoother than the page beneath it, and their
   mean is within 6 of the library's frost of that same page — the
   screenshot without the nav, blurred by `lamp.frostBlur` and composited

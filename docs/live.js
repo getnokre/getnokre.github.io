@@ -863,7 +863,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
   const SCENE_VIEWPORT = '.stage-viewport';
-  const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .chip.current, .nav.stacked, .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
+  const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
   const LAMP_EDGE_CHOSEN_PLATES = '.chip.current, .nav.stacked';
   const LAMP_EDGE_SHEET_PLATES = '.sheet, .notices-pane, .picker:not(.above-nav)';
 

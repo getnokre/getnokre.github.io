@@ -2065,14 +2065,18 @@ reaches over its ring.
 
 **Rim.** The plate's transparent border is the ring: depth's own, one
 lamp adds out of a box's padding without moving a child
-(`lamp_rim_borders`), or a stand-in's. Rim layers are opaque grays
-over the border box, joined by `background-blend-mode: lighten`, each
-capped at the rim cap on its own, so the cap holds by construction.
-The lamp's layer, nine stops about the lamp, carries the face's
-darkening too. Each ring of the specular carries the lamp's own light at
-that ring's farthest from the lamp, and each chrome edge the lamp's
-where it stands, faded out as their own light fades, which is how
-layers joined by the brightest come near native's sum. The chrome
+(`lamp_rim_borders`), or a stand-in's. All its layers lie over the
+border box. The lamp's, nine stops about the lamp, is an opaque gray
+that carries the face's darkening too; the specular is another, each
+ring carrying the lamp's own light at that ring's farthest from the
+lamp, faded out as its own light fades, and the two are joined by
+`background-blend-mode: lighten`, which is how two capped grays come
+near native's sum. Over them each chrome edge is white at the coverage
+`e / (1 − there)` — `e` its own light, `there` the lamp's where the
+plate comes nearest it — joined `normal`, which adds `e` to the light
+beneath rather than taking the brighter of the two. Over those, the
+cap: the lamp's gradient again at the rim cap, joined by `darken`, so
+the sum is capped once, as native caps it, by construction. The chrome
 edges light only plates on the page. Each layer lifts the ring's own
 byte, `--lamp-ring-byte`, which is the fill's but on a stage's frame,
 whose ring is its edge: there it is the rule's, as native strokes the
@@ -2119,8 +2123,10 @@ itself writes them too
 **Lit glyphs.** A glyph on a plate is filled by a gradient through
 `background-clip: text`, its own color transparent, lit over its em
 square centred in its element: CSS has no ink box to read. Its layers,
-a field about the lamp, a specular, and on the page each chrome edge,
-are each capped at the glyph's peak and joined by `lighten`.
+a field about the lamp and a specular, each capped at the glyph's peak
+and joined by `lighten`; on the page each chrome edge over them, white
+at a coverage that adds its light, as on a rim; and over all a solid
+gray at the peak joined by `darken`, which caps the sum once.
 
 ### What a browser cannot, and what it draws instead
 
@@ -2141,8 +2147,8 @@ Chrome.
 | Effect | On the web, and by how much |
 | --- | --- |
 | Rim width | one CSS pixel, not one device pixel |
-| Joining a rim's lights | the brightest, with the lamp's light folded into each, not the sum: about 0.7 to 0.8 bytes off on unlit rims, about 4 where the nav lights them, 4 on a filled pill's lit edge |
-| The nav's light on the page | the bar lights rims as one edge and the chosen plate as a second, joined by the brighter: never brighter than native near the nav, and the gaps between plates are lit where native dims them |
+| Joining a rim's lights | the lamp's and the specular's by the brighter, with the lamp's light folded into the specular: about 0.7 to 0.8 bytes off on unlit rims, 4 on a filled pill's lit edge; a chrome edge's added, white at a coverage, and the sum capped once: within 2 on the raree's rims beside a phone's band |
+| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, as native has it: the gaps between plates are lit where native dims them, and a chosen chip between two others is lit by the bar's span too — about 7 over native under it by the library's sum, unmeasured in Chrome, since no viewport the check runs lays the chips in a row |
 | Rounding | no dither: bands about five times longer than native's |
 | Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |
 | A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |
@@ -2153,7 +2159,7 @@ Chrome.
 | Rim over frost | two whites composited, not summed and capped; the cap holds |
 | A lit glyph | lit over its em square, which fitted the golden best |
 | A glyph on frost | lit over the tint's byte: +5 to +12 toward its dim end |
-| A glyph's layers | joined by the brighter |
+| A glyph's layers | the field and the specular joined by the brighter; a chrome edge added, the sum capped once |
 | No runtime | plates unlit |
 | No `backdrop-filter` | chrome as depth |
 

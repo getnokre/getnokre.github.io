@@ -467,6 +467,20 @@ whose top is no more than 8 px below the edge, whose bottom is within
 four reaches above it, and which overlaps the lit segment across. Only
 the page's boxes are lit — a layer's own plates stand above every edge.
 
+On the web the live driver publishes three edges rather than one per
+plate (`lamp_plates.edge_bar`, `edge_chosen`, `edge_sheet`): the bar,
+as one span over its nav plates — an unchosen chip, the indicator, the
+banner — at the nav plate's amplitude; the chosen plate, the current
+chip or the band a phone's stacked columns stand on, alone at its own;
+and the top modal layer. The chosen plate is never in the bar's span
+by name, so the stacked band is lit once, as here. A chosen chip
+between two others still lies under the bar's span, which reaches
+from the first chip to the last: there the web adds the bar's light to
+the chosen plate's where native has the chosen plate's alone — about
+7 bytes over on a card's lower rim 60 px above the chips, by the
+library's own sum, and unmeasured in Chrome
+([dom-substrate.md](dom-substrate.md#where-the-web-differs-from-native-and-by-how-much)).
+
 A sheet's edge light is in the page's rims, so the dim lowers it with
 the page: under a sheet over the scrolled page, a card's lower rim just
 above the sheet's edge is `0x3F` lit by the sheet against `0x20` by
