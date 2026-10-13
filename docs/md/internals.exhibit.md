@@ -55,7 +55,7 @@ writer and the reader are one declaration.
 | `viewport` | the window the run was acted at, read the same way |
 | `steps` | the recording's step count: what a raree counts and a stage counts as one |
 | `file` | the path under the root, `/`-separated on every host, which is the URL the exhibit fetches |
-| `refused` | each `.nokreplay` that `read` refused, or that stands outside the layout, by path and the error's name |
+| `refused` | each `.nokreplay` that `read` refused, or that stands outside the layout, by path and the error's name; `Refused.format` writes it as a line (The tool, below) |
 
 Recordings are sorted scenarios first, then by name, then by locale;
 refusals by path. The bytes are a function of the root.
@@ -84,7 +84,13 @@ zig build exhibit-index -- --app <name> <root>
 ```
 
 On success it prints `✓ exhibit.json: N recordings, 0 refused` and
-exits 0. Each refused file is one `✗ <file>: <error>` line, the
+exits 0. Each refused file is one `✗ <file> — <words> (<error>)` line
+(`Refused.format`): `ExhibitIndex.refusalWords` says what the refusal
+means and what cures it — a stale stamp reads "recorded at another
+nokre revision or shape; record it again", a cure that names no
+consumer's command, since nokre does not know which one recorded the
+file — and an error it has no words for is written by its name alone,
+`✗ <file> — <error>`, never under a sentence that could be wrong. The
 manifest is written anyway so the exhibit shows what it can, the
 summary is printed under `✗`, and the exit is 1. A root holding no
 `.nokreplay` at all writes nothing and exits 1 with
@@ -173,7 +179,8 @@ built over the exhibit's own `tool_nokre`, so it reads every recording
 with the exhibit's mark face (Read the way the exhibit reads, above).
 The step does not fail on a refused recording, only on a root with
 none: the manifest is written either way and the exhibit lists each
-refusal by file and error at the foot of its page.
+refusal at the foot of its page in the tool's own line, words and
+error name (The tool, above).
 
 **The root URL.** `.root_url` is baked into the build. Null means the
 page's own origin on the web — every fetch is relative, `exhibit.json`
