@@ -351,6 +351,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     syncBigScreen();
     syncPeep();
     fetchPlays();
+    watchRarees();
     syncPictures();
     syncTables();
     restoreFocus();
@@ -412,6 +413,69 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       nk.nokre_dom_play_arrived(ticket, got.length);
     }
     frame();
+  }
+
+  // ---- a raree's band ----------------------------------------------
+  //
+  // The page's scroll is the browser's, so core cannot see which rarees
+  // are near the window, and a page of hundreds would write every
+  // scene's markup on every frame. One observer, a screen of margin on
+  // every side, says each figure's coming and going
+  // (`nokre_dom_raree_band`, core's `raree.inBand`); the frame after
+  // writes that figure with its scene or with an empty window, and the
+  // patch touches nothing else. A figure is reported under its press's
+  // `data-n`, and observed again when the patch hands it another
+  // raree's, since nothing crosses the band to say so. A resize makes
+  // the observer again: its margin is the window's height. Where there
+  // is no observer every raree is in band.
+  const rareesWatched = new Map(); // figure -> the data-n it was observed under
+  let rareeBand = null;
+  // The figure's own press, a child of its card: a scene in its window
+  // may hold rarees of its own.
+  function childClassed(el, name) {
+    for (let c = el?.firstChild; c; c = c.nextSibling) if (c.classList?.contains(name)) return c;
+    return null;
+  }
+  function rareeNodeOf(figure) {
+    return childClassed(childClassed(figure, "raree-frame"), "raree-press")?.dataset.n;
+  }
+  function watchRarees() {
+    if (rareeBand === null && typeof IntersectionObserver === "function") {
+      rareeBand = new IntersectionObserver(
+        (entries) => {
+          let moved = false;
+          for (const e of entries) {
+            const n = rareesWatched.get(e.target);
+            if (n === undefined || n !== rareeNodeOf(e.target)) continue;
+            if (nk.nokre_dom_raree_band(Number(n), e.isIntersecting ? 1 : 0)) moved = true;
+          }
+          if (moved) frame();
+        },
+        { rootMargin: "100% 100% 100% 100%" },
+      );
+    }
+    for (const [figure, n] of rareesWatched) {
+      if (figure.isConnected && n === rareeNodeOf(figure)) continue;
+      rareeBand?.unobserve(figure);
+      rareesWatched.delete(figure);
+    }
+    let reportedWithNoObserver = false;
+    for (const host of roots) {
+      for (const figure of host.querySelectorAll("figure.raree")) {
+        if (rareesWatched.has(figure)) continue;
+        const n = rareeNodeOf(figure);
+        if (n === undefined) continue;
+        rareesWatched.set(figure, n);
+        if (rareeBand) rareeBand.observe(figure);
+        else if (nk.nokre_dom_raree_band(Number(n), 1)) reportedWithNoObserver = true;
+      }
+    }
+    if (reportedWithNoObserver) frame();
+  }
+  function rewatchRarees() {
+    rareeBand?.disconnect();
+    rareeBand = null;
+    rareesWatched.clear();
   }
 
   // ---- a picture from data ----------------------------------------
@@ -1822,6 +1886,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     nk.nokre_dom_resize(screen.clientWidth, innerHeight);
     // The window moved every plate's light, whether or not a byte did.
     lampDirty = true;
+    rewatchRarees();
     frame();
   }
 

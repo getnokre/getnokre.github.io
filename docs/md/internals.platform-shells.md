@@ -624,6 +624,24 @@ above, beside the other shells'. Its presenter and its scrolling:
   the transaction that resizes the window. Raster is still on the main
   thread, inside the tick. `NOKRE_FRAME_LOG=1` prints each frame's
   raster, present (copy and commit) and interval to stderr.
+- **A frame drawn off screen.** The Metal layer of a `-Dgpu` build drops
+  a drawable presented while the window is not on screen, and a launch
+  draws its first frames before the window server shows the window: a
+  window whose every frame landed then (a slow first build, an app
+  hidden or launched behind a full-screen app) stood blank until a
+  resize. Each frame notes whether the window was on screen — `isVisible`
+  and the occlusion state both, since each lags the other somewhere —
+  in shell.h's `nokre_unseen_frame`, and `windowDidChangeOcclusionState:`
+  asks for the frame again when the window comes on screen after one was
+  drawn off it. Seen on the Rokovski Ties host exhibit, hidden at launch
+  and shown four seconds later: blank three runs in five before, drawn
+  every run after (2026-10-13).
+- **The window outlives its close.** ARC owns it and
+  `releasedWhenClosed` is NO: AppKit's default for a window made in code
+  releases it on close, a second release under ARC, and the pool
+  `nokre_shell_run` pops after `[app run]` then released a freed window —
+  every close of a host app crashed. Closing a real window is the proof;
+  the unit test holds the line in place.
 - **The scale.** Each frame asks `nokre_pixels_per_point`
   ([pixel-model.md](pixel-model.md)) over the window's
   `backingScaleFactor` as a percent, the shorter side of its screen's

@@ -406,13 +406,23 @@ screen through `App.internal.reportScreen`, which lays out again where
 `raree.readsWindow`) and the host's density. A scene app
 is made only where it is drawn: the renderer's `drawRaree` asks
 `raree.sceneOf` only for a raree whose window has a row on the window
-the app is drawn into, and draws the rest as the missing-value tone
-(the DOM substrate still writes every raree's scene; its sheet skips
-rendering an off-screen figure with `content-visibility: auto`). The
-scene app of every raree whose box is more than one screen from the
-window is dropped by `raree.settle` after each layout and by
-`raree.dropScenesOutsideBand` after a scroll that lays nothing out, so
-a scrolled page holds about three screens of them at most. A stood scene is
+the app is drawn into, and draws the rest as the missing-value tone.
+Whether a raree may stand one at all is `raree.inBand`, the one rule
+both substrates read: a peeped raree always; where core scrolls the
+window itself, a box within one screen of it; on the web, where the
+page's scroll is the browser's and core never sees it, what the live
+driver's observer last reported (`raree.Viewer.reported_in_band`, through
+`App.internal.reportRareeInBand`, once its boot said it reports at all,
+`App.internal.reportsRareeBand`); and on a page written with no driver,
+which nobody scrolls for core, always, so a file opened with no script
+still shows every scene. The DOM writes a raree out of band as its
+figure, caption and press round an empty window (`serialize.raree`;
+dom-substrate.md, "A raree's scene stands where the browser says it is
+near"). The scene app of every raree out of band is dropped by
+`raree.settle` after each layout, by `raree.dropScenesOutsideBand`
+after a scroll that lays nothing out, and on the web by the report
+that takes it out, so a scrolled page holds about three screens of them
+at most. A stood scene is
 keyed by the scene number, its size and the dress, and stands again when
 any changes.
 

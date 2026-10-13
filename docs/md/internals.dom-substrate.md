@@ -1503,6 +1503,39 @@ in a 600px window took the header). So inside it:
   width says header. The page's reserve is the page's too: a scene owes
   its window's, unless its own nav stands above it.
 
+### A raree's scene stands where the browser says it is near
+
+A page of rarees is hundreds of scenes, and the frame is serialised
+whole: before the band, every raree's scene markup was written on every
+frame (Rokovski Ties' exhibit, 318 rarees: 23k nodes, 92% of them inside
+raree windows, 1.55 MB a frame). The page's scroll is the browser's, so
+core cannot tell which are near the window; the live driver tells it.
+At boot it says it will (`App.internal.reportsRareeBand`), and from
+then a raree no report has reached writes no scene. One
+`IntersectionObserver` with a screen of margin on every side
+(`rootMargin: 100%`) watches every `figure.raree`, and each crossing is
+`nokre_dom_raree_band(press id, in)`, which sets the raree's
+`raree.Viewer.reported_in_band`, drops its scene app on the way out, and
+answers whether anything moved, so the glue renders only then. A
+figure is reported under its press's `data-n`, the only id it carries;
+the patch keeps figures by position, so one handed another raree's
+press is observed again, which re-reports it. A resize makes the
+observer again, its margin being the window's height. A browser with
+no observer reports every raree in, which is the page as it was.
+
+Out of band the figure keeps everything but the scene: its box
+(`--raree-w`, `--raree-h` size the window), its caption, its press and
+its name. The window is written empty, with no `data-waiting`, so the
+patch removes the scene the window held instead of keeping it, as it
+keeps a waiting stage's; the sheet gives an empty raree window the
+missing-value tone `drawRaree` gives one off the screen. Writing it
+again on entry is the patch inserting one subtree: every other figure
+is compared and left alone, so scroll offsets stand. The lamp needs
+nothing of its own: the plates are in the markup or not, and a frame
+that changed bytes is measured again (`syncLamp`), so a figure gaining
+its scene has its plates published by the frame that wrote them.
+`raree.inBand` is the rule; stage.md, "The raree", has its four cases.
+
 ### The write is a diff; the frame never is
 
 A frame is still built whole: nokre rebuilds subtrees instantly and

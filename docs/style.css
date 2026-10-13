@@ -2690,6 +2690,10 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
    and paints the few on the screen rather than every scene's
    markup. Peeped, it is the screen, and always rendered. */
 .raree:not([data-peeped]) .raree-window.stage-window { content-visibility: auto; contain-intrinsic-size: var(--raree-w) var(--raree-h); }
+/* Farther than a screen from the window (`raree.inBand`) its window
+   holds no scene: the stand-in's tone, as `drawRaree` draws a
+   window off the screen. */
+.raree-window.stage-window:empty { background: var(--g10); }
 .raree-caption { padding: var(--tile-pad-v) var(--tile-pad-h); margin: 0; }
 .raree-frame:not(:has(> .raree-caption)) > .raree-window.stage-window { margin-block: 0; box-shadow: none; border-radius: calc(var(--radius-card) - var(--border)); }
 .raree-press { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: transparent; border-radius: var(--radius-card); cursor: pointer; }
