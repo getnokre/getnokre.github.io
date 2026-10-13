@@ -1943,7 +1943,8 @@ test above can reach — that a browser *draws* what the library computes
 — has a gate of its own, and nokre's tests are its only proof: a
 consumer keeps no goldens for a look.
 
-`zig build check-web-lamp` builds the kitchen sink's site and
+`zig build check-web-lamp` builds the kitchen sink's site, the site
+of `tests/nav_row.zig`, and
 `tests/web_lamp_reference.zig`, a host program that answers, for a
 plate's box, material and fill in a window at a scale, what `lamp.Face`,
 `lamp.Rim`, `lamp.Glyph` and the frost put at a device pixel. Then
@@ -1969,13 +1970,42 @@ look through the page's own control, and holds these facts at a phone's
   Watch screen's raree card too, whose lower rims stand beside the
   stacked band, and the select chevron again, scrolled to just above
   the band: the two places a chrome edge's light adds to the lamp's,
-  held to the library's one capped sum. Nothing else the kitchen sink
-  draws stands within an edge's reach, so the bar's span over a chosen
-  chip between two others is not read: no pass lays the chips in a
-  row. Every one of them must be a
+  held to the library's one capped sum. Every one of them must be a
   box the live driver measured, or the gate names the missing
   `lamp_plates` entry. The nav plate's rim is held within 10 over the
   frost beneath it, read with the rim hidden.
+- **A row of pills lights the page as native's does.** The kitchen
+  sink's roster stacks at every width its band stands at (the row is
+  kept only where its pills fit at 560 px or less, and its four
+  marked destinations do not), so the bar's row with a chosen chip
+  between two others is `tests/nav_row.zig`'s: three bare words opened
+  on the middle one, in lamp from its first frame. At 390x844 at scale
+  2 a card's bottom rim 120 px above the chips is read beneath the
+  chosen chip, beneath a plain one and in the gap, and held within the
+  rim's 8 to the library lit by one edge per chip, read off the chips'
+  own boxes as native's `BarPlates` emits them — not off the edges the
+  page publishes. The page publishes the bar as one edge and the
+  chosen plate as its own, and native sums one line per plate, so away
+  from the rim's cap the web is missing the neighbours' tails and reads
+  under native. Measured 2026-10-13, web against native, chosen /
+  plain / gap:
+
+  | card above the chips | chosen | plain | gap |
+  | --- | --- | --- | --- |
+  | 40 px | 100 / 100 | 99 / 99 | 100 / 100 (all at the cap) |
+  | 70 px | 98 / 100 | 88 / 94 | 97 / 100 |
+  | 80 px | 91 / 100 | 83 / 88 | 90 / 99 |
+  | 90 px | 85 / 94 | 79 / 84 | 85 / 93 |
+  | 120 px | 76 / 80 | 71 / 74 | 75 / 79 |
+
+  120 px is chosen past that shortfall, and under the cap, where a
+  wrong join still shows: the edges' gray stops under `lighten` (the
+  join before 2026-10-13) read 67 against 80 beneath the chosen chip.
+  The two exact answers known are an edge per plate in the sheet,
+  measured at +77% paint on every screen and refused, and the
+  per-plate sum computed in the driver, unexplored. An earlier
+  synthetic estimate of 7 *over* native beneath the chosen chip was
+  wrong: no distance the rim is not capped at reads over.
 - **The big screen is lit as a page with no chrome.** On the Watch
   screen with its stage on the big screen, the frame's face, the Play
   pill's face and rims and the header's play glyph are held to the

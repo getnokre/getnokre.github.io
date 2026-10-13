@@ -1390,7 +1390,12 @@ declared two; `icon.json` named only the live ones so actool ignored the
 rest, which is the quiet version of the same failure. nokre prunes the
 destination of what the source no longer carries before the copy, so the
 installed tree is exactly the generated one — the bundle, the rendered
-`ic_launcher` set, the web icons and the `.icns` alike.
+`ic_launcher` set, the web icons and the `.icns` alike. And it writes a file only
+when its bytes differ: std's copy is keyed on mtime, so a second
+`zig build` whose tree sits in another cache directory rewrites identical
+files, and on 2026-10-13 Xcode signed the kitchen sink with an
+entitlements file so rewritten during its build verbatim — no
+`application-identifier` — which the device refused.
 
 ```zig
 const nokre = b.dependency("nokre", .{

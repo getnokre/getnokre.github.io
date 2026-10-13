@@ -2148,7 +2148,7 @@ Chrome.
 | --- | --- |
 | Rim width | one CSS pixel, not one device pixel |
 | Joining a rim's lights | the lamp's and the specular's by the brighter, with the lamp's light folded into the specular: about 0.7 to 0.8 bytes off on unlit rims, 4 on a filled pill's lit edge; a chrome edge's added, white at a coverage, and the sum capped once: within 2 on the raree's rims beside a phone's band |
-| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, as native has it: the gaps between plates are lit where native dims them, and a chosen chip between two others is lit by the bar's span too — about 7 over native under it by the library's sum, unmeasured in Chrome, since no viewport the check runs lays the chips in a row |
+| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, where native sums one line per plate: away from the rim's cap the neighbours' tails are missing, so a row of pills lights a card's rim under native's — 9 under beneath the chosen chip 90 px above the chips, 4 at 120 px, measured in Chrome over `tests/nav_row.zig` ([testing.md](../testing.md#lamp-on-the-web-drawn) has the table); a stacked band is one plate and has no shortfall |
 | Rounding | no dither: bands about five times longer than native's |
 | Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |
 | A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |

@@ -2589,12 +2589,22 @@ file that changed under it, which a generated one does on the first
 build and whenever the declaration changes. The plan itself is made
 before any phase runs, from the file as the *previous* build left it —
 so the scheme carries a build pre-action that runs `zig build pkg`
-with the same target, prefix and `NOKRE_ZIG_FLAGS` first, and the plan
-reads the current declaration. Without it a declaration that drops a
+with the same target, prefix, `NOKRE_ZIG_FLAGS` and `NOKRE_OPTIMIZE`
+first, and the plan reads the current declaration — the tree the phase
+installs, byte for byte. The pre-action takes the app target's build
+settings (its `EnvironmentBuildable`), so a setting on the `xcodebuild`
+line reaches it as it reaches the phase. Without it a declaration that drops a
 capability is provisioned against the old file and refused before the
 phase that would have rewritten it, which no second build repairs; a
 pre-action's own failure is silent by Xcode's design, so its output
-goes to `ios/build/pre-build-pkg.log`. And
+goes to `ios/build/pre-build-pkg.log`. The pre-action and the phase
+both install the tree, so a generated signing input — the entitlements
+and `Info.plist` — is written only when its bytes change: Xcode treats a
+file modified during its build as user-modified and signs with it
+verbatim, so a rewrite with the same bytes would drop the
+`application-identifier` and team the provisioning profile merges in, and
+the device refuses the app (`addInstallExactDirectory`,
+[services.md](services.md)). And
 `PRODUCT_BUNDLE_IDENTIFIER` must equal the declared id — that one
 duplication belongs to Apple's signing machinery. Xcode alone only
 *warns* when the two disagree (and an unsigned build succeeds), so the

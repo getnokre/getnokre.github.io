@@ -90,11 +90,20 @@ means and what cures it — a stale stamp reads "recorded at another
 nokre revision or shape; record it again", a cure that names no
 consumer's command, since nokre does not know which one recorded the
 file — and an error it has no words for is written by its name alone,
-`✗ <file> — <error>`, never under a sentence that could be wrong. The
-manifest is written anyway so the exhibit shows what it can, the
-summary is printed under `✗`, and the exit is 1. A root holding no
-`.nokreplay` at all writes nothing and exits 1 with
-`✗ no recordings under <root>` (`error.ExhibitRootHoldsNoRecording`).
+`✗ <file> — <error>`, never under a sentence that could be wrong. A
+refusal is reported, never fatal: the manifest lists it under
+`refused`, the summary is printed under `✗`, and the exit is 0 —
+including when every recording was refused, since the page says so
+and a consumer that wants a refusal for an empty exhibit makes its
+own. The exit is 1 only when the tool could not index, each with its
+`✗` line, writing no manifest: a root it cannot open (`✗ cannot open
+<root>: <error>`, a missing path or one that is not a directory), a
+root holding no `.nokreplay` at all (`✗ no recordings under <root>`,
+`error.ExhibitRootHoldsNoRecording`), a walk or read that failed
+(`✗ cannot index <root>: <error>`), or a manifest it cannot write
+(`✗ cannot write exhibit.json under <root>: <error>`).
+`indexRootForTool` is the run and `ToolOutcome` its exit;
+`src/exhibit/index_test.zig` pins the exit for each case.
 
 **It is not run per driver run.** Driver runs are separate processes,
 often run side by side; each one rewriting a shared index would race,
@@ -177,10 +186,10 @@ default.
 with `nokre-serve` on `.port` in the fragment form. The index tool is
 built over the exhibit's own `tool_nokre`, so it reads every recording
 with the exhibit's mark face (Read the way the exhibit reads, above).
-The step does not fail on a refused recording, only on a root with
-none: the manifest is written either way and the exhibit lists each
-refusal at the foot of its page in the tool's own line, words and
-error name (The tool, above).
+The serve depends on the tool's exit and nothing else, so it fails
+only where the tool does (The tool, above); a refused recording is
+listed at the foot of the exhibit's page in the tool's own line,
+words and error name.
 
 **The root URL.** `.root_url` is baked into the build. Null means the
 page's own origin on the web — every fetch is relative, `exhibit.json`
