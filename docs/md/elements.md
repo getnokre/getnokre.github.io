@@ -5048,11 +5048,19 @@ line, which no width alone can answer:
   and its height, and the content reserve with it.
 - **What "stands" means.** Only where the bar is the band and the
   window is taller than it is wide. The standing pills fit when one
-  52px column per declared destination and one more for the off-roster
-  marker, a gap between each, the indicator's reserve and the bar's
-  insets fit the viewport. Both reserves are counted whether or not
-  they show, for the reasons above, and no word is measured: every
+  52px column per entry drawn — the declared destinations, and the
+  off-roster marker while a screen that is none of them is open — a
+  gap between each, the indicator's reserve while an indicator is up,
+  and the bar's insets fit the viewport. No word is measured: every
   standing pill is as wide as every other, so the answer is a count.
+  **Here the two reserves count only while they show**, the opposite
+  of the row's and the columns' rule, and the owner's call
+  (2026-10-14): counted always, five destinations wanted 428px and no
+  phone has it, so the rosters this shape was made for would have
+  collapsed on every phone. The price is the one the columns refused —
+  a roster standing with a few pixels to spare collapses to the chip
+  when a detail screen opens or a notice arrives, and stands again
+  when it clears.
   Where they do not fit the band takes the chip, never the stacked
   columns — a portrait phone has the height to stand words on end and
   not the width to lay them in columns.
