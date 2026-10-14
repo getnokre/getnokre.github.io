@@ -149,8 +149,8 @@ derived declaration is what it is for one reason:
 | services | none, and a local-network purpose (`packaging.Services.local_network_usage`) | on a phone the root is another machine on the network, and iOS asks the person first with this sentence; the `http` service is sockets, so no App Transport Security key rides beside it |
 
 The name, the display name and the id are one on every target: an app
-exhibited for the web, this machine and an iPhone in one build is three
-exhibits of one derived app, `<pkg.name> exhibit` on the phone's home
+exhibited for the web, this machine, an iPhone and an Android device in
+one build is four exhibits of one derived app, `<pkg.name> exhibit` on the phone's home
 screen as in the browser's tab, `<pkg.id>.exhibit` wherever an id is
 asked. `addExhibit` refuses, when configured, a second exhibit of one app **for one
 target** (the message names the target) and two apps of one name
@@ -186,7 +186,9 @@ executable (desktop) or what Xcode takes (iOS), and the plays:
 - on iOS, the exhibit's static library (`lib/lib<name>-exhibit.a`),
   the Skia shim (`lib/libnokre_skia.a`) and the `pkg` tree **exactly**
   into `<prefix>/pkg`, as an iOS app's build installs its own (On an
-  iPhone, below);
+  iPhone, below); on Android the library and the `pkg` tree the same
+  way and no shim, since the Gradle project compiles its own (On an
+  Android device, below);
 - `.plays`, `Plays.recordings` from `addPlays`, **exactly** into
   `<prefix>/<install_dir>/plays`, so a play the app stopped declaring is gone.
 
@@ -252,6 +254,44 @@ exhibit-ios-smoke` builds and installs it for a device from a host
 build and reads the five installed files back, and `zig build test`
 holds the install to the library, the shim and the `pkg` tree on the
 graph and the derived `Info.plist` to its id and local-network purpose.
+
+**On an Android device.** The same again through one Gradle project,
+`src/exhibit/android`, never copied: the kitchen sink's project with
+everything the consumer owns turned into a Gradle property given on
+the `gradlew` line, since a property is what Gradle reads at
+configuration, where the identity is needed.
+
+| Property | Meaning |
+| --- | --- |
+| `nokreExhibitPackageDir` | the package whose `zig build` installs the exhibit; the build runs there. Required |
+| `nokreExhibitLib` | the library's name, `<name>-exhibit`. Required |
+| `nokreExhibitStep` | the step whose dependency is `Exhibit.install` for `-Dtarget=aarch64-linux-android`; default `exhibit-android` |
+| `nokreExhibitOut` | where everything lands — Gradle's build directories, the CMake staging and the install prefix `NokreExhibit/` the step is given as `-p`; default the project's own `build/`. Gradle's `.gradle/` is `--project-cache-dir`, the caller's |
+| `nokreNdkVersion` | an NDK to pin, as a copied kitchen sink project may; none by default |
+| `NOKRE_ZIG_FLAGS`, `NOKRE_OPTIMIZE` | in the environment, as the Xcode project reads them |
+
+The step runs at configuration, once, and installs the library and
+the `pkg` tree in the same run: the identity, the manifest, the res
+tree and `raster.cmake` are read off the prefix, as a copied project
+reads them off `zig build pkg`, and the library is linked from
+`lib/` by `app/src/main/cpp/CMakeLists.txt`. No shim is installed —
+the Gradle project compiles it with the NDK, as every Android project
+does — and the raster derives from the app's theme, so a lamp app's
+exhibit links the GPU archive `tools/build-skia-android.sh --gpu`
+built, named by `raster.cmake` when it is missing. Only the shell's
+Java is compiled: the exhibit links no service. There is no
+local-network purpose to state: Android asks none, and the exhibit
+fetches over its own sockets, which the platform's cleartext policy
+does not reach. The id is `<pkg.id>.exhibit`, read from the generated
+`package.properties`, so no project side repeats it.
+
+nokre proves it on the kitchen sink: `zig build
+-Dtarget=aarch64-linux-android exhibit-android` is the step the
+project names, `zig build exhibit-android-smoke` builds and installs it
+from a host build — the Zig alone, which no NDK is needed for — and
+reads the four installed files back, and `zig build test` holds the
+install to the library and the `pkg` tree on the graph and the derived
+`package.properties` to its id.
 
 **What it shows.** A top bar of three selects: the language (the
 locales the manifest's recordings carry — named as text, "Language: en",

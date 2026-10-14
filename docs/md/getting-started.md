@@ -2442,6 +2442,23 @@ reads is served by something listening on that address. The project's other
 settings — the step's name, the prefix — have defaults, and
 [internals/exhibit.md](internals/exhibit.md) lists them.
 
+On an Android device it is the same call once more, with the Android
+target and a step named `exhibit-android`, and nokre's own Gradle
+project builds it, the properties playing the settings' part:
+
+```sh
+NOKRE_ZIG_FLAGS=-Dexhibit-root=http://my-mac.local:8000/ \
+  ../nokre/src/exhibit/android/gradlew -p ../nokre/src/exhibit/android \
+  -PnokreExhibitPackageDir="$PWD" -PnokreExhibitLib=notes-exhibit \
+  -PnokreExhibitOut="$PWD/zig-out/exhibit-android" \
+  --project-cache-dir "$PWD/zig-out/exhibit-android/.gradle" assembleDebug
+```
+
+The debug APK lands under the out directory, `app/outputs/apk/debug/`,
+and `adb install -r` puts it on the device; the device asks nothing
+before reaching your Mac. The same NDK Skia build an Android app needs
+(Part 13) is needed here.
+
 ## Part 13 — Every platform
 
 The Zig you wrote is finished — what remains is entry points and native
