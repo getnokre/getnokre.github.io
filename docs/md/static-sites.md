@@ -535,7 +535,10 @@ cap, so its file carries the plain row and a phone reading it gets the
 scrolling band, never the columns. A generated header usually wears no
 marks, and a roster of bare words never stacks, so the case is a marked
 roster on a page nothing boots — the scrolling band is its answer, and
-it is a working one.
+it is a working one. A generator whose viewport is under the cap and
+taller than wide is the other way round: its file carries the standing
+band, which needs no driver, and states the band's height on its own
+root for the reserve ([internals/dom-substrate.md](internals/dom-substrate.md)).
 
 ## A generated document has no host, so it has no unstyled half
 

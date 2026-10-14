@@ -109,7 +109,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b)));
   --chrome-reserve: calc(
-    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
+    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-band-h, var(--nav-slot)) + var(--bar-bottom) + var(--safe-b)
   );
   --px-small: 12px;
   --lh-small: 16px;
@@ -3885,6 +3885,39 @@ input.check::after { content: "\e06c"; }
     outline: var(--focus) solid var(--ink);
     outline-offset: calc(-1 * (var(--focus) + var(--nav-item-gap) / 2));
   }
+  /* Standing (`layout.NavShape.standing`, core's answer for a
+     portrait band): the row's pills stood on end, each a slot
+     wide and as tall as core measured its words (`--pill-h`),
+     every bottom on one line; the glyph's box is its em, as core
+     counts it.
+     The glyph stays upright at the foot and the words rise from
+     it in their own span, the one box a writing mode can turn:
+     `vertical-rl` runs right-to-left words up with their tops to
+     the right (clockwise), and turned half round runs left-to-right
+     words up with their tops to the left (counterclockwise). The
+     words' own direction picks the turn (`dir`), as the
+     reference's does. The off-roster marker is clipped to the
+     tallest declared pill, which is the band's height (core's,
+     written as `--nav-band-h`), so it never moves the bar; its
+     words are cut inside the end pad, at their end, so what shows
+     is how they begin. */
+  .nav-row.standing:where(:not(.stage-window *)) { align-items: flex-end; }
+  .nav-row.standing > .chip:where(:not(.stage-window *)) {
+    width: var(--nav-slot);
+    height: var(--pill-h);
+    padding-inline: 0;
+    padding-block: calc(var(--nav-item-pad-h) - var(--border));
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: var(--icon-gap);
+    border-radius: calc(var(--nav-slot) / 2);
+  }
+  .nav-row.standing > .chip.here:where(:not(.stage-window *)) { max-height: var(--nav-band-h); }
+  .nav-row.standing > .chip.here > .chip-words:where(:not(.stage-window *)) { min-height: 0; overflow: hidden; }
+  .nav-row.standing > .chip > .icon:where(:not(.stage-window *)) { line-height: var(--px-body); }
+  .chip-words:where(:not(.stage-window *)) { writing-mode: vertical-rl; text-orientation: mixed; }
+  .chip-words[dir="ltr"]:where(:not(.stage-window *)) { transform: rotate(180deg); }
   /* The section list is the tile group's card, not the modal
      pane's surface: it floats clear of every edge, so all four
      corners are its own and all four are drawn. It is sized to
@@ -3917,8 +3950,8 @@ input.check::after { content: "\e06c"; }
   }
 }
 
-.stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); --notice-banner-height: initial; --chrome-reserve: calc(
-    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-slot) + var(--bar-bottom) + var(--safe-b)
+.stage-window { --safe-b: 0px; --bar-bottom: max(var(--nav-bar-pad), calc(var(--nav-bar-pad-b) - var(--safe-b))); --notice-banner-height: initial; --nav-band-h: initial; --chrome-reserve: calc(
+    var(--nav-content-gap) + var(--nav-bar-pad) + var(--nav-band-h, var(--nav-slot)) + var(--bar-bottom) + var(--safe-b)
   ); }
 @container stage-viewport (max-width: 560px) {
   /* No side border left to be part of the inset, so the words
@@ -3940,6 +3973,13 @@ input.check::after { content: "\e06c"; }
 :where(.stage-window) .slot.current { color: var(--ink); font-weight: 700; }
 :where(.stage-window) .slot > .icon { font-size: var(--px-body); line-height: var(--px-body); }
 :where(.stage-window) .slot:focus-visible { outline: var(--focus) solid var(--ink); outline-offset: calc(-1 * (var(--focus) + var(--nav-item-gap) / 2)); }
+:where(.stage-window) .nav-row.standing { align-items: flex-end; }
+:where(.stage-window) .nav-row.standing > .chip { width: var(--nav-slot); height: var(--pill-h); padding-inline: 0; padding-block: calc(var(--nav-item-pad-h) - var(--border)); display: flex; flex-direction: column-reverse; align-items: center; gap: var(--icon-gap); border-radius: calc(var(--nav-slot) / 2); }
+:where(.stage-window) .nav-row.standing > .chip.here { max-height: var(--nav-band-h); }
+:where(.stage-window) .nav-row.standing > .chip.here > .chip-words { min-height: 0; overflow: hidden; }
+:where(.stage-window) .nav-row.standing > .chip > .icon { line-height: var(--px-body); }
+:where(.stage-window) .chip-words { writing-mode: vertical-rl; text-orientation: mixed; }
+:where(.stage-window) .chip-words[dir="ltr"] { transform: rotate(180deg); }
 :where(.stage-window) .picker.above-nav { bottom: calc(var(--bar-bottom) + var(--safe-b) + var(--nav-slot) + var(--nav-item-gap)); width: max-content; max-width: calc(100% - 2 * var(--nav-bar-pad-h)); max-height: calc(100dvh - var(--sheet-min-top)); padding: 0; inset-inline: 0; margin-inline: auto; border-bottom: var(--border) solid var(--g6); border-radius: var(--radius-card); }
 }
 :where(.stage-window) :is(.sheet, .notices-pane, .picker), :where(.stage-window) .picker.above-nav { max-height: calc(100% - var(--sheet-min-top)); }

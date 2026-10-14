@@ -471,7 +471,7 @@ On the web the live driver publishes three edges rather than one per
 plate (`lamp_plates.edge_bar`, `edge_chosen`, `edge_sheet`): the bar,
 as one span over its nav plates — an unchosen chip, the indicator, the
 banner — at the nav plate's amplitude; the chosen plate, the current
-chip or the band a phone's stacked columns stand on, alone at its own;
+chip or the band stacked columns stand on, alone at its own;
 and the top modal layer. The chosen plate is never in the bar's span
 by name, so the stacked band is lit once, as here. A row of pills is
 one span where native has a line per plate, and the lines' tails

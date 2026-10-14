@@ -358,6 +358,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     syncAddressBar();
     syncRoot();
     syncBanner();
+    syncBandHeight();
     // `paint` hands back what it was given when nothing moved, so an
     // unchanged frame compares a reference and measures nothing.
     framed = true;
@@ -955,6 +956,21 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
     watchedBanner = banner;
     if (banner) bannerWatch.observe(banner, { box: "border-box" });
     else root.style.removeProperty("--notice-banner-height");
+  }
+
+  // The standing band's height, which the serializer wrote on the nav
+  // because core measured it (`layout.navBandHeight`), copied to the
+  // root because the reserve is declared there and a custom property
+  // does not flow up. A page with no driver is never standing.
+  function syncBandHeight() {
+    let nav = null;
+    for (const el of into.childNodes) {
+      if (el.nodeType === Node.ELEMENT_NODE && el.classList.contains("nav")) nav = el;
+    }
+    const h = nav ? nav.style.getPropertyValue("--nav-band-h") : "";
+    if (h === root.style.getPropertyValue("--nav-band-h")) return;
+    if (h) root.style.setProperty("--nav-band-h", h);
+    else root.style.removeProperty("--nav-band-h");
   }
 
   // ---- the lamp's numbers -----------------------------------------

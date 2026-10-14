@@ -4734,7 +4734,7 @@ decisions, not the consumer's, and there is no API for either.
 
 **Two shapes, and the reader's window picks.** At a phone's width the
 bar is the bottom band of the viewport, and whatever it holds — the row
-of destinations as pills or stacked, the collapsed chip, the
+of destinations as pills, stacked or standing, the collapsed chip, the
 minimized-notices square — is measured at its own width and centered
 there. That is a thumb
 affordance: reach is worst at the far edge, and the bar is the chrome a
@@ -4761,8 +4761,9 @@ so no window above that width collapses anything, on any medium that
 reflows. In the band, which is one line by construction, a row that will
 not fit scrolls instead: every destination is a link with an address of
 its own, and a browser scrolls a focused one into view. A live driver
-replaces that with the stacked row where its columns fit, and with the
-chip, which always fits, where they do not. So a page nothing will
+replaces that with the shape core measured for the reader's window —
+standing or stacked where those fit, below — and with the chip, which
+always fits, where they do not. So a page nothing will
 ever mount over gets the same band, the same markup and a reachable set
 of destinations at every width, and nothing about who published a file
 reaches the decision.
@@ -4809,7 +4810,8 @@ carrying some of each is `error.NavIconsMixed`, refused whole before
 anything is drawn. A phone's tab bar wears marks; a generated site's
 header usually wears none ([static-sites.md](static-sites.md)). Where there is a glyph it leads
 the label at the label's own 16px — or stands over it, where the row
-stacks (below) — both always visible, and it is
+stacks (below), or stands upright under it, where the row stands on end (below) — both
+always visible, and it is
 decorative to assistive tech, which hears the words; where there is
 none, there is no gap left where one would have been. The marker for a
 screen that is none of the destinations follows the roster, because it
@@ -4894,7 +4896,8 @@ and down into the safe band — that glimpse of a half-covered line is the
 only thing left saying there is more below. A header reserves nothing:
 it took its space where it stands, at the top, in flow.
 
-A slot is 52px tall, pill or stacked column, the one control in the library that grows *past*
+A slot is 52px tall, pill or stacked column — a standing pill is 52px
+*wide* instead, the same slot turned — the one control in the library that grows *past*
 `touch_target` rather than up to it: it is the chrome a thumb reaches
 for without looking, stacked against the bottom edge where reach is
 worst. Below it the bar keeps `metrics.nav_bar_pad_b` (16px) of clear
@@ -4903,14 +4906,18 @@ except that the OS band counts toward it, so on a phone the items sit
 just above the home-indicator strip rather than 16px above a strip that
 is already empty.
 
-Where the labels fit, the nav is that row. Where they do not, a
+Where the labels fit, the nav is that row — in a window at least as
+wide as it is tall, a square one included. Where they do not, a
 **marked** roster **stacks**: the same destinations, each its glyph at
 16px over its words at `Scale.small` (12px), in columns across the
-band. Where even the columns do not fit, the nav **collapses**: the bar
-shows the current section alone, as the same chip wearing that
-section's glyph with a chevron-up at its trailing edge, and the other
-destinations move behind a picker that opens above it — carrying their
-glyphs into the list, so a mark means the same thing in every shape.
+band. In a window taller than it is wide the band has a ladder of its
+own: the row **stands** on end where its pills fit side by side, and
+neither the row nor the stacked columns are taken there (below). Where
+none of these fits, the nav **collapses**: the bar shows the current
+section alone, as the same chip wearing that section's glyph with a
+chevron-up at its trailing edge, and the other destinations move behind
+a picker that opens above it — carrying their glyphs into the list, so
+a mark means the same thing in every shape.
 
 **Each column is as wide as its own words**, never under
 `touch_target`, and only what the band has left over is shared — equally,
@@ -4974,13 +4981,41 @@ on the ground, being a glyph target rather than a destination. A focused
 column draws the ring inside itself, half a gap in at a control's
 corner, so it never touches the column beside it.
 
-It is a shape of the *row*, not a third kind of nav: the same `nav_item`
-links, in the same order, with the same focus stops and `aria-current`,
-and no `tablist` — tabs select a panel that co-exists with them, and a
-destination is a place you go. The flip between pills and columns
-writes one field on the nav (`Nav.stacked`) and keeps every node, so
-focus and an assistive tech's place survive a window crossing the
-threshold.
+**Standing is the row's pill stood on end.** Each pill is
+`navItemHeight` (52px) wide with the row's corner, so its ends are
+semicircles, and as tall as the row's pill for the same words is wide:
+the width-as-words rule above, turned into height-as-words, so no word
+stands adrift in a share sized for another one. Inside it, from the
+foot, are the row's 20px of end pad, the glyph upright at the label's
+16px, the row's icon gap, and the label rising. Every pill's foot is on
+one line, so the short ones end lower and the bar's top edge reads the
+roster's words; the notices indicator stands at the trailing end on the
+same line. The plates are the row's in every look — the destinations'
+fill, the current plate, depth's card shadow, lamp's glass — because
+this is the row and nothing new was made for it.
+
+The band is as tall as the tallest **declared** pill, and the off-roster
+marker's pill (`nav_here`) is clipped to that height. A bar whose
+height moved because a detail screen opened would move the navigation
+for a reason that has nothing to do with it; a locale change may move
+it, because then the words themselves changed. The content reserve
+follows that height, so a page scrolled to its end stands clear of the
+tallest pill rather than of a 52px slot.
+
+The label turns by its own text's direction, not the app's: a
+left-to-right label turns counterclockwise, its tops to the left, and a
+right-to-left one clockwise, its tops to the right, so both read upward
+from the glyph — a Persian word in an English roster turns as Persian.
+The pills' order mirrors under [right-to-left](localization.md) as the
+row's does.
+
+Stacked and standing are shapes of the *row*, not more kinds of nav:
+the same `nav_item` links, in the same order, with the same focus stops
+and `aria-current`, and no `tablist` — tabs select a panel that
+co-exists with them, and a destination is a place you go. The flip
+between pills, columns and standing pills writes one field on the nav
+(`Nav.row`) and keeps every node, so focus and an assistive tech's
+place survive a window crossing the threshold or turning.
 
 The threshold is measured, not a breakpoint — the one breakpoint above
 is about *where the bar stands*, which is a fact about the reader's
@@ -5011,6 +5046,16 @@ line, which no width alone can answer:
   computed with the indicator's reserve held back, so a notice moves
   the group and never resizes a column. The band keeps its 52px slot
   and its height, and the content reserve with it.
+- **What "stands" means.** Only where the bar is the band and the
+  window is taller than it is wide. The standing pills fit when one
+  52px column per declared destination and one more for the off-roster
+  marker, a gap between each, the indicator's reserve and the bar's
+  insets fit the viewport. Both reserves are counted whether or not
+  they show, for the reasons above, and no word is measured: every
+  standing pill is as wide as every other, so the answer is a count.
+  Where they do not fit the band takes the chip, never the stacked
+  columns — a portrait phone has the height to stand words on end and
+  not the width to lay them in columns.
 - **What that measured, against the first consumer.** Rokovski Teams'
   and Rokovski Reviews' five destinations, in bold 12px, each column
   then the marker's 44, against 276px of span at a 360pt phone and 306
@@ -5041,7 +5086,8 @@ line, which no width alone can answer:
 - **What moves the answer.** Icons cost width, so they push rosters
   off the row sooner — and are what gives them the stacked shape to go
   to; a set that fits in landscape and not in
-  portrait reshapes as the device turns, one too wide for a laptop
+  portrait reshapes as the device turns, and turning also changes
+  which ladder is asked, one too wide for a laptop
   reopens the moment the window reaches the width it asked for, and
   translations change it too — the same app can be a row in English
   and a chip in German, which is the point of measuring.
@@ -5104,7 +5150,10 @@ nothing, and both shapes have to answer "where am I" anyway.
 They answer it with one extra entry, appended to the roster the chrome
 draws from: the current route's [`title`](routing.md), wearing the shared
 `file_text` mark. In the row it is a `nav_here` — a plate at the trailing
-end, in the current destination's plating. Collapsed, it is what the chip
+end, in the current destination's plating. Standing, its pill is
+clipped to the band's height, the tallest declared pill's, its words cut
+inside the end pad, so a long title never makes the bar taller.
+Collapsed, it is what the chip
 carries, so the answer does not depend on the shape. Consumers append
 neither, and name neither: every line of the roster — the destinations
 and this one alike — is labelled from the route table.
@@ -5133,9 +5182,11 @@ none. What used to happen here was worse and simpler — the chip fell back
 to the *first* destination, naming a section the visitor may never have
 opened.
 
-The extra entry is measured like any other, so the collapse threshold
-needed no rule for it: a row with one more pill in it collapses at a
-wider viewport, which is the threshold working, not an exception to it.
+In the row the extra entry is measured like any other, so the collapse
+threshold needed no rule for it: a row with one more pill in it
+collapses at a wider viewport, which is the threshold working, not an
+exception to it. The stacked and standing shapes count its column
+whether or not it shows, so opening it never reshapes them.
 Crossing back onto a destination drops the entry and the row returns to
 the roster alone.
 

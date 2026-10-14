@@ -1870,9 +1870,29 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   move into a renderer. Whether the row *stacks* is core's too, for the
   other reason: it is a measurement against the window, which no rule
   in a sheet can make. It changes no role, so it is a field on the nav
-  (`Nav.stacked`) rather than a different element, and the serializer
+  (`Nav.row`) rather than a different element, and the serializer
   writes it as the row's `stacked` class and its destinations as
-  unplated `slot`s, which only the band's rules style. Above the cap
+  unplated `slot`s, which only the band's rules style. Whether it
+  *stands* is the same field and the same kind of answer: the nav and
+  its row carry `standing`, each pill stays a `chip` link, and its words
+  go in a `chip-words` span with the label's own `dir`, because only a
+  box takes a writing mode — `vertical-rl`, turned half round for a
+  left-to-right label. Each pill's height is core's
+  (`layout.navStandingPillHeight`), written as `--pill-h` on it rather
+  than left to the browser: Chrome's own height for the same words came
+  out 8px off core's, which broke both the reserve and the off-roster
+  marker's clip, since both read the band's height as core measured it.
+  That height above the pads (`layout.navStandingBandHeight`) is
+  published as `--nav-band-h` on the nav, where the marker is clipped
+  to it, and the live driver copies it to the document root
+  (`syncBandHeight`), as it publishes the banner's height there, because
+  a custom property flows down and the reserve is read above the nav:
+  `--chrome-reserve` spends `var(--nav-band-h, var(--nav-slot))`, so
+  every other band is the same sum it was. A page with no driver has
+  nobody to copy it, so `document.zig` writes it on the root itself
+  wherever the serialized nav stands, and a scene's window resets it to
+  `initial` and states its own, so the page's never reaches a scene.
+  Above the cap
   this substrate wraps the header, and a row that wraps has no width at
   which it fails, so `layout.navShape` declines before it measures, on
   the one input
@@ -2210,7 +2230,7 @@ Chrome.
 | --- | --- |
 | Rim width | one CSS pixel, not one device pixel |
 | Joining a rim's lights | the lamp's and the specular's by the brighter, with the lamp's light folded into the specular: about 0.7 to 0.8 bytes off on unlit rims, 4 on a filled pill's lit edge; a chrome edge's added, white at a coverage, and the sum capped once: within 2 on the raree's rims beside a phone's band |
-| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, where native sums one line per plate: away from the rim's cap the neighbours' tails are missing, so a row of pills lights a card's rim under native's — 9 under beneath the chosen chip 90 px above the chips, 4 at 120 px, measured in Chrome over `tests/nav_row.zig` ([testing.md](../testing.md#lamp-on-the-web-drawn) has the table); a stacked band is one plate and has no shortfall |
+| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, where native sums one line per plate: away from the rim's cap the neighbours' tails are missing, so a row of pills lights a card's rim under native's — 9 under beneath the chosen chip 90 px above the chips, 4 at 120 px, measured in Chrome over `tests/nav_row.zig` ([testing.md](../testing.md#lamp-on-the-web-drawn) has the table); a stacked band is one plate and has no shortfall; a standing band's plain pills publish one edge at their union's top where native sums one per plate, which the standing pass holds within tolerance |
 | Rounding | no dither: bands about five times longer than native's |
 | Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |
 | A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |
