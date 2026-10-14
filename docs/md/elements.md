@@ -3947,7 +3947,10 @@ look at each. It is what an exhibit is made of: an app that fetches its
 recordings shows one raree per step of each, then the plays on stages.
 Fields: `play`, a `nokre.element.PlaySource` as a stage's; `step`, which
 step's rest it shows; and `viewport`, the size the scene is laid out at.
-That is all a raree takes.
+That is all a raree takes. In its card the scene wears eink, in the
+app's appearance, under every look: a card is a thumbnail, and eink is
+the look that costs a page of hundreds nothing. Peeped, it wears the
+app's look.
 
 **A step with no words has no caption.** The opening of a traced
 recording stands under nothing, so its card is the window alone: no

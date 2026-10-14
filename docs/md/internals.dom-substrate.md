@@ -2009,6 +2009,22 @@ system query while no appearance is stamped, and the stamped attribute
 after. The ground is `color.pageGround`'s void, and the dim under a
 sheet is lamp's veil (`writeLampGround`).
 
+The page's look stops at a raree's card. A card's scene wears eink
+(`raree.card_look`; stage.md, "The card and the peep"), and the
+serializer stamps `data-nokre-theme="eink"` on a scene whose look is
+not the page's. Every rule of depth's and lamp's is written inside
+`@scope (:root) to (.stage-scene[data-nokre-theme="eink"])`
+(`page_look_scope`), so none reaches that scene or anything under it,
+and the scene restates the eink ramp and its aliases on itself
+(`writeEinkSceneRamp`), since a ramp is custom properties and the
+page's would inherit through. The live driver measures no plate inside
+such a scene and reads no size off its window. Rules on the root alone,
+the grain and lamp's numbers, stay outside the scope: they reach a
+scene by inheritance at most. Measured on Rokovski Ties' exhibit (318
+cards, headless Chrome at 1180 wide, five scroll jumps): the style
+work per jump under lamp dark before and after is in the commit that
+landed it (2026-10-14).
+
 ### The plate table
 
 `src/render/dom/lamp_plates.zig` names every plate the renderer draws
@@ -2068,6 +2084,15 @@ the numbers.
 
 A page with no runtime publishes nothing, so no lamp paint matches its
 plates: they draw depth's dark fills and chrome, unlit, on the void.
+So does a raree out of the band ("A raree's scene stands where the
+browser says it is near"): its frame and caption are published by the
+frame that brings its scene, and until then the frame is no plate,
+follows no scroll and is drawn as depth's card, a screen or more off
+the window. Every frame on the page followed the scroll before
+(2026-10-14): 318 frames on Rokovski Ties' exhibit were 636
+scroll-driven animations, and twenty scroll steps of 40 px spent 7.1 s
+of style against 22 ms under eink. Nothing inside a scene wearing eink
+is published either (lamp dark on the web, below).
 
 ### Following the scroll
 

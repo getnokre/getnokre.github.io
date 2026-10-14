@@ -445,7 +445,17 @@ window scroll frame at 1800×1100@2 fell from 128 ms to 40 ms on the
 CPU and from 94 ms to 8 ms on the GPU, and at 428×926@3 from 55 ms to
 18 ms and from 25 ms to 5 ms.
 
-**The card and the peep.** Layout (`layoutRaree`) makes the window the
+**The card and the peep.** A card wears eink in the app's appearance
+whatever the app's look (`raree.card_look`, the owner's call of
+2026-10-14): a card is a thumbnail, and under the lamp a page of cards'
+scenes cost the web more than the page (a scroll jump of Rokovski Ties'
+exhibit, 318 cards, spent 360 to 980 ms of style under lamp against 15
+to 37 under eink). The scene app is dressed so (`stage.dressSceneIn`),
+which both substrates read: the renderer draws the scene's own theme in
+the window, and the DOM stamps the scene's look on it and stops every
+rule of the page's look at it (dom-substrate.md, "Lamp dark on the
+web"). The peep is a screen and wears the app's look. Layout
+(`layoutRaree`) makes the window the
 viewport at the largest density from 1:1 down whose width fits the
 column (`layout.rareeDensityAt`: the stage's steps, then past one pixel
 per point on every host, where a stage's zoom stops on a hi-DPI one), so the card keeps the viewport's aspect, and

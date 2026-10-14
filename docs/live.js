@@ -981,6 +981,7 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
   const LAMP_SCROLLPORTS = '.scroll, .region, .sheet, .notices-pane, .picker';
   const LAMP_SIDEWAYS_SCROLLERS = '.seg-track, .table-wrap, .nav-row, pre.code';
   const LAMP_WINDOW = '.stage-window';
+  const EINK_SCENE = '.stage-scene[data-nokre-theme="eink"]';
   const SCENE_VIEWPORT = '.stage-viewport';
   const LAMP_EDGE_BAR_PLATES = '.chip:not(.current), .nav-row > .icon-button, .nav-indicator .icon-button, .notice:not(.notices-pane .notice)';
   const LAMP_EDGE_CHOSEN_PLATES = '.chip.current, .nav.stacked';
@@ -1125,9 +1126,30 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
       if (box) toRoot(names, [box[0], box[1], box[2] - box[0]]);
     };
 
+    // A scene wearing eink under the page (a raree's card) holds no
+    // plate of the page's look: nothing in it is measured, and its
+    // window's size is read by nothing.
+    const inEinkScene = (el) => el.closest(EINK_SCENE) !== null;
+    const holdsEinkScene = (win) => win.querySelector(`:scope > ${SCENE_VIEWPORT} > ${EINK_SCENE}`) !== null;
+    // A raree out of the band stands an empty window (serialize.raree),
+    // and nothing of it is published: its frame is then no plate, so it
+    // runs no scroll-driven animation and is drawn as depth's card, a
+    // screen or more off the window; it is published by the frame that
+    // brings its scene, which the band's report owes before it shows.
+    // Every frame on the page followed the scroll before this: 318
+    // frames on Rokovski Ties' exhibit, 636 animations, and a scroll
+    // step restyled them all.
+    const outOfBand = (el) => {
+      const figure = el.closest("figure.raree");
+      if (!figure) return false;
+      const win = figure.querySelector(LAMP_WINDOW);
+      return win !== null && win.firstElementChild === null;
+    };
+    const unlit = (el) => inEinkScene(el) || outOfBand(el);
     if (lit) {
       for (const host of roots) {
         for (const win of host.querySelectorAll(LAMP_WINDOW)) {
+          if (unlit(win) || holdsEinkScene(win)) continue;
           const r = win.getBoundingClientRect();
           put(writes, win, LAMP_WINDOW_SIZE, [r.width, r.height]);
           // A zoomed scene is lit from the same window, in its pixels.
@@ -1135,12 +1157,13 @@ export async function mount({ wasm, into, worker, content, route, locale, seed, 
           const [num, den] = zoomIn(viewport);
           if (num !== den) put(writes, viewport, LAMP_WINDOW_SIZE, [(r.width * den) / num, (r.height * den) / num]);
         }
-        for (const el of host.querySelectorAll(LAMP_PLATES)) put(writes, el, LAMP_PLATE, atRest(el));
+        for (const el of host.querySelectorAll(LAMP_PLATES)) if (!unlit(el)) put(writes, el, LAMP_PLATE, atRest(el));
         for (const el of host.querySelectorAll(LAMP_SCROLLPORTS)) {
+          if (unlit(el)) continue;
           const [, top, , height] = atRest(el);
           put(writes, el, LAMP_SCROLLPORT, [top, height]);
         }
-        for (const el of host.querySelectorAll(LAMP_SIDEWAYS_SCROLLERS)) put(writes, el, LAMP_SIDEWAYS, [atRest(el)[1]]);
+        for (const el of host.querySelectorAll(LAMP_SIDEWAYS_SCROLLERS)) if (!unlit(el)) put(writes, el, LAMP_SIDEWAYS, [atRest(el)[1]]);
       }
       toRoot(LAMP_WINDOW_SIZE, [root.clientWidth || innerWidth, root.clientHeight || innerHeight]);
       edge(LAMP_EDGE_BAR, LAMP_EDGE_BAR_PLATES, true);
