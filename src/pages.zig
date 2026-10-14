@@ -278,6 +278,14 @@ pub const all = [_]Page{
         .track = .contributor,
     },
     .{
+        .name = "internals.cache_store",
+        .title = .titleInternalsCacheStore,
+        .blurb = .blurbInternalsCacheStore,
+        .icon = .lucide_archive,
+        .md = "internals/cache_store.md",
+        .track = .contributor,
+    },
+    .{
         .name = "internals.oauth",
         .title = .titleInternalsOauth,
         .blurb = .blurbInternalsOauth,

@@ -39,6 +39,7 @@ internals doc.
 | --- | --- | --- |
 | `secure_store` | Encrypted key/value for small secrets: get, set, delete, list. **Never leaves the device.** | **Working** — five native backends; web is session-scoped |
 | `roaming_store` | The same pouch, opposite posture: entries are meant to reach the account's next device. | **Working** — iCloud Keychain on Apple, the platform backup on Android; device-local elsewhere |
+| `cache_store` | Kept copies of documents the app fetched, as bytes up to 64 MiB under a key: get, set, delete, each answered on the UI thread. **A copy the device may lose.** | **Working** — files in the platform's cache directory on five natives; IndexedDB on the web |
 | `package_info` | App identity: name, id, version, build, installer source. One struct. | **Working** |
 | `clipboard` | Copy UTF-8 text out; ask the platform to paste. Still no read. | **Working** |
 | `deep_link` | A link into the app, at launch and while running. The address in it is entered; there is no handler. | **Working** — native; the web's is its address bar; Windows is custom-scheme only |
@@ -347,6 +348,70 @@ driving.
 The wiring — the keychain attributes, the Android backup rules, why
 Block Store is not the Android leg, and what each refusal costs — is
 [internals/roaming_store.md](internals/roaming_store.md).
+
+### cache_store: a copy the device may lose
+
+A document the app fetched and wants to find again at the next launch —
+an exhibit's recordings, a catalog, a page of legal text — as bytes
+under a key, up to 64 MiB a value, behind three asynchronous verbs:
+`get`, `set`, `delete`. Asynchronous on purpose, where the two pouches
+are not: a value here is megabytes read from a disk or an IndexedDB,
+and reading it inside `build` would hold the frame it is deciding, so
+each verb answers the way `http` does — one typed result on the UI
+thread, between events, with the caller's `ctx` and `tag`.
+
+The posture is in the name. Every platform writes where the OS is
+allowed to purge, so `absent` is data the app always handles by going
+back to the source, and nothing it cannot fetch again belongs here.
+Where a value must survive, it is a pouch entry or the app's own
+server; where it must stay secret, it is `secure_store` — a kept copy
+is plaintext in a cache directory.
+
+Like the pouches, the service links and requires `pkg_id`, the store's
+namespace:
+
+```zig
+const nokre = b.dependency("nokre", .{
+    // ...
+    .pkg_id = @as([]const u8, "com.example.notes"),
+    .cache_store = true,
+});
+```
+
+```zig
+// Ask the store first; the network only where it has nothing.
+_ = try nokre.services.cache_store.get(.{
+    .app = app,
+    .key = "catalog.v3",
+    .ctx = state,
+    .on_result = onKept,
+});
+
+fn onKept(ctx: ?*anyopaque, tag: u64, result: nokre.services.cache_store.GetResult) void {
+    switch (result) {
+        .value => |bytes| show(ctx, bytes.take()),  // keep the buffer past the callback
+        .absent, .failure => fetch(ctx),            // the source is always there
+    }
+}
+
+// Once the body arrived: keep it. The bytes are copied at the call.
+_ = try nokre.services.cache_store.set(.{ .app = app, .key = "catalog.v3", .value = body, .on_result = onKeptWritten });
+```
+
+What can refuse at issue is closed and identical on every target:
+`InvalidKey` (the key is outside `[a-z0-9._-]` or past 128 bytes),
+`ValueTooLarge` (past 64 MiB), `OutOfMemory`, `Unavailable` (the
+transport could not start). The one failure a result can carry is
+`"Unavailable"`: the directory could not be made, the file not read or
+written, the browser refused IndexedDB. A `set` is atomic per value — a
+reader finds the old bytes or the new, never a half-written file — and
+there is no `list` and no entry cap: a store of documents is bounded by
+the app's own key set, and eviction is the app's call, by `delete`.
+
+Under `zig test` the store is a mock seeded from `Mock.Config` and
+journaled, so a test seeds a kept document and asserts the app never
+asked the network for it. The wiring per platform is
+[internals/cache_store.md](internals/cache_store.md).
 
 ### clipboard: text out, and a paste the platform performs
 
@@ -2938,7 +3003,9 @@ toolchain:
   thread cannot: typed messaging, in-order UI-thread delivery, the
   deterministic testing story, and the web
   ([internals/workers.md](internals/workers.md)).
-- **Filesystem** — `std.fs`, native only, dev/test affordances.
+- **Filesystem** — `std.fs`, native only, dev/test affordances. A
+  document the app fetched and wants to find again at the next launch is
+  not that: it is `cache_store`, which has a web leg and a mock.
 - **Raw HTTP (native)** — `std.http.Client`, when a blocking call on a
   thread you already own will do. The `http` service adds what the
   bare client cannot: UI-thread delivery, the web, cancellation

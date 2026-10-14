@@ -317,18 +317,61 @@ cap, one to a phone's); then each play on a `stage` on `.data`; then
 the refusals. A failed fetch is written in words where its recording
 would stand, never a panic.
 
-**Asking again.** A manifest that failed to arrive is said in words
-with a "Try again" button under it; recordings that failed are counted
-under the bar ("2 recordings could not be fetched.") with the same
-button, which asks again for every one that failed and for nothing
-that arrived. The same retry runs on its own when the app comes back
-in front (`App.setResumeHandler`), and that is the automatic retry
-rather than one after a delay, because nokre has no timer (the clock
-service's refusals): on an iPhone the first fetch races iOS's
-local-network prompt and fails, and answering the prompt is the app
-coming back. A recording that arrived and that the raree refuses to
-read ("This play could not be loaded.", recorded at another revision
-or shape) is not a failed fetch and is not asked for again; the
+**The kept set.** The exhibit links `cache_store` and keeps what it
+fetched as one value: the manifest and every recording it names, in one
+envelope (`src/exhibit/kept_set.zig` — a magic line, the manifest's
+length and bytes, the count, then each body's length and bytes in the
+manifest's order), under the key `set.<hash>` where the hash is the
+root URL's, sixteen hex digits, in the exhibit's own namespace. One key
+per source, so the host's exhibit and a device's, which name different
+roots, keep separate copies; and one value per set, so the copy is
+atomic by construction — a store writes a value whole or not at all,
+and no manifest can ever name a body it does not hold. At launch the
+exhibit asks the store first and the source only where the store has
+nothing: a kept set is shown at once, usable with the serve down, and
+it stays the page until a refresh *succeeds* — the owner's call
+(2026-10-14, "holds on to it") over refreshing in the background, so the
+page a reader opened is the page they keep looking at. A kept set the
+exhibit refuses (a manifest of another revision, a torn envelope, a
+body the manifest's count does not match) is deleted and the source
+asked as if nothing were kept. A set that came whole — kept, or
+refreshed — is one gpa-owned envelope with each body a slice into it and
+the parsed manifest in an arena beside it; a set fetched piece by piece
+holds one buffer per body until the next launch and builds its envelope
+only for the write. A successful refresh frees the set it replaces after
+the reload, and never before.
+
+**Nothing kept.** The manifest and the recordings are fetched as before,
+each shown as it arrives, a failed fetch written in words where its
+recording would stand, never a panic. A manifest that failed to arrive
+is said with a "Try again" button under it; recordings that failed are
+counted under the bar ("2 recordings could not be fetched.") with the
+same button, which asks again for every one that failed and for nothing
+that arrived. The same retry runs on its own when the app comes back in
+front (`App.setResumeHandler`), and that is the automatic retry rather
+than one after a delay, because nokre has no timer (the clock service's
+refusals): on an iPhone the first fetch races iOS's local-network prompt
+and fails, and answering the prompt is the app coming back. Once every
+recording has arrived the set is written to the store; a store that
+refuses the write, or a set past the store's value cap, is said in words
+under the bar ("Could not keep the recordings: Unavailable.") and the
+page works from the network as it did.
+
+**Refresh source.** Whenever a manifest is shown the bar's row below it
+carries this button. It gathers a new set from the source into a staging
+area of its own — the manifest, then every recording it names — and only
+a complete, parsed set replaces the shown one and then the kept one;
+any failure on the way (a request failed, the server answered other than
+200, the manifest refused) leaves the shown page and the kept copy
+untouched and is said beside the button ("Could not refresh: the server
+answered 404."), where a success says "Refreshed from the source." A
+store that refuses the write after the swap keeps the new page and says
+so ("Refreshed from the source, but could not keep it: Unavailable."):
+the reader asked for the source and got it, and the old copy was no
+truer. While it runs the button is in progress and a second press does
+nothing. A recording that arrived and that the raree
+refuses to read ("This play could not be loaded.", recorded at another
+revision or shape) is not a failed fetch and is not asked for again; the
 manifest's refusals say the same of a file the index refused.
 
 **The icon risk, stated rather than closed.** A stage's icons are

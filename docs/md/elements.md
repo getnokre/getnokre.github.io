@@ -1490,7 +1490,8 @@ film of an app never ships the artwork. This is also how nokre's own
 examples show one: neither is in a store, so the kitchen sink's details
 screen plays the recorded screen of a fixture app
 (`tests/store_badge_site`), and nokre's build hands that recording to a
-site as `store_badge_plays`.
+site as `store_badge_plays`, beside the kitchen sink's own ranking
+(`examples/kitchen_sink/plays.zig`) as `kitchen_sink_plays`.
 
 #### What the vendors ask
 

@@ -721,6 +721,10 @@ fn gallery(app: *App) !void {
         .placeholder = "Whitespace is preserved; the field grows to three lines and then scrolls.",
     });
 
+    try b.heading(.h3, "stage");
+    try b.stage(.{ .play = .{ .declared = .ranking }, .label = "A ranking, played" });
+    try b.styled("A play of another app, filmed here: the screens that app really built in a scenario its build recorded, step by step, with a hand on what it presses and the words of each step under it. Next walks the steps and Play runs them. The recording is the kitchen sink's own, the ranking it plays on its own stage; this one stands it up again at this page's width, in this page's look.", .{ .ink = .mid, .scale = .small });
+
     try b.heading(.h3, "copyable");
     try b.copyable(.{
         .label = "Recovery code",

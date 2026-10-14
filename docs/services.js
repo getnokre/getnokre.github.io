@@ -67,6 +67,11 @@ export function silentHooks() {
     nokre_clock_js_now: () => 0,
     nokre_ss_mirror_set: () => {},
     nokre_ss_mirror_del: () => {},
+    // A compute actor holds no ticket the app instance could land, so
+    // a verb it issued never answers; only the page's instance stores.
+    nokre_cs_js_get: () => {},
+    nokre_cs_js_set: () => {},
+    nokre_cs_js_delete: () => {},
     // A compute instance lays nothing out, so it never asks.
     nokre_dom_measure: () => 0,
     // Nor does it build a screen, so no builder of its can fail.
@@ -135,6 +140,20 @@ export function reportAuthToOpener() {
 // byte per code unit, and values cap at 2560 bytes, so char-at-a-time
 // costs nothing.
 const SS_PREFIX = "nokre.ss.";
+
+// cache_store's IndexedDB schema (docs/internals/cache_store.md, "The
+// web leg"): one database, one object store, the key the full
+// `nokre.cs.<pkg_id>/<key>` string, the value an ArrayBuffer. The
+// prefix lives here beside the database it names, as SS_PREFIX does;
+// wasm sends `<pkg_id>/<key>`.
+const CS_PREFIX = "nokre.cs.";
+const CS_DB = "nokre.cs";
+const CS_STORE = "entries";
+// Statuses mirror `Kind` in services/cache_store/web.zig.
+const CS_VALUE = 0;
+const CS_ABSENT = 1;
+const CS_DONE = 2;
+const CS_FAILURE = 3;
 
 function b64encode(raw) {
   let s = "";
@@ -294,6 +313,67 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
     nk().nokre_http_fail(index, gen, nb.length);
     onWork();
   }
+
+  // ---- cache_store: IndexedDB, opened once on the first verb ----
+
+  // A rejected open is kept, not retried: a browser that refused the
+  // database once (a private window, a blocked origin) refuses it for
+  // the life of the page, and every verb answers "Unavailable".
+  let csDb = null;
+  function csOpen() {
+    csDb ??= new Promise((resolve, reject) => {
+      const req = indexedDB.open(CS_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(CS_STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error("blocked"));
+    });
+    return csDb;
+  }
+
+  // One request in its own transaction, as a promise of its result once
+  // the transaction completes: a request's success precedes the commit,
+  // and a set answered "done" before it is a write the browser may
+  // still abort. Anything that throws on the way — `indexedDB` absent,
+  // a closed database, a transaction the browser refused or aborted —
+  // rejects, and the caller lands it as the one failure the contract
+  // names.
+  function csRequest(mode, act) {
+    return csOpen().then(
+      (db) =>
+        new Promise((resolve, reject) => {
+          const tx = db.transaction(CS_STORE, mode);
+          const req = act(tx.objectStore(CS_STORE));
+          tx.oncomplete = () => resolve(req.result);
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        }),
+    );
+  }
+
+  function csLand(index, gen, kind, payload) {
+    let ptr = nk().nokre_cs_scratch(payload.length);
+    if (!ptr && kind === CS_VALUE) {
+      // A value the wasm heap cannot hold still has to end the verb.
+      kind = CS_FAILURE;
+      payload = bytes.encode("Unavailable");
+      ptr = nk().nokre_cs_scratch(payload.length);
+    }
+    if (!ptr && payload.length) return;
+    if (payload.length) memory().set(payload, ptr);
+    nk().nokre_cs_deliver(index, gen, kind, payload.length);
+    onWork();
+  }
+
+  function csAnswer(index, gen, pending, settled) {
+    pending.then(settled).then(
+      ([kind, payload]) => csLand(index, gen, kind, payload),
+      () => csLand(index, gen, CS_FAILURE, bytes.encode("Unavailable")),
+    );
+  }
+
+  const csKey = (ptr, len) => CS_PREFIX + utf8.decode(memory().subarray(ptr, ptr + len));
+  const EMPTY_CS = new Uint8Array(0);
 
   // ---- photo_pick: the file input, and the one answer it gives ----
   // Statuses mirror NOKRE_PHOTO_PICK_* in services/photo_pick/photo_pick.h.
@@ -745,6 +825,30 @@ export function appHooks({ nk, memory, workerUrl, wasmUrl, onWork, onMetrics, on
     },
     nokre_http_js_cancel: (index, gen) => {
       fetches.get(index + ":" + gen)?.abort();
+    },
+
+    // ---- cache_store (docs/internals/cache_store.md) ----
+    // Every argument is copied before the import returns; the answer
+    // lands whenever IndexedDB gives it.
+
+    nokre_cs_js_get: (index, gen, kPtr, kLen) => {
+      const key = csKey(kPtr, kLen);
+      csAnswer(index, gen, csRequest("readonly", (store) => store.get(key)), (found) => {
+        if (found === undefined) return [CS_ABSENT, EMPTY_CS];
+        // The database is same-origin-writable: anything but the
+        // ArrayBuffer this file stores is not a value of ours.
+        if (!(found instanceof ArrayBuffer)) throw new TypeError("not a cache_store value");
+        return [CS_VALUE, new Uint8Array(found)];
+      });
+    },
+    nokre_cs_js_set: (index, gen, kPtr, kLen, vPtr, vLen) => {
+      const key = csKey(kPtr, kLen);
+      const value = memory().slice(vPtr, vPtr + vLen).buffer;
+      csAnswer(index, gen, csRequest("readwrite", (store) => store.put(value, key)), () => [CS_DONE, EMPTY_CS]);
+    },
+    nokre_cs_js_delete: (index, gen, kPtr, kLen) => {
+      const key = csKey(kPtr, kLen);
+      csAnswer(index, gen, csRequest("readwrite", (store) => store.delete(key)), () => [CS_DONE, EMPTY_CS]);
     },
 
     // ---- oauth (docs/internals/oauth.md) ----

@@ -31,7 +31,7 @@ fn scanEntities(gpa: std.mem.Allocator, out: *std.ArrayList(u21), bytes: []const
         const end = std.mem.indexOfScalarPos(u8, bytes, start, ';') orelse continue;
         const cp = std.fmt.parseInt(u21, bytes[start..end], 16) catch continue;
         i = end + 1;
-        if (inAppMark(bytes, at)) continue;
+        if (inAppMark(bytes, at) or inBrandMark(bytes, at)) continue;
         if (isIconCodepoint(cp)) try appendUnique(gpa, out, cp);
     }
 }
@@ -44,6 +44,23 @@ fn scanEntities(gpa: std.mem.Allocator, out: *std.ArrayList(u21), bytes: []const
 fn inAppMark(bytes: []const u8, at: usize) bool {
     const open = std.mem.lastIndexOfScalar(u8, bytes[0..at], '<') orelse return false;
     return std.mem.startsWith(u8, bytes[open..], "<span class=\"app-mark");
+}
+
+/// Whether the entity at `at` is a sign-in button's vendor mark — the
+/// brand face's (LICENSE-Brand.txt in nokre), which every site serves,
+/// so the icon face rightly has no outline for it either. Apple's is
+/// the whole content of its span; Google's G is four glyphs, each in a
+/// bare span of its own inside the mark's.
+fn inBrandMark(bytes: []const u8, at: usize) bool {
+    const brand_open = "<span class=\"brand-mark";
+    var open = std.mem.lastIndexOfScalar(u8, bytes[0..at], '<') orelse return false;
+    if (std.mem.startsWith(u8, bytes[open..], brand_open)) return true;
+    if (!std.mem.startsWith(u8, bytes[open..], "<span>")) return false;
+    while (std.mem.endsWith(u8, bytes[0..open], ";</span>")) {
+        open = std.mem.lastIndexOf(u8, bytes[0..open], "<span>&#x") orelse return false;
+    }
+    const parent = std.mem.lastIndexOfScalar(u8, bytes[0..open], '<') orelse return false;
+    return std.mem.startsWith(u8, bytes[parent..], brand_open);
 }
 
 fn scanCssEscapes(gpa: std.mem.Allocator, out: *std.ArrayList(u21), css: []const u8) !void {
@@ -74,6 +91,18 @@ test "a mark's glyph is the mark face's, not a missing icon" {
         "<span class=\"app-mark\" role=\"img\" aria-label=\"nokre\">&#xE000;</span>" ++
             "<span class=\"app-mark square\" aria-hidden=\"true\">&#xE000;</span>" ++
             "<span class=\"icon\">&#xE06C;</span>",
+    }, "");
+    defer gpa.free(emitted);
+    try std.testing.expectEqualSlices(u21, &.{0xE06C}, emitted);
+}
+
+test "a sign-in button's vendor mark is the brand face's, not a missing icon" {
+    const gpa = std.testing.allocator;
+    const emitted = try collectEmitted(gpa, &.{
+        "<span class=\"brand-mark\" aria-hidden=\"true\">&#xE900;</span>Sign in with Apple" ++
+            "<span class=\"brand-mark g\" aria-hidden=\"true\">" ++
+            "<span>&#xE901;</span><span>&#xE902;</span><span>&#xE903;</span><span>&#xE904;</span></span>" ++
+            "<span>&#xE06C;</span>",
     }, "");
     defer gpa.free(emitted);
     try std.testing.expectEqualSlices(u21, &.{0xE06C}, emitted);

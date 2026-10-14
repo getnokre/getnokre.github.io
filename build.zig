@@ -82,11 +82,15 @@ pub fn build(b: *std.Build) void {
         // can show, and published under `pictures_dir` by the
         // generator (src/main.zig).
         .pictures = &.{.{ .name = "hills", .png = b.path("assets/pictures/hills.png") }},
-        // The gallery's store_badge specimen: this site is in no store,
-        // so it shows another app's recorded badge screen on a stage
-        // (docs/elements.md, "store_badge"). nokre's build records the
-        // fixture's play and offers it under this name.
-        .shows = &.{.{ .recordings = dep.namedLazyPath("store_badge_plays"), .play = "store-badges" }},
+        // The gallery's stages: its store_badge specimen, another app's
+        // recorded badge screen since this site is in no store
+        // (docs/elements.md, "store_badge"), and its stage specimen, the
+        // kitchen sink's ranking. nokre's build records both and offers
+        // them under these names.
+        .shows = &.{
+            .{ .recordings = dep.namedLazyPath("store_badge_plays"), .play = "store-badges" },
+            .{ .recordings = dep.namedLazyPath("kitchen_sink_plays"), .play = "ranking" },
+        },
         .theme = .lamp,
         // The key rule only. This site's catalog gives nokre's chrome
         // its words; its prose is English by decision, written in the
