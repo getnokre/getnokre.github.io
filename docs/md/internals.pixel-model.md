@@ -1,7 +1,9 @@
 # The pixel model
 
 nokre's promise: **same logical viewport ⇒ same bytes**, every run and
-every machine, on the platform that drew them. Why that promise is worth
+every machine, on the platform that drew them — on the CPU raster, which
+every golden draws; a device's GPU frame is the driver's bytes
+([gpu.md](gpu.md#gpu-first-2026-10-15)). Why that promise is worth
 making — and why it deliberately stops at the platform's edge — is
 [introduction.md](../introduction.md)'s story; this document is the
 normative contract that makes it true.

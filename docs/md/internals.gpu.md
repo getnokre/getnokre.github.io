@@ -1,10 +1,11 @@
 # The GPU: a reversed refusal
 
-nokre refused the GPU from its first release, and on 2026-09-26 the owner
-reversed that refusal for one reason: the `lamp` theme
-([lamp.md](lamp.md)). This file is the record — what was refused and
+nokre refused the GPU from its first release. On 2026-09-26 the owner
+reversed that refusal for one reason, the `lamp` theme
+([lamp.md](lamp.md)), and on 2026-10-15 widened it to every look on
+macOS, iOS and Android. This file is the record — what was refused and
 why, what changed, what stays exactly as it was, and the plan that
-proves the reversal on one platform before any other shell moves. The
+proved the reversal on one platform before any other shell moved. The
 build that carries the GPU backend is
 [skia-build.md](skia-build.md#macos-with-metal-the-gpu-build); the
 refusal list that points here is
@@ -45,16 +46,58 @@ chose the second. **The design's effects are not to be reduced** —
 fewer lights, a smaller blur, or a coarser grain would be a different
 theme, and lamp is the theme that was designed. So the GPU draws lamp.
 
+## GPU first (2026-10-15)
+
+The look no longer decides the raster. On macOS (arm64), iOS and
+Android every app, whatever look it declares, is built with the GPU
+raster — Ganesh on Metal on Apple, on Vulkan on Android — and keeps the
+CPU raster in the same binary, which a device whose GPU refuses draws
+on at run time. `AppOptions.raster` keeps `.cpu` as the explicit
+opt-out and `.gpu` as an explicit ask; null is nokre's table
+([Consumers](#consumers)).
+
+The measured reason is in the tables below ([What the shaders
+measure](#what-the-shaders-measure)): on an M4, eink and depth raster in
+about half the CPU's time on the GPU, and lamp holds the display's rate
+only there. What the first decision kept for eink and depth — their
+device bytes held to the goldens — was worth less than that, in the
+owner's reasoning: text rendering already differs per platform, which is
+why goldens are per-platform; the difference between GPU drivers is
+negligible beside it; the goldens stay on the CPU; and builds come from
+one dedicated machine. The first frame after an install compiles the
+shaders, a one-time cost accepted; battery is not a concern, because
+nokre draws a frame only when something changed.
+
+**Windows and Linux (x86_64) stay on the CPU for now**, by nokre's
+decision, stated in one table in src/raster.zig: their Vulkan paths
+exist in the shim but have never drawn a frame on real hardware
+([Windows](#windows), [Linux](#linux)), and nokre publishes no GPU
+archive for them. Asking for `.gpu` there is refused with a message.
+rokovski ships on the web, Android and iOS first; the desktops are
+built the same way now so the GPU never becomes a bolt-on there later,
+and moving one is a row in that table plus a published archive.
+
+**No silent fallback at build time.** A GPU archive missing from `deps/`
+fails the build, naming how to get it; the lamp app that built on the
+CPU with a note is gone. nokre supplies the archives, so a consumer
+never runs a Skia build script ([skia-build.md](skia-build.md#today-published-archives)).
+
+Intel Macs are dropped, an unsupported target. arm64 Windows and Linux
+are future targets, refused clearly for now rather than quietly drawn
+on the CPU.
+
 ## What stays
 
-The reversal spends the promise for GPU-backed frames and nothing else:
+Both reversals together spend the promise for frames drawn on a device
+and nothing else:
 
-- **The CPU raster path remains**, in every build, on every shell. An
-  app that does not declare lamp, and every test, builds byte-for-byte
-  what it did.
-- **eink and depth stay CPU-exact.** They never needed the GPU, and
-  their bytes keep the full promise of
-  [pixel-model.md](pixel-model.md).
+- **The CPU raster path remains**, in every binary, on every shell: the
+  run-time fallback where the GPU is the build, the raster where the
+  table or a `.cpu` declaration says so.
+- **A device's frame is the driver's.** On the GPU platforms eink and
+  depth are no longer promised the goldens' bytes on a device, as lamp
+  never was; [pixel-model.md](pixel-model.md)'s promise is the CPU
+  raster's, which every golden, driver and harness draws.
 - **The CPU path is the golden oracle.** The committed golden set is
   CPU bytes, generated and compared exactly as before; the planners,
   partial-raster proofs and `skia_test`'s kept-bytes checks all run
@@ -119,10 +162,10 @@ macOS and Metal first, as a go/no-go:
    macOS arm64 (Windows and Linux followed, below): the shim compiles with `NOKRE_GPU`
    plus `shim/nokre_skia_mtl.mm` against `deps/skia-macos-gpu`, and the
    app links that archive with Metal, QuartzCore and IOSurface in place
-   of the prebuilt. It is now the examples' explicit `.raster = .gpu`,
-   and a consumer's app resolves its own ([Consumers](#consumers)). The
-   example drivers and `bench-lamp` import the app's module, so under
-   `-Dgpu` they link the GPU shim and, with no layer attached, draw on
+   of the prebuilt. It is now tri-state, and an example without it
+   takes the table as a consumer's app does ([Consumers](#consumers)). The
+   example drivers and `bench-lamp` import the app's module, so on the
+   GPU they link the GPU shim and, with no layer attached, draw on
    the CPU through it.
 3. The shim's GPU path. *Built.* One `GrDirectContext` over the layer's
    device, made when the shell attaches its layer; per frame the
@@ -144,31 +187,31 @@ macOS and Metal first, as a go/no-go:
 8. Android, on Vulkan. *Built*, verified on the emulator and on a MediaTek tablet
    ([Android](#android)).
 9. Windows, on Vulkan. *Written and compile-checked, unverified: no
-   machine* ([Windows](#windows)).
+   machine; not offered* ([Windows](#windows)).
 10. Linux (Wayland), on Vulkan. *Written and compile-checked,
-    unverified: no machine* ([Linux](#linux)).
+    unverified: no machine; not offered* ([Linux](#linux)).
 
 ### iOS
 
 The shim's Metal half is platform-neutral, so iOS moves the shell
 alone. `tools/build-skia-ios.sh --gpu` builds the macOS GPU profile for
 both SDKs into `deps/skia-ios-gpu`
-([skia-build.md](skia-build.md#ios-built-from-source)); `-Dgpu` on an
+([skia-build.md](skia-build.md#ios-built-from-source)); the GPU on an
 iOS target compiles the shim with `NOKRE_GPU` and
 `shim/nokre_skia_mtl.mm` against it. The shell is compiled by Xcode,
 not zig, so it learns the raster from the packaging tree, as a
-consumer's does ([Consumers](#consumers)); the example project's one
-setting, `NOKRE_RASTER=gpu`, only passes `-Dgpu` to the Zig phase.
+consumer's does ([Consumers](#consumers)); the example project's
+`NOKRE_RASTER` setting only passes nokre's `-Dgpu` to the Zig phase.
 
 ```
 xcodebuild -project examples/kitchen_sink/ios/KitchenSink.xcodeproj \
   -scheme KitchenSink -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  NOKRE_RASTER=gpu build
+  build
 ```
 
 On the iOS 26.5 Simulator (iPhone 17 Pro, 1206×2436 frame), the kitchen
 sink in lamp dark drew on the Mac's GPU through the Simulator's Metal,
-and a screenshot of it against the same build without the flag differs
+and a screenshot of it against the same build on the CPU differs
 by at most 1 over the ground and 14 at most in the nav chip's frost and
 glyph edges (mean 0.002 over the whole frame) — `check-gpu`'s split,
 roughly, not held. Launch frames, Simulator only and not a device
@@ -240,19 +283,20 @@ suboptimal answer still remakes the swapchain.
 The SkSL shaders compile to SPIR-V unchanged. `allowEs3` is still
 needed: the SkSL 100 limit is the front end's, before any backend.
 
-The example project's `nokreRaster=gpu` property passes `-Dgpu` to both
-of its zig builds; the Zig checks the archive exists and is otherwise
-the same either way. What CMake compiles — `nokre_skia_vk.cpp`, the
+The example project's `nokreRaster` property passes nokre's `-Dgpu`
+to both of its zig builds, and unset leaves the table's answer; the Zig
+checks the archive exists and is otherwise the same either way. What CMake compiles — `nokre_skia_vk.cpp`, the
 shim and shell.c with `NOKRE_GPU=1` against `deps/skia-android-gpu`
 ([skia-build.md](skia-build.md#android-built-from-source-freetype-from-memory))
 — it reads from the packaging tree, as a consumer's does
 ([Consumers](#consumers)). The GPU build's `minSdk` is 30, Android 11,
-the floor set for it; the CPU build's stays 26. `zig build check-targets` parses shell.c both
+the floor set for it, so an app on the table's answer needs Android 11;
+a `.cpu` build's stays 26. `zig build check-targets` parses shell.c both
 ways and the Vulkan half with the NDK's clang, when an NDK is found.
 
 ```
 cd examples/kitchen_sink/android
-./gradlew installDebug -PnokreRaster=gpu
+./gradlew installDebug
 ```
 
 `adb shell setprop debug.nokre.frame_log 1` before launch logs the
@@ -430,14 +474,18 @@ command, and it stays for a person to try by hand.
 One cost does depend on orientation, and it stays. On the CPU raster
 the tablet in full-screen landscape rasterises in 9.0 ms against 7.5 in
 portrait, because the display hardware rotates the buffer. Accepted
-for the CPU raster (owner, 2026-09-28): an app that needs full rate in
-every orientation declares lamp and takes the GPU raster, which
-pre-rotates.
+for the CPU raster (owner, 2026-09-28), when an app that needed full
+rate in every orientation took the GPU raster by declaring lamp; every
+app takes it since 2026-10-15, and the cost stays only with a `.cpu`
+build or a device whose GPU refuses.
 
 ### Windows
 
-Vulkan, one backend — no GL, no ANGLE, no Direct3D — and the CPU
-presenter the only fallback. `-Dgpu` on the Windows target
+Not offered: src/raster.zig's table keeps Windows on the CPU, and
+`.gpu` there is refused ([GPU first](#gpu-first-2026-10-15)). What the
+path is, for the day the table moves it: Vulkan, one backend — no GL,
+no ANGLE, no Direct3D — and the CPU presenter the only fallback. A GPU
+build on the Windows target
 (x86_64-windows-msvc, as every Windows `-Dskia` build is) compiles the
 shim with `NOKRE_GPU` and `shim/nokre_skia_vk.cpp` against
 `deps/skia-windows-gpu`, which `tools/build-skia-windows.sh` builds
@@ -479,7 +527,9 @@ unknown.
 
 ### Linux
 
-Wayland, Vulkan, the same one backend and the same fallback. `-Dgpu` on
+Not offered, as Windows is not: src/raster.zig's table keeps Linux on
+the CPU. What the path is: Wayland, Vulkan, the same one backend and
+the same fallback. A GPU build on
 an x86_64 Linux target compiles the shim with `NOKRE_GPU` and
 `shim/nokre_skia_vk.cpp` against `deps/skia-linux-gpu`
 (`tools/build-skia-linux.sh`), and shell.c with `NOKRE_GPU`. The
@@ -528,7 +578,7 @@ unknown.
 
 ### The shaders
 
-Under `-Dgpu`, on a surface that draws on the GPU (`hsk_surface_is_gpu`:
+In a GPU build, on a surface that draws on the GPU (`hsk_surface_is_gpu`:
 a layer is attached, or the surface was made to), the lamp's ops no
 longer ask the renderer for tiles. canvas_skia.zig plans each op as it
 always did and hands the shim the planner's parameter block and the
@@ -748,7 +798,7 @@ over every frame. `raster` is everything before the submit; on the GPU
 it is the record (the tree walk and the op list, the planners
 included), the wait for a drawable and the replay onto the canvas, and
 `present` is the submit and the present. The CPU columns are the same
-build without `-Dgpu`.
+build on the CPU (`-Dgpu=false` since the table moved).
 
 | Theme, window | CPU raster | CPU present | CPU interval | GPU raster | GPU present | GPU interval |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -799,23 +849,26 @@ CPU is the tree walk and the op list; what is left on the GPU is about
 
 ## Consumers
 
-A consumer's app takes the GPU the way it takes its look: from its
-build.zig declaration, `AppOptions.raster` (`nokre.Raster`), resolved by
-`addApp` against the GPU archives in the nokre checkout
-(src/raster.zig holds the table and which script builds each archive):
+A consumer's app takes its raster from its build.zig declaration,
+`AppOptions.raster` (`nokre.Raster`), resolved by `addApp` against
+src/raster.zig's table — the raster each target is offered, and the
+archive in the nokre checkout's `deps/` each raster links. The look plays
+no part ([GPU first](#gpu-first-2026-10-15)):
 
-| `raster` | GPU archive built | Not built | No GPU archive for the target |
-| --- | --- | --- | --- |
-| null, look `lamp` | GPU | CPU, and a build note naming the script | CPU, noted |
-| null, `eink` or `depth` | CPU | CPU | CPU |
-| `.gpu` | GPU | the build fails, naming the script | the build fails |
-| `.cpu` | CPU | CPU | CPU |
+| `raster` | macOS arm64, iOS, Android (offered the GPU) | Windows and Linux x86_64 (offered the CPU) |
+| --- | --- | --- |
+| null | GPU | CPU |
+| `.gpu` | GPU | refused, with a message |
+| `.cpu` | CPU | CPU |
 
-The targets with an archive are macOS arm64, iOS, Android, and Windows
-and Linux x86_64; every other native target is the last column, and the
-web ignores the field (the browser draws, [dom-substrate.md](dom-substrate.md)).
-The note is printed once per build, while the graph is made, however
-many lamp apps the build holds.
+Whatever the answer, the archive it names is on disk or the build
+fails, naming how to get it: nothing is noted and nothing falls back
+while the graph is made. `tools/fetch-deps.sh` fetches every archive
+([skia-build.md](skia-build.md#today-published-archives)). Every other
+native target — an Intel Mac, arm64 Windows or Linux — is refused, and
+the web ignores the field (the browser draws, [dom-substrate.md](dom-substrate.md)).
+A GPU build still carries the CPU raster, which a device whose GPU
+refuses draws on at run time.
 
 **One declaration, every artifact.** The desktop executable links the
 GPU shim, the archive and the shell compiled with `NOKRE_GPU`
@@ -839,16 +892,21 @@ whatever this build's own target is — `zig build pkg` runs for the host:
   dependency), and the link reruns because the shim archive changed.
 - `pkg/android/raster.cmake` sets the archive, the shim's Vulkan half,
   its defines and include directories for a CMakeLists to `include()`
-  with `NOKRE_ROOT` and `ANDROID_ABI` set, and fails naming the script
-  when the archive is missing; `package.properties` carries `min_sdk`,
+  with `NOKRE_ROOT` and `ANDROID_ABI` set, and fails naming how to get
+  the archive when it is missing; `package.properties` carries `min_sdk`,
   30 for the GPU and 26 otherwise, for Gradle's `minSdk`.
 
 The example projects read the same files, so a copied project needs no
-switch of its own. What stays on the CPU whatever the declaration says:
+switch of its own. Theirs is nokre's own `-Dgpu`, tri-state like the
+declaration: absent is the table, `-Dgpu=true` declares `.gpu` and
+`-Dgpu=false` declares `.cpu`, the way to build an example on the CPU
+for comparison. The Xcode projects pass it from `NOKRE_RASTER` and the
+Gradle ones from `nokreRaster` (`gpu` or `cpu`), and unset is the
+table. What stays on the CPU whatever the declaration says:
 `addGoldenTests` and `linkSkia` (the golden oracle), the harness, and
 `addDriver` and `addDevStoreDriver` — a driver presents no window (it
 names the headless shell) and links the CPU shim through `linkSkia`.
-`tests/declared_raster.zig` holds the link: a lamp app built through
+`tests/declared_raster.zig` holds the link: an app built through
 `addApp` asks the shim it linked whether it draws on the GPU, against
 what the build resolved.
 
@@ -856,13 +914,13 @@ what the build resolved.
 
 What each shell presents with today, and what the GPU path makes it:
 
-| Shell | Today (CPU) | GPU |
+| Shell | CPU | GPU |
 | --- | --- | --- |
-| macOS | the frame copied into an IOSurface on the view's layer, display-link paced | Metal: `CAMetalLayer`, the same display link, a resize presented in its transaction (`-Dgpu`, built) |
-| iOS | the frame copied into an IOSurface on the view's layer, `CADisplayLink` paced — macOS's presenter | Metal: the view's layer a `CAMetalLayer` (`+layerClass`), the same display link, a layout's frame presented in its transaction (`-Dgpu`, built; simulator-verified, unverified on a device) |
-| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, pre-rotated to the display's turn, still Choreographer paced, remade when the window's size or the turn moves (`nokreRaster=gpu`, built; verified on a MediaTek tablet) |
-| Windows | the frame swizzled into a DIB section and `BitBlt` to the window, paced by a `DwmFlush` frame clock (unverified: no machine) | Vulkan: a FIFO swapchain over the `HWND` (`VK_KHR_win32_surface`, `vulkan-1.dll` opened at run time), the same clock, remade at `WM_SIZE` (`-Dgpu`; written, compile-checked, unverified: no machine) |
-| Linux | `wl_shm` double buffer, paced by the surface's frame callback (unverified: no machine) | Vulkan: a FIFO swapchain over the `wl_surface` (`VK_KHR_wayland_surface`, `libvulkan.so.1` opened at run time), sized by the shell, presented on the frame callback (`-Dgpu`; written, compile-checked, unverified: no machine) |
+| macOS | the frame copied into an IOSurface on the view's layer, display-link paced | Metal: `CAMetalLayer`, the same display link, a resize presented in its transaction (built; the table's answer) |
+| iOS | the frame copied into an IOSurface on the view's layer, `CADisplayLink` paced — macOS's presenter | Metal: the view's layer a `CAMetalLayer` (`+layerClass`), the same display link, a layout's frame presented in its transaction (built, the table's answer; simulator-verified, unverified on a device) |
+| Android | `SurfaceView` + `ANativeWindow_lock`, Choreographer paced | Vulkan: a FIFO swapchain on the same `SurfaceView`'s window, pre-rotated to the display's turn, still Choreographer paced, remade when the window's size or the turn moves (built, the table's answer; verified on a MediaTek tablet) |
+| Windows | the frame swizzled into a DIB section and `BitBlt` to the window, paced by a `DwmFlush` frame clock — the table's answer (unverified: no machine) | Vulkan: a FIFO swapchain over the `HWND` (`VK_KHR_win32_surface`, `vulkan-1.dll` opened at run time), the same clock, remade at `WM_SIZE` (written, compile-checked, unverified: no machine; not offered) |
+| Linux | `wl_shm` double buffer, paced by the surface's frame callback — the table's answer (unverified: no machine) | Vulkan: a FIFO swapchain over the `wl_surface` (`VK_KHR_wayland_surface`, `libvulkan.so.1` opened at run time), sized by the shell, presented on the frame callback (written, compile-checked, unverified: no machine; not offered) |
 
 The web is not on this list: the DOM substrate has no Skia and no frame
 of its own ([dom-substrate.md](dom-substrate.md)).

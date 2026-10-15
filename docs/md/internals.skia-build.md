@@ -3,32 +3,32 @@
 nokre uses Skia as a rasterizer behind a ~15-function C shim
 ([shim/nokre_skia.h](../../shim/nokre_skia.h)). No PDF, no animation
 modules — the shim is the entire contract, which is what makes swapping
-or shrinking Skia later a contained problem. Every default build is CPU
-raster only; the GPU backend for the `lamp` theme — Ganesh on Metal on
-Apple, Ganesh on Vulkan on Android, one per platform — is in separate
-archives built below and linked only for an app whose declaration
-resolves to the GPU ([gpu.md](gpu.md) records why, and its
-[Consumers](gpu.md#consumers) section the resolution); Ganesh on Vulkan
-on Windows and Linux is scripted and unrun.
+or shrinking Skia later a contained problem. Each target has a CPU
+archive and, where src/raster.zig's table offers the GPU, a GPU one —
+Ganesh on Metal on Apple, Ganesh on Vulkan on Android, one backend per
+platform — and an app links the one its declaration resolves to
+([gpu.md](gpu.md) records why the GPU comes first, and its
+[Consumers](gpu.md#consumers) section the resolution). Ganesh on Vulkan
+on Windows and Linux is scripted and unrun, and not offered.
 
-**What a consumer builds.** Every archive lives in the nokre checkout's
-`deps/`, so the scripts run there, once per machine and per Skia pin,
-and never in a consumer's tree. The CPU ones are the prerequisite of any
-native build: `tools/fetch-deps.sh` for the desktops, and
-`tools/build-skia-ios.sh` and `tools/build-skia-android.sh` for the two
-mobile targets. The GPU ones are the prerequisite of a *fast* lamp app,
-not of a working one: an app declaring `lamp` builds without them, on
-the CPU, and the build names the missing script — `tools/build-skia-macos.sh`,
-`tools/build-skia-ios.sh --gpu`, `tools/build-skia-android.sh --gpu`,
-and `tools/build-skia-windows.sh` and `tools/build-skia-linux.sh`, each
-of the last two on its own OS. Only an explicit `.raster = .gpu` makes
-one a hard prerequisite.
+**What a consumer builds.** No Skia. Every archive lives in the nokre
+checkout's `deps/`, and `tools/fetch-deps.sh` fetches them there, once
+per machine and per Skia pin; a consumer never runs a `build-skia-*`
+script. Those scripts are how nokre produces the archives it publishes
+for a release, and each section below names the one behind an archive.
+An archive missing from `deps/` fails the build, naming how to get it.
 
-## Today: prebuilts
+## Today: published archives
 
-`tools/fetch-deps.sh` downloads a pinned prebuilt
-([aseprite/skia](https://github.com/aseprite/skia/releases), tag
-`m124-08a5439a6b`) into `deps/skia/` (gitignored):
+`tools/fetch-deps.sh` fetches two kinds of archive, each sha256-pinned
+in `tools/versions.sh` beside `SKIA_TAG`. nokre's own — `skia-macos-gpu`,
+`skia-ios`, `skia-ios-gpu`, `skia-android` and `skia-android-gpu` — are
+assets of the GitHub release `deps-skia-<SKIA_TAG>` on getnokre/nokre,
+fetched on a macOS arm64 host, the one that builds for every target
+they serve; the repository is private, so they download through `gh`,
+which must be signed in. The desktops' CPU archive is still a pinned
+third-party prebuilt ([aseprite/skia](https://github.com/aseprite/skia/releases), tag
+`m124-08a5439a6b`), into `deps/skia/` (gitignored):
 
 ```
 deps/skia/
@@ -53,7 +53,8 @@ only C++ in the project.
 
 ## iOS: built from source
 
-No prebuilts exist for iOS, so `tools/build-skia-ios.sh` compiles the
+No third-party prebuilt exists for iOS, so `tools/build-skia-ios.sh`, run
+for a release and published, compiles the
 same pinned tag from source into
 `deps/skia-ios/{iphoneos,iphonesimulator}/libskia.a` — CPU raster only
 (no GPU backends, codecs, or shaping modules; none need third-party
@@ -97,13 +98,12 @@ framework, so the build still needs no third-party checkouts; it takes
 a few minutes on Apple Silicon and refuses an Intel Mac, whose shell
 could not link an arm64 archive.
 
-`tools/fetch-deps.sh` does not run it, the same as the iOS and Android
-builds: fetch-deps fetches published archives, and this one is built
-locally until the release artifacts below exist. A GPU raster links it
+Like the iOS and Android builds it is run for a release, and
+`tools/fetch-deps.sh` fetches what it published. A GPU raster links it
 — the shim's GPU half (`shim/nokre_skia_mtl.mm`, compiled with the
 archive's client defines `SK_GANESH` and `SK_METAL`), the GPU archive,
-Metal, QuartzCore and IOSurface — for a lamp app, or any app under
-`.raster = .gpu` or nokre's own `-Dgpu` ([gpu.md](gpu.md#consumers)). Every codec is off in
+Metal, QuartzCore and IOSurface — for every macOS app but one declaring
+`.cpu` ([gpu.md](gpu.md#consumers)). Every codec is off in
 this archive as in iOS's, so the shim carries the same PNG encoder stub
 (`shim/nokre_skia_nocodec_stub.cpp`), and the script ships skcms's two
 public headers beside `include/`, since `SkColorSpace.h` includes them.
@@ -123,9 +123,9 @@ determinism that travels. What it gave up is the other half, knowingly.
 
 ## Android: built from source, FreeType from memory
 
-`tools/build-skia-android.sh` compiles the same minimal profile with the
-NDK's toolchain into `deps/skia-android/<abi>/libskia.a` (arm64-v8a by
-default; `ABIS="arm64-v8a x86_64"` for Intel-host emulators). Android
+`tools/build-skia-android.sh`, run for a release and published, compiles
+the same minimal profile with the NDK's toolchain into
+`deps/skia-android/<abi>/libskia.a` (arm64-v8a by default; `ABIS="arm64-v8a x86_64"` for Intel-host emulators). Android
 *has* a platform fontmgr, but using it would mean expat plus whatever
 fonts the device ships — so the build keeps the memory-only manager
 (the shim selects it under `__ANDROID__`) and the same three pinned
@@ -186,9 +186,9 @@ headers beside it.
 Both are **unrun**: written on a Mac, which can build neither, so no gn
 argument above has been through gn on its platform, and whether the
 Windows archive still wants the zlib stub the prebuilt needs is
-unknown. An explicit `.gpu` (or `-Dgpu`) without the archive stops the
-build before compiling and names the script; a lamp app without it
-builds on the CPU and prints a note naming the script. Every default build is untouched.
+unknown. Neither is published, and src/raster.zig's table keeps both
+desktops on the CPU, so `.gpu` there is refused
+([gpu.md](gpu.md#gpu-first-2026-10-15)).
 
 ## Which scaler, and why it is not one scaler
 
@@ -211,19 +211,19 @@ one code path on every platform, and makes glyph choice and advances
 (integer 26.6 math) platform-identical while rasterization stays each
 scaler's own.
 
-## Next: nokre-owned builds
+## Next: the desktops' archives
 
-A packaging errand ([../roadmap.md](../roadmap.md)): the desktop targets
-depend on someone else's release cadence for an archive carrying far more
-Skia than the shim asks for, while iOS and Android already compile the
-minimal profile from source. The plan, in order:
+A packaging errand ([../roadmap.md](../roadmap.md)). nokre publishes
+every mobile archive and every GPU archive the table offers; what is
+still someone else's is the desktops' CPU archive, aseprite's prebuilt,
+which carries far more Skia than the shim asks for. What is open:
 
-1. Build the same minimal profile for the remaining targets — macOS and
-   Windows — stripped to CPU raster, no GPU (`skia_use_gl=false` etc.),
-   no image codecs, keeping each target's existing font backend.
-2. Publish as GitHub release artifacts; point `fetch-deps.sh` at them.
-3. Regenerate the golden set once, on macOS, if the new archive moves a
-   byte.
+1. Build the minimal profile for the desktops' CPU raster — macOS,
+   Windows and Linux — with no GPU backend and no image codecs, keeping
+   each target's existing font backend, publish it beside the others,
+   and regenerate the golden set once, on macOS, if it moves a byte.
+2. Publish the Windows and Linux GPU archives when the table moves
+   those desktops to the GPU ([gpu.md](gpu.md#gpu-first-2026-10-15)).
 
 The shim API does not change at any step, and neither does the scaler
 question above: this is about what nokre ships, not about making every

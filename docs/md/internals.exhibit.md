@@ -246,7 +246,8 @@ since a file reference expands no build setting, and nothing is written
 into nokre's checkout. The project compiles `shell.m` and no service
 source: the exhibit links none. `NOKRE_RASTER` is the kitchen sink's
 override of nokre's own `-Dgpu` and is not carried: the exhibit's raster
-derives from the app's theme, as any app's does.
+is the app's declaration resolved against nokre's table, as any app's
+is ([gpu.md](gpu.md#consumers)).
 
 nokre proves it on the kitchen sink: `zig build -Dtarget=aarch64-ios
 exhibit-ios` is the step the project names, `zig build
@@ -276,9 +277,9 @@ tree and `raster.cmake` are read off the prefix, as a copied project
 reads them off `zig build pkg`, and the library is linked from
 `lib/` by `app/src/main/cpp/CMakeLists.txt`. No shim is installed —
 the Gradle project compiles it with the NDK, as every Android project
-does — and the raster derives from the app's theme, so a lamp app's
-exhibit links the GPU archive `tools/build-skia-android.sh --gpu`
-built, named by `raster.cmake` when it is missing. Only the shell's
+does — and the raster is the app's declaration resolved against
+nokre's table, so an exhibit links the GPU archive `tools/fetch-deps.sh`
+fetched, named by `raster.cmake` when it is missing. Only the shell's
 Java is compiled: the exhibit links no service. There is no
 local-network purpose to state: Android asks none, and the exhibit
 fetches over its own sockets, which the platform's cleartext policy

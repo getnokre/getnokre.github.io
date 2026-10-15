@@ -101,12 +101,13 @@ reader on it.
 
 ## 4. Skia, smaller and published
 
-The desktop builds link a pinned third-party prebuilt that carries far
-more Skia than the ~15-function shim asks for; iOS and Android already
-compile the minimal profile from source. Building that same profile for
-every Skia target and publishing the archives as release artifacts —
-plan in [internals/skia-build.md](internals/skia-build.md) — removes a
-setup step and a dependency on someone else's release cadence. It is a
+nokre publishes its mobile and GPU archives, and `tools/fetch-deps.sh`
+fetches them, so a consumer runs no Skia build. The desktops' CPU raster
+still links a pinned third-party prebuilt that carries far more Skia
+than the ~15-function shim asks for. Building the minimal profile for it
+and publishing that too — what is open is in
+[internals/skia-build.md](internals/skia-build.md) — removes the last
+dependency on someone else's release cadence. It is a
 packaging errand, not a determinism one: each platform keeps the text
 scaler it has.
 
