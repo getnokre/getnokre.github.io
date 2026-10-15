@@ -2316,8 +2316,9 @@ transparency cascade existed to stop the template's fake words
 rendering, and there are no fake words any more.
 
 A pending value emits `<i class="pending" aria-hidden="true">` holding
-one empty `<b>` per character — each an inline-block `1ch` wide, the
-reference advance the Skia substrate measures its block in, so the two
+one empty `<b>` per character — each an inline-block `0.72ch` wide
+(`pending.char_advance_hundredths_of_reference`), the advance the Skia
+substrate measures its block in, so the two
 agree on a width rather than one computing from a measurer and the
 other from line boxes. Cells and not one sized box, because a browser
 never breaks inside an atomic inline and always may between two (CSS

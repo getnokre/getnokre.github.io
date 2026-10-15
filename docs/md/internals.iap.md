@@ -38,7 +38,7 @@ nokre.services.iap.setHandler(app, .bind(onPurchase, state)); // the stream
 _ = try nokre.services.iap.products(.{ … });         // verb: catalog
 try nokre.services.iap.purchase(.{ … });             // verb: sheet up
 nokre.services.iap.finish(app, txn_id, .consumed);   // verb: delivered
-try nokre.services.iap.restore(app);                 // verb: Apple's control
+try nokre.services.iap.restore(app);                 // verb: replay what is owned
 ```
 
 Each line's contract — when the query is legal, why the stream is the
@@ -92,7 +92,7 @@ the product type it already knows; Play does not.
 
 `oauth`'s line, applied again:
 
-- **No receipt verification.** The `token` (Apple's JWS, Play's purchase token)
+- **No receipt verification.** The `token` (Apple's app receipt, Play's purchase token)
   is opaque bytes nokre never reads. The app sends it to its backend, which
   calls the App Store Server API or the Play Developer API. Verifying on the
   device is verifying with the attacker's copy of the key, and doing it in the
@@ -247,9 +247,11 @@ Canonical fake, journaling, no transport semantics for the consumer to implement
   boots the app onto a storeless platform, `lockStore`'s twin for a
   different store) and an optional auto-outcome for `purchase`.
 - **Journals**: `queries()` (the id sets asked for), `purchases()` (every
-  `purchase` call, in order), `completions()` (id + disposition), `restores()`. So
-  "the app charged for the wrong SKU", "the app never finished the transaction",
-  and "the app has no Restore control" are assertions rather than hopes.
+  `purchase` call, in order, with the account it was bought under),
+  `completions()` (id + disposition), `restores()` (how many times the app
+  called it). So "the app charged for the wrong SKU", "the app bought under
+  the wrong account" and "the app never finished the transaction" are
+  assertions rather than hopes.
 - **HarnessApp verbs**, named away from `secure_store`'s `store` vocabulary so the
   two never read as one service: `deliverPurchase`, `cancelPurchase`,
   `failPurchase`, `deliverProducts`, `failProducts`, `expectFinished`. Each pumps

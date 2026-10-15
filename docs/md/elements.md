@@ -142,7 +142,14 @@ if (!try b.loadGate(state.view.phase, .{
 ```
 
 It returns whether to continue: `true` on `.ready` (having appended
-nothing), `false` otherwise (having rendered the phase). `.idle` and
+nothing), `false` otherwise (having rendered the phase). The loading
+words stand in a `stand_in` named by them, so they are a polite status
+a reader hears arrive — a bare line of text announced nothing — and
+the snapshot reads the scope and its one line as one node. Scopes
+standing at once in the same words are one wait: the first is the
+status, the later ones groups of that name, read where the cursor
+meets them and never spoken on arrival, on every bridge and the web
+alike ([accessibility.md](accessibility.md#derivation)). `.idle` and
 `.loading` render identically — an app that requests on first build
 shows `.idle` for at most one frame, and distinct words for it would
 flash. Every option defaults to appending nothing, so each state keeps
@@ -213,8 +220,11 @@ block with no live status over it is content nobody can see and nobody
 is told about.
 
 `example` is a value the screen would plausibly show. Its **characters**
-size the block — one reference advance each, the same `0` width CSS
-calls `ch`, so both substrates draw the same width — and its *words* never
+size the block — 0.72 of the `0` width CSS calls `ch` each, the mean
+advance of running text in the body face (a digit is the widest thing
+in a sentence, and a block a digit per character stood a third wider
+than the words it waited for, so the page jumped when they landed), the
+same number on both substrates — and its *words* never
 enter the tree, so neither substrate can leak them. `nokre.pendingChars(n)`
 is the same thing for a screen with no example string to hand.
 
@@ -846,12 +856,18 @@ it, at `text_input`'s label scale. As with `badge`, the words carry the
 state — `label` ("12 of 30 days") is mandatory, rendered above the bar,
 and is what assistive tech hears; the `value`/`max` fill only restates
 it visually. The label wraps as [`text_input`'s](#text_input) does,
-and the bar keeps the full width beneath however many lines it took. `append` rejects an empty label or a value outside
+and the bar keeps the full width beneath however many lines it took.
+The label stands 2px above its own bar (`layout.meter_label_gap`), a
+third of a field label's gap, so in a column of meters each name reads
+as the bar's beneath it and never the one above; the air between
+meters is your stack's gap, and it should be the wider. `append` rejects an empty label or a value outside
 0...max. The track is the `segmented` pattern: dimmed `.g11` with a 1px
 `.g6` border carrying WCAG 1.4.11, an `.ink` fill inside; under
 [`depth`](getting-started.md#a-theme) it is a `.g10` fill with no border. Never
-interactive, never animated — for indeterminate waiting, write
-"Loading…" as `text`; a spinner is animation, which nokre refuses.
+interactive, never animated — for indeterminate waiting, use
+[`loadGate`](#the-load-gate), whose words are a status a reader hears
+arrive, or a [`stand_in`](#stand_in) of the screen's own template; a
+spinner is animation, which nokre refuses.
 Semantics: plain static text, the words.
 
 ### `diverging_meter`
@@ -863,8 +879,15 @@ per-dimension shape of a cycle, a budget split two ways, a vote. The
 centre is the reading: either share is the distance from it, which is
 what a pair of separate bars cannot say.
 
-`label` names the row and is the accessible name, and wraps above the
-row as `meter`'s does. `start_label` and
+`label` names the row and is the accessible name. It stands centred
+over the centre tick, wrapped at the track's width and 2px above the
+track (`layout.meter_label_gap`): the centre is the reading, and a name
+at the leading edge shared one column with the start figure and a
+legend's start word, so the legend read as a first row label. Centring
+is symmetric, so RTL changes nothing about it. The cost is a column of
+names no longer scannable down one edge, which a group's six-odd rows
+can afford. The DOM substrate centres a lone row's name over the row
+and a group's over the track column. `start_label` and
 `end_label` are what each side says — a magnitude and the thing it
 counts, formatted by you, as a `badge`'s words are — and both are
 **mandatory**, because they are the whole of what a reader who cannot
@@ -925,7 +948,10 @@ Diverging meters read against one scale. It holds `diverging_meter` rows
 and nothing else (`error.DivergingGroupChildMustBeMeter`), and makes the
 one decision none of its rows can make alone: the widest words on each
 side decide a single flank width, so every track starts and ends at the
-same x and the whole column flanks or stacks together.
+same x and the whole column flanks or stacks together. Its rows stand
+20px apart, and 20px under the legend (`layout.diverging_group_row_gap`),
+ten times a row's label-to-track gap: measured on a phone, a name 34px
+from its own bar and 45px from the next read as belonging to neither.
 
 **A column that repeats its side words takes a `legend`.** Six rows of
 "2 observations … 5 recognitions" spend about forty percent of each row
@@ -999,7 +1025,13 @@ try b.qr(.{ .label = "Join Acme Plumbing", .value = invite_url, .width = .full }
 It is the one surface that ignores the
 appearance: scanners want dark modules on a light ground, so the code
 draws ink-on-paper from the light palette in dark mode too — a
-deliberately light tile. Never interactive; put a `copyable` beside it
+deliberately light tile. The tile's corners round at 16px
+(`layout.qrTileRadius`, never more than the quiet zone is wide, so the
+curve reaches no module); the modules stay square and the three finder
+eyes are never rounded, because rounded eyes failed OpenCV's decoder at
+every scale tried while the rounded tile decodes exactly as the square
+one did. The corner shows wherever the page is not true paper — dark,
+depth and lamp. Never interactive; put a `copyable` beside it
 carrying the same value for the clipboard path. Semantics: an image
 named by the label, carrying the value.
 
@@ -1858,7 +1890,7 @@ is what the whole scope announces.
 
 Under it, everything draws **real** — the consumer's ordinary draw code
 runs, and its words are its words. What blocks is a string handed as
-`nokre.pendingValue`: a rounded `g10` block one reference advance per
+`nokre.pendingValue`: a rounded `g10` block one running-text advance per
 character of the example it was sized by, silent to assistive tech, and
 refused outside a scope. Every control is **disabled** for the scope's
 life — real words, dimmed, no press,
@@ -2199,6 +2231,20 @@ with no border rather than an outline. Under
 [`lamp`](internals/lamp.md#buttons-under-the-lamp) dark the primary is a
 filled gray plate and the secondary its `.g6` stroke alone, lit on its
 own as eink's is — paint, not a form change.
+
+**No form says what a press costs, and no button carries a price
+line** (refused 2026-10-15). A consumer selling credits asked for a
+button that knew the reader's balance — drawn off, or worded "Not
+enough credits", when the press would overspend — and for a cost line
+drawn inside the pill under the verb. nokre takes no value it cannot
+check: a balance handed to a button is a number the app read some time
+ago, and whether a press is affordable is the server's answer to that
+press, which arrives after it like any other result. A cost is words,
+and the words are the app's: the label says "Buy for 3 credits", or the
+row the button stands in says the price, and a press the server refuses
+comes back as the app's own message. One filled, one outlined, and the
+words carry the rest — a third line inside the pill would be a second
+label with no name of its own to be announced by.
 
 **The label wraps inside the pill, and the pill grows to hold it.** A
 button asks for the width its words want and takes what it is offered;
@@ -3322,7 +3368,13 @@ count selects
 a field a repeated click is an ordinary press.
 
 **A caret placed by a finger wears a grab handle**: one teardrop hanging
-off its foot, dragged to move the caret. A caret placed by a mouse does
+off its foot, dragged to move the caret. On a field's last line — the
+only line of a single-line field — the foot is inside the field's
+padding, so every handle there, the teardrop and a selection's discs
+alike, hangs from the field's outer bottom edge instead and never
+stands on its border, as iOS hangs its handles below the line and
+Android below the baseline; on an earlier line of an area it hangs from
+the foot, over the line below, as theirs do. A caret placed by a mouse does
 not, because a mouse already puts the caret anywhere it can see. This is
 the one thing nokre draws from what is pressing, and it is a grab
 *target* rather than a control — the caret it moves is reached by a tap,
@@ -3619,6 +3671,19 @@ further draws off. **Their words are the framework's** — they come from
 `Chrome` like the back and close controls, so an app states no words for
 them and a localized app says them with the rest of its chrome:
 `chromeDialIncrease` and `chromeDialDecrease`.
+
+**The step buttons take no circle and no ring of their own** (refused
+2026-10-15). A consumer asked for each step to stand on a round ground,
+or inside an outline, as a stepper does elsewhere. Each already stands
+on one: a plate the full touch target high and the column wide, the
+`.g11` ground every look draws with its own edge — a well under depth —
+that recedes to the off vocabulary at the bound it cannot pass, so the
+press a finger can make and the press it cannot are drawn apart
+already. A circle would be a second shape for one control, beside the
+plates of the column it serves. A ground drawn only while a finger is
+down would need a pressed state, and nokre has none: what a press
+changes is the value, drawn at once, and the haptic knock under a
+dragged dial.
 
 **The device is vertical, so nothing inside it mirrors.** It stands at
 the leading edge under its label and moves to the other one with the
@@ -4998,9 +5063,12 @@ line, which no width alone can answer:
   drawn, each as wide as its words on one line at 12px with 8px either
   side and never under `touch_target`, the ground's two 16px ends, the
   insets and the indicator while it is up fit the viewport. The
-  off-roster marker's column is a bare `touch_target` and its words are
-  not measured — they are the title of whatever screen is open — so a
-  title wider than its column is clipped to it from its leading edge.
+  off-roster marker's column is measured the same way, by the title of
+  whatever screen is open (the owner's call, 2026-10-15, reversing the
+  bare `touch_target` column of 2026-10-14: at 390pt Rokovski
+  Organizations' "Create organization" was clipped to its first
+  letters while the ground held 243 of 358px). A title too long for
+  the band tips it to the chip, as any destination's long word does.
 - **Only what shows is counted**, the owner's call (2026-10-14): "don't
   reserve/imagine marker, let it change to stacked when needed and let
   it stay row in floating ground while not needed yet." The off-roster
@@ -5101,7 +5169,7 @@ They answer it with one extra entry, appended to the roster the chrome
 draws from: the current route's [`title`](routing.md), wearing the shared
 `file_text` mark. In the row it is a `nav_here` — a plate at the trailing
 end of the ground, in the current destination's plating; stacked, a
-`touch_target`-wide column with its title clipped to it and the rule
+column as wide as its title, like any destination's, with the rule
 under it. Collapsed, it is what the chip
 carries, so the answer does not depend on the shape. Consumers append
 neither, and name neither: every line of the roster — the destinations
@@ -5446,10 +5514,19 @@ states, all living in the bottom pane:
   drag, or keyboard rather than being clipped at the pane's edge. The
   header stays put, dismiss-all with it: the control that empties the
   list should not scroll away as the list grows.
-- **Minimized** — an indicator glyph that reopens the pane. It belongs to
-  the bar rather than to the pane: it rides at the trailing end of
-  whatever the bar is centering — the row of destinations, or the
-  collapsed chip — and centers alone when there is no nav.
+- **Minimized** — an indicator, Lucide's bell, that reopens the pane. It
+  belongs to the bar rather than to the pane: it rides at the trailing
+  end of whatever the bar is centering — the row of destinations, or the
+  collapsed chip — and centers alone when there is no nav. It is not the
+  banner's expand glyph (square-arrow-up): that one names an act on
+  notices already shown, this one stands for notices waiting. It carries
+  **no count badge** (owner-decided 2026-10-15): a count drawn on the
+  glyph would have to be in its accessible name too, and the chrome's
+  words (`App.Chrome`) are fixed strings with no plural form and no
+  buffer to say a count into; the indicator exists only while something
+  is pending, so its presence is the signal. The square-asterisk was
+  refused too: a consumer may already spend it on a destination beside
+  the bar, where the two would read as one mark.
 
 A notice is a row: its title and its description stand together on
 the chrome's leading edge whatever language each is in, as the banner

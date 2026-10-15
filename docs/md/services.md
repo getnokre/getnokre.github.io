@@ -2242,14 +2242,21 @@ fn onProducts(ctx: ?*anyopaque, catalog: nokre.services.iap.Catalog) void {
     }
 }
 
-// From a tap. The outcome arrives on the stream, not here.
-try nokre.services.iap.purchase(.{ .app = app, .product = "coins.100" });
+// From a tap. The outcome arrives on the stream, not here. The account
+// is a UUID the app derives from its own — never the account id itself.
+try nokre.services.iap.purchase(.{
+    .app = app,
+    .product = "coins.100",
+    .account_uuid = state.account_uuid,
+});
 
 fn onPurchase(state: *State, update: nokre.services.iap.Update) void {
     switch (update) {
         .purchase => |p| switch (p.state) {
-            // Send p.token to your backend; when it has written the
-            // entitlement, and not one line before, finish.
+            // Send p.id and p.token to your backend; when it has
+            // written the entitlement, and not one line before, finish.
+            // A non-empty p.account_uuid that is not the signed-in
+            // account's was bought by someone else: leave it unfinished.
             .purchased, .restored => deliver(state, p),
             // Committed, unpaid: Play's cash flow, Apple's Ask to Buy.
             // The real purchase arrives later — maybe days later, in
@@ -2265,7 +2272,7 @@ fn onPurchase(state: *State, update: nokre.services.iap.Update) void {
 // After the goods are durably delivered.
 nokre.services.iap.finish(app, txn_id, .consumed);
 
-// Apple requires a visible control for this; results arrive as .restored.
+// For non-consumables and subscriptions; results arrive as .restored.
 try nokre.services.iap.restore(app);
 ```
 
@@ -2317,6 +2324,7 @@ is a pure function of the argument checked before any OS call:
 | Cap | Value | Why this number |
 | --- | --- | --- |
 | ids per query | 20 | Play's per-query cap — Apple documents none, so the store with a bound sets it — enforced on the Zig side everywhere so `TooManyProducts` means one thing on every platform |
+| account | a UUID in canonical lowercase text, 36 bytes | the one shape both stores keep: Apple persists `applicationUsername` to the transaction and to its server's `appAccountToken` only when it is a UUID, and Play takes at most 64 characters with no personal data |
 | product id | 1–128 bytes of `[a-z0-9._]`, leading `[a-z0-9]` | the intersection of the two consoles' rules (Play's is narrower, and lowercase-only) — an id that is legal on the developer's Apple device and rejected by the Play console should fail on the machine that typed it, which is package_info's argument for the app id |
 
 One sheet and one query at a time per app: a second `purchase` is
@@ -2324,6 +2332,26 @@ One sheet and one query at a time per app: a second `purchase` is
 sheet), a second query is
 `error.QueryInFlight` (a paywall asks for its whole catalog at once,
 because the id set is a parameter).
+
+**A purchase names its buyer, and the backend claims it by its id.**
+A store purchase belongs to the store account on the device, not to the
+app's account, so an unfinished one is redelivered at launch to whoever
+is signed in then. `purchase` therefore takes `account_uuid` — a UUID
+the app derives from its account (a keyed hash shaped as one), never an
+id or an address — and hands it to the store: Apple's
+`SKMutablePayment.applicationUsername`, Play's
+`setObfuscatedAccountId`. It comes back as `Purchase.account_uuid` on
+every update the store returns it for, the launch replay included:
+Play returns it on every purchase bought with one; Apple returns it on
+a purchased or deferred transaction and not on a restored one. Empty
+means the store did not say, never "another account" — the backend's
+own read is the verdict, Apple's `app_account_token` in the receipt or
+`appAccountToken` in the Server API, Play's
+`obfuscatedExternalAccountId`. And `Purchase.id` is what the backend
+claims the purchase by: on Apple the `transaction_id` in the receipt
+(one StoreKit 1 app receipt can hold two live purchases, and the id is
+what tells them apart; a restored one reports its original id); on Play
+the purchase token, which is also `Purchase.token`.
 
 **The stream comes first.** `purchase` and `restore` are
 `error.NoHandler` until `setHandler` has run: their entire outcome
@@ -2392,7 +2420,8 @@ it, and a schedule is a timer, which is a ticker nokre has none of (the
 `clock` service reports the time and `notification.schedule` hands a
 date to the OS; nothing in nokre runs one); `restore`
 reports what the store says is owned right now, with no dates and no
-arithmetic. No catalog, no price cache, no paywall layout, no route
+arithmetic — and a consumable is spent, so no store restores one and an
+app selling only consumables needs no Restore control. No catalog, no price cache, no paywall layout, no route
 table.
 
 In tests the mock is one app's fake store: seed a catalog and queries

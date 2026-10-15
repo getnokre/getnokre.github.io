@@ -85,7 +85,13 @@ what a landmark is on both platforms.
 
 A `stand_in` ([elements.md](elements.md#stand_in)) is a screen that is
 still arriving, and it is derived from like any other. Its scope is one
-polite live region saying the app's own "loading" words; the real text
+polite live region saying the app's own "loading" words — once: a
+scope whose words an earlier one on the screen already says is a group
+of that name, not a second status, because each bridge speaks every
+status on arrival and four sections waiting in "Loading…" were four
+announcements of one word; and a scope whose one line is its own name,
+`loadGate`'s plain sentence, is one node rather than a status and a
+line saying the same thing. The real text
 under it is announced as ordinary text, because it is real; and its
 controls are announced **disabled and not busy** — the thing they act
 on has not arrived, so they are off, where the pair below is a control's

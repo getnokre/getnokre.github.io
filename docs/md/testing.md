@@ -2028,7 +2028,12 @@ look through the page's own control, and holds these facts at a phone's
 - **Depth is depth.** A depth page publishes no lamp number, and
   deleting the lamp's rules changes no computed paint on any element or
   pseudo-element and no pixel by more than a byte (Chrome dithers a
-  gradient anew each time it rasterizes one).
+  gradient anew each time it rasterizes one). Chrome runs with its tiles
+  rasterized on the CPU: its GPU raster drew the QR tile's rounded
+  corners one of two ways, ten levels apart, between two rasterizations
+  of an unchanged page, and failed this pass three runs in ten
+  (2026-10-15); on the CPU, twenty-two runs in a row held, and every pass's
+  worst reading stayed where the GPU's stood.
 - **No console error**, through all of it.
 - **A peeped raree scrolls.** Not the lamp's, and here because this is
   the one place a real browser scrolls a nokre page: at 390x844 at

@@ -67,6 +67,8 @@
   --badge-pad-h: 8px;
   --badge-pad-v: 2px;
   --meter-h: 12px;
+  --meter-label-gap: 2px;
+  --diverging-group-row-gap: 20px;
   --quantity-unit-gap: 6px;
   --diverging-min-track: 64px;
   --diverging-tick-reach: 2px;
@@ -1752,7 +1754,7 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   margin-inline-start: var(--quantity-unit-gap);
 }
 .quantity-caption { font-size: var(--px-small); line-height: var(--lh-small); color: var(--dark); }
-.meter { display: flex; flex-direction: column; gap: var(--input-label-gap); }
+.meter { display: flex; flex-direction: column; gap: var(--meter-label-gap); }
 .meter-track {
   height: var(--meter-h);
   background: var(--g11);
@@ -1775,7 +1777,12 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
    the leading half rather than a box of its own, so it is drawn
    once whichever arm is empty, and `outline` puts it proud of
    the track's own height the way the tick stands proud there. */
-.diverging-meter { display: flex; flex-direction: column; gap: var(--input-label-gap); }
+.diverging-meter { display: flex; flex-direction: column; gap: var(--meter-label-gap); }
+/* The row's name is centred over the centre tick, as `drawCentredWrapped`
+   draws it: alone, over the row, which is the browser's flex line;
+   in a group, held to the track's column. Its own block, because the
+   label's chrome-edge rule above outranks any selector here. */
+.diverging-label { display: block; text-align: center; }
 .diverging-row {
   display: flex;
   flex-wrap: wrap;
@@ -1833,15 +1840,15 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
 .diverging-group {
   display: grid;
   grid-template-columns: auto minmax(var(--diverging-min-track), 1fr) auto;
-  gap: var(--control-gap);
+  gap: var(--diverging-group-row-gap) var(--control-gap);
 }
 .diverging-group > .diverging-meter {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
-  row-gap: var(--input-label-gap);
+  row-gap: var(--meter-label-gap);
 }
-.diverging-group > .diverging-meter > .field-label { grid-column: 1 / -1; }
+.diverging-group > .diverging-meter > .field-label { grid-column: 2; }
 .diverging-group .diverging-row {
   display: grid;
   grid-template-columns: subgrid;
@@ -1884,8 +1891,8 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
    tech, which the real content must not be. */
 
 /* A value that has not arrived: one empty cell per character,
-   `1ch` wide — the reference advance the other substrate measures
-   its block in, so the two agree on a width. Cells and not one
+   a running-text share of `ch` wide — the pending advance the other
+   substrate measures its block in, so the two agree on a width. Cells and not one
    sized box, because a browser never breaks inside an atomic
    inline and always may between two (CSS Text §5.1): a run wider
    than the column wraps at the edge, as `wrap.breakWord` does,
@@ -1900,7 +1907,7 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
 .pending > b {
   display: inline-block;
   font: inherit;
-  width: 1ch;
+  width: 0.72ch;
   height: 0.8em;
   vertical-align: -0.1em;
   background: var(--g10);
@@ -1917,7 +1924,7 @@ hr { border: 0; border-top: var(--border) solid var(--g10); }
   inset-inline-start: var(--input-pad-h, 8px);
   top: 50%;
   transform: translateY(-50%);
-  width: var(--pending, 6ch);
+  width: calc(var(--pending, 6ch) * 0.72);
   height: 0.8em;
   border-radius: 3px;
   background: var(--g10);
@@ -3825,10 +3832,11 @@ input.check::after { content: "\e06c"; }
 
      "You are here" is ink and the rule under the words, in the
      regular face core measured every column in. The words are
-     always one line. Words wider than their column — only the
-     off-roster marker's can be — are clipped to it from its
-     leading edge (`safe`), as the reference clips them, so what
-     shows is how they begin. */
+     always one line, in a column core measured for them, the
+     off-roster marker's title like any destination's. Where the
+     browser's advances run wider than core's they are clipped to
+     it from its leading edge (`safe`), so what shows is how they
+     begin. */
   /* The row is the group, centred: the ground and, a gap after
      it, the notices indicator standing beside it as a neighbour.
      The ground is a pill hugging the destinations, pills or
