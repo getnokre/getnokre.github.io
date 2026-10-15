@@ -107,7 +107,7 @@ nokre derives it and offers no knob for it.
 
 | Decision | Whose |
 | --- | --- |
-| Nav shape — a row of destinations, the same stacked, the same standing on end, or one chip | nokre's (`layout.navShape`) |
+| Nav shape — a row of destinations or the same stacked, on a floating ground, or one chip | nokre's (`layout.navShape`) |
 | Folding an overflowing row of actions, where the surface clips | nokre's (`layout.rowOverflow`, `overflow.syncOverflowChrome`) |
 | Where a row wraps | nokre's |
 | A row of blocks: side by side or one per line | nokre's (`layout.boxRow`) |

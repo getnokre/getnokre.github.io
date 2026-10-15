@@ -1975,20 +1975,20 @@ look through the page's own control, and holds these facts at a phone's
   `lamp_plates` entry. The nav plate's rim is held within 10 over the
   frost beneath it, read with the rim hidden.
 - **A row of pills lights the page as native's does.** The kitchen
-  sink's roster stands at 390x844 and is a header at 1024x700, so the
+  sink's roster stacks at 390x844 and is a header at 1024x700, so the
   bar's row with a chosen chip between two others is
   `tests/nav_row.zig`'s: three bare words opened on the middle one, in
-  lamp from its first frame. The row lies down only in a band at least
-  as wide as it is tall, so its pass stands at 560x390 at scale 2, a
-  phone on its side at the pane's cap; a card's bottom rim 120 px above
-  the chips is read beneath the
+  lamp from its first frame, on the band's floating ground. Its pass
+  stands at 560x390 at scale 2, a phone on its side at the pane's cap;
+  a card's bottom rim 120 px above the chips is read beneath the
   chosen chip, beneath a plain one and in the gap, and held within the
-  rim's 8 to the library lit by one edge per chip, read off the chips'
-  own boxes as native's `BarPlates` emits them — not off the edges the
-  page publishes. The page publishes the bar as one edge and the
-  chosen plate as its own, and native sums one line per plate, so away
-  from the rim's cap the web is missing the neighbours' tails and reads
-  under native. Measured 2026-10-13, at 390x844 before the row's pass
+  rim's 8 to the library lit as native's `BarPlates` lights it: one
+  edge per plate, the ground and the chosen chip on it (a plain chip is
+  no plate), read off their own boxes — not off the edges the page
+  publishes. The ground is one plate under every sample, so the web's
+  one bar edge and native's one line agree there; the older table
+  below is from the plated pills, where native summed one line per pill
+  and the web, missing the neighbours' tails, read under it. Measured 2026-10-13, at 390x844 before the row's pass
   moved to a landscape band, web against native, chosen / plain / gap:
 
   | card above the chips | chosen | plain | gap |
@@ -2007,28 +2007,19 @@ look through the page's own control, and holds these facts at a phone's
   per-plate sum computed in the driver, unexplored. An earlier
   synthetic estimate of 7 *over* native beneath the chosen chip was
   wrong: no distance the rim is not capped at reads over.
-- **The same three pills stand.** At 390x844 at scale 2 the site of
-  `tests/nav_row.zig` is the standing band, and its pass holds what the
-  sheet cannot be trusted to keep by itself: each pill as wide as the
-  slot (52), all their feet on one line, at least one taller than it is
-  wide, and the `--nav-band-h` the root states within 1 px of the
-  tallest pill, since the reserve and the marker's clip both read it.
-  Then the card's bottom rim 120 px above the chosen pill is read as the
-  row's is, against native lit by one edge per plate. The page
-  publishes the plain pills as one edge at their union's top, so the
-  standing band reads under native for the row's reason, within the
-  same tolerance.
+- **The standing pass is parked with the standing band**
+  ([explorations/standing-nav.md](explorations/standing-nav.md)): it
+  logs "skipped — the standing band is parked" and reads nothing.
 - **The big screen is lit as a page with no chrome.** On the Watch
   screen with its stage on the big screen, the frame's face, the Play
   pill's face and rims and the header's play glyph are held to the
   library with no edge, and the pane drawn again with the bar's and the
   chosen plate's numbers taken off the root changes no pixel by more
   than a byte.
-- **Frost is there.** With the nav plate in the chosen glass over the
-  QR code — the current pill, standing in the kitchen sink's roster at
-  390, or the one ground stacked columns stand on — read inside its
-  round ends and its rim on its straight sides, whichever way the plate
-  stands, its pixels
+- **Frost is there.** With the band's ground over the QR code — the
+  kitchen sink's stacked columns at 390, the current column's rule and
+  every glyph and word on it hidden — read inside its round ends and
+  its rim on its straight sides, its pixels
   are at least eight times smoother than the page beneath it, and their
   mean is within 6 of the library's frost of that same page — the
   screenshot without the nav, blurred by `lamp.frostBlur` and composited

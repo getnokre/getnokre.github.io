@@ -4734,9 +4734,9 @@ decisions, not the consumer's, and there is no API for either.
 
 **Two shapes, and the reader's window picks.** At a phone's width the
 bar is the bottom band of the viewport, and whatever it holds — the row
-of destinations as pills, stacked or standing, the collapsed chip, the
-minimized-notices square — is measured at its own width and centered
-there. That is a thumb
+of destinations as pills or stacked columns on a floating ground, the
+collapsed chip, the minimized-notices circle — is measured at its own
+width and centered there. That is a thumb
 affordance: reach is worst at the far edge, and the bar is the chrome a
 hand goes to without looking. Anywhere wider it is a header instead —
 the same destinations as words in the page's own margin, above the
@@ -4762,7 +4762,7 @@ reflows. In the band, which is one line by construction, a row that will
 not fit scrolls instead: every destination is a link with an address of
 its own, and a browser scrolls a focused one into view. A live driver
 replaces that with the shape core measured for the reader's window —
-standing or stacked where those fit, below — and with the chip, which
+the stacked columns where those fit, below — and with the chip, which
 always fits, where they do not. So a page nothing will
 ever mount over gets the same band, the same markup and a reachable set
 of destinations at every width, and nothing about who published a file
@@ -4810,8 +4810,7 @@ carrying some of each is `error.NavIconsMixed`, refused whole before
 anything is drawn. A phone's tab bar wears marks; a generated site's
 header usually wears none ([static-sites.md](static-sites.md)). Where there is a glyph it leads
 the label at the label's own 16px — or stands over it, where the row
-stacks (below), or stands upright under it, where the row stands on end (below) — both
-always visible, and it is
+stacks (below) — both always visible, and it is
 decorative to assistive tech, which hears the words; where there is
 none, there is no gap left where one would have been. The marker for a
 screen that is none of the destinations follows the roster, because it
@@ -4834,20 +4833,30 @@ shapes can carry, and the stricter shape is the one that sets the
 bound. A site with more destinations than the bound restructures; that
 is the price of one markup answering every width.
 
-**The bar has no ground.** There is no track, no fill, no hairline —
-the nav is its items and nothing else, each on a plate of its own, with
-`metrics.nav_item_gap` (8px) of page showing between them. The plates
-are three levels: the page, the destinations on `.g11` (the dim track
-tone every other control uses), and the current route one step above
-them on `.g10`, outlined in `mid` and lettered in `.ink` — `mid` rather
-than the `.g6` other chips use, because `.g6` is 2.7:1 against `.g10`,
-under the 1.4.11 floor, and `mid` is the lightest tone that clears it
-on both of the chip's sides. Under [`depth`](getting-started.md#a-theme) the current
-plate has no edge and climbs to `.g9` in dark, and in light every plate
-in the row — each destination, current or not, the `nav_here`, the
-collapsed chip and the notices indicator — casts a card's shadow rather
-than a control's: with no track under it, a plate is a small card over
-the page. The current item is exposed as
+**The band floats on a ground.** The row and the stacked columns
+stand on one ground: a pill `layout.navGroundHeight` (60px) tall — the
+52px slot with `metrics.nav_bar_pad` (4px) above and below it —
+hugging what it holds, centered on the viewport and standing
+`metrics.nav_bar_pad_b` (16px) above the bottom. Nothing runs edge to
+edge: the page passes behind the band and shows beside the ground and
+below it. The ground is a card's material, because a ground floating
+over the page is a card: `.g11` with the card's `.g10` structure
+hairline in eink, the card's paper and shadow with no edge under
+[`depth`](getting-started.md#a-theme), and the resting nav glass under
+lamp, where it is the nav's one plate — the one whose edges light the
+rims of the page beneath it, and the one that lays the nav's contact
+shadow. Its corner is half its height. The collapsed chip stands on no
+ground: it is one control, and its own plate.
+
+**On the ground, only the current destination is a plate.** The others
+are their glyph and words in `dark`, unplated, because the ground is
+already the surface they stand on and a plate apiece would be a strip
+of lozenges on a lozenge. The current destination keeps the pill plate
+it always wore: `.g10`, outlined in `mid` and lettered in `.ink` —
+`mid` rather than the `.g6` other chips use, because `.g6` is 2.7:1
+against `.g10`, under the 1.4.11 floor, and `mid` is the lightest tone
+that clears it on both of the plate's sides. Under depth it takes the
+chosen fill, under lamp the chosen glass. The current item is exposed as
 `aria-current`; consumers never manage selected state. Activating an
 item **pushes** its destination, so crossing the nav leaves a way back
 to the screen you crossed from ([routing.md](routing.md)); activating
@@ -4858,27 +4867,31 @@ after it, the label, and `metrics.nav_item_pad_h` (20px) on either
 side: the button's 16 with 4 added back, because a pill's ends curve
 away from the words. Equal slots would stretch each pill to a share of
 the bar and set its words adrift in a strip of identical lozenges — and
-the stacked row below keeps the same rule. The row is measured, then centered on the viewport as one group, the
-notices indicator — when there is one — riding at its trailing end. The
-gap between plates is drawn, not laid out: each item's *rect* is its
+the stacked columns below keep the same rule. Neighbours stand
+`metrics.nav_item_gap` (8px) apart, and the ground runs 4px past the
+first and last, so the words stand `layout.nav_ground_words_inset`
+(24px) from its ends in either shape. The ground is centered on the
+viewport, the notices indicator — when there is one — its neighbour,
+8px past the ground's trailing end, the pair centered as one group. The
+gap between items is drawn, not laid out: each item's *rect* is its
 pill grown half a gap on either side, so the targets meet end to end
 and a thumb landing between two destinations still lands on one of
 them.
 
-Plates are **pills** — the corner is half the slot's height, derived
+Plates are **pills** — the corner is half the plate's height, derived
 rather than fixed, so the shape follows the slot instead of drifting
 back to a rounded rectangle the next time the row grows. A filled or
 secondary button is a pill too, its corner capped at a one-line
-button's because its label may wrap; a plate's never does. The collapsed
-chip takes the same corner, and the notices indicator beside them — a
-pill as tall as it is wide — is a circle.
+button's because its label may wrap; a plate's never does. The ground,
+the current pill and the collapsed chip all take the same rule, and the
+notices indicator — a pill as tall as it is wide — is a circle.
 
-**As a header the same items are words.** No plate, no pill, no fill:
-the destinations take the same `dark` step-back tone they wear on their
-plates, and the one you are standing on takes `.ink` and the bold face.
+**As a header the same items are words.** No ground, no plate, no
+pill: the destinations take the same `dark` tone they wear on the
+ground, and the one you are standing on takes `.ink` and the bold face.
 Weight and tone are how a grayscale system says *this one* — a fill is
 the weakest mark available in thirteen grays, and the band uses it only
-because a band has plates to fill. There is no underline either, though
+because a band has a ground to set it on. There is no underline either, though
 [`link`](#link) carries one: an underline says *this word is a
 destination* among words that are not, and in a row where every word is
 one it distinguishes nothing. The row sits in the page's own 16px
@@ -4888,204 +4901,133 @@ glyph target rather than a word.
 
 Because nothing hides what passes behind it, every screen whose bar is
 in the **band** reserves `metrics.nav_content_gap` (24px) below its last
-element, on top of the bar and the OS safe band — on a desk, below the
-last element of each region that ends above the bar, and the same
-beside a notice banner. Scrolled to the end, a
-page stands clear of the nav; mid-scroll, lines pass behind the items
-and down into the safe band — that glimpse of a half-covered line is the
-only thing left saying there is more below. A header reserves nothing:
-it took its space where it stands, at the top, in flow.
+element, and `nav_bar_pad` (4px) more, on top of the ground and the OS
+safe band — on a desk, below the last element of each region that ends
+above the bar, and the same beside a notice banner. Scrolled to the
+end, a page stands clear of the ground; mid-scroll, lines pass behind
+it and down into the safe band — that glimpse of a half-covered line is
+the only thing left saying there is more below. A header reserves
+nothing: it took its space where it stands, at the top, in flow.
 
-A slot is 52px tall, pill or stacked column — a standing pill is 52px
-*wide* instead, the same slot turned — the one control in the library that grows *past*
-`touch_target` rather than up to it: it is the chrome a thumb reaches
-for without looking, stacked against the bottom edge where reach is
-worst. Below it the bar keeps `metrics.nav_bar_pad_b` (16px) of clear
-space, the same inset the page's own margin takes from the frame —
-except that the OS band counts toward it, so on a phone the items sit
-just above the home-indicator strip rather than 16px above a strip that
-is already empty.
+A slot is 52px tall, pill or stacked column — the one control in the
+library that grows *past* `touch_target` rather than up to it: it is
+the chrome a thumb reaches for without looking, near the bottom edge
+where reach is worst. Below the ground the bar keeps
+`metrics.nav_bar_pad_b` (16px) of clear space, the same inset the
+page's own margin takes from the frame — except that the OS band counts
+toward it, so on a phone the ground sits just above the home-indicator
+strip rather than 16px above a strip that is already empty.
 
-Where the labels fit, the nav is that row — in a window at least as
-wide as it is tall, a square one included. Where they do not, a
-**marked** roster **stacks**: the same destinations, each its glyph at
-16px over its words at `Scale.small` (12px), in columns across the
-band. In a window taller than it is wide the band has a ladder of its
-own: the row **stands** on end where its pills fit side by side, and
-neither the row nor the stacked columns are taken there (below). Where
-none of these fits, the nav **collapses**: the bar shows the current
-section alone, as the same chip wearing that section's glyph with a
-chevron-up at its trailing edge, and the other destinations move behind
-a picker that opens above it — carrying their glyphs into the list, so
-a mark means the same thing in every shape.
+**Row, then stacked, then the chip**, in a window of any shape. Where
+the labels fit, the nav is the row. Where they do not, a **marked**
+roster **stacks**: the same destinations, each its glyph at 16px over
+its words at `Scale.small` (12px), in columns on the same ground. Where
+neither fits, the nav **collapses**: the bar shows the current section
+alone, as the same chip wearing that section's glyph with a chevron-up
+at its trailing edge, and the other destinations move behind a picker
+that opens above it — carrying their glyphs into the list, so a mark
+means the same thing in every shape.
 
-**Each column is as wide as its own words**, never under
-`touch_target`, and only what the band has left over is shared — equally,
-so every column gains the same air. Equal shares of the whole bar were
-the first draft, argued on the ground that a glyph over a short word is
-a column with no plate to stretch; measured against the first
-consumer's rosters it never stacked anything, because six equal columns
-each as wide as the *widest* word ("Einstellungen", ~85px) wanted
-430–510px of a phone's 276–306. A column's width being its word's is
-the pill rule again: no word stands adrift in a share sized for another
-one, and a short word gives the width it does not need to the long one
-beside it. Which is also why only a marked roster stacks: a column of
-one small word with nothing over it is a cramped row, not a column, so a
-roster of bare words keeps the row or the chip it always had.
+**Each column is as wide as its own words**, with
+`layout.nav_stacked_column_air` (8px) either side and never under
+`touch_target`, so two neighbours' words stand 16px apart, and the
+ground runs 16px past the first and last column, the words again 24px
+from its ends. Equal shares of the whole bar were the first draft,
+argued on the ground that a glyph over a short word is a column with no
+plate to stretch; measured against the first consumer's rosters it
+never stacked anything, because six equal columns each as wide as the
+*widest* word ("Einstellungen", ~85px) wanted 430–510px of a phone's
+276–306. A column's width being its word's is the pill rule again: no
+word stands adrift in a share sized for another one. Which is also why
+only a marked roster stacks: a column of one small word with nothing
+over it is a cramped row, not a column, so a roster of bare words goes
+from the row to the chip.
 
-**Words with a space may take two lines**, broken at a space, inside a
-column no wider than the longer line — "Your groups" becomes a
-`touch_target`-wide column of two words. Two lines take tight leading,
-14px apart rather than `Scale.small`'s 16 (`layout.nav_stacked_two_line_pitch`),
-the way a wrapped caption may sit tighter than running text: the glyph's
-16, the 4px gap (`nav_stacked_glyph_gap`) and two 14px lines are 48 of
-the 52px slot, centred, so 2px of air stand above the glyph and below
-the words. At `Scale.small`'s own 16 two lines filled all 52 and set the
-glyph on the ground's top edge. A one-line column keeps 16. A single
-word never breaks. Drawn, the words take one line where they fit
-their column after the leftover is shared, and two where they do not,
-broken at the last space that keeps the first line fitting.
+**A column's words are one line**, the owner's call (2026-10-14). Words
+with a space used to break onto two lines at tight leading to fit a
+narrow column; that is retired, and a roster whose words do not fit
+their columns on one line takes the chip. The glyph's 16px, the 4px gap
+(`nav_stacked_glyph_gap`) and the 16px line stand centered in the 52px
+slot.
 
-**The stacked band has one ground, and its columns no plates.** The
-pill row is plated per item because each pill is a control standing in
-air, and content may pass behind the air. Stacked columns are one bar,
-and a bar has a ground — the first build drew them bare, and every
-scene that scrolled a page behind them had its words read straight
-through the destinations'. A plate per column would be the strip of
-identical lozenges the pills refused; a plate on the current column
-alone leaves the others on prose. So the ground is the chip's own
-material — the current plate's fill, `.g10` in eink, the chosen fill
-under depth, the chosen glass under lamp — because the band replaces
-the chip and should read as the same thing. It runs the window's full
-width and down through the OS band to the frame, as every
-bottom-anchored fill does, and starts where the chip's plate started, at
-the columns' top, so its shadow reaches no higher than the chip's did
-and the content reserve still clears it. Eink draws the `.g6` hairline
-the notice banner already draws at the same edge; depth and lamp draw
-none, as the banner's do not. It casts what the chip's plate cast: the
-card's shadow under depth, the nav plate's contact and cast shadow under
-lamp, where the DOM substrate's lamp table lists it as a band-wide glass
-beside the banner and lights the column glyphs on it as the chip's glyph
-was lit.
+**The current column is marked by a rule, and its words in `.ink`.**
+The others' words are `dark`; the current one's are `.ink` in the same
+regular face — bold would make the column wider than its resting self,
+and the ground would change width as the reader crossed it. Under its
+words a round-ended rule, as wide as the words and
+`metrics.focus_stroke` (2px) tall, lies on the ground's bottom edge:
+its two rows are the ground's hairline row and the one inside it, flush
+with the outer edge and nothing hanging past it, so it reads as a
+segment of the rim (`layout.navStackedRule`). It is `.ink` in eink and
+under depth, and under lamp a plate of the chosen nav glass, whose lit
+rim glows as a lit stretch of the ground's own. Columns carry no plates:
+a plate per column would be the strip of identical lozenges the pills
+refused. The first floating draft plated the current column alone; the
+rule on the edge replaced it, the owner's pick from the mockups
+(2026-10-14). The glyph takes its
+words' tone, and is never mirrored: it is centred, with no leading side
+to swap, while the columns' order mirrors under
+[right-to-left](localization.md) like the row's. A focused column draws
+the ring inside itself, half a gap in at a control's corner, so it
+never touches the column beside it.
 
-The current destination takes `.ink` and the bold face against `dark`
-for the others, with no plate of its own — the header's mark, weight and
-tone, a non-colour cue that is two carriers deep rather than the single
-step of gray the band's plates were added to replace — and no underline,
-for the header's reason: in a row where every word is a destination it
-distinguishes nothing. The glyph takes its words' tone, and is never
-mirrored: it is centred, with no leading side to swap, while the
-columns' order mirrors under [right-to-left](localization.md) like the
-row's. The notices control keeps its circle plate at the trailing end,
-on the ground, being a glyph target rather than a destination. A focused
-column draws the ring inside itself, half a gap in at a control's
-corner, so it never touches the column beside it.
+**The standing band was tried and parked**
+([explorations/standing-nav.md](explorations/standing-nav.md)): the
+row's pills stood on end in a portrait band. Its code stays, and
+nothing engages it (`layout.standing_engaged`).
 
-**Standing is the row's pill stood on end.** Each pill is
-`navItemHeight` (52px) wide with the row's corner, so its ends are
-semicircles, and as tall as the row's pill for the same words is wide:
-the width-as-words rule above, turned into height-as-words, so no word
-stands adrift in a share sized for another one. Inside it, from the
-foot, are the row's 20px of end pad, the glyph upright at the label's
-16px, the row's icon gap, and the label rising. Every pill's foot is on
-one line, so the short ones end lower and the bar's top edge reads the
-roster's words; the notices indicator stands at the trailing end on the
-same line. The plates are the row's in every look — the destinations'
-fill, the current plate, depth's card shadow, lamp's glass — because
-this is the row and nothing new was made for it.
-
-The band is as tall as the tallest **declared** pill, and the off-roster
-marker's pill (`nav_here`) is clipped to that height. A bar whose
-height moved because a detail screen opened would move the navigation
-for a reason that has nothing to do with it; a locale change may move
-it, because then the words themselves changed. The content reserve
-follows that height, so a page scrolled to its end stands clear of the
-tallest pill rather than of a 52px slot.
-
-The label turns by its own text's direction, not the app's: a
-left-to-right label turns counterclockwise, its tops to the left, and a
-right-to-left one clockwise, its tops to the right, so both read upward
-from the glyph — a Persian word in an English roster turns as Persian.
-The pills' order mirrors under [right-to-left](localization.md) as the
-row's does.
-
-Stacked and standing are shapes of the *row*, not more kinds of nav:
+The stacked columns are a shape of the *row*, not another kind of nav:
 the same `nav_item` links, in the same order, with the same focus stops
 and `aria-current`, and no `tablist` — tabs select a panel that
 co-exists with them, and a destination is a place you go. The flip
-between pills, columns and standing pills writes one field on the nav
-(`Nav.row`) and keeps every node, so focus and an assistive tech's
-place survive a window crossing the threshold or turning.
+between pills and columns writes one field on the nav (`Nav.row`) and
+keeps every node, so focus and an assistive tech's place survive a
+window crossing the threshold or turning.
 
 The threshold is measured, not a breakpoint — the one breakpoint above
 is about *where the bar stands*, which is a fact about the reader's
 window, and this is about whether a particular set of words makes a
 line, which no width alone can answer:
 
-- **What "fits" means.** The row fits when its pills, the gaps between
-  them, the bar's insets, and the indicator's reserved square fit the
-  **viewport** — a longer word costs the row that word and nothing
-  more, and the reserve is counted whether or not an indicator is
-  showing, so the nav never changes shape because a notice arrived.
-- **What "stacks" means.** The columns fit when one column per declared
-  destination, each as wide as its words in bold at 12px — on one line,
-  or on two at a space where that is narrower — and never under
-  `touch_target`, plus a bare `touch_target` column for the off-roster
-  marker, sum to no more than the viewport less the same insets and
-  reserve. The marker's column is counted whether or not the marker is
-  showing and its words are not counted at all — they are the title of
-  whatever screen is open — so opening a detail screen never reshapes
-  the bar; a title wider than its column is clipped to it from its
-  leading edge. No air is added beside a column's words: the leftover
-  the band shares is the air between neighbours. Two neighbours' words
-  can therefore touch, and that is accepted: it happens only at an exact
-  fit, where the columns sum to the span to the pixel and there is no
-  leftover to share. Laid out, the leftover of that span is
-  shared equally among the columns, the group centred with the
-  indicator's square riding at its trailing end — the leftover is
-  computed with the indicator's reserve held back, so a notice moves
-  the group and never resizes a column. The band keeps its 52px slot
-  and its height, and the content reserve with it.
-- **What "stands" means.** Only where the bar is the band and the
-  window is taller than it is wide. The standing pills fit when one
-  52px column per entry drawn — the declared destinations, and the
-  off-roster marker while a screen that is none of them is open — a
-  gap between each, the indicator's reserve while an indicator is up,
-  and the bar's insets fit the viewport. No word is measured: every
-  standing pill is as wide as every other, so the answer is a count.
-  **Here the two reserves count only while they show**, the opposite
-  of the row's and the columns' rule, and the owner's call
-  (2026-10-14): counted always, five destinations wanted 428px and no
-  phone has it, so the rosters this shape was made for would have
-  collapsed on every phone. The price is the one the columns refused —
-  a roster standing with a few pixels to spare collapses to the chip
-  when a detail screen opens or a notice arrives, and stands again
-  when it clears.
-  Where they do not fit the band takes the chip, never the stacked
-  columns — a portrait phone has the height to stand words on end and
-  not the width to lay them in columns.
+- **What "fits" means.** The row fits when its ground — the pills, the
+  gaps between them and the ground's two 4px ends — fits the
+  **viewport** less the bar's 16px insets either side and, while the
+  notices indicator is up, its 8px gap and 44px circle. A longer word
+  costs the row that word and nothing more.
+- **What "stacks" means.** The columns fit when one column per entry
+  drawn, each as wide as its words on one line at 12px with 8px either
+  side and never under `touch_target`, the ground's two 16px ends, the
+  insets and the indicator while it is up fit the viewport. The
+  off-roster marker's column is a bare `touch_target` and its words are
+  not measured — they are the title of whatever screen is open — so a
+  title wider than its column is clipped to it from its leading edge.
+- **Only what shows is counted**, the owner's call (2026-10-14): "don't
+  reserve/imagine marker, let it change to stacked when needed and let
+  it stay row in floating ground while not needed yet." The off-roster
+  marker counts while a screen off the roster is open, and the
+  indicator while one is up, so the bar may move from the row to the
+  columns, or from the columns to the chip, when a detail screen opens
+  or a notice arrives, and back when it clears. Reserving both had made
+  five destinations a chip on every phone for a marker that was not
+  there.
 - **What that measured, against the first consumer.** Rokovski Teams'
-  and Rokovski Reviews' five destinations, in bold 12px, each column
-  then the marker's 44, against 276px of span at a 360pt phone and 306
-  at 390 (`tests/golden.zig`, the consumer-roster test):
+  and Rokovski Reviews' five destinations, as columns, against a 360pt
+  and a 390pt phone (`tests/golden.zig`, the consumer-roster test):
 
-  | room | locale | columns | sum | 360 | 390 |
-  |---|---|---|---|---|---|
-  | Teams | en | 44 44 44 44 47 +44 | 267 | stacked | stacked |
-  | Teams | de | 50 58 58 44 78 +44 | 332 | chip | chip |
-  | Teams | fa | 44 44 44 44 44 +44 | 264 | stacked | stacked |
-  | Teams | tr | 64 63 44 44 44 +44 | 303 | chip | stacked |
-  | Reviews | en | 48 44 44 44 47 +44 | 271 | stacked | stacked |
-  | Reviews | de | 44 58 58 44 78 +44 | 326 | chip | chip |
-  | Reviews | fa | 44 44 44 44 44 +44 | 264 | stacked | stacked |
-  | Reviews | tr | 56 63 44 44 44 +44 | 295 | chip | stacked |
+  | room | locale | 360 | 390 |
+  |---|---|---|---|
+  | Teams | en | stacked | stacked |
+  | Teams | de | chip | chip |
+  | Teams | fa | stacked | stacked |
+  | Teams | tr | stacked | stacked |
+  | Reviews | en | stacked | stacked |
+  | Reviews | de | chip | chip |
+  | Reviews | fa | stacked | stacked |
+  | Reviews | tr | stacked | stacked |
 
-  German stays the chip at both widths, and that is the record of why
-  rather than a gap: "Einstellungen" (78), "Bibliothek" (58) and
-  "Schreiben" (58) are single words that cannot break, and the sum runs
-  20–26px past a 390pt phone's span. Dropping the marker's reserve when
-  no marker shows would stack it, and was refused: the bar would then
-  change shape whenever a detail screen opened.
+  German stays the chip at both widths: "Einstellungen", "Bibliothek"
+  and "Schreiben" are single words that cannot break, and Teams' roster
+  wants 433px, Reviews' 401, where a 390pt phone has 390.
 - **The viewport, not the 560px pane.** That cap is a line-length
   argument, governing the bottom chrome that holds prose — the banner,
   the notices pane, the sheet, a select's picker — and nothing in the
@@ -5093,12 +5035,12 @@ line, which no width alone can answer:
   items need and no further.
 - **What moves the answer.** Icons cost width, so they push rosters
   off the row sooner — and are what gives them the stacked shape to go
-  to; a set that fits in landscape and not in
-  portrait reshapes as the device turns, and turning also changes
-  which ladder is asked, one too wide for a laptop
-  reopens the moment the window reaches the width it asked for, and
-  translations change it too — the same app can be a row in English
-  and a chip in German, which is the point of measuring.
+  to; a set that fits in landscape and not in portrait reshapes as the
+  device turns, one too wide for a laptop reopens the moment the window
+  reaches the width it asked for, the marker and the indicator move it
+  as they come and go, and translations change it too — the same app
+  can be a row in English and a chip in German, which is the point of
+  measuring.
 
 The collapsed chip does not grow at all: it is one control, and a
 control that widened to hold one word would be its own kind of wrong.
@@ -5158,10 +5100,9 @@ nothing, and both shapes have to answer "where am I" anyway.
 They answer it with one extra entry, appended to the roster the chrome
 draws from: the current route's [`title`](routing.md), wearing the shared
 `file_text` mark. In the row it is a `nav_here` — a plate at the trailing
-end, in the current destination's plating. Standing, its pill is
-clipped to the band's height, the tallest declared pill's, its words cut
-inside the end pad, so a long title never makes the bar taller.
-Collapsed, it is what the chip
+end of the ground, in the current destination's plating; stacked, a
+`touch_target`-wide column with its title clipped to it and the rule
+under it. Collapsed, it is what the chip
 carries, so the answer does not depend on the shape. Consumers append
 neither, and name neither: every line of the roster — the destinations
 and this one alike — is labelled from the route table.
@@ -5193,8 +5134,8 @@ opened.
 In the row the extra entry is measured like any other, so the collapse
 threshold needed no rule for it: a row with one more pill in it
 collapses at a wider viewport, which is the threshold working, not an
-exception to it. The stacked and standing shapes count its column
-whether or not it shows, so opening it never reshapes them.
+exception to it. The stacked shape counts its column the same way,
+only while it shows.
 Crossing back onto a destination drops the entry and the row returns to
 the roster alone.
 

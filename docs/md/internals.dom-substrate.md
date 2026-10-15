@@ -1872,26 +1872,28 @@ try dom.chrome(&em);    // notice, nav, sheet, picker
   in a sheet can make. It changes no role, so it is a field on the nav
   (`Nav.row`) rather than a different element, and the serializer
   writes it as the row's `stacked` class and its destinations as
-  unplated `slot`s, which only the band's rules style. Whether it
-  *stands* is the same field and the same kind of answer: the nav and
-  its row carry `standing`, each pill stays a `chip` link, and its words
-  go in a `chip-words` span with the label's own `dir`, because only a
-  box takes a writing mode — `vertical-rl`, turned half round for a
-  left-to-right label. Each pill's height is core's
-  (`layout.navStandingPillHeight`), written as `--pill-h` on it rather
-  than left to the browser: Chrome's own height for the same words came
-  out 8px off core's, which broke both the reserve and the off-roster
-  marker's clip, since both read the band's height as core measured it.
-  That height above the pads (`layout.navStandingBandHeight`) is
-  published as `--nav-band-h` on the nav, where the marker is clipped
-  to it, and the live driver copies it to the document root
-  (`syncBandHeight`), as it publishes the banner's height there, because
-  a custom property flows down and the reserve is read above the nav:
-  `--chrome-reserve` spends `var(--nav-band-h, var(--nav-slot))`, so
-  every other band is the same sum it was. A page with no driver has
-  nobody to copy it, so `document.zig` writes it on the root itself
-  wherever the serialized nav stands, and a scene's window resets it to
-  `initial` and states its own, so the page's never reaches a scene.
+  unplated `slot`s, which only the band's rules style. In the band the row stands on a floating ground, the
+  same markup in both arrangements:
+  `<nav class="nav[ stacked]"><div class="nav-row[ stacked]"><div class="nav-ground">`
+  holding the destinations — `chip` links, or `slot`s when stacked —
+  then, after the ground and inside the row, the notices indicator's
+  `icon-button` as its neighbour. The ground is core's rect drawn by the
+  browser: as wide as its contents, `--nav-ground-h` (60px, the slot
+  and `nav_bar_pad` above and below) tall, its corner half that. A row's
+  `chip`s are unplated on it and the `.current` one keeps its plate; a
+  stacked current or marker carries a `slot-rule` span inside its words,
+  the round-ended rule laid on the ground's bottom edge
+  (`bottom: calc(-1 * var(--nav-bar-pad))` from the words, so its two
+  rows are the ground's hairline row and the one inside it, as
+  `layout.navStackedRule` places it). A slot is
+  `flex: 0 0 var(--slot-basis)` with `nav_item_gap` of padding either
+  side. As a header the ground is `display: contents` and nothing
+  changes. `--chrome-reserve` spends the gap, the pad,
+  `var(--nav-band-h, var(--nav-ground-h))`, the bar's bottom pad and
+  the safe band, so every band shape is the same sum; `--nav-band-h` is
+  the parked standing band's, which nothing engages
+  ([../explorations/standing-nav.md](../explorations/standing-nav.md)
+  has its markup).
   Above the cap
   this substrate wraps the header, and a row that wraps has no width at
   which it fails, so `layout.navShape` declines before it measures, on
@@ -2207,8 +2209,13 @@ itself writes them too
 square centred in its element: CSS has no ink box to read. Its layers,
 a field about the lamp and a specular, each capped at the glyph's peak
 and joined by `lighten`; on the page each chrome edge over them, white
-at a coverage that adds its light, as on a rim; and over all a solid
-gray at the peak joined by `darken`, which caps the sum once.
+at a coverage that adds its light, as on a rim, and gated on the plate
+the glyph stands on, as native gates it: every published plate passes
+its box down (`--lamp-host-*`), the glyph takes its parent's and reads
+it in its own coordinates, so a chevron beside the band's ground, past
+its end, is lit where its field's plate reaches across the ground; and
+over all a solid gray at the peak joined by `darken`, which caps the
+sum once.
 
 ### What a browser cannot, and what it draws instead
 
@@ -2230,7 +2237,7 @@ Chrome.
 | --- | --- |
 | Rim width | one CSS pixel, not one device pixel |
 | Joining a rim's lights | the lamp's and the specular's by the brighter, with the lamp's light folded into the specular: about 0.7 to 0.8 bytes off on unlit rims, 4 on a filled pill's lit edge; a chrome edge's added, white at a coverage, and the sum capped once: within 2 on the raree's rims beside a phone's band |
-| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, where native sums one line per plate: away from the rim's cap the neighbours' tails are missing, so a row of pills lights a card's rim under native's — 9 under beneath the chosen chip 90 px above the chips, 4 at 120 px, measured in Chrome over `tests/nav_row.zig` ([testing.md](../testing.md#lamp-on-the-web-drawn) has the table); a stacked band is one plate and has no shortfall; a standing band's plain pills publish one edge at their union's top where native sums one per plate, which the standing pass holds within tolerance |
+| The nav's light on the page | the bar's nav plates light rims as one edge and the chosen plate as its own, where native sums one line per plate: away from the rim's cap the neighbours' tails were missing, so a row of plated pills lit a card's rim under native's — 9 under beneath the chosen chip 90 px above the chips, 4 at 120 px, measured in Chrome over `tests/nav_row.zig` ([testing.md](../testing.md#lamp-on-the-web-drawn) has the table); the band's ground is one plate in either arrangement, the bar's one edge, and the current pill the chosen edge on it, so the floating band has no shortfall; the table's numbers are from the plated pills before it |
 | Rounding | no dither: bands about five times longer than native's |
 | Shadows | the browser's Gaussian, fitted to native's curve within 1.2% of its peak, at 0.95 of native's blur |
 | A plate's light under a scroll | does not follow a sideways scroll, and does not follow the page at all where the browser has no view timelines |

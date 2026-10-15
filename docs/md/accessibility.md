@@ -66,7 +66,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `select` | `combo_box` | the label as the name, or the words of the node it is `named_by`; selected option as value, focused, `disabled` |
 | picker (framework) | `dialog` | modal; `picker_item` → `option`, selected |
 | `nav` | `navigation` | — |
-| `nav_item` | `link` | selected (aria-current), focused; its icon is decorative — the label is the name. The same `link` whether the row is pills, stacked or standing ([elements.md](elements.md#nav--nav_item)): stacked columns and standing pills are destinations with addresses of their own, never a `tablist`, because no panel co-exists with them to be selected |
+| `nav_item` | `link` | selected (aria-current), focused; its icon is decorative — the label is the name. The same `link` whether the row is pills or stacked columns ([elements.md](elements.md#nav--nav_item)): stacked columns are destinations with addresses of their own, never a `tablist`, because no panel co-exists with them to be selected |
 | `nav_current` (framework) | `combo_box` | named by the framework ("Section" in English — [localization.md](localization.md#the-frameworks-own-words)), current section as value, focused |
 | `nav_here` (framework) | `static_text` | named by the framework ("Current screen"), the route's title as value; no focus stop — it names where you are, it does not go there |
 | `sheet` | `dialog` | modal |
@@ -549,11 +549,10 @@ after the fact would mean the bad state existed:
 - a nav off the root, a second nav, non-item children of a nav, nav items
   outside a nav, or a nav mixing its two shapes — the row of destinations
   and the collapsed chip cannot both stand, or the same section would be
-  in the focus order twice. The row's stacked and standing arrangements
-  are not more shapes here: each is the same `nav_item`s, the same order
-  and the same focus stops, drawn differently (`Nav.row`), so the flip
-  between pills, columns and standing pills keeps every node and focus
-  with it
+  in the focus order twice. The row's stacked arrangement is not another
+  shape here: it is the same `nav_item`s, the same order and the same
+  focus stops, drawn differently (`Nav.row`), so the flip between pills
+  and columns keeps every node and focus with it
 - a sheet or notice off the root, a second one of either, an untitled
   sheet, an empty notice
 - a `more` control anywhere but on a horizontal stack, or a second one on

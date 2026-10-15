@@ -442,8 +442,8 @@ own byte" holds it.
   caret passed, and the pen for the second half was the sum of two
   standalone widths rather than the whole string's, so the words slid a
   pixel or two sideways as the caret moved through them.
-- A run may be stood on end (`drawTextRising`, the standing nav's
-  label): shaped and placed exactly as `drawText` places it, then turned
+- A run may be stood on end (`drawTextRising`, the parked standing
+  nav's label, [../explorations/standing-nav.md](../explorations/standing-nav.md)): shaped and placed exactly as `drawText` places it, then turned
   an exact quarter turn — counterclockwise for a left-to-right run,
   clockwise for a right-to-left one — so either reads upward from its
   foot and its ink stays within its measured width above it.

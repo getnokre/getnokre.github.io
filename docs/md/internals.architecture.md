@@ -54,7 +54,7 @@ nokre is a strict layer cake. Each layer knows only the layer below it.
 | [src/core/editing.zig](../../src/core/editing.zig) | text-field editing: the selection and every operation written in terms of it, IME protocol, and the offset↔pixel questions a shell or a renderer asks about a field |
 | [src/core/history.zig](../../src/core/history.zig) | undo and redo for the focused field: bounded snapshots in their own arena, one field at a time |
 | [src/core/overlays.zig](../../src/core/overlays.zig) | modal sheet + select and section pickers |
-| [src/core/nav.zig](../../src/core/nav.zig) | the nav roster (plus the current screen when it is off it) and its two shapes: row of items (pills, stacked or standing) → collapsed chip |
+| [src/core/nav.zig](../../src/core/nav.zig) | the nav roster (plus the current screen when it is off it) and its two shapes: row of items (pills or stacked columns, on a floating ground) → collapsed chip |
 | [src/core/desk.zig](../../src/core/desk.zig) | a desk's own chrome: the region switcher a window too narrow to stand the band offers instead ([../elements.md](../elements.md)) |
 | [src/core/notices.zig](../../src/core/notices.zig) | notices → banner / pane / indicator |
 | [src/core/foreground.zig](../../src/core/foreground.zig) | whether the window is in front, from the shells' focus and the web's visibility; the resume handler on a return, never at launch |
