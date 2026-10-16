@@ -2279,13 +2279,18 @@ a.link.block {
 /* Body prose in ink, in the regular face: the row is a
    destination, not a heading. */
 .tile-label { font-weight: 400; }
-/* A row's trailing chip sits on the row's *first line*, not
-   centred on a two-line row: the same box the reference centres
-   it in, said as the margin that puts a `--lh-small` chip in the
-   middle of a `--lh-body` line. */
-.tile > .badge {
+/* A row's chip and its label share a wrapping head. The label's
+   basis is half the column, so the chip stands beside the label's
+   first line while the label keeps at least half of it and drops
+   under the label, at the leading edge, below that: the reference's
+   `tileBadgeBeside`. Its block margins centre a `--lh-small` chip
+   in a `--lh-body` line in either place, the box the reference
+   centres it in. */
+.tile-head { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: var(--icon-gap); }
+.tile-head > .tile-label { flex: 1 1 50%; min-width: 0; }
+.tile-head > .badge {
   flex: none;
-  margin-block-start: calc((var(--lh-body) - var(--lh-small)) / 2 - var(--badge-pad-v) - var(--border));
+  margin-block: calc((var(--lh-body) - var(--lh-small)) / 2 - var(--badge-pad-v) - var(--border));
 }
 .tile-detail, .tiles-desc { font-size: var(--px-small); line-height: var(--lh-small); color: var(--dark); }
 /* Off: the whole row recedes at once — label, detail, leading mark,
@@ -3698,12 +3703,12 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 :where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > * { --in-gap: initial; }
 :where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet), :where(.stack.row) { --in-gap: 8px; }
 
-:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(:not(.icon-button, .pane-title)) ~ :where(.group, h1, h2, h3, h4, h5, h6),
-:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(:not(.icon-button, .pane-title)),
-:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)),
-:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group) + :where(.icon-button, .pane-title) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)) { margin-block-start: max(0px, var(--boundary) - var(--in-gap, var(--gap))); }
-:is(li, th, td) > :is(.group, h1, h2, h3, h4, h5, h6):not(:first-child),
-:is(li, th, td) > .group + :not(.group) { margin-block-start: var(--boundary); }
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(:not(.icon-button, .pane-title)) ~ :where(.group, h1, h2, h3, h4, h5, h6, .stand-in.hands-back:has(> :is(.group, h1, h2, h3, h4, h5, h6):first-child)),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group, .stand-in.hands-back:has(> .group:last-child)) + :where(:not(.icon-button, .pane-title)),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group, .stand-in.hands-back:has(> .group:last-child)) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)),
+:where(.nokre, .region, .stack:not(.row), .group, .box, .document, .scroll, blockquote, .sheet) > :where(.group, .stand-in.hands-back:has(> .group:last-child)) + :where(.icon-button, .pane-title) + :where(.icon-button, .pane-title) + :where(:not(.icon-button, .pane-title)) { margin-block-start: max(0px, var(--boundary) - var(--in-gap, var(--gap))); }
+:is(li, th, td) > :is(.group, h1, h2, h3, h4, h5, h6, .stand-in.hands-back:has(> :is(.group, h1, h2, h3, h4, h5, h6):first-child)):not(:first-child),
+:is(li, th, td) > :is(.group, .stand-in.hands-back:has(> .group:last-child)) + :not(.group) { margin-block-start: var(--boundary); }
 
 .tiles > .tile + .tile:not(.radio) { position: relative; border-top-color: transparent; }
 .tiles > .tile + .tile:not(.radio)::before { content: ""; position: absolute; inset-inline: 12px 0; top: calc(-1 * var(--border)); border-top: var(--border) solid var(--g10); }
@@ -3832,11 +3837,14 @@ input.check::after { content: "\e06c"; }
 
      "You are here" is ink and the rule under the words, in the
      regular face core measured every column in. The words are
-     always one line, in a column core measured for them, the
-     off-roster marker's title like any destination's. Where the
-     browser's advances run wider than core's they are clipped to
-     it from its leading edge (`safe`), so what shows is how they
-     begin. */
+     always one line, in the column core measured: a
+     destination's as wide as its words, the off-roster marker's
+     as wide as its title where the band holds it and a bare
+     touch target where it does not. Words wider than their
+     column end in the browser's ellipsis, as core's reference
+     elides them at a cluster, never a glyph cut at the edge; a
+     line too long for its box starts at its leading edge, so
+     what shows is how they begin. */
   /* The row is the group, centred: the ground and, a gap after
      it, the notices indicator standing beside it as a neighbour.
      The ground is a pill hugging the destinations, pills or
@@ -3894,11 +3902,10 @@ input.check::after { content: "\e06c"; }
   .slot-words:where(:not(.stage-window *)) {
     white-space: nowrap;
     text-align: center;
-    display: flex;
-    align-items: center;
+    display: block;
     max-width: 100%;
-    justify-content: safe center;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
   .slot.current:where(:not(.stage-window *)) { position: relative; color: var(--ink); }
   /* "You are here" in a column: a round-ended rule as wide as the
@@ -4007,7 +4014,7 @@ input.check::after { content: "\e06c"; }
 :where(.stage-window) .nav-ground { position: relative; overflow: visible; display: flex; align-items: center; flex: 0 0 auto; gap: var(--nav-item-gap); box-sizing: border-box; height: var(--nav-ground-h); padding-inline: calc(var(--nav-bar-pad) - var(--border)); border: var(--border) solid var(--g10); border-radius: calc(var(--nav-ground-h) / 2); background: var(--g11); }
 :where(.stage-window) .nav-row.stacked > .nav-ground { gap: 0; padding-inline: calc(var(--nav-bar-pad-h) - var(--border)); }
 :where(.stage-window) .slot { flex: 0 0 var(--slot-basis); box-sizing: border-box; padding-inline: var(--nav-item-gap); min-width: 0; height: var(--nav-slot); display: flex; flex-direction: column; align-items: safe center; justify-content: center; gap: var(--nav-stacked-glyph-gap); border-radius: var(--radius); font-size: var(--px-small); line-height: var(--lh-small); color: var(--dark); text-decoration: none; }
-:where(.stage-window) .slot-words { white-space: nowrap; text-align: center; display: flex; align-items: center; max-width: 100%; justify-content: safe center; overflow: hidden; }
+:where(.stage-window) .slot-words { white-space: nowrap; text-align: center; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 :where(.stage-window) .slot.current { position: relative; color: var(--ink); }
 :where(.stage-window) .slot-rule { position: absolute; inset-inline: var(--nav-item-gap); bottom: calc(-1 * var(--nav-bar-pad)); height: var(--focus); border-radius: 1px; background: var(--ink); }
 :where(.stage-window) .slot > .icon { font-size: var(--px-body); line-height: var(--px-body); }

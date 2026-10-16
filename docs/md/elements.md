@@ -647,6 +647,44 @@ and stands by its words, beside the paragraphs it heads
 | `h2` | 24 | `h5` | 16 (body) |
 | `h3` | 20 | `h6` | 12 (small) |
 
+#### A title whose word does not fit
+
+**A title steps down to `h2` when one of its words is wider than its
+column at `h1`, and only the title.** The column is what the line leaves
+the words: the back control and the header actions come off it, so a
+360pt phone gives a title beside both about 240pt, and a German circle
+name, `Gestaltungsgilde`, is wider than that at 32px. The whole title
+takes the step, every line of it, at `h2`'s line height, and the back
+control and the actions centre on that line (`layout.pageTitleScale`,
+`layout.laidTextRun`; 2026-10-16). A title whose words
+all fit stays `h1` however many lines it wraps to: words that can break
+between themselves are not this case.
+
+One step, and `h2` is the floor: a title drawn under the size of the
+sections it heads would invert the page's outline. A word wider than
+the column even at `h2` still breaks at the column edge, as any word
+does (`wrap.breakWord`), so nothing is ever lost or run past the edge.
+The web serves the verdict core reached, as the title's `s-h2` class,
+measured by the reader's own faces at the reader's width on every
+relayout.
+
+Weighed and refused, so they are not reopened:
+
+- **Breaking mid-word, as before.** A title is a name, often one a
+  person typed; a name split with no hyphen reads as a typo, while a
+  smaller name reads as a name.
+- **Ellipsis.** It loses the name's end, and a name the person typed is
+  the one thing on the screen they will check letter by letter.
+- **A hyphen at the break.** A right hyphenation point needs a
+  dictionary per language, which nokre does not carry, and a hyphen at
+  an arbitrary point is the same typo with a mark on it.
+- **More steps, or a size between steps.** The type scale is closed;
+  below `h2` the title reads as a section.
+- **Every heading, or every text run.** A section's heading takes the
+  whole column, where no chrome comes off it, and stepping it would make
+  it read as the level below it. Prose has a whole column and no claim
+  to a size of its own.
+
 Only three sizes sit above the 16px body, so size alone cannot carry six
 levels. Every level draws **bold**, in the family's real bundled bold
 face — never synthetic emboldening — which is what keeps `h5` and `h6`
@@ -1887,6 +1925,15 @@ A scope whose content has not arrived. Lays out exactly as the `stack`
 it replaces (`axis`, `gap`, `padding`, same defaults), so the template
 inside it stands where the real content will. `label` is required and
 is what the whole scope announces.
+
+**Its air is the air of what lands in its place.** A vertical stand-in
+that pads nothing stands for the blocks it holds, so the flow around it
+spends at each edge what the block at that edge asks: a stand-in opening
+on a group or a heading takes the boundary gap before itself, and one
+closing on a group the boundary gap after, exactly as the group would.
+A stand-in for a group under the title sits where the group lands, and
+nothing moves when it does. A padded stand-in, or one running as a row,
+is a block of its own and asks the flow's gap.
 
 Under it, everything draws **real** — the consumer's ordinary draw code
 runs, and its words are its words. What blocks is a string handed as
@@ -3374,7 +3421,11 @@ padding, so every handle there, the teardrop and a selection's discs
 alike, hangs from the field's outer bottom edge instead and never
 stands on its border, as iOS hangs its handles below the line and
 Android below the baseline; on an earlier line of an area it hangs from
-the foot, over the line below, as theirs do. A caret placed by a mouse does
+the foot, over the line below, as theirs do. Hanging there, a handle
+reaches into whatever is laid out next, and it stands over it: every
+handle is drawn after everything else in the field's scroll region,
+modal layer or page, under that scope's clip, and only a layer drawn
+later over a scrim covers it. A caret placed by a mouse does
 not, because a mouse already puts the caret anywhere it can see. This is
 the one thing nokre draws from what is pressing, and it is a grab
 *target* rather than a control — the caret it moves is reached by a tap,
@@ -4338,7 +4389,7 @@ among options, that is `radio_group`, not a tile group.
 
 
 A row may carry a **`badge`**: a short status word — "Sent", "Draft",
-"3 new" — drawn as the chip the `badge` element draws, on the row's
+"3 new" — drawn as the chip the `badge` element draws, on the label's
 first line, inboard of the chevron, mirroring with everything else.
 Unlike the leading mark it is **announced**: a glyph's meaning is a
 guess and a word is not, so it reaches assistive tech as the row's
@@ -4346,11 +4397,30 @@ value after `detail`, joined with the library's own `, ` — "Write" is
 the name, "Send anonymous feedback, Sent" the value. `""` is no chip
 and nothing joined.
 
-Its width comes off the row's **whole** text column, not off the first
-line alone, which is the trade the chevron's band already makes: a
-group reads as a column because every line of every row starts and ends
-on one pair of x's, and letting a second line run under the chip to buy
-back twenty pixels would cost that.
+Its width comes off the **label's** lines and never off `detail`'s:
+the chip is a word about the row's name, and a detail line nothing
+stands beside wraps to the whole text column.
+
+- **If standing beside the label would leave it less than half the
+  text column, the chip drops to a line of its own under the label**,
+  at the column's leading edge and before `detail`, and the label takes
+  the whole column. A state word in German ("Schlüssel auf anderem
+  Gerät") is half a phone's column; beside it a question wrapped a word
+  a line and broke words mid-word. Half, and not a measured fit,
+  because the browser has to reach the same verdict without nokre
+  measuring: it is the label's `flex-basis: 50%` in a wrapping row
+  beside the chip.
+- **The chip is centred in a body line in both places**, so it sits
+  the same beside the label and under it.
+- **Neither ellipsis nor always-under**, both weighed on 2026-10-16: an
+  ellipsised chip loses the state word, which is the only thing the
+  chip says, and always-under spends a line on every row whose chip
+  fits beside its name, which is most of them.
+
+Charging the chip to the whole column was the first shape (2026-09-07),
+on the grounds that every line of every row should end on one x. It held
+while a chip was "Sent" and cost the detail twenty pixels; a German
+state word cost it half the column and wrapped a group name mid-word.
 
 #### The family
 
@@ -5067,8 +5137,13 @@ line, which no width alone can answer:
   whatever screen is open (the owner's call, 2026-10-15, reversing the
   bare `touch_target` column of 2026-10-14: at 390pt Rokovski
   Organizations' "Create organization" was clipped to its first
-  letters while the ground held 243 of 358px). A title too long for
-  the band tips it to the chip, as any destination's long word does.
+  letters while the ground held 243 of 358px). Where the whole title
+  does not fit, the column falls back to a bare `touch_target` with the
+  title elided to it, and only where even that
+  does not fit is the band the chip (the owner's call, 2026-10-16: at
+  480pt Rokovski Teams' German credits screen lost all five
+  destinations to the chip for one title, "Guthaben"). One long title
+  never costs every destination its column.
 - **Only what shows is counted**, the owner's call (2026-10-14): "don't
   reserve/imagine marker, let it change to stacked when needed and let
   it stay row in floating ground while not needed yet." The off-roster
@@ -5169,8 +5244,15 @@ They answer it with one extra entry, appended to the roster the chrome
 draws from: the current route's [`title`](routing.md), wearing the shared
 `file_text` mark. In the row it is a `nav_here` — a plate at the trailing
 end of the ground, in the current destination's plating; stacked, a
-column as wide as its title, like any destination's, with the rule
-under it. Collapsed, it is what the chip
+column as wide as its title where the band holds it whole, else a
+`touch_target`-wide column with the title elided to it, and the rule
+under it either way. Elided means the title ends at a grapheme cluster
+with an ellipsis, measured in, inside the column's air ("Ter…"), and
+where not even one cluster fits beside it the ellipsis alone, never a
+glyph cut at the column's edge (the owner's call, 2026-10-16: a hard
+cut mid-word, "What kir", read as a defect in Rokovski Ties' store
+frames); the rule then spans the room the title was elided to. The
+title's whole words stay its accessible value. Collapsed, it is what the chip
 carries, so the answer does not depend on the shape. Consumers append
 neither, and name neither: every line of the roster — the destinations
 and this one alike — is labelled from the route table.
@@ -5202,8 +5284,8 @@ opened.
 In the row the extra entry is measured like any other, so the collapse
 threshold needed no rule for it: a row with one more pill in it
 collapses at a wider viewport, which is the threshold working, not an
-exception to it. The stacked shape counts its column the same way,
-only while it shows.
+exception to it. The stacked shape counts its column only while it
+shows, at its `touch_target` floor.
 Crossing back onto a destination drops the entry and the row returns to
 the roster alone.
 

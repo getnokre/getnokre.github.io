@@ -343,7 +343,11 @@ for the full list. The ones that don't have a `docs/testing.md` page:
 - **The GPU against the CPU** — `zig build check-gpu -Dskia -Dgpu`, one
   of the gates, and `zig build check-gpu-sweep -Dskia -Dgpu`, run
   before a release and not with them
-  ([gpu.md](gpu.md#what-the-shaders-measure)).
+  ([gpu.md](gpu.md#what-the-shaders-measure)). Its verdict is its exit
+  status: a take past its target fails the step and exits non-zero,
+  while a passing run prints its table on stderr and Zig 0.17's build
+  runner follows that with a `failed command:` line, its label for any
+  passing side-effect run's stderr, not a failure (2026-10-16).
 
 Goldens are byte-exact. CI never creates goldens ([testing.md](../testing.md)
 has the workflow).
