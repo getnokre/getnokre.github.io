@@ -3281,9 +3281,12 @@ recording is nokre's own format, stamped with the revision and a digest
 of the shapes it is made of: it is not a contract, and a new nokre asks
 for the plays to be recorded again.
 
-A recording holds no stage — a play of a play is a recording of a
-recording — and the recorder refuses one
-(`error.RecordingHoldsAStage`).
+A recording holds no stage over a recorded play — a play of a play is
+a recording of a recording — and the recorder refuses one
+(`error.RecordingHoldsAStage`). A [live stage](elements.md#a-live-stage)
+is the app's own subtree, not a play, so a screen holding one records:
+the stage, its frame's viewport and every node under it, at the top of
+its scroll.
 
 What nokre tests for *itself* — and the guarantees those tests prove on
 your behalf — is catalogued in

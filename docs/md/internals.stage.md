@@ -82,10 +82,12 @@ digest (`shapeDigest`): a field added anywhere in `Element`,
 `SceneState` or `Step` changes it, and `format` is bumped where the
 bytes' meaning changes with no type's, so a reader refuses any other
 stamp. `IconName`, `PlayName` and `PictureName` are digested by name
-alone — icons travel by name, a recording holds no stage (a
-`PlaySource` of either kind is refused at the writer), and a
-picture is stood up with `Picture.held.recorded` set so it draws its
-box.
+alone — icons travel by name, a recording holds no stage over a
+recorded play (a `PlaySource` that is `.declared` or `.data` is refused
+at the writer), and a picture is stood up with `Picture.held.recorded`
+set so it draws its box. A live stage is written as its play, label and
+naming, never its `played`, which layout and the stood scene's own
+`stage.sync` write again ("The live stage").
 
 ## Standing a scene up
 
@@ -477,6 +479,61 @@ wheel, a drag and the bar scroll it through the one door, clamped to
 and as far again as the scene's page scrolls at the window, found by
 `raree.settle`. `unpeep` returns focus without a
 reveal, as `closeBig` does, so the page stands where it stood.
+
+## The live stage
+
+A stage whose `play` is `.live` (elements.md, "A live stage") is a
+stage by its frame and nothing else: no player, no recording, no cut,
+no ticks, no controls, no big screen. Everything above this section is
+the recorded stage's; this is the whole of the live one.
+
+**Who owns what.** The host does. The scene is the stage's children in
+the host's own tree, appended through `validateAppend` like any other
+(only `.live` lifts `error.StageControlsAreNokres`), laid out by the
+host's layout and drawn by the host's renderer in its look. No scene
+app is made: a scene app owns its own layout pass, and lifting a
+subtree the host built into one would stand a copy of the app's tree
+that the host's focus, input and recording never see. That is also why
+a screen holding a live stage records: the recorder walks the host's
+tree, and the subtree is in it. Standing that recording up stands the
+live stage with its children in the scene app, which lays it out by
+the same code, so a raree or a stage over the recording shows it with
+no nested scene app.
+
+**Layout** (`layoutLiveStage`). `stage.sync` writes
+`StagePlayed.scene_viewport` from the `SceneViewport` (`.window` is
+`App.staging.screen`, else `App.viewport`, as a raree's is). The window
+is that viewport at 1:1, no wider than the span and as tall as its
+aspect then says (`liveStageWindowSize`), from the span's leading edge;
+the frame stands round it (`liveStageFrame`), with a header only where
+the stage has a `label`. The children flow inside the window as the
+root page flows (`root_stack`'s padding and gap), from the window's top
+less `StagePlayed.live_scroll`, clamped to `live_content_h` less the
+window's height. The stage's rect is the window alone, so the one door
+every scroll goes through (`Element.scrollView`, `viewportTrack`'s
+`rectOf(id).h`) and the bar's strip read it as they read a
+`scroll_region`'s; the frame's header stands above the rect, as the
+recorded stage's edge stands outside its own.
+
+**The scene is the stage's alone.** Every walk that answers a reader
+or a hand stops at a live stage: the focus order
+(`focus.StopIterator`, the stage itself a stop so the keyboard scrolls
+it), hit testing, the scroll owner under a point, the sideways
+scroller and the dial under one, the bar under one
+(`DfsIterator.skipLiveStageScene`), a locator (`reach.dropContents`),
+the accessibility snapshot, and the audit's label and announcement
+rules. `input.activateStop` refuses a stop inside one
+(`Tree.inLiveStage`), for a backend that delivers stops. Layout, the
+renderer, the DOM substrate and the recorder walk in.
+
+**Drawing.** The card and its edge are `drawSceneFrame`'s; the
+children are drawn under the card's rounded clip and the window's, so
+the window's corners at the card's foot stay round. A scroll of the
+window is therefore a whole frame, as a scroll a rounded corner cuts
+always is ([pixel-model.md](pixel-model.md#partial-frames)). The DOM writes a figure,
+the same frame and header classes, and a `.live-stage-window` scroller
+at the viewport's `aspect-ratio` holding the children under one
+`inert` flow, whose scroll is the browser's.
 
 ## Time
 

@@ -371,6 +371,7 @@
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .picture-unshown { border-color: var(--rule); }
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .stage-frame, :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .raree:not([data-peeped]) > .raree-frame { --stage-edge: var(--rule); background: var(--paper); box-shadow: var(--card-shadow); }
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .stage-window { --stage-rule: var(--rule); }
+:scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .live-stage-window { --stage-rule: var(--rule); }
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]):is([data-nokre-shape="desk"], [data-nokre-shape="desk-narrow"]) .nokre > :is(.region-roster, .region-aside, .region-masthead, .region-composer) { border-color: var(--rule); }
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .seg input:checked + span, :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .plate.lit:not([aria-pressed="true"]), :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .dial-plate.now { background: var(--lit-fill); border-color: var(--lit-edge); box-shadow: var(--control-shadow); }
 :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .segmented[disabled] .seg input:checked + span, :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .segmented:has([aria-disabled="true"]) .seg input:checked + span, :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .ranking[disabled] .plate.lit:not([aria-pressed="true"]), :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .ranking.off .plate.lit:not([aria-pressed="true"]), :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .dial[disabled] .dial-plate.now, :scope:is([data-nokre-theme="depth"], [data-nokre-theme="lamp"]) .dial.off .dial-plate.now { border-color: var(--lit-edge); box-shadow: none; }
@@ -2691,6 +2692,16 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .stage-header > .btn:nth-last-child(3) { inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed) + 2 * var(--touch)); }
 .stage-header > .btn[hidden] { display: none; }
 .stage-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.live-stage > .stage-frame { overflow: hidden; }
+.live-stage > .stage-frame > .stage-header { padding-inline: var(--tile-pad-h); }
+.live-stage-window {
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  --stage-rule: var(--g10);
+}
+.stage-header + .live-stage-window { margin-top: var(--border); box-shadow: 0 calc(-1 * var(--border)) 0 0 var(--stage-rule); }
 .stage-window {
   position: relative;
   width: 100%;

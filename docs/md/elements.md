@@ -3870,7 +3870,8 @@ or `named_by` in its place
 ([naming](#naming-a-device-without-drawing-its-label)). That is all a
 stage takes.
 
-A play comes from one of two places. `.declared` names one the app's
+A play comes from one of two places, and a stage may hold a scene the
+app builds instead ([a live stage](#a-live-stage)). `.declared` names one the app's
 build declares it shows (`AppOptions.shows`): a `nokre.PlayName`, with a
 member for each such play and no other, so a stage naming a play the
 build does not carry does not compile. The build gathers it in every
@@ -4000,8 +4001,8 @@ written `hidden`, since
 only the live driver answers them and the page may be read with no
 script at all; the figure, its scene at rest and its step's words stand
 without them, and the driver's first frame shows them.
-An app appends nothing under a stage and sets none of its play
-(`error.StageControlsAreNokres`, `error.StageFieldIsNokres`).
+An app appends nothing under a stage over a recorded play and sets none
+of its play (`error.StageControlsAreNokres`, `error.StageFieldIsNokres`).
 
 **The big screen.** Full screen is the same stage, its frame, words and
 controls, standing alone over the reader's whole screen on the page's
@@ -4055,6 +4056,47 @@ Reach for it to show what an app does — on its own welcome screen, or on
 another app's pages, which is what a marketing site is. The played app's
 code is never linked: its recordings are data.
 
+#### A live stage
+
+`.live`, a `nokre.element.SceneViewport`, makes the stage a frame round
+a scene this app builds now, from its own state: the stage's children,
+which the app appends under it as under a stack
+(`Cursor.liveStage`, which refuses any other `play` with
+`error.LiveStageHoldsARecording`). Reach for it to show a reader what
+another screen of this app will show someone else — what a receiver
+reads once the quarter closes, built from what the sender just chose —
+in a frame that says it is not this screen. The honesty rule holds
+because the app built it.
+
+It keeps the stage's frame and nothing of the play: no controls, no
+count, no foot, no hand, no zoom, no big screen, no ticks, no
+recording. The header holds the `label` alone; a stage `named_by` a
+heading has no header. The window is the viewport at 1:1 — `.window`,
+the default, the screen the app stands on now, read again at every
+layout; `.size`, that logical size, refused where either side is not
+positive (`error.LiveStageSizeEmpty`) — no wider than the space the
+stage is given and as tall as the viewport's aspect then says, so a
+phone's family keeps a phone's shape in a narrower column and reflows
+its words to the window's width. The children are laid out as a page
+in the window, at the page's padding and gap, in this app's look; a
+scene taller than the window scrolls inside it at 1:1, by the wheel, a
+drag, the bar and the keyboard, and the page beside it does not move.
+A rebuild starts it at the top.
+
+Inert as a recorded stage's window is: a press inside lands on the
+stage, so a switch in the scene does not toggle and a button does not
+act; focus stops on the stage itself, so the keyboard can scroll it,
+and never enters; nothing in the window is found by a test's locator or
+is a node in the accessibility tree — the stage is one `figure` named
+by its name ([accessibility.md](accessibility.md#derivation)). On the
+web the window is a scroller with the scene's markup `inert` inside it.
+
+A screen holding a live stage records: the subtree is the app's own,
+so a recording of that screen holds the stage and everything under it
+at the top of its scroll, and a [raree](#raree) or a stage over that
+recording shows it. A stage over a recorded play is still refused in a
+recording ([testing.md](testing.md#and-as-a-play-inside-an-app)).
+
 ### `raree`
 One still scene from a recorded play, in a card, with the words its step
 stands under: the peep box of a raree show. Where a [`stage`](#stage)
@@ -4062,7 +4104,8 @@ plays a recording, a raree shows one of its screens and holds still, so
 a page can lay a whole play out as one raree per step and a reader can
 look at each. It is what an exhibit is made of: an app that fetches its
 recordings shows one raree per step of each, then the plays on stages.
-Fields: `play`, a `nokre.element.PlaySource` as a stage's; `step`, which
+Fields: `play`, a `nokre.element.PlaySource` as a stage's, never
+`.live` (`error.RareeNeedsARecording`); `step`, which
 step's rest it shows; and `viewport`, the size the scene is laid out at.
 That is all a raree takes. In its card the scene wears eink, in the
 app's appearance, under every look: a card is a thumbnail, and eink is
@@ -4092,7 +4135,7 @@ missing value is drawn in, with no words under it; a fetch that fails
 says the could-not-show words. A `.data` raree never asks: its bytes
 are all there is.
 
-**The viewport is the reader's choice**, a `nokre.element.RareeViewport`.
+**The viewport is the reader's choice**, a `nokre.element.SceneViewport`.
 `.window`, the default, lays the scene out at the screen the app stands
 on now, read again at every layout, so a resize lays it out again with
 no rebuild, as a stage's is; peeped, it stands at 1:1 in exactly the
