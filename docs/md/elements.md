@@ -77,6 +77,12 @@ does not change. Every test tier fails on it instead
 that *catches* a refusal and carries on has built a whole screen of its
 own choosing; only a refusal the builder returns counts.
 
+A rule that guards only against a press landing on a control that does
+nothing is not held inside a [live stage](#a-live-stage)'s scene, where
+no press lands (2026-10-17): `error.TileNeedsDestination` and
+`error.RankingPickingUnwired` stand aside there, and every other rule
+holds.
+
 ### Patching one node instead of rebuilding
 
 Most screens are rebuilt from state: `app.reload()` for a gesture the
@@ -447,6 +453,14 @@ costs at rest is never the air the button section declines to give a
 pill that never goes busy, and every sheet saying the same `true`
 would be the composition this exists to stop being written by hand.
 
+**A destructive act's sheet says so on the act**:
+`.confirm = .{ .label = tr(.remove), .on_press = …, .destructive = true }`,
+and the primary takes the [destructive form](#the-destructive-form),
+the hollow hexagon, instead of the filled pill. A fact about the act rather than a form the
+caller picks: the sheet's primary can be no other form, so a `form`
+field would offer the secondary, the glyph and a vendor mark only to
+refuse them. Cancel stays the secondary either way.
+
 **Cancel stays enabled while the act is running.** nokre has no spinner
 and no animation, so a busy confirmation shows a static hourglass on its primary and
 nothing else moves: a user who cannot tell whether anything is
@@ -596,6 +610,13 @@ an empty `route` is how a span says so — every route-carrying field in
 the set is a plain `[]const u8` defaulting to `""`, never an optional,
 so "no route" has one spelling and every reader asks one question
 (`route.len > 0`).
+
+`parted` makes the text words in parts — a name and a date range,
+"Bobby A · 1 Jan 2025 – 1 Jun 2025" — which wraps between its parts
+first and drops the separator where it breaks, exactly as a button's
+label does ([Words in parts](#words-in-parts)). It takes the place of
+`content`, which `append` writes as the one-line join, and never stands
+beside `spans` (`error.PartedWordsAlongsideSpans`).
 
 `lang` is the one thing a span carries that is neither vocabulary nor
 destination: the BCP 47 tag of the language *these words* are in, where
@@ -1269,22 +1290,43 @@ try b.picture(.{ .shows = .{ .data = org.logo_png }, .description = org.name, .e
 
 ### `avatar`
 An avatar is a person: their face inside a disc, or, where there is no
-face to show, the initials of their name on a plain disc. Four fields:
+face to show, the initials of their name on a plain disc. Five fields:
 `picture`, an optional `PictureSource` (a picture's `.declared` or
 `.data`); `name`, the person's name, which nokre takes the initials
-from and never draws whole; `description`, who it is in words; and
-`size`, `.small`, `.medium` (the default) or `.large`.
+from and draws whole only when centred; `description`, who it is in
+words; `size`, `.small`, `.medium` (the default), `.large` or `.hero`;
+and `centred`, off by default.
 
 ```zig
 try row.avatar(.{ .picture = .{ .data = member.face_png }, .name = member.name, .description = member.name, .size = .small });
 try b.avatar(.{ .name = account.name, .description = tr(.yourAccount), .size = .large });
+try b.avatar(.{ .picture = person.face, .name = person.name, .description = person.name, .size = .hero, .centred = true });
 ```
 
-- **Three fixed sizes, never another.** `.small` is 24 points, a body
+- **Four fixed sizes, never another.** `.small` is 24 points, a body
   line's height, for a name in a row; `.medium` is 40, a list's or a
-  header's lead; `.large` is 80, the one face a screen is about. Its
-  box is that square at the start edge, and it is never narrowed or
-  stretched. There is no size field in points.
+  header's lead; `.large` is 80, the one face a screen is about;
+  `.hero` is 120, the same face where the column has room for half
+  again as much. There is no size field in points, and none grows
+  with the column: a size is the avatar's meaning, and a disc that
+  tracked the window would say a different thing on every device.
+  `.hero`'s initials are `.large`'s, `h1`, the largest scale there is.
+- **At the start edge, its box is that square, never narrowed or
+  stretched.** That is every avatar a row's words name beside it.
+- **Centred, it is a screen about one person** (owner-decided
+  2026-10-17, amending "at the start edge" for this form alone): the
+  avatar takes the column, its disc centred across the top, and its
+  `name` drawn whole under it at `body` scale, `element.avatar_name_gap`
+  (8) below the disc, wrapped in the column with every line centred
+  (`layout.avatarNameHeight`, `layout.avatarDisc`). Everything after it
+  stands where it always did; a consumer that drew the name as text
+  under the avatar stops, because the element now owns "a face with its
+  name". Centring is symmetric, so no direction moves it; the name is
+  a paragraph of its own and takes its direction from its own words. No
+  name draws no line. In a horizontal stack it hugs its name, the disc
+  centred over it. A list item's lead is never centred
+  (`error.ListItemAvatarIsCentred`): it stands beside the item's
+  words.
 - **A face is its centre square, inside the disc.** Whatever the
   picture's shape, the square at its centre is read down to the disc
   in integers and the disc's edge is coverage nokre computes, so the
@@ -1295,7 +1337,8 @@ try b.avatar(.{ .name = account.name, .description = tr(.yourAccount), .size = .
   picture is never enlarged; a face is, because an avatar's size is its
   meaning and a small disc inside a larger one says nothing. A face made
   by `App.squarePngOf` at an `edge` of 240 or more is never enlarged at
-  `.large` on a screen of three device pixels per point or less.
+  `.large` on a screen of three device pixels per point or less, and
+  one of 360 or more at `.hero`.
 - **No face draws the initials.** No `picture`, bytes that are not a
   PNG within a picture's limits, and pixels the platform cannot decode
   all draw the initials, with no could-not-show words: a person is
@@ -1315,18 +1358,25 @@ try b.avatar(.{ .name = account.name, .description = tr(.yourAccount), .size = .
   holds 4.5:1 in every look and appearance.
 - **A reader hears the description alone**, "Ada Lovelace, image",
   face or initials: the initials restate the name, and the face is the
-  person the description names. An empty description is refused at
+  person the description names. A centred avatar's drawn name is heard
+  after it as the image's accessible description, unless it is the
+  description's own words, so no name is said twice
+  (`Avatar.drawnNameDescribing`; [accessibility.md](accessibility.md)).
+  An empty description is refused at
   append (`error.UndescribedAvatar`), and empty face bytes too
   (`error.EmptyPicture`). It is never a control: no focus, no press.
 - **The same bytes decode once**, shared with any `picture` of them,
   and are freed with them, by the store a picture uses.
 - **In the browser** a face is an `<img>` the stylesheet rounds and
-  covers, named by its `alt`; a face from data takes a blob URL from the
+  covers, named by its `alt`; centred, it and a `p.avatar-name` stand
+  in a `div.avatar-centred` the sheet centres, the name hidden from the
+  tree and pointed at by the disc's `aria-describedby` where it
+  describes; a face from data takes a blob URL from the
   live driver as a picture's does, and stands its initials until then,
   as on a page a static generator writes. Initials and the mark are one
   `role="img"` named by the description.
-- **A recording carries the name, the description and the size, never
-  the face.** A stage draws a played app's avatar as its initials.
+- **A recording carries the name, the description, the size and
+  whether it is centred, never the face.** A stage draws a played app's avatar as its initials.
 
 #### Making a face from a photo
 
@@ -1365,7 +1415,7 @@ was handed — a picker's bytes, in whatever container the device keeps
 
 It leads two other elements' rows: a [`tile`](#tile_group--tile)'s,
 as its `avatar` field, and a [`list_item`](#list--list_item)'s, as its
-first child. Both take `.small`.
+first child. Both take `.small` at the start edge.
 
 What this is not: a `picture` is something the words are about, at its
 own shape; an `app_mark` is an app's identity; an avatar is a person's.
@@ -1733,23 +1783,30 @@ bounded by an edge instead of a number.
 #### A row too narrow for its children
 
 A horizontal stack that runs out of line does one of exactly two things.
-**The row's own children and the surface's medium pick which.** The
-medium says whether the surface clips a row too wide for it or reflows
-it, and the driver that draws the app declares it; your code never
-does. There is no field, no wrapper and nothing to opt into, so there is
+**The row's own children, the screen's shape and the surface's medium
+pick which.** The shape is the route's
+([routing.md](routing.md), "A screen declares its shape"); the medium
+says whether the surface clips a row too wide for it or reflows it, and
+the driver that draws the app declares it. Your code states neither
+here. There is no field, no wrapper and nothing to opt into, so there is
 no way to be handed the wrong one:
 
-- **Where the surface clips, a row of actions folds.** Every native
-  window clips. A row whose every child is a `button` or a `link`, two
-  or more of them, collapses its tail into a `More` control and stays
-  one line. For example, Publish, Save draft and Archive in a narrow
-  macOS window show as Publish and "2 more".
+- **On a desk, where the surface clips, a row of actions folds.** Every
+  native window clips. A row whose every child is a `button` or a
+  `link`, two or more of them, in a `desk`'s region or in a sheet over
+  one, collapses its tail into a `More` control and stays one line. For
+  example, Publish, Save draft and Archive in a console's narrow macOS
+  window show as Publish and "2 more".
   [The folded tail](#the-folded-tail-more) has the mechanics.
-- **Where the surface reflows, every row wraps, a row of actions
+- **On a page, a row of actions wraps, on every surface.** A phone, a
+  desktop window, the browser: the same two or three acts take one line
+  where there is room and two where there is not. The first child, the
+  primary, stays first on the first line, at the leading edge (the right
+  under RTL), and no act is ever hidden. No `More` is ever drawn on a
+  page.
+- **Where the surface reflows, every row wraps, a desk's row of actions
   included.** The browser reflows, both on a generated page and under
-  the live driver, with or without a runtime. The same three buttons on
-  a phone's browser take a second line, and no `More` is ever drawn
-  there.
+  the live driver, with or without a runtime.
 - **A row of blocks with words wraps one to a line.** Two or more
   blocks — boxes, groups, quantities — alone in a row share the line
   evenly where they all fit; where they do not, each takes a line of
@@ -1761,6 +1818,37 @@ no way to be handed the wrong one:
   centered on its own tallest, or standing at its top under
   `row_align = .top`.
 
+**A page's row of actions wraps (since 2026-10-17, owner's decision).**
+Until then it folded wherever the surface clipped, which is every native
+window, phones included. The fold was designed for a desktop toolbar,
+and on a phone it hid the very act a reader came for: Rokovski Ties'
+cycle card, Write and "Guess what they'll say" at 320pt in German,
+folded the whole row into "··· noch 2"; Rokovski Teams' domain
+re-verification, Verify, Send verification code and Cancel, folded to
+"Verify · 2 more", hiding the act you need when no code arrives;
+Rokovski Rankings' ballot publications in Turkish at 480pt folded both
+acts into "··· 2 tane daha", leaving nothing visible. A page scrolls as
+one, so a second line costs nothing, and wrapping hides nothing.
+
+A desk keeps the fold because a desk is the toolbar's shell. Its regions
+hold app-owned edges that never scroll away, so a toolbar there keeps
+its one line and a control opens the rest. A desk on a phone still
+folds: its regions stand one at a time, each with the same pinned
+edges.
+
+**A touch-screen medium was asked for and refused** (2026-10-17): fold
+in a desktop window, wrap on a phone. That is a named platform group
+([introduction.md](introduction.md), "No named platform groups"), and a
+device-conditional affordance besides: at the same width, a phone and a
+desktop window would show different trees, one with an act hidden. The
+only fact a driver could declare for it is which OS it runs on, which is
+the group, stale the first time an iPad stands a window in Stage Manager
+or a laptop has a touch screen. The shape is the route's own word, so it
+cannot go stale about a device. Two narrower fixes were weighed and
+dropped: never hiding the first child, and never folding a row of
+exactly two. Both still hide Send verification code behind "Verify ·
+2 more".
+
 The browser wraps rows of actions because a fold there is one nothing
 can perform. A page of links needs no runtime, so none loads to open a
 `More`
@@ -1768,20 +1856,21 @@ can perform. A page of links needs no runtime, so none loads to open a
 records what that did to published pages). A row that reflows cannot
 fail to fit, so there is nothing to fold for.
 
-On a surface that clips, the split is what the row *is*. Actions have to stay reachable and a user
+On a desk where the surface clips, the split is what the row *is*.
+Actions have to stay reachable and a user
 needs all of them, so one row plus a control that opens the rest is the
 honest shape; folding three status chips behind `More` would hide state
 behind a press, and clipping them would hide it outright. Wrapping is
 also the answer for the one row of actions that cannot fold — a lone
-action, which a control named `More` would hide twice. Where the row
-stands changes nothing: a row of actions inside a sheet folds like a
-screen's, its tail opening as a sheet stacked over the one it is in
-(since 2026-09-09, when sheets began to stack).
+action, which a control named `More` would hide twice. A row of actions
+inside a sheet over a desk folds like the desk's own, its tail opening
+as a sheet stacked over the one it is in (since 2026-09-09, when sheets
+began to stack).
 
-Width is not an input to the choice. The row's children and the medium
-are, and resizing a window changes neither, so it can change where a
-line breaks or how deep a tail folds, but never which of the two the
-reader is looking at.
+Width is not an input to the choice, and neither is the device. The
+row's children, the shape and the medium are, and resizing a window
+changes none of them, so it can change where a line breaks or how deep
+a tail folds, but never which of the two the reader is looking at.
 
 Wrapping bounds the problem the way shortening the words never could:
 **a row can always fit, as long as each child fits a line on its own.**
@@ -2253,14 +2342,15 @@ beside the control, the only thing saying what it switches. A `meter` or
 label: it is already the name alone.
 
 ### `button`
-`label`, `room_for`, `on_press` or `route` or `external`, `disabled`,
+`label` or `parted`, `room_for`, `on_press` or `route` or `external`, `disabled`,
 `in_progress`, `form`, `accessible_name`. A filled pill —
 ink fill, paper text — ringed on keyboard-origin focus
 ([accessibility.md](accessibility.md#focus)). Activated by tap, Enter,
 or Space.
 
-`form` says which button this is, as a tagged union with four faces:
-`.filled` (the default), `.secondary`, `.glyph`, and `.provider`. One
+`form` says which button this is, as a tagged union with five faces:
+`.filled` (the default), `.secondary`, `.destructive`, `.glyph`, and
+`.provider`. One
 field rather than four flags, because the flags' illegal combinations —
 a glyph form without a glyph or with an emphasis, an icon beside a
 vendor mark, a glyph-only sign-in, an outlined Google — used to be five
@@ -2273,8 +2363,9 @@ carrier), `.ink` text — beside the filled primary. Identical geometry,
 so the pair aligns; identical semantics, so assistive tech hears no
 difference. Because its text draws on the ambient, it passes the same
 contrast gate as `text` — a secondary button on a dark box fill is
-rejected at `append`. There is no tertiary and no danger variant: one
-filled, one outlined, and the words carry the rest. In every look
+rejected at `append`. There is no tertiary: one filled, one outlined,
+one hollow hexagon for an act that destroys (below), and the words
+carry the rest. In every look
 both round fully at the ends (capped at a one-line button's
 half-height, so a wrapped label keeps its corners), and the focus ring,
 the outline, and the off, working and waiting drawings follow; the
@@ -2303,6 +2394,73 @@ comes back as the app's own message. One filled, one outlined, and the
 words carry the rest — a third line inside the pill would be a second
 label with no name of its own to be announced by.
 
+#### The destructive form
+
+**An act that destroys or ends something has a form of its own**
+(2026-10-17, the operator's decision, after twelve rendered
+candidates): `.destructive`, a **rounded hexagon, hollow** — straight
+along the top and bottom, each end cut to a point at mid-height, all
+six corners rounded at 8px, drawn as the primary's `ink` in a 2px
+stroke with `ink` words on the ambient, in every look: eink, depth,
+depth dark and lamp dark draw it the same way. **A hexagon means this
+one thing and nothing else**: no other element, form or chrome takes
+the shape, so the eye reads the act from its outline before the words.
+It is not the secondary under a new name: the secondary is a *quieter*
+act, mid-gray at rest and thickening its own edge under focus; the
+destructive hexagon carries the primary's weight in the primary's tone,
+and its focus ring follows the hexagon outside it, held clear of it as
+the primary's is. Grayscale stays (settled): the form is the outline,
+never a hue. Dashes and a change of tone were rendered and refused, and
+there is no filled variant.
+
+Its height and padding are the pill's; **the points add their own
+width at each end** (`layout.buttonPointDepth`): each a quarter of a
+one-line pill's height deep, 9px, outside the label column, so the
+words, the busy hourglass and a progress track stand between the points
+exactly where they stand in a pill, and the column a label wraps to is
+the filled pill's for the same words. A wrapped label keeps that depth,
+so its points grow blunter rather than wider: a depth read off the
+button's own height would be a width read off itself, since the column
+decides how many lines there are. On the web a one-line button's ends
+are inline SVGs of the outline and the straight run between them a pair
+of borders. A label on two lines or more (`.wrapped`, read off layout's
+height) cannot use them, since an end's slope and corners depend on the
+height and no SVG follows that without a script: its hexagon is a clip
+over an `ink` ground, the band between the outline and the outline 2px
+in, its point at half the height. Where the browser has CSS `shape()`
+each corner is a curve meeting both sides; where it has not, the clip
+is a `polygon()` and the six corners are sharp, the points kept
+(2026-10-17, the operator's decision): a plainer hexagon, never a broken
+one.
+
+```zig
+try row.button(.{ .label = tr(.removeConnection), .form = .{ .destructive = null }, .on_press = .bind(remove, state) });
+```
+
+Busy, it keeps its stroke and stands the hourglass as any pill does;
+off, the stroke drops to the inactive `.g10` and the words to `.g6`; a
+number draws the ambient meter's tones between the points, and under
+lamp dark the hexagon's interior fills up to the number, cut square,
+as the secondary's interior does. Words not yet known draw its outline
+in the pending tone in every look. Its words draw on the
+ambient, so it faces `text`'s contrast gate at `append` as the
+secondary does, and it may act or go. It carries the same optional lead
+glyph. **The form adds nothing to the accessible name**: the words carry
+the act, as everywhere else — "Remove connection", never "Remove" and a
+form that means "dangerous".
+
+Which acts take it: **remove, delete, leave, sign out and clear, and
+cancelling a ballot** — acts that end or destroy something the reader
+cannot have back by pressing again. **Unpublish and unshare do not**:
+each is undone by publishing or sharing again, so it is an ordinary act
+in an ordinary form. A destructive act **never shares a row with a
+safe act** it could be mistaken beside — Delete next to Save is the
+slip the form exists to slow down; two destructive acts of one subject
+may share one. nokre does not enforce that, any
+more than it enforces which acts are destructive; the app's own design
+doc does. A [confirm sheet](#the-confirm-sheet) for a destructive act
+says so, and its primary takes the form.
+
 **The label wraps inside the pill, and the pill grows to hold it.** A
 button asks for the width its words want and takes what it is offered;
 when that is less, the column it wraps to is the box less its border,
@@ -2319,6 +2477,69 @@ one line whatever it was handed while its width was capped at what it
 was offered, and the rest of the label was painted past the pill: on an
 outlined one that reached a store screenshot with the price cut off, and
 on a filled one it is paper on paper and the words simply disappear.
+
+#### Words in parts
+
+**A label made of parts wraps between its parts first** (2026-10-17,
+the operator's decision). "Read Design · 4 credits" said whole on one
+line is right; wrapped by words at 320px it is "Read Design · 4" over
+"credits", a price torn in half. A button whose words are two things
+says so:
+
+```zig
+try b.button(.{
+    .parted = .{ .parts = &.{ tr(.readDesign), price }, .separator = tr(.partsSeparator) },
+    .on_press = .bind(buy, state),
+});
+```
+
+On one line the parts are drawn joined by `separator`. Where the label
+must wrap, a line takes as many whole parts as fit, the separators
+between them included, and a part that starts a line drops the
+separator before it — it is not drawn at all. Only a part wider than
+the column on its own breaks inside, by the ordinary rule, on lines of
+its own. Greedy across parts rather than one part to a line, because a
+browser's wrapping row of parts does exactly that with three, and the
+two substrates break the same words in the same places.
+
+`append` writes the one-line join into `label`, which the call leaves
+empty — `text`'s `spans` rule — so the accessible name, the locators,
+`room_for`'s measuring and the uniqueness rule all read one plain
+string, and each part is a slice of it afterwards. The name is always
+the join, whichever way the pill broke. A label stated beside parts
+must be that join (`error.WordsAlongsideParts`; the fold's restated
+copy carries both). One part is not parts
+(`error.PartedWordsNeedTwoParts`), a separator is required
+(`error.PartedWordsNeedSeparator`), a blank part is refused
+(`error.EmptyPart`), and the glyph form draws no words to part
+(`error.GlyphButtonDrawsNoParts`).
+
+**The joints live in the API, never inside a string.** No marker
+character in a catalogue value says where a label may break: a
+translator would see it, drop it, or carry it into a locale where it
+means something else. The parts are the call's own slices, each from
+its own catalogue entry, and the separator is the app's words like the
+rest — nokre owns no separator.
+
+The plain `label` stays the ordinary case, and a field rather than a
+`Label` union on `label` is why: Zig coerces no string to a union, so
+a union would have rewritten every `.label = tr(…)` in every consumer
+for the sake of the few labels that are two things.
+
+**On the web** the parts are a row that wraps, each part unbroken, the
+gap between two the separator's own width, and the separator drawn in
+that gap before every part but the first; a part that starts a line has
+its separator out past the row's edge, where the row's clip takes it.
+No script runs. The one thing the browser cannot do is break inside an
+unbroken part only when it is alone on its line, so **a part wider than
+its row is clipped there**, as an unbreakable word is, where the
+reference wraps it. The row takes its direction from its words, so in a
+right-to-left label the parts run right to left; it is hidden from
+assistive tech and the join stands beside it, visually hidden, as what
+is read.
+
+A [`text`](#text) takes `parted` the same way, for a row's
+"name · from – to".
 
 **`room_for` is a floor, never a cap.** A button whose words change —
 Follow and Following, Save and Saved — lists the labels it may say,
@@ -2602,7 +2823,7 @@ has. Which one it is follows from the field you set:
 - **A button that goes takes no progress.** A destination starts no
   work, so `in_progress` or `progress_percent` on one is
   `error.GoingButtonHasNoProgress`.
-- **Only `.filled` and `.secondary` may go.** A sign-in button's press
+- **Only `.filled`, `.secondary` and `.destructive` may go.** A sign-in button's press
   is the sign-in (`error.AuthButtonHasNoDestination`), and a `.glyph`
   button is shaped like the chrome's Back and close, so a destination
   behind one reads as either (`error.GlyphButtonHasNoDestination`).
@@ -2625,28 +2846,32 @@ derived"). `Button.goes` answers which kind a button is.
 
 #### The folded tail (`More`)
 
-Put actions in a horizontal `stack` and nokre shows as many as fit. When
-they don't all fit, the row **folds**: the actions that don't fit, and
+Put actions in a horizontal `stack` on a desk and nokre shows as many as
+fit. When they don't all fit, the row **folds**: the actions that don't fit, and
 as many before them as the control needs room taken from, give way to a
 control that says how many it hides — "3 more"
 (the framework's own counted word, `App.Chrome.more_count` — see
 [localization.md](localization.md)) — and pressing that opens a sheet,
 titled with the plain word "More" (`App.Chrome.more`), holding it and
-everything after it, in the row's own order. This is what a surface that clips does, which is every native
-window. In a browser the same row wraps instead
+everything after it, in the row's own order. This is what a desk does
+where the surface clips, which is every native window. On a page, and
+in a browser, the same row wraps instead
 ([A row too narrow for its children](#a-row-too-narrow-for-its-children)).
 
 This is not opt-in and takes no setup — no flag on the stack, no wrapper,
-no width to declare. Any row of actions you have already written folds
-the moment it runs out of room in a native window.
+no width to declare. Any row of actions you have already written on a
+desk folds the moment it runs out of room in a native window.
 
 ```zig
-const row = try b.stack(.{ .axis = .horizontal, .gap = 8 });
+// In a route declared `.shape = .desk`:
+const main = try b.region(.{ .role = .main, .label = "Draft" });
+const row = try main.stack(.{ .axis = .horizontal, .gap = 8 });
 try row.button(.{ .label = "Publish", .on_press = ... });
 try row.button(.{ .label = "Save draft", .on_press = ... });
 try row.button(.{ .label = "Archive", .on_press = ... });
 try row.link(.{ .label = "More details", .route = "details" });
 // Narrow enough, this renders: Publish · 3 more
+// The same row on a page takes a second line instead.
 ```
 
 There is no API for it — no `overflow` knob, no "collapse at" width, no
@@ -2714,8 +2939,8 @@ Details worth knowing:
   the tail closes the sheet it was declared in, not the tail. On a
   screen the last sheet's departure rebuilds the screen, and that
   rebuild lands after the action, from the state the action wrote.
-- **Inside a sheet too.** A row of actions inside a sheet folds like a
-  screen's, and its tail is a sheet stacked over the one it is in
+- **Inside a sheet too.** A row of actions inside a sheet over a desk
+  folds like the desk's own, and its tail is a sheet stacked over the one it is in
   ([the sheet stack](#sheet)). The covered sheet's node goes while the
   tail stands — the tail lists copies, restated whole as always — and
   is rebuilt from state when the tail goes. Esc from the tail returns
@@ -3176,7 +3401,7 @@ and `error.InputOwnedField` above. Picking adds its own:
 `error.RankingPickedAtMax` (the choice that meets the maximum has
 already ended picking), `error.RankingPickingUnwired` (a picking
 ranking needs all four of `on_pick`, `on_undo`, `on_start_over` and
-`on_done`), `error.RankingUndoRestoresWithChoices` and
+`on_done`, except in a [live stage](#a-live-stage)'s scene), `error.RankingUndoRestoresWithChoices` and
 `error.RankingUndoRestoresInEdit`.
 
 #### Two phases: picking, then edit
@@ -4208,6 +4433,17 @@ is a node in the accessibility tree — the stage is one `figure` named
 by its name ([accessibility.md](accessibility.md#derivation)). On the
 web the window is a scroller with the scene's markup `inert` inside it.
 
+**So the scene may hold controls nothing wires** (2026-10-17). The
+rules that refuse an append only because a press would land on a
+control that does nothing stand aside under a live stage, at any depth:
+a tile with no destination (`error.TileNeedsDestination`) and a picking
+ranking missing any of its four handlers
+(`error.RankingPickingUnwired`). A scene can show what someone else's
+screen will show, ballot mid-pick included, without the app wiring
+presses no one can make. Every rule about structure or grammar still
+holds there: a tile with two destinations, a ranking picked twice, a
+link with no route, an unsupported scheme.
+
 A screen holding a live stage records: the subtree is the app's own,
 so a recording of that screen holds the stage and everything under it
 at the top of its scroll, and a [raree](#raree) or a stage over that
@@ -4406,7 +4642,9 @@ Its accessible role follows the same split: link for a row that goes,
 button for one that acts. More than one of the three is
 `error.TileHasOneDestination` and none is `error.TileNeedsDestination`
 — with a destination and a press the press would never be called, and
-with nothing the row is a tab stop that answers nothing. Focus is the
+with nothing the row is a tab stop that answers nothing, which is why
+none is allowed in a [live stage](#a-live-stage)'s scene, where nothing
+is a tab stop. Focus is the
 picker's pattern — a heavier stroke hugging the
 row — because an outset ring would collide with the separators.
 
@@ -4522,8 +4760,8 @@ try b.tile(.{ .label = member.name, .route = "write", .avatar = .{ .picture = .{
   try b.tile(.{ .label = account.name, .detail = account.address, .route = "account", .avatar = .{ .picture = account.face, .name = account.name, .size = .medium } });
   ```
 
-- **`.large` is refused** (`TileAvatarIsLarge`): a tile is a row, and a
-  hero face is an `avatar` element of its own. **A group's rows lead at
+- **`.large` and `.hero` are refused** (`TileAvatarIsLarge`): a tile
+  is a row, and a screen's one face is an `avatar` element of its own. **A group's rows lead at
   one size** (`TileGroupMixedAvatarSizes`): the band is the column the
   words start on, and two sizes are two columns, the mixed-marks
   reason. It is its own error rather than `TileGroupMixedLeadingMarks`

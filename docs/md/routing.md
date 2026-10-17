@@ -341,14 +341,18 @@ it does:
 - `page` — the default. Content flows in a column capped at the prose
   measure and centred in what is left. Every screen this library drew
   before the field existed is one, which is why saying nothing says
-  `page` and most tables never write the word.
+  `page` and most tables never write the word. A row of actions too
+  wide for a page's line takes a second one.
 - `desk` — an application shell: a console, a mail client, an IDE.
   Content takes the window, because a console is not prose and a measure
   argued from line length has nothing to say about one. A desk's root
   holds `region` children and nothing else — the roster, the subject,
   the aside, the strip you act from ([elements.md](elements.md)) — and a
   window too narrow to stand them side by side shows one at a time
-  behind a control that names the rest.
+  behind a control that names the rest. A row of actions too wide for a
+  region's line keeps its one line and folds its tail behind `More`
+  where the surface clips
+  ([elements.md](elements.md#a-row-too-narrow-for-its-children)).
 
 **It is not a width knob**, and the difference is not a technicality. A
 knob asks how wide you want this screen; this asks what the screen *is*,

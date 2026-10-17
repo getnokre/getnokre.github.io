@@ -49,8 +49,8 @@ keep a second one possible, and what it owes the first:
 *tree* question rather than a drawing one: whether a row too wide for
 its space is clipped or reflowed. Core has to know, because the two
 answers are different nodes — `nav.syncNavChrome` builds a row of links
-or a chip, a row of actions folds its tail into a `more` control only
-where the surface clips (`layout.rowOverflow`), and both are decided
+or a chip, a desk's row of actions folds its tail into a `more` control
+only where the surface clips (`layout.rowOverflow`), and both are decided
 before either renderer sees the tree. The
 driver declares it through `App.setMedium`, and the default is `clips`,
 the cautious answer. The test anything wanting to join the enum has to
@@ -94,6 +94,14 @@ append rules, and what a window too narrow for the band does.
 
 There is no device in that sentence, which is the point — a phone shows
 a desk's regions one at a time rather than a different app's screens.
+The shape also decides what a row of actions does when it runs out of
+line (since 2026-10-17, owner's decision): it folds its tail behind
+`More` only on a desk, a toolbar on edges that never scroll away, and
+wraps on a page, which scrolls as one, on every surface. A medium that
+would tell a phone from a desktop window was asked for to decide the
+same question and refused as a named platform group
+([../elements.md](../elements.md#a-row-too-narrow-for-its-children)).
+
 What a shape is and how one is declared:
 [../routing.md](../routing.md). What a `region` is:
 [../elements.md](../elements.md).
@@ -108,7 +116,7 @@ nokre derives it and offers no knob for it.
 | Decision | Whose |
 | --- | --- |
 | Nav shape — a row of destinations or the same stacked, on a floating ground, or one chip | nokre's (`layout.navShape`) |
-| Folding an overflowing row of actions, where the surface clips | nokre's (`layout.rowOverflow`, `overflow.syncOverflowChrome`) |
+| Folding an overflowing row of actions, on a desk where the surface clips | nokre's (`layout.rowOverflow`, `overflow.syncOverflowChrome`) |
 | Where a row wraps | nokre's |
 | A row of blocks: side by side or one per line | nokre's (`layout.boxRow`) |
 | Page width | nokre's, derived from the shape |

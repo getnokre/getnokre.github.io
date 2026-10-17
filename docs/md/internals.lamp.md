@@ -178,6 +178,7 @@ table.
 | the collapsed nav's section list | the card, on the dim | card |
 | `button`, filled (primary) | the pill, a `.g9` plate | cta |
 | `button`, secondary | no plate: its stroke alone, no fill ([below](#buttons-under-the-lamp)) | none: a `.g6` stroke, lit on its own, as a pool row is |
+| `button`, destructive | no plate: its hexagon's stroke alone in every look, no fill ([below](#buttons-under-the-lamp)) | none: an `ink` stroke, unlit, as the secondary's |
 | `button`, waiting on its words | the pill | plate |
 | `tile` | the mark's well | plate |
 | `segmented`, `dial` | the lit plate | knob |
@@ -356,6 +357,15 @@ link stays words.
   is the in-place 2 px `ink` edge, as in depth: a change of width from 1
   to 2 points as well as of tone, since `ink` over `.g6` is 2.71:1, as it
   is on the pool row.
+- **Destructive.** Its rounded hexagon's 2px `ink` stroke alone, as in
+  every other look (2026-10-17) — the form is hollow by definition, so
+  the lamp has no fill to step down and no plate to light: the stroke
+  is unlit, as the secondary's is. Disabled `.g10` with `.g6` words; a
+  percentage fills the hexagon's interior up to it, cut square, under
+  the stroke (the renderer's `rimOnly` names both forms; the web clips
+  the fill to the hexagon inside its stroke, its corners sharp beneath
+  the stroke's rounding). Focus is a ring along the hexagon outside it,
+  never the secondary's in-place edge.
 - **The vendor pills** are the exception, as everywhere: Apple's and
   Google's keep their store-facing fills, pinned to eink's light ramp.
 

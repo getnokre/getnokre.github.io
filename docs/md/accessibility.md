@@ -22,7 +22,7 @@ and produces a flat, parent-linked `Snapshot` in document order. Roles map
 | `diverging_meter` | `static_text` | row label as name, both sides' words joined as the value — an arm nobody can see is otherwise a magnitude only a looker gets; under a group legend the row draws figures and the value is still the words |
 | `qr` | `image` | label as name, encoded value carried |
 | `picture` | `link` (`route` or `external`) / `image` | description as name; never decorative, an empty one is refused; a link is focused, and its could-not-show box is the link too |
-| `avatar` | `image` | description as name, face or initials alike, leading a list item too, read before its words; an empty one is refused; never a control, so no stop |
+| `avatar` | `image` | description as name, face or initials alike, leading a list item too, read before its words; centred, its drawn name as the accessible description unless it is the description's own words, so no name is said twice; an empty one is refused; never a control, so no stop |
 | `quantity` | `static_text` | value and unit joined as the name, caption as the value — the reverse of `diverging_meter`'s slots, and for the reason its row gives |
 | `stack`, `box`, `group` | `group` | — |
 | `accessibility_toggles` | `group` | — ; its rows are the `toggle`s nokre installs, below |

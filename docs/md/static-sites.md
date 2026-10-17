@@ -458,8 +458,8 @@ missing from the markup.
 The answer is the one the header already had: a row that reflows has no
 width at which it fails. So the medium now decides this too. Where it
 reflows, every row wraps, a row of buttons included, with or without a
-runtime; where it clips, a row of actions folds as it always did. The
-rule is stated once, in
+runtime; where it clips, a desk's row of actions folds (a page's has
+wrapped on every surface since 2026-10-17). The rule is stated once, in
 [elements.md](elements.md#a-row-too-narrow-for-its-children).
 `dom.document` lays the page out before its checks, so a fold a
 clipping layout left in the tree is gone before the runtime check reads
