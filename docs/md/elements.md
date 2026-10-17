@@ -437,6 +437,16 @@ act — appends that itself first and then calls this for the tail.
 sheet's own precondition (a box not ticked), which is a different fact
 and stays a different field.
 
+**The primary always keeps room for the busy mark** (2026-10-17). It is
+built with `room_for_busy_mark = true`, so a busy sheet shows the
+hourglass ahead of the words rather than in their place ("A busy button
+still says what it does", under `button`), and the pill is the same
+width at rest and busy. The room is not a field the sheet takes: the
+primary is by construction the act a press sets running, so the 24px it
+costs at rest is never the air the button section declines to give a
+pill that never goes busy, and every sheet saying the same `true`
+would be the composition this exists to stop being written by hand.
+
 **Cancel stays enabled while the act is running.** nokre has no spinner
 and no animation, so a busy confirmation shows a static hourglass on its primary and
 nothing else moves: a user who cannot tell whether anything is
@@ -2917,7 +2927,9 @@ words and the rings
 
 ### `ranking`
 An order the user sets over a fixed set, with a line above which items
-count, inside a band the app sets. Fields: `label`, or `named_by` in
+count, inside a band the app sets — or, composing, the set being
+written by its creator ([composing](#composing-the-creators-phase)).
+Fields: `label`, or `named_by` in
 its place ([naming](#naming-a-device-without-drawing-its-label)); `options` (2+),
 given *in their current order* — the app owns the order the way it owns
 a `radio_group`'s `selected`; `viable`, how many of them count, which is
@@ -3333,6 +3345,61 @@ owns no "not counted" word: a choice is a lit row with a rank, a pool
 row a stroke with none, and that is the whole
 distinction. What a reader hears while picking is in
 [accessibility.md](accessibility.md).
+
+#### Composing: the creator's phase
+
+The third phase, and the one the person who *writes* the ballot meets
+(owner-decided 2026-10-17, for Rokovski Votes' compose step): the
+device being written, in the form a voter will meet it. `composing =
+true` turns the ranking into a container whose children are its rows —
+a `text_input` per option, each a slot the creator names in place, and
+after any slot one `button`, its Remove — and `Tree.append` refuses
+every other child (`error.RankingComposingChildKind`), a Remove that
+follows no slot (`error.RankingSlotButtonNeedsSlot`), and any child at
+all under a voter's ranking (`error.RankingHoldsNoChildren`). Every
+voter field is unused and must arrive at rest — no options, band,
+caption, choice or voter action (`error.RankingComposingHoldsVoterState`);
+`Ranking.Composing` and the cursor's `rankingComposing` spell that:
+
+```zig
+const device = try b.rankingComposing(.{ .label = "Options" }); // or .named_by = heading
+for (draft.options, 0..) |option, slot| {
+    try device.textInput(.{ .label = "Option 1", .value = option, .on_change = … });
+    if (draft.options.len > 2) try device.button(.{ .label = "Remove", .accessible_name = "Remove option 1", .on_press = … });
+}
+try b.button(.{ .label = "Add an option", .form = .{ .secondary = null }, .on_press = … });
+```
+
+**Nothing reorders while composing: a voter orders, a creator names.**
+No row is armed, swapped or picked, no line is drawn — a voter meets no
+line before choosing — and the device itself is no focus stop: its
+fields and buttons are, in document order. The slot's field is the row:
+it is drawn at the pool row's shape (the `.g6` stroke at a pill's
+corner, the same tone and height a voter's row has), its label is its
+name and is never drawn (`TextInput.composing_slot`, written by the
+tree from the parent and refused as a literal), and its text starts
+where the voter's words will — a tile pad and the ordinal band in, the
+band reserved for the ranks the slots will carry. The Remove is drawn
+as the row's verb, the button's own word beside the cancel glyph in the
+trailing band, which is as wide as the voter's verb band or the Remove,
+whichever is wider, so the field keeps its column when a third option
+brings the first Remove. A slot's problem hangs under its row, which
+grows by it; rows never swap here, so no row is held to the tallest.
+The caret's focus takes the row's stroke over, as a pool row's does;
+a Remove with keyboard focus rings its own band. A press on the stroke
+outside the field is the field's, where it fell. One thing the slot
+keeps of a field: its text stands on its own script's side
+(`editing.lineAlignment`), where a voter's row stands its words on the
+app's, so a Latin option in a right-to-left app stands at the left
+while composing and at the right once cast — the field's rule for the
+caret, kept over a likeness that would hold only until the person
+typed.
+
+An Add is the app's own `button` under the device: a voter meets no add
+row, so the device draws none. Assistive tech hears a group named by
+the label, holding the fields by their names and the Removes by theirs,
+and no slot of the device's own. The audit holds two slots at least
+(`malformed_ranking`), as a voter's ranking has two options at least.
 
 #### What it is for, and the drag it is not
 

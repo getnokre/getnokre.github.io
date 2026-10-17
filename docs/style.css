@@ -2639,6 +2639,27 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .plate.pool { background: transparent; border-color: var(--g6); color: var(--ink); border-radius: var(--ranking-pool-radius); }
 .plate.pool:focus-visible { border-color: transparent; }
 :is(.ranking[disabled], .ranking.off) .plate.pool { border-color: var(--g10); }
+/* Composing (`rankingComposing`): a pool row that is no button but
+   holds its slot's field — the field's label hidden, its box
+   stripped to the row's own stroke, its text on the column the
+   voter's words take — and a Remove in the trailing band as the
+   verb a voter's row says there, the word beside the cancel glyph.
+   The row carries the field's focus, as the reference takes the
+   stroke over (`drawPoolRow`); the verb carries its own. A
+   problem hangs under the field inside the row, which grows. */
+.ranking.composing > .ranking-rows { margin-top: var(--input-label-gap); }
+.ranking.composing > .ranking-rows:first-child { margin-top: 0; }
+.plate.slot { align-items: flex-start; min-height: var(--touch); }
+.plate.slot > .field, .plate.slot > .field-group { flex: 1; min-width: 0; }
+.plate.slot .field { gap: 0; }
+.plate.slot .field > .field-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.plate.slot .field-box { border: 0; padding: 0; background: transparent; box-shadow: none; }
+.plate.slot .field-box:has(:focus-visible) { outline: none; }
+.plate.slot:has(> :is(.field, .field-group) input:focus-visible) { outline: var(--focus) solid var(--ink); outline-offset: calc(-1 * var(--focus)); border-color: transparent; }
+.plate.slot > .verb { align-self: flex-start; line-height: var(--lh-body); }
+button.verb { appearance: none; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+button.verb:disabled, button.verb[aria-disabled="true"] { color: var(--g6); }
+button.verb:focus-visible { outline: var(--focus) solid var(--ink); outline-offset: var(--focus-clear); border-radius: var(--radius); }
 .ranking[disabled] :is(.ranking-prompt, .ranking-hint), .ranking.off :is(.ranking-prompt, .ranking-hint) { color: var(--g6); }
 /* The controls (`rankingControls`): Undo and Start over at the
    leading edge, Done at the trailing, a control gap apart. The
