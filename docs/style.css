@@ -2244,6 +2244,18 @@ a.link.block {
    face is all this borrows from `.icon`, which would also bring a
    `1lh` height that fights the inset here. */
 .btn-wait { position: absolute; inset: 0; display: grid; place-content: center; font-family: icons; font-style: normal; font-weight: 400; }
+/* Busy, the words stay where the pill has a lead slot
+   (`Button.room_for_busy_mark`): a slot kept for the hourglass is
+   padding at rest, split round the centred words, and the
+   hourglass leading them while the work runs; a lead mark keeps its
+   slot as a hidden strut under the hourglass. */
+.btn.busy-room:not([aria-busy="true"]) { padding-inline: calc(var(--button-pad-h) + 12px); }
+
+.btn-wait.lead { position: static; inset: auto; width: 16px; }
+.busy-lead { display: grid; place-items: center; }
+.busy-lead > * { grid-area: 1 / 1; }
+.busy-lead > .lead-strut { visibility: hidden; }
+.busy-lead > .btn-wait { position: static; }
 .btn-track {
   position: absolute;
   inset: 0 var(--button-pad-h);
@@ -2692,10 +2704,11 @@ div.plate.cut .cut-rule::before { border-top-color: var(--g10); }
 .stage-header > .btn:nth-last-child(3) { inset-inline-end: calc(var(--tile-pad-h) - var(--back-bleed) + 2 * var(--touch)); }
 .stage-header > .btn[hidden] { display: none; }
 .stage-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
-.live-stage > .stage-frame { overflow: hidden; }
+.live-stage > .stage-frame { overflow: hidden; container-type: inline-size; }
 .live-stage > .stage-frame > .stage-header { padding-inline: var(--tile-pad-h); }
 .live-stage-window {
   width: 100%;
+  max-height: calc(100cqi * var(--cap-h, 1) / var(--cap-w, 1));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;

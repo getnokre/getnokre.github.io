@@ -2331,15 +2331,36 @@ way.
 `in_progress` says the button has been pressed and the work it started
 is still running — not "loading", because nothing is being loaded, and
 not a spinner, because a spinner is animation this frame model does not
-have. The words stand down for an hourglass — Lucide's, static, in the
-icon face — centered in the pill at the size the label and icon already
-bought it: the button does not resize when the press starts or when the
-result lands, so nothing under the finger
-moves. It does not dim. `disabled` is unavailable and dims; `in_progress`
-is busy and stays at full strength, because the mark is the only sign the
-work is happening. A leading icon or vendor mark stands down with the
-words; the glyph form has no pill, so the hourglass takes the bare touch
-target where the glyph was, at the 24px grid that glyph stood on.
+have. The mark is an hourglass — Lucide's, static, in the icon face — and
+the button does not resize when the press starts or when the result
+lands, so nothing under the finger moves. It does not dim. `disabled` is
+unavailable and dims; `in_progress` is busy and stays at full strength.
+
+**A busy button still says what it does** (2026-10-17, the operator's
+decision). The hourglass leads the words in a lead slot and the words
+stay: a pill with a lead icon or vendor mark stands it in that mark's
+slot; a pill with neither stands it in room it keeps for it,
+`room_for_busy_mark = true`, which at rest is padding split round the
+centred words and busy is the hourglass and the lead's gap ahead of
+them, at the start edge (the right under a right-to-left chrome). A pill
+with an icon or a vendor mark refuses the field, its room being there
+already (`error.ButtonKeepsBusyRoomAlready`), and so does the glyph form
+(`error.GlyphButtonKeepsNoRoom`).
+
+```zig
+try b.button(.{ .label = tr(.connect), .room_for_busy_mark = true, .in_progress = state.connecting, .on_press = … });
+```
+
+Room is asked for, not given to every pill, because it widens the pill
+at rest by the hourglass and its gap: a pill that never goes busy would
+carry 24px of air for nothing. Paying for the mark out of the pill's own
+padding instead, at no width, was tried on 2026-10-17 and left the
+words 4px from the pill's rounded end. A pill with neither a lead mark
+nor the room still keeps its size by standing the hourglass in place of
+its words, centred at the size they bought; its accessible name is the
+label all the same. The glyph form has no words, so the hourglass takes
+the bare touch target where the glyph was, at the 24px grid that glyph
+stood on.
 
 Until revision 101 the mark was `…` — on the button, the switch and the
 box alike — which is also the mark nokre elides text with and the mark a
@@ -2412,7 +2433,8 @@ cancelled, and it is the one control on screen that cannot be pressed
 to recover.
 
 `progress_percent` (0–100) is the same state with a number attached.
-Set it and the hourglass gives way to a meter track in that same slot —
+Set it and a meter track stands in the pill in place of the hourglass
+and the words, a bar being what it says now —
 `meter`'s own geometry, centered, growing from the leading edge and
 mirroring under RTL. The pill does not change size, fill, or tone: only
 what stands in the middle changes, so a button at 0% is still visibly
@@ -4058,7 +4080,7 @@ code is never linked: its recordings are data.
 
 #### A live stage
 
-`.live`, a `nokre.element.SceneViewport`, makes the stage a frame round
+`.live`, a `nokre.element.LiveScene`, makes the stage a frame round
 a scene this app builds now, from its own state: the stage's children,
 which the app appends under it as under a stack
 (`Cursor.liveStage`, which refuses any other `play` with
@@ -4071,17 +4093,45 @@ because the app built it.
 It keeps the stage's frame and nothing of the play: no controls, no
 count, no foot, no hand, no zoom, no big screen, no ticks, no
 recording. The header holds the `label` alone; a stage `named_by` a
-heading has no header. The window is the viewport at 1:1 — `.window`,
-the default, the screen the app stands on now, read again at every
-layout; `.size`, that logical size, refused where either side is not
-positive (`error.LiveStageSizeEmpty`) — no wider than the space the
-stage is given and as tall as the viewport's aspect then says, so a
-phone's family keeps a phone's shape in a narrower column and reflows
-its words to the window's width. The children are laid out as a page
-in the window, at the page's padding and gap, in this app's look; a
-scene taller than the window scrolls inside it at 1:1, by the wheel, a
-drag, the bar and the keyboard, and the page beside it does not move.
-A rebuild starts it at the top.
+heading has no header.
+
+**The frame hugs its scene** (2026-10-17). The window is as wide as the
+space the stage is given, and as tall as the scene laid out at that
+width, up to a cap; a scene shorter than the cap ends the frame where
+it ends, so the page goes on right under it. The cap is `cap`, a
+`nokre.element.LiveSceneCap`:
+
+```zig
+_ = try b.liveStage(.{ .play = .{ .live = .{} }, .label = "What they see" });
+_ = try b.liveStage(.{ .play = .{ .live = .{ .cap = .{ .size = nokre.element.ViewportPreset.phone.size() } } }, .label = "What they see" });
+```
+
+- `.square`, the default (`.live = .{}`): no taller than the window is
+  wide.
+- `.size`, a logical size: no wider than its `w`, and no taller than its
+  aspect says at the window's width, so a phone's cap keeps a phone's
+  shape in a narrower column. Refused where either side is not positive
+  (`error.LiveStageSizeEmpty`).
+- `.window`: `.size` at the screen the app stands on now, read again at
+  every layout.
+
+The children are laid out as a page in the window, at the page's
+padding and gap, in this app's look, against the cap: a child that
+fills to the foot of its space (a `scroll_region` with no `height`)
+fills the cap, and the window stands at it. A scene taller than the cap
+scrolls inside the window at 1:1, by the wheel, a drag, the bar and the
+keyboard, and the page beside it does not move. A rebuild starts it at
+the top.
+
+**Presets.** `nokre.element.ViewportPreset` names the logical sizes of
+the screens an app is commonly read on, by family, never by product:
+`small_phone` (360×800), `phone` (390×844), `large_phone` (440×956),
+`tablet` (1032×1376), `laptop` (1440×900), `desktop` (1920×1080).
+`.size()` is a `geometry.Size`, for a live stage's cap, a raree's
+`viewport`, or anything else that takes a logical size; the exhibit's
+Device select offers them in this order. They are not the store's
+device families (`nokre.shots.DeviceFamily`), the sizes a listing is
+uploaded at.
 
 Inert as a recorded stage's window is: a press inside lands on the
 stage, so a switch in the scene does not toggle and a button does not
@@ -4094,7 +4144,9 @@ web the window is a scroller with the scene's markup `inert` inside it.
 A screen holding a live stage records: the subtree is the app's own,
 so a recording of that screen holds the stage and everything under it
 at the top of its scroll, and a [raree](#raree) or a stage over that
-recording shows it. A stage over a recorded play is still refused in a
+recording shows it. The recording carries the cap, never the height:
+the scene is laid out again by the same code, so at the width it was
+acted at it hugs to the same height. A stage over a recorded play is still refused in a
 recording ([testing.md](testing.md#and-as-a-play-inside-an-app)).
 
 ### `raree`

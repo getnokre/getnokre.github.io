@@ -302,7 +302,8 @@ catalog's `@@locale`, read when `addExhibit` is configured and handed to the pag
 `exhibit_options.template_locale` — where the root holds a recording in
 it, else on the first recording's), the look (`eink`, `depth`,
 `lamp`, through `setTheme`) and the device: "This window", the
-default, then the exhibit's own presets (`src/exhibit/viewports.zig`:
+default, then nokre's presets (`element.ViewportPreset`, public since
+2026-10-17; `src/exhibit/viewports.zig` holds only their English words:
 small phone, phone, large phone, tablet, laptop, desktop, each said
 with its logical size, "Phone, 390×844"). The presets are not the
 store's device families and are not read from the app's `.store`: a

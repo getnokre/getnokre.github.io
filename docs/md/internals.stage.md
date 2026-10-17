@@ -501,15 +501,26 @@ the same code, so a raree or a stage over the recording shows it with
 no nested scene app.
 
 **Layout** (`layoutLiveStage`). `stage.sync` writes
-`StagePlayed.scene_viewport` from the `SceneViewport` (`.window` is
-`App.staging.screen`, else `App.viewport`, as a raree's is). The window
-is that viewport at 1:1, no wider than the span and as tall as its
-aspect then says (`liveStageWindowSize`), from the span's leading edge;
-the frame stands round it (`liveStageFrame`), with a header only where
-the stage has a `label`. The children flow inside the window as the
-root page flows (`root_stack`'s padding and gap), from the window's top
-less `StagePlayed.live_scroll`, clamped to `live_content_h` less the
-window's height. The stage's rect is the window alone, so the one door
+`StagePlayed.scene_viewport` from the `LiveSceneCap`
+(`stage.liveSceneCapSize`: zero for `.square`; `.window` is
+`App.staging.screen`, else `App.viewport`, as a raree's is). The cap is
+that size at 1:1, no wider than the span and as tall as its aspect then
+says, or as tall as wide for a zero size (`liveStageWindowCap`), from
+the span's leading edge. The children flow against the cap as the root
+page flows (`root_stack`'s padding and gap), the cap's foot their
+`bottom` and its height their band, from the cap's top less
+`StagePlayed.live_scroll`; the window is the cap's width and
+`min(cap, live_content_h)` tall (`liveStageWindowHeight`, 2026-10-17),
+and the scroll is clamped to `live_content_h` less the window's height.
+Flowing against the cap rather than the window is what keeps the hug a
+single pass: a child that fills to the foot fills the cap, so the
+content is never shorter than the window it would size. The frame
+stands round the window (`liveStageFrame`), with a header only where
+the stage has a `label`. A live stage's intrinsic size (a peer in a box
+row) is the cap's, an upper bound, since it is asked before its
+children are laid out. Nothing of the hug is recorded: a recording
+holds the `LiveScene`, and the scene app's layout hugs again by this
+code. The stage's rect is the window alone, so the one door
 every scroll goes through (`Element.scrollView`, `viewportTrack`'s
 `rectOf(id).h`) and the bar's strip read it as they read a
 `scroll_region`'s; the frame's header stands above the rect, as the
@@ -532,8 +543,11 @@ the window's corners at the card's foot stay round. A scroll of the
 window is therefore a whole frame, as a scroll a rounded corner cuts
 always is ([pixel-model.md](pixel-model.md#partial-frames)). The DOM writes a figure,
 the same frame and header classes, and a `.live-stage-window` scroller
-at the viewport's `aspect-ratio` holding the children under one
-`inert` flow, whose scroll is the browser's.
+holding the children under one `inert` flow, whose scroll is the
+browser's. The window has no height of its own, so it hugs; its
+`max-height` is the cap, read off the frame's width (the frame is an
+inline-size container, `100cqi` times the cap's `--cap-h` over
+`--cap-w`, both 1 for `.square`).
 
 ## Time
 
